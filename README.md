@@ -1,13 +1,5 @@
 # markdown.nvim
 
-```
-  __  __         _       _
- |  \/  |__ _ _ | |_____| |_____ __ ___ _
- | |\/| / _` | '_| / / -_) / (_-</ _` \ V /
- |_|  |_\__,_|_| |_\_\___|_\_/__/\__,_|\_/
-              nvim
-```
-
 ![version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![status](https://img.shields.io/badge/status-beta-orange.svg)
 ![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-success.svg)

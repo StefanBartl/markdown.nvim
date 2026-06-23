@@ -77,6 +77,39 @@ local function parse_args(args)
   return opts, path or ""
 end
 
+--- Generate links for a list of paths and return the result string.
+--- Directories are expanded to their contained files.
+---@param paths string[]
+---@param opts? {recursive?: boolean, noignore?: boolean, root?: string}
+---@return string
+function M.for_paths(paths, opts)
+  opts = opts or {}
+  local root = resolve_root(opts.root)
+  local scan_opts = {
+    recursive = opts.recursive or false,
+    noignore  = opts.noignore  or false,
+  }
+  local lines = {}
+
+  for _, path in ipairs(paths) do
+    path = vim.fn.expand(path)
+    if vim.fn.isdirectory(path) == 1 then
+      local files = collect_files(path, scan_opts)
+      for i = 1, #files do
+        local file_path = files[i]
+        if root then file_path = join_path(root, file_path) end
+        lines[#lines + 1] = file_to_link(file_path)
+      end
+    else
+      local file_path = path
+      if root then file_path = join_path(root, file_path) end
+      lines[#lines + 1] = file_to_link(file_path)
+    end
+  end
+
+  return table.concat(lines, "\n")
+end
+
 function M.run(args)
   local opts, path = parse_args(args)
 
@@ -85,24 +118,7 @@ function M.run(args)
     return
   end
 
-  path = vim.fn.expand(path)
-  local root = resolve_root(opts.root)
-  local lines = {}
-
-  if vim.fn.isdirectory(path) == 1 then
-    local files = collect_files(path, opts)
-    for i = 1, #files do
-      local file_path = files[i]
-      if root then file_path = join_path(root, file_path) end
-      lines[#lines + 1] = file_to_link(file_path)
-    end
-  else
-    local file_path = path
-    if root then file_path = join_path(root, file_path) end
-    lines[#lines + 1] = file_to_link(file_path)
-  end
-
-  local result = table.concat(lines, "\n")
+  local result = M.for_paths({ path }, opts)
   clipboard.copy(result)
   print(result)
   vim.notify("Markdown links copied to clipboard", vim.log.levels.INFO)
