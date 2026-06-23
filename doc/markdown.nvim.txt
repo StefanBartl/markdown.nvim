@@ -1,0 +1,549 @@
+*markdown.nvim.txt*  A self-contained Markdown toolkit for Neovim.
+
+==============================================================================
+CONTENTS                                           *markdown.nvim-contents*
+
+  1. Introduction .............. |markdown.nvim-intro|
+  2. Requirements .............. |markdown.nvim-requirements|
+  3. Installation .............. |markdown.nvim-installation|
+  4. Setup ..................... |markdown.nvim-setup|
+  5. Configuration ............. |markdown.nvim-config|
+     5.1 General options ....... |markdown.nvim-config-general|
+     5.2 blockquote_hl ......... |markdown.nvim-config-blockquote|
+     5.3 fenced_fix ............ |markdown.nvim-config-fenced-fix|
+  6. Keymaps ................... |markdown.nvim-keymaps|
+     6.1 Navigation ............ |markdown.nvim-keymaps-nav|
+     6.2 Heading shift ......... |markdown.nvim-keymaps-shift|
+     6.3 Folding ............... |markdown.nvim-keymaps-fold|
+     6.4 TOC ................... |markdown.nvim-keymaps-toc|
+     6.5 Cursor handler ........ |markdown.nvim-keymaps-handler|
+     6.6 Bold wrap ............. |markdown.nvim-keymaps-bold|
+     6.7 TableView ............. |markdown.nvim-keymaps-tableview|
+  7. Commands .................. |markdown.nvim-commands|
+     7.1 :Markdown ............. |:Markdown|
+     7.2 Buffer commands ....... |markdown.nvim-buf-commands|
+  8. TableView ................. |markdown.nvim-tableview|
+  9. Fold expression ........... |markdown.nvim-foldexpr|
+ 10. Lua API ................... |markdown.nvim-api|
+ 11. Architecture .............. |markdown.nvim-architecture|
+
+==============================================================================
+1. INTRODUCTION                                     *markdown.nvim-intro*
+
+markdown.nvim is a self-contained Markdown toolkit for Neovim. All features
+are FileType-scoped: keymaps and user commands are installed only for Markdown
+buffers, and nothing is registered globally beyond one :Markdown command and
+the :checkhealth handler.
+
+Included subsystems:
+  * Heading navigation and level shifting
+  * Custom fold expression for ATX and Setext headings
+  * Table of Contents generator (GFM slug + duplicate suffix)
+  * Visual bold (`**`) toggle
+  * Headline spacing enforcer (blank-dash-blank between H2+ sections)
+  * Fenced-code and inline-code highlight override
+  * Blockquote coloring via matchadd
+  * Anchor / URL / image / file handler on double-click or `ma`
+  * Floating Markdown table browser with HTML export
+  * `:Markdown links` directory-to-link generator
+
+==============================================================================
+2. REQUIREMENTS                                *markdown.nvim-requirements*
+
+  * Neovim >= 0.9
+
+No external tools required. All features use built-in Neovim APIs.
+
+==============================================================================
+3. INSTALLATION                                *markdown.nvim-installation*
+
+lazy.nvim: >
+  {
+    "StefanBartl/markdown.nvim",
+    ft = { "markdown", "mdx", "md" },
+    config = function()
+      require("markdown_nvim").setup()
+    end,
+  }
+<
+Local development: >
+  {
+    dir = "E:/repos/markdown.nvim",
+    ft  = { "markdown", "mdx", "md" },
+    config = function()
+      require("markdown_nvim").setup()
+    end,
+  }
+<
+==============================================================================
+4. SETUP                                           *markdown.nvim-setup*
+
+Call `setup()` once during Neovim startup: >
+
+  require("markdown_nvim").setup({
+    -- options (see |markdown.nvim-config|)
+  })
+<
+`setup()` is idempotent — calling it twice has no effect.
+
+On FileType events matching markdown / mdx / md, the plugin installs:
+  * Buffer-local keymaps (see |markdown.nvim-keymaps|)
+  * Buffer-local user commands (see |markdown.nvim-buf-commands|)
+  * TableView keymaps and commands (see |markdown.nvim-tableview|)
+
+Already-open Markdown buffers are also covered: the plugin applies its
+keymaps and commands to every loaded buffer whose `filetype` matches.
+
+==============================================================================
+5. CONFIGURATION                                   *markdown.nvim-config*
+
+All keys are optional. Unset keys use the defaults shown below.
+
+------------------------------------------------------------------------------
+5.1 General options                          *markdown.nvim-config-general*
+>
+  require("markdown_nvim").setup({
+    map_double_asterisk    = true,
+    keep_inner_selection   = true,
+    protect_h1             = false,
+    use_zf_override        = true,
+    enable_autocmds        = true,
+    enable_keymaps         = true,
+    ft_only                = true,
+    ensure_headline_spacing = true,
+  })
+<
+`map_double_asterisk`
+  When `true`, typing `**` in visual mode toggles bold on the selection.
+  Set to `false` if you use a surround plugin that provides this.
+
+`keep_inner_selection`
+  After wrapping text with `**`, restore the visual selection to the inner
+  text only (without the asterisks). When `false`, selects the full wrapped
+  region.
+
+`protect_h1`
+  When `true`, heading shift operations refuse to move H1 further up (i.e.,
+  H1 cannot become plain text via `<C-Left>`). H2+ shifting is unaffected.
+
+`use_zf_override`
+  When `true`, `zf` is remapped to "toggle fold under cursor + center" in
+  Markdown buffers, overriding the default Vim `zf` operator.
+
+`enable_autocmds`
+  When `false`, no FileType autocmds are registered — you must call
+  `require("markdown_nvim.setup.keymaps").apply(bufnr)` manually.
+
+`enable_keymaps`
+  Currently unused at runtime; all keymaps are controlled by `enable_autocmds`.
+  Reserved for finer-grained control in future versions.
+
+`ft_only`
+  Reserved. Currently all features are ft-only by design.
+
+`ensure_headline_spacing`
+  When `true`, a `BufWritePre` autocmd enforces `[blank]---[blank]` spacing
+  between consecutive H2+ sections. Does not run automatically yet —
+  currently reserved for opt-in use via
+  `require("markdown_nvim.core.headline_spacing").apply_headl_separators(0)`.
+
+------------------------------------------------------------------------------
+5.2 blockquote_hl                          *markdown.nvim-config-blockquote*
+>
+  blockquote_hl = {
+    marker_fg   = "#6A9955",
+    text_fg     = "#7EE787",
+    text_bold   = true,
+    text_italic = false,
+    -- text_bg  = nil  or a hex color or "dimm" (auto-darken marker_fg)
+    -- link     = nil  or a highlight group name (overrides all other fields)
+  },
+<
+Two separate highlight groups are created:
+  `MarkdownBlockquoteMarker`   the `>` token
+  `MarkdownBlockquoteText`     everything after `> `
+
+Both are applied with `matchadd()` at priority 110, which wins over
+Tree-sitter's `@punctuation.special.markdown` (priority 100).
+
+`text_bg = "dimm"` derives a background from `marker_fg` by mixing 20%
+of its color toward black.
+
+------------------------------------------------------------------------------
+5.3 fenced_fix                            *markdown.nvim-config-fenced-fix*
+>
+  fenced_fix = {
+    inline_base_hl = { "DiagnosticWarn", "Special", "Constant", "String" },
+    inline_style   = { italic = false, bold = false },
+    delimiter_hl   = "Comment",
+  },
+<
+`inline_base_hl`
+  Ordered list of highlight groups tried in sequence. The first one that
+  exists in the current colorscheme is used as the base color for inline
+  backtick code spans.
+
+`inline_style`
+  Additional style flags (bold, italic, underline, undercurl) applied on
+  top of the base color.
+
+`delimiter_hl`
+  Highlight group for the backtick delimiters (`` ` ``).
+
+The fix also clears `@markup.raw.block` / `@markup.fenced_code.block` so
+that injected language tokens use their own colors rather than a blanket
+single-color overlay. Re-applied automatically on `:colorscheme` changes.
+
+==============================================================================
+6. KEYMAPS                                        *markdown.nvim-keymaps*
+
+All keymaps are buffer-local and installed only for Markdown filetypes.
+None of the keys are mapped globally.
+
+------------------------------------------------------------------------------
+6.1 Navigation                              *markdown.nvim-keymaps-nav*
+
+  Key                 Mode  Action~
+  <C-p>              n     Jump to previous H2+ heading
+  [[                 n     Jump to previous H2+ heading
+  <C-f>              n     Jump to next H2+ heading
+  ]]                 n     Jump to next H2+ heading
+  {N}<leader><C-p>   n     Jump to previous heading of level N
+  {N}<leader><C-f>   n     Jump to next heading of level N
+
+With a count, the plain variants repeat N times (e.g., `3<C-f>` skips three
+headings forward). With the `<leader>` variants, the count sets the heading
+level to match (e.g., `2<leader><C-f>` finds the next `##` heading).
+
+------------------------------------------------------------------------------
+6.2 Heading shift                           *markdown.nvim-keymaps-shift*
+
+  Key         Mode   Action~
+  <C-Right>   n      Increase heading level on current line
+  <C-Left>    n      Decrease heading level on current line
+  <C-Right>   v / x  Increase heading level on visual selection
+  <C-Left>    v / x  Decrease heading level on visual selection
+  <S-Right>   n      Increase all headings in buffer
+  <S-Left>    n      Decrease all headings in buffer
+
+Notes:
+  * In normal mode (single line): plain text can be promoted to `# `.
+  * In visual mode (multi-line): only existing headings are modified;
+    plain text lines are skipped.
+  * Lines inside fenced code blocks are never modified.
+  * If `protect_h1 = true`, H1 headings cannot be shifted further.
+
+------------------------------------------------------------------------------
+6.3 Folding                                 *markdown.nvim-keymaps-fold*
+
+  Key                 Mode  Action~
+  zf                  n     Toggle fold under cursor + center (if use_zf_override)
+  <localleader>f      n     Toggle fold under cursor + center
+  zu                  n     Unfold all, center
+  zi                  n     Fold previous heading then center
+  zk                  n     Fold H2+ headings (keep H1 open)
+
+See also |markdown.nvim-foldexpr|.
+
+------------------------------------------------------------------------------
+6.4 TOC                                     *markdown.nvim-keymaps-toc*
+
+  Key              Mode  Action~
+  {N}<leader>toc   n     Insert or refresh TOC; count N sets max heading level
+
+The TOC header line is `## Table of content`. Anchors use GFM-compatible
+slugs. Duplicate headings receive numeric suffixes (GitHub convention:
+`slug`, `slug-1`, `slug-2`, ...).
+
+Placement rules:
+  1. If a `## Table of content` block already exists, it is replaced in-place.
+  2. If a first-level heading (`#`) exists, the TOC is inserted before the
+     first following `##` heading.
+  3. Otherwise the TOC is appended to the end of the file.
+
+Spacing is normalized: exactly one blank line before the TOC header, one
+blank line before the `---` separator, and one blank line after it.
+
+------------------------------------------------------------------------------
+6.5 Cursor handler                          *markdown.nvim-keymaps-handler*
+
+  Key              Mode  Action~
+  <2-LeftMouse>    n     Handle target under cursor
+  <C-LeftMouse>    n     Handle target under cursor
+  ma               n     Handle target under cursor
+  mi               n     Open image under cursor
+  mj               n     Jump to anchor under cursor
+
+Dispatch priority:
+  1. Markdown `(#anchor)` link inside a TOC block or list line.
+  2. HTML anchor link (`<a href="#id">`, etc.).
+  3. External file link with optional fragment (`file.md#anchor`).
+  4. Image (`![alt](path)`, `<img src="...">`).
+  5. URL (`https?://...`).
+  6. Local file (`[text](path)`).
+
+Images and files are opened with the system viewer (xdg-open / open / cmd start).
+URLs are opened in the default browser. Internal `#anchor` links jump in-buffer.
+
+------------------------------------------------------------------------------
+6.6 Bold wrap                               *markdown.nvim-keymaps-bold*
+
+  Key   Mode  Action~
+  **    v     Toggle **bold** on visual selection
+
+If the selected text is already surrounded by `**`, the asterisks are
+removed. Otherwise `**` is added on both sides. Whether the inner text
+or the full wrapped text is re-selected is controlled by
+`keep_inner_selection` (see |markdown.nvim-config-general|).
+
+Requires `map_double_asterisk = true` (default).
+
+------------------------------------------------------------------------------
+6.7 TableView                               *markdown.nvim-keymaps-tableview*
+
+  Key           Mode  Action~
+  <leader>tvt   n     Toggle floating table preview for table at cursor
+  <leader>tvs   n     Open table selector (list of all tables in buffer)
+  <leader>tvb   n     Export table at cursor as basic HTML, open in browser
+  <leader>tvc   n     Close TableView floating window
+
+See |markdown.nvim-tableview| for details.
+
+==============================================================================
+7. COMMANDS                                      *markdown.nvim-commands*
+
+------------------------------------------------------------------------------
+7.1 :Markdown                                              *:Markdown*
+
+:Markdown {subcommand} [args]
+
+  Global command dispatcher for Markdown utilities. Currently one
+  subcommand is provided:
+
+                                                     *:Markdown-links*
+:Markdown links [-r] [--noignore] [--root <path>] <path>
+
+  Generate Markdown-style links for all files under <path> and copy them
+  to the system clipboard (`+` register).
+
+  Arguments:
+    <path>           Path to a file or directory.
+    -r / --recursive Recurse into sub-directories.
+    --noignore       Do not skip common directory names (.git, node_modules,
+                     build, dist, …).
+    --root <path>    Prepend this path to every generated link. Supports
+                     `$ENV_VAR` expansion.
+
+  Example: >
+    :Markdown links -r --root $DOCS_ROOT ./docs
+<
+  Output is both printed to the command line and copied to the clipboard.
+
+Tab-completion is available for subcommand names.
+
+------------------------------------------------------------------------------
+7.2 Buffer-local commands                        *markdown.nvim-buf-commands*
+
+These commands are available only in Markdown buffers (installed via FileType
+autocmd):
+
+                                          *:OpenWithSystemApplication*
+:OpenWithSystemApplication
+
+  Identical to pressing `ma`. Dispatches to the cursor-action handler:
+  opens anchors, images, URLs or local files under the cursor.
+
+                                                    *:TableViewToggle*
+:TableViewToggle
+
+  Toggle the floating table preview for the table at the cursor.
+
+                                                    *:TableViewSelect*
+:TableViewSelect
+
+  Open a floating selection list with all pipe-tables found in the buffer.
+  Press `<Enter>` to preview a table; `q` or `<Esc>` to close.
+
+                                                     *:TableViewClose*
+:TableViewClose
+
+  Close the persistent floating TableView window.
+
+                                               *:TableViewOpenBrowser*
+:TableViewOpenBrowser
+
+  Export the table at the cursor as a basic HTML file and open it in the
+  system default browser.
+
+                                           *:TableViewOpenBrowserNice*
+:TableViewOpenBrowserNice
+
+  Export the table at the cursor as a styled HTML file (dark header, zebra
+  rows, rounded card) and open it in the system default browser.
+
+==============================================================================
+8. TABLEVIEW                                    *markdown.nvim-tableview*
+
+The TableView subsystem parses GFM pipe-style tables from the current buffer
+and displays them in a persistent floating window.
+
+Table format supported: >
+  | Column A | Column B | Column C |
+  |:---------|:--------:|---------:|
+  | left     | center   | right    |
+<
+Alignment markers (`:---`, `:---:`, `---:`) are respected in the rendered
+output.
+
+The floating window reuses the same buffer for successive renders. It is
+closed by `:TableViewClose`, by pressing `q` or `<Esc>` in the selection
+list, or when the buffer is wiped.
+
+Browser export creates a temporary `.html` file in `vim.fn.tempname()` and
+opens it with the system application (xdg-open / open / cmd start).
+
+Live preview (BufWritePost) is available via
+`require("markdown_nvim.tableview.live").start()`.
+
+==============================================================================
+9. FOLD EXPRESSION                              *markdown.nvim-foldexpr*
+
+To enable fold support, add to your config (or use an ftplugin): >
+
+  vim.opt_local.foldmethod = "expr"
+  vim.opt_local.foldexpr   = "v:lua.require('markdown_nvim').foldexpr(v:lnum)"
+  vim.opt_local.foldenable  = true
+<
+The expression recognizes:
+  * ATX headings (`# `, `## `, …) — foldlevel equals the heading depth.
+  * Setext H2 underlines (`---`) — treated as level 2.
+  * All other lines return `=` (inherit from previous line).
+
+Helper functions:
+
+  `require("markdown_nvim.core.fold").toggle_under_cursor()`
+    Toggle fold under cursor and center the view.
+
+  `require("markdown_nvim.core.fold").unfold_all_center()`
+    Open all folds (`zR`) and center the view.
+
+  `require("markdown_nvim.core.fold_levels").fold_h2_plus()`
+    Fold all H2+ headings (equivalent to `set foldlevel=1`).
+
+  `require("markdown_nvim.core.fold_levels").fold_levels({2,3,4})`
+    Fold the specified heading levels.
+
+  `require("markdown_nvim.core.fold_prev").fold_prev_heading_then_center()`
+    Move to the previous heading, close its fold, and center.
+
+==============================================================================
+10. LUA API                                         *markdown.nvim-api*
+
+After calling `setup()`, the following functions are exported from the
+top-level module:
+
+                                               *markdown_nvim.foldexpr()*
+`require("markdown_nvim").foldexpr(lnum)`
+
+  Fold expression function. Pass it to `foldexpr` (see |markdown.nvim-foldexpr|).
+
+                                          *markdown_nvim.goto_prev_heading()*
+`require("markdown_nvim").goto_prev_heading()`
+
+  Jump to the previous H2+ heading. Respects `vim.v.count1`.
+
+                                          *markdown_nvim.goto_next_heading()*
+`require("markdown_nvim").goto_next_heading()`
+
+  Jump to the next H2+ heading. Respects `vim.v.count1`.
+
+                                         *markdown_nvim.toggle_visual_bold()*
+`require("markdown_nvim").toggle_visual_bold()`
+
+  Toggle `**bold**` on the current visual selection.
+
+                                               *markdown_nvim.update_toc()*
+`require("markdown_nvim").update_toc([header [, opts]])`
+
+  Insert or refresh the TOC in the current buffer.
+  `header`     String: the TOC heading line (default `"## Table of content"`).
+  `opts`       Table with optional `min_level` and `max_level` (integers 1-6).
+
+                                        *markdown_nvim.handle_cursor_action()*
+`require("markdown_nvim").handle_cursor_action()`
+
+  Dispatch the cursor-action handler (anchor / image / URL / file).
+
+Sub-modules can be imported individually, e.g.: >
+
+  local headings = require("markdown_nvim.core.headings")
+  headings.shift_range(srow, erow, delta)
+
+  local toc = require("markdown_nvim.core.toc")
+  toc.update_markdown_toc("## Contents", { max_level = 3 })
+
+  local hs = require("markdown_nvim.core.headline_spacing")
+  hs.apply_headl_separators(0, { notify = false })
+<
+==============================================================================
+11. ARCHITECTURE                              *markdown.nvim-architecture*
+
+>
+  lua/markdown_nvim/
+    init.lua                 setup() + public Lua facade
+    config.lua               merged defaults
+    util/
+      notify.lua             vim.notify wrapper
+      clipboard.lua          setreg("+") helper
+      ignore.lua             default directory ignore list
+    core/
+      headings.lua           navigation + level shifting
+      fold.lua               foldexpr, toggle, unfold
+      fold_levels.lua        fold by heading level
+      fold_prev.lua          fold previous heading
+      toc.lua                TOC generator (GFM slugs, de-dup)
+      wrap.lua               visual bold toggle
+      headline_spacing/
+        init.lua             blank-dash-blank enforcer
+    anchor/
+      is_anchor_line.lua
+      is_html_anchor_line.lua
+      is_html_extern_anchor_line.lua
+      is_inside_toc_block.lua
+      jump.lua               jump to #anchor under cursor
+    handler/
+      init.lua               cursor-action dispatcher
+      image.lua              open image (system viewer)
+      url.lua                open URL (system browser)
+      file.lua               open file (system viewer / :edit)
+    fenced_fix/
+      init.lua               fenced-code + inline-code HL override
+    hl_options/
+      init.lua               orchestrator (ColorScheme re-apply)
+      hl_groups/
+        blockquote.lua       matchadd-based blockquote coloring
+    tableview/
+      init.lua               setup (autocmds)
+      autocmds.lua           FileType autocmd
+      mappings.lua           buffer-local keymaps
+      commands.lua           buffer-local user commands
+      parser.lua             pipe-table parser
+      renderer.lua           floating window renderer
+      live.lua               BufWritePost live preview helper
+      views/
+        browser_basic.lua    basic HTML export
+        browser_niceified.lua styled HTML export
+        table_selector.lua   pick-a-table floating UI
+    commands/
+      init.lua               :Markdown dispatcher + completion
+      markdown_links.lua     :Markdown links implementation
+    setup/
+      keymaps.lua            buffer-local keymap installer
+      autocmds.lua           FileType autocmd driver
+      usercmds/
+        init.lua             buffer-local user-command installer
+  plugin/
+    markdown_nvim.lua        guard (vim.g.loaded_markdown_nvim)
+<
+==============================================================================
+vim:ft=help:tw=78:ts=2:et:
