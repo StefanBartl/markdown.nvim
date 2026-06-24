@@ -2,7 +2,11 @@
 local M = {}
 
 local commands = {
-  links = require("markdown_nvim.commands.markdown_links").run,
+  links             = require("markdown_nvim.commands.markdown_links").run,
+  headline_spacing  = function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
+  end,
 }
 
 function M.execute(argv)

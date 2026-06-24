@@ -50,4 +50,13 @@ M.handle_cursor_action = function()
   require("markdown_nvim.handler").handle_cursor_action()
 end
 
+---Apply H2-level blank-line separators to the current (or given) buffer.
+---@param bufnr? integer  defaults to current buffer
+---@param opts?  { notify?: boolean }
+M.apply_headline_separators = function(bufnr, opts)
+  require("markdown_nvim.core.headline_spacing").apply_headl_separators(
+    bufnr or vim.api.nvim_get_current_buf(), opts or { notify = true }
+  )
+end
+
 return M
