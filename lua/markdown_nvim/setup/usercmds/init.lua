@@ -20,9 +20,14 @@ local function create_markdown_command()
   if vim.fn.exists(":Markdown") == 2 then return end
 
   vim.api.nvim_create_user_command("Markdown", function(opts)
-    require("markdown_nvim.commands").execute(opts.fargs)
+    require("markdown_nvim.commands").execute(opts.fargs, {
+      range = opts.range,
+      line1 = opts.line1,
+      line2 = opts.line2,
+    })
   end, {
     nargs    = "*",
+    range    = true,
     complete = function(arglead, cmdline, cursorpos)
       return require("markdown_nvim.commands").complete(arglead, cmdline, cursorpos)
     end,

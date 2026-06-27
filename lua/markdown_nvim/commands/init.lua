@@ -7,13 +7,16 @@ local commands = {
   table             = require("markdown_nvim.commands.table").run,
   render            = require("markdown_nvim.commands.render").run,
   preview           = require("markdown_nvim.commands.preview").run,
+  create            = require("markdown_nvim.commands.create").run,
   headline_spacing  = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
   end,
 }
 
-function M.execute(argv)
+---@param argv string[]
+---@param ctx? table  Optional context (e.g. range info) forwarded to the subcommand
+function M.execute(argv, ctx)
   local command = argv[1]
   if not command then
     vim.notify("Usage: :Markdown <subcommand>", vim.log.levels.INFO)
@@ -27,7 +30,7 @@ function M.execute(argv)
   end
 
   table.remove(argv, 1)
-  fn(argv)
+  fn(argv, ctx)
 end
 
 -- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
@@ -36,6 +39,7 @@ local sub_complete = {
   table   = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
   render  = function(arglead) return require("markdown_nvim.commands.render").complete(arglead) end,
   preview = function(arglead) return require("markdown_nvim.commands.preview").complete(arglead) end,
+  create  = function(arglead) return require("markdown_nvim.commands.create").complete(arglead) end,
 }
 
 function M.complete(arglead, cmdline, _cursorpos)
