@@ -25,6 +25,7 @@ function M.apply(bufnr)
   local fold_prev = require("markdown_nvim.core.fold_prev")
   local fold_lvl  = require("markdown_nvim.core.fold_levels")
   local wrap      = require("markdown_nvim.core.wrap")
+  local wrap_link = require("markdown_nvim.core.wrap_link")
   local handler   = require("markdown_nvim.handler")
   local image     = require("markdown_nvim.handler.image")
   local anchor    = require("markdown_nvim.anchor.jump")
@@ -34,10 +35,16 @@ function M.apply(bufnr)
     map(bufnr, "v", "**", function() wrap.toggle_visual_bold() end, "Toggle bold")
   end
 
+  -- Wrap word/selection in a Markdown link []()
+  if cfg().map_wrap_link then
+    map(bufnr, "n", "<leader>[", function() wrap_link.wrap_normal() end, "Wrap word in link")
+    map(bufnr, "v", "<leader>[", function() wrap_link.wrap_visual() end, "Wrap selection in link")
+  end
+
   -- Heading navigation
-  map(bufnr, "n", "<C-p>", function() head.goto_prev_heading() end, "Prev heading")
+  map(bufnr, { "n", "v", "x" }, "<C-p>", function() head.goto_prev_heading() end, "Prev heading")
   map(bufnr, "n", "[[",    function() head.goto_prev_heading() end, "Prev heading")
-  map(bufnr, "n", "<C-f>", function() head.goto_next_heading() end, "Next heading")
+  map(bufnr, { "n", "v", "x" }, "<C-f>", function() head.goto_next_heading() end, "Next heading")
   map(bufnr, "n", "]]",    function() head.goto_next_heading() end, "Next heading")
 
   map(bufnr, "n", "<leader><C-p>", function() head.goto_prev_heading_level() end, "Prev heading of level")
@@ -71,35 +78,35 @@ function M.apply(bufnr)
   map(bufnr, "n", "mi", function() image.open() end,  "Open image")
   map(bufnr, "n", "mj", function() anchor.jump() end, "Jump to anchor")
 
-  -- Heading level shift (normal mode: single line)
+  -- Heading level shift (normal mode: single line); count = number of levels.
   map(bufnr, "n", "<C-Right>", function()
     local row = vim.api.nvim_win_get_cursor(0)[1]
-    head.shift_range(row, row, 1)
+    head.shift_range(row, row, vim.v.count1)
   end, "Increase heading level")
 
   map(bufnr, "n", "<C-Left>", function()
     local row = vim.api.nvim_win_get_cursor(0)[1]
-    head.shift_range(row, row, -1)
+    head.shift_range(row, row, -vim.v.count1)
   end, "Decrease heading level")
 
   -- Heading level shift (visual mode: selection only)
   map(bufnr, { "v", "x" }, "<C-Right>", function()
-    head.shift_visual_selection(1)
+    head.shift_visual_selection(vim.v.count1)
   end, "Increase heading level (visual)")
 
   map(bufnr, { "v", "x" }, "<C-Left>", function()
-    head.shift_visual_selection(-1)
+    head.shift_visual_selection(-vim.v.count1)
   end, "Decrease heading level (visual)")
 
-  -- Whole-buffer heading shift (S-Right / S-Left)
+  -- Whole-buffer heading shift (S-Right / S-Left); count = number of levels.
   map(bufnr, "n", "<S-Right>", function()
     local total = vim.api.nvim_buf_line_count(0)
-    head.shift_range(1, total, 1)
+    head.shift_range(1, total, vim.v.count1)
   end, "Increase all headings")
 
   map(bufnr, "n", "<S-Left>", function()
     local total = vim.api.nvim_buf_line_count(0)
-    head.shift_range(1, total, -1)
+    head.shift_range(1, total, -vim.v.count1)
   end, "Decrease all headings")
 end
 

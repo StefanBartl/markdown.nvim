@@ -4,6 +4,7 @@ local M = {}
 ---@class Mkdn.Config
 local DEFAULTS = {
   map_double_asterisk    = true,
+  map_wrap_link          = true,
   keep_inner_selection   = true,
   protect_h1             = false,
   use_zf_override        = true,

@@ -17,11 +17,17 @@ CONTENTS                                           *markdown.nvim-contents*
      6.3 Folding ............... |markdown.nvim-keymaps-fold|
      6.4 TOC ................... |markdown.nvim-keymaps-toc|
      6.5 Cursor handler ........ |markdown.nvim-keymaps-handler|
-     6.6 Bold wrap ............. |markdown.nvim-keymaps-bold|
+     6.6 Bold / link wrap ...... |markdown.nvim-keymaps-bold|
      6.7 TableView ............. |markdown.nvim-keymaps-tableview|
   7. Commands .................. |markdown.nvim-commands|
      7.1 :Markdown ............. |:Markdown|
-     7.2 Buffer commands ....... |markdown.nvim-buf-commands|
+     7.2 links ................. |:Markdown-links|
+     7.3 toc ................... |:Markdown-toc|
+     7.4 table ................. |:Markdown-table|
+     7.5 render / preview ...... |:Markdown-render|
+     7.6 create ................ |:Markdown-create|
+     7.7 headline_spacing ...... |:Markdown-headline-spacing|
+     7.8 Buffer commands ....... |markdown.nvim-buf-commands|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -36,16 +42,20 @@ buffers, and nothing is registered globally beyond one :Markdown command and
 the :checkhealth handler.
 
 Included subsystems:
-  * Heading navigation and level shifting
+  * Heading navigation and level shifting (count-aware)
   * Custom fold expression for ATX and Setext headings
   * Table of Contents generator (GFM slug + duplicate suffix)
   * Visual bold (`**`) toggle
-  * Headline spacing enforcer (blank-dash-blank between H2+ sections)
+  * Link wrap (`<leader>[`) — wrap word/selection in `[]()`
+  * Headline spacing enforcer (blank-dash-blank between H2+ sections,
+    including a closing separator after the final section)
   * Fenced-code and inline-code highlight override
   * Blockquote coloring via matchadd
   * Anchor / URL / image / file handler on double-click or `ma`
   * Floating Markdown table browser with HTML export
-  * `:Markdown links` directory-to-link generator
+  * GFM table formatter (`:Markdown table format`)
+  * Unified `:Markdown` command: links, toc, table, render, preview,
+    create, headline_spacing
 
 ==============================================================================
 2. REQUIREMENTS                                *markdown.nvim-requirements*
@@ -104,6 +114,7 @@ All keys are optional. Unset keys use the defaults shown below.
 >
   require("markdown_nvim").setup({
     map_double_asterisk    = true,
+    map_wrap_link          = true,
     keep_inner_selection   = true,
     protect_h1             = false,
     use_zf_override        = true,
@@ -111,11 +122,19 @@ All keys are optional. Unset keys use the defaults shown below.
     enable_keymaps         = true,
     ft_only                = true,
     ensure_headline_spacing = true,
+    links = { picker = "hover_select" },
+    open  = { external_extensions = { "png", "pdf", "mp4", ... } },
   })
 <
 `map_double_asterisk`
   When `true`, typing `**` in visual mode toggles bold on the selection.
   Set to `false` if you use a surround plugin that provides this.
+
+`map_wrap_link`
+  When `true`, `<leader>[` wraps the word under the cursor (normal mode) or
+  the visual selection in a Markdown link. The inner text is auto-classified:
+  a URL or file path goes into the `(target)` part, plain text into the
+  `[text]` part. See |markdown.nvim-keymaps-bold|.
 
 `keep_inner_selection`
   After wrapping text with `**`, restore the visual selection to the inner
@@ -142,10 +161,30 @@ All keys are optional. Unset keys use the defaults shown below.
   Reserved. Currently all features are ft-only by design.
 
 `ensure_headline_spacing`
-  When `true`, a `BufWritePre` autocmd enforces `[blank]---[blank]` spacing
-  between consecutive H2+ sections. Does not run automatically yet —
-  currently reserved for opt-in use via
-  `require("markdown_nvim.core.headline_spacing").apply_headl_separators(0)`.
+  When `true` (default), refreshing the TOC (`<leader>toc` or
+  `:Markdown toc`) also enforces `[blank]---[blank]` spacing between
+  consecutive H2+ sections and adds a closing `---` after the final section.
+  Override per call with the `--sep` / `--no-sep` flags of `:Markdown toc`,
+  or apply on demand with `:Markdown headline_spacing` (see
+  |:Markdown-headline-spacing|).
+
+`links`
+  Options for `:Markdown links show` (see |:Markdown-links|). >
+    links = { picker = "hover_select" }  -- "hover_select" | "select"
+<
+  `picker = "hover_select"` uses lib.nvim's floating hover_select; `"select"`
+  falls back to |vim.ui.select()|.
+
+`open`
+  Controls how followed file targets open (see |markdown.nvim-keymaps-handler|
+  and |:Markdown-links|). >
+    open = { external_extensions = { "png", "pdf", "mp4", ... } }
+<
+  Targets whose extension is in `external_extensions` are launched with the
+  system application (image viewer, PDF reader, media player, …). Every other
+  (text-like) target opens in the current window via `:edit`. The default list
+  covers common image, video, audio, office, archive and binary formats;
+  extend or replace it to taste.
 
 ------------------------------------------------------------------------------
 5.2 blockquote_hl                          *markdown.nvim-config-blockquote*
@@ -203,13 +242,13 @@ None of the keys are mapped globally.
 ------------------------------------------------------------------------------
 6.1 Navigation                              *markdown.nvim-keymaps-nav*
 
-  Key                 Mode  Action~
-  <C-p>              n     Jump to previous H2+ heading
-  [[                 n     Jump to previous H2+ heading
-  <C-f>              n     Jump to next H2+ heading
-  ]]                 n     Jump to next H2+ heading
-  {N}<leader><C-p>   n     Jump to previous heading of level N
-  {N}<leader><C-f>   n     Jump to next heading of level N
+  Key                 Mode   Action~
+  <C-p>              n/v/x  Jump to previous H2+ heading
+  [[                 n      Jump to previous H2+ heading
+  <C-f>              n/v/x  Jump to next H2+ heading
+  ]]                 n      Jump to next H2+ heading
+  {N}<leader><C-p>   n      Jump to previous heading of level N
+  {N}<leader><C-f>   n      Jump to next heading of level N
 
 With a count, the plain variants repeat N times (e.g., `3<C-f>` skips three
 headings forward). With the `<leader>` variants, the count sets the heading
@@ -227,6 +266,8 @@ level to match (e.g., `2<leader><C-f>` finds the next `##` heading).
   <S-Left>    n      Decrease all headings in buffer
 
 Notes:
+  * A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>` adds
+    two `#`). Without a count, one level is used.
   * In normal mode (single line): plain text can be promoted to `# `.
   * In visual mode (multi-line): only existing headings are modified;
     plain text lines are skipped.
@@ -282,21 +323,38 @@ Dispatch priority:
   5. URL (`https?://...`).
   6. Local file (`[text](path)`).
 
-Images and files are opened with the system viewer (xdg-open / open / cmd start).
-URLs are opened in the default browser. Internal `#anchor` links jump in-buffer.
+Opening rules:
+  * URLs open in the default browser (via |vim.ui.open()| where available,
+    falling back to a system command).
+  * Internal `#anchor` links jump in-buffer.
+  * File targets whose extension is in `open.external_extensions` (images,
+    PDFs, media, …) open with the system application; all other (text-like)
+    files open in the current window via `:edit`. See
+    |markdown.nvim-config-general| for the extension list.
 
 ------------------------------------------------------------------------------
-6.6 Bold wrap                               *markdown.nvim-keymaps-bold*
+6.6 Bold / link wrap                        *markdown.nvim-keymaps-bold*
 
-  Key   Mode  Action~
-  **    v     Toggle **bold** on visual selection
+  Key          Mode  Action~
+  **           v     Toggle **bold** on visual selection
+  <leader>[    n     Wrap word under cursor in a Markdown link
+  <leader>[    v     Wrap visual selection in a Markdown link
 
-If the selected text is already surrounded by `**`, the asterisks are
-removed. Otherwise `**` is added on both sides. Whether the inner text
-or the full wrapped text is re-selected is controlled by
-`keep_inner_selection` (see |markdown.nvim-config-general|).
+Bold (`**`):
+  If the selected text is already surrounded by `**`, the asterisks are
+  removed. Otherwise `**` is added on both sides. Whether the inner text
+  or the full wrapped text is re-selected is controlled by
+  `keep_inner_selection` (see |markdown.nvim-config-general|).
+  Requires `map_double_asterisk = true` (default).
 
-Requires `map_double_asterisk = true` (default).
+Link (`<leader>[`):
+  The inner text is auto-classified:
+    * URL or file path -> `[](target)`, cursor placed inside `[]`
+    * plain text       -> `[text]()`,  cursor placed inside `()`
+    * empty / blank    -> `[]()`,       cursor placed inside `[]`
+  A path separator, a `scheme://` prefix, `mailto:`, or a `name.ext`
+  shape marks the text as a target. Requires `map_wrap_link = true`
+  (default).
 
 ------------------------------------------------------------------------------
 6.7 TableView                               *markdown.nvim-keymaps-tableview*
@@ -317,14 +375,38 @@ See |markdown.nvim-tableview| for details.
 
 :Markdown {subcommand} [args]
 
-  Global command dispatcher for Markdown utilities. Currently one
-  subcommand is provided:
+  Global command dispatcher for all Markdown utilities. It accepts a range,
+  so visual selections are honoured by range-aware subcommands (e.g.
+  `create fs`). Tab-completion is available at every level: subcommands,
+  their actions, and their options.
 
-                                                     *:Markdown-links*
-:Markdown links [-r] [--noignore] [--root <path>] <path>
+  Subcommands:
+    links              Show or generate Markdown links  |:Markdown-links|
+    toc                Insert/refresh the TOC           |:Markdown-toc|
+    table              Table view / format / new        |:Markdown-table|
+    render             Toggle render-markdown.nvim       |:Markdown-render|
+    preview            Toggle markdown-preview.nvim       |:Markdown-render|
+    create             Create files for link targets     |:Markdown-create|
+    headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
 
-  Generate Markdown-style links for all files under <path> and copy them
-  to the system clipboard (`+` register).
+------------------------------------------------------------------------------
+7.2 :Markdown links                                       *:Markdown-links*
+
+:Markdown links show [%|cwd|<file>]
+
+  Scan for links and open the chosen one through a picker. The source is the
+  current buffer (`%`, the default), the current working directory (`cwd`),
+  or a given file. Selecting an entry opens it:
+    * URL      -> default browser
+    * #anchor  -> in-buffer jump
+    * file     -> system application or `:edit` (see
+                  |markdown.nvim-config-general|, `open`).
+  The picker backend is set by the `links.picker` option.
+
+:Markdown links create [-r] [--noignore] [--root <path>] <path>
+
+  Generate Markdown-style links for all files under <path> and copy them to
+  the system clipboard (`+` register).
 
   Arguments:
     <path>           Path to a file or directory.
@@ -335,14 +417,80 @@ See |markdown.nvim-tableview| for details.
                      `$ENV_VAR` expansion.
 
   Example: >
-    :Markdown links -r --root $DOCS_ROOT ./docs
+    :Markdown links create -r --root $DOCS_ROOT ./docs
 <
-  Output is both printed to the command line and copied to the clipboard.
-
-Tab-completion is available for subcommand names.
+  A bare path with no subcommand (`:Markdown links ./docs`) is treated as
+  `create ./docs` for backwards compatibility.
 
 ------------------------------------------------------------------------------
-7.2 Buffer-local commands                        *markdown.nvim-buf-commands*
+7.3 :Markdown toc                                          *:Markdown-toc*
+
+:Markdown toc [level] [--sep | --no-sep]
+
+  Insert or refresh the Table of Contents (see |markdown.nvim-keymaps-toc|
+  for placement and slug rules). `level` caps the maximum heading depth.
+
+  By default the headline separators are applied afterwards, following the
+  `ensure_headline_spacing` option. Force the behaviour per call:
+    --sep      always apply separators
+    --no-sep   never apply separators
+
+------------------------------------------------------------------------------
+7.4 :Markdown table                                       *:Markdown-table*
+
+:Markdown table view [toggle|select|close|browser|browsernice]
+
+  Drive the floating TableView (see |markdown.nvim-tableview|). Defaults to
+  `toggle`. `browser` / `browsernice` export the table as basic / styled HTML.
+
+:Markdown table format [options]
+
+  Run the self-contained GFM formatter on the table at the cursor (or in the
+  given scope): pad columns to equal width and normalize separator rows.
+
+:Markdown table new [cols] [rows]
+
+  Insert an empty GFM table template with the given dimensions
+  (defaults apply when omitted).
+
+------------------------------------------------------------------------------
+7.5 :Markdown render / preview                            *:Markdown-render*
+
+:Markdown render [on|off|toggle]
+
+  Enable/disable render-markdown.nvim for the current buffer. The plugin is
+  an optional host dependency; the command warns gracefully when it is not
+  installed.
+
+:Markdown preview [start|stop|toggle]
+
+  Control markdown-preview.nvim. While active, the preview is refreshed on
+  buffer switch (BufEnter for `*.md`). Also an optional host dependency.
+
+------------------------------------------------------------------------------
+7.6 :Markdown create                                      *:Markdown-create*
+
+:Markdown create fs
+
+  Walk the Markdown-link targets in the range (visual selection) or, without
+  a range, the whole buffer, and create the corresponding filesystem entries.
+  A trailing `/` denotes a directory; otherwise a file is created together
+  with its parent directories. URLs, `mailto:` and `#anchors` are skipped and
+  existing paths are left untouched. The result reports created / already
+  existing / failed counts.
+
+------------------------------------------------------------------------------
+7.7 :Markdown headline_spacing                  *:Markdown-headline-spacing*
+
+:Markdown headline_spacing
+
+  Enforce `[blank]---[blank]` spacing between consecutive H2+ sections in the
+  current buffer and add a closing `---` after the final section. Idempotent.
+  This is the on-demand form of the behaviour described under
+  `ensure_headline_spacing` (see |markdown.nvim-config-general|).
+
+------------------------------------------------------------------------------
+7.8 Buffer-local commands                        *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):
@@ -496,6 +644,7 @@ Sub-modules can be imported individually, e.g.: >
       notify.lua             vim.notify wrapper
       clipboard.lua          setreg("+") helper
       ignore.lua             default directory ignore list
+      picker.lua             hover_select / vim.ui.select abstraction
     core/
       headings.lua           navigation + level shifting
       fold.lua               foldexpr, toggle, unfold
@@ -503,8 +652,11 @@ Sub-modules can be imported individually, e.g.: >
       fold_prev.lua          fold previous heading
       toc.lua                TOC generator (GFM slugs, de-dup)
       wrap.lua               visual bold toggle
+      wrap_link.lua          <leader>[ wrap word/selection in a link
+      link_scan.lua          collect links from a line/buffer
+      table_fmt.lua          GFM table formatter (self-contained)
       headline_spacing/
-        init.lua             blank-dash-blank enforcer
+        init.lua             blank-dash-blank enforcer (+ final closer)
     anchor/
       is_anchor_line.lua
       is_html_anchor_line.lua
@@ -535,8 +687,14 @@ Sub-modules can be imported individually, e.g.: >
         browser_niceified.lua styled HTML export
         table_selector.lua   pick-a-table floating UI
     commands/
-      init.lua               :Markdown dispatcher + completion
-      markdown_links.lua     :Markdown links implementation
+      init.lua               :Markdown dispatcher + nested completion
+      links.lua              :Markdown links show|create
+      markdown_links.lua     directory-to-link generator (links create)
+      toc.lua                :Markdown toc (TOC + separators)
+      table.lua              :Markdown table view|format|new
+      render.lua             :Markdown render (render-markdown.nvim)
+      preview.lua            :Markdown preview (markdown-preview.nvim)
+      create.lua             :Markdown create fs
     setup/
       keymaps.lua            buffer-local keymap installer
       autocmds.lua           FileType autocmd driver

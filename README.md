@@ -16,17 +16,20 @@ effects on non-Markdown buffers.
 
 | Module | What it does |
 |--------|-------------|
-| **headings** | Navigate (prev/next, by level), shift levels (normal/visual/whole-buffer) |
+| **headings** | Navigate (prev/next, by level), shift levels (normal/visual/whole-buffer, count-aware) |
 | **fold** | Custom `foldexpr` for ATX and Setext headings, fold/unfold helpers |
 | **TOC** | Insert or refresh a Table of Contents with GFM-like anchors and de-dup |
 | **wrap** | Toggle `**bold**` on visual selection |
-| **headline\_spacing** | Ensure `[blank]---[blank]` separator between H2+ sections |
+| **wrap\_link** | `<leader>[` — wrap word/selection in a Markdown link, auto-detecting URL vs. text |
+| **headline\_spacing** | Ensure `[blank]---[blank]` separator between H2+ sections (incl. final closer) |
 | **fenced\_fix** | Highlight override: injected-language colors shine through fenced blocks; inline `code` gets a distinct style |
 | **blockquote HL** | Two-region blockquote coloring (`>` marker + text) via `matchadd` |
 | **anchor / jump** | Jump to `#heading` anchors (GFM slug, duplicate handling) |
-| **handler** | Double-click / `<C-LeftMouse>` / `ma`: open TOC links, HTML anchors, images, URLs, local files |
-| **tableview** | Floating Markdown table browser; HTML export (basic + styled) via `:TableViewOpenBrowser*` |
-| **:Markdown links** | Generate Markdown links from a directory tree and copy to clipboard |
+| **handler** | Double-click / `<C-LeftMouse>` / `ma`: open TOC links, HTML anchors, images; URLs in browser; media/binary in system app; text files via `:edit` |
+| **tableview** | Floating Markdown table browser; HTML export (basic + styled) |
+| **table\_fmt** | GFM table formatter (align columns, normalize separators) — self-contained |
+| **link\_scan** | Collect every link in a line/buffer; powers `:Markdown links show` and `create fs` |
+| **:Markdown** | Unified command: `links`, `toc`, `table`, `render`, `preview`, `create`, `headline_spacing` |
 
 ---
 
@@ -77,6 +80,9 @@ require("markdown_nvim").setup({
   -- Toggle ** mapping in visual mode
   map_double_asterisk    = true,
 
+  -- Map <leader>[ to wrap the word/selection in a Markdown link
+  map_wrap_link          = true,
+
   -- After toggling bold: keep the inner text selected (not the asterisks)
   keep_inner_selection   = true,
 
@@ -95,8 +101,28 @@ require("markdown_nvim").setup({
   -- Only activate for markdown filetypes
   ft_only                = true,
 
-  -- Automatically ensure [blank]---[blank] between H2+ sections on save
+  -- Default on: TOC refresh also ensures [blank]---[blank] between H2+ sections
+  -- (including a closing separator after the last section)
   ensure_headline_spacing = true,
+
+  -- :Markdown links show — picker backend: "hover_select" | "select"
+  links = {
+    picker = "hover_select",
+  },
+
+  -- How followed file targets open. Extensions in this list launch the system
+  -- application (image viewer, PDF reader, …); everything else opens via :edit.
+  open = {
+    external_extensions = {
+      "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff",
+      "pdf",
+      "mp4", "mkv", "mov", "avi", "webm", "wmv", "flv",
+      "mp3", "wav", "flac", "ogg", "m4a",
+      "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp",
+      "zip", "tar", "gz", "tgz", "7z", "rar",
+      "exe", "msi", "dmg", "app",
+    },
+  },
 
   -- Blockquote highlight colors
   blockquote_hl = {
@@ -123,12 +149,14 @@ require("markdown_nvim").setup({
 
 | Key | Mode | Action |
 |-----|------|--------|
-| `<C-p>` / `[[` | n | Previous H2+ heading |
-| `<C-f>` / `]]` | n | Next H2+ heading |
+| `<C-p>` / `[[` | n / v / x | Previous H2+ heading |
+| `<C-f>` / `]]` | n / v / x | Next H2+ heading |
 | `{count}<leader><C-p>` | n | Previous heading of level `count` |
 | `{count}<leader><C-f>` | n | Next heading of level `count` |
 
 ### Heading level shift
+
+A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>`).
 
 | Key | Mode | Action |
 |-----|------|--------|
@@ -167,11 +195,17 @@ in your config, or let the plugin handle it via the FileType autocmd.
 | `mi` | n | Open image under cursor |
 | `mj` | n | Jump to anchor under cursor |
 
-### Bold wrap
+### Bold wrap / link wrap
 
 | Key | Mode | Action |
 |-----|------|--------|
 | `**` | v | Toggle `**bold**` on selection |
+| `<leader>[` | n | Wrap word under cursor in a Markdown link |
+| `<leader>[` | v | Wrap selection in a Markdown link |
+
+`<leader>[` auto-detects the inner text: a URL or file path lands in the
+`(target)` part (cursor jumps into `[]`), plain text lands in the `[text]`
+part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 
 ### TableView
 
@@ -186,20 +220,74 @@ in your config, or let the plugin handle it via the FileType autocmd.
 
 ## Commands
 
-### Global
+Everything is funnelled through a single `:Markdown` command with subcommands.
+The command supports a range, so visual selections are honoured where relevant.
+Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`, …).
+
+### `:Markdown links`
 
 ```vim
-:Markdown links [-r] [--noignore] [--root <path>] <path>
+:Markdown links show [%|cwd|<file>]      " collect links, pick one, open it
+:Markdown links create [-r] [--noignore] [--root <path>] <path>
 ```
 
-Generate Markdown links from a directory tree and copy them to the clipboard.
+- **show** — scan the current buffer (`%`, the default), the cwd, or a given
+  file for links, list them in a picker, and open the chosen one (URL → browser,
+  `#anchor` → in-buffer jump, file → system app or `:edit`).
+- **create** — generate Markdown links from a directory tree and copy them to
+  the clipboard. Options: `-r`/`--recursive`, `--noignore`,
+  `--root <path>` (prefix, supports `$ENV_VAR`).
+  A bare path without a subcommand is treated as `create <path>`.
 
-Options:
-- `-r` / `--recursive` — include sub-directories
-- `--noignore` — do not apply the default ignore list
-- `--root <path>` — prefix all paths with this root (supports `$ENV_VAR`)
+### `:Markdown toc`
 
-### Buffer-local (Markdown buffers only)
+```vim
+:Markdown toc [level] [--sep | --no-sep]
+```
+
+Insert/refresh the TOC. `level` caps the max heading depth. By default the
+headline separators are applied too (per `ensure_headline_spacing`); override
+per-call with `--sep` / `--no-sep`.
+
+### `:Markdown table`
+
+```vim
+:Markdown table view [toggle|select|close|browser|browsernice]
+:Markdown table format [options]        " align columns / normalize separators
+:Markdown table new [cols] [rows]        " insert an empty GFM table template
+```
+
+`view` drives the floating TableView (defaults to `toggle`). `format` runs the
+self-contained GFM formatter on the table at the cursor / in scope.
+
+### `:Markdown render` / `:Markdown preview`
+
+```vim
+:Markdown render  [on|off|toggle]        " render-markdown.nvim (optional host)
+:Markdown preview [start|stop|toggle]    " markdown-preview.nvim (optional host)
+```
+
+Thin wrappers around the optional host plugins; they warn gracefully if the
+plugin is not installed. `preview` also auto-refreshes on buffer switch while
+active.
+
+### `:Markdown create`
+
+```vim
+:Markdown create fs                      " create files/dirs for local link targets
+```
+
+Walks the markdown-link targets in the range (visual selection) or the whole
+buffer and creates the corresponding files/directories. Trailing `/` ⇒ directory.
+URLs, `mailto:` and `#anchors` are skipped; existing paths are left untouched.
+
+### `:Markdown headline_spacing`
+
+```vim
+:Markdown headline_spacing               " enforce blank-dash-blank between H2+ sections
+```
+
+### Buffer-local commands (Markdown buffers only)
 
 ```vim
 :OpenWithSystemApplication   " same as 'ma' - open target under cursor
@@ -223,6 +311,7 @@ lua/markdown_nvim/
     notify.lua             vim.notify wrapper
     clipboard.lua          setreg("+") helper
     ignore.lua             default directory ignore list
+    picker.lua             hover_select / vim.ui.select abstraction
   core/
     headings.lua           navigation + level shifting
     fold.lua               foldexpr, toggle, unfold
@@ -230,8 +319,11 @@ lua/markdown_nvim/
     fold_prev.lua          fold previous heading
     toc.lua                TOC generator (GFM slugs, de-dup)
     wrap.lua               visual bold toggle
+    wrap_link.lua          <leader>[ wrap word/selection in a link
+    link_scan.lua          collect links from a line/buffer
+    table_fmt.lua          GFM table formatter (self-contained)
     headline_spacing/
-      init.lua             ensure blank-dash-blank between H2+ sections
+      init.lua             ensure blank-dash-blank between H2+ sections (+ final closer)
   anchor/
     is_anchor_line.lua
     is_html_anchor_line.lua
@@ -262,8 +354,14 @@ lua/markdown_nvim/
       browser_niceified.lua styled HTML export
       table_selector.lua   pick-a-table floating UI
   commands/
-    init.lua               :Markdown dispatcher + completion
-    markdown_links.lua     :Markdown links implementation
+    init.lua               :Markdown dispatcher + nested completion
+    links.lua              :Markdown links show|create
+    markdown_links.lua     directory-to-link generator (links create)
+    toc.lua                :Markdown toc (TOC + separators)
+    table.lua              :Markdown table view|format|new
+    render.lua             :Markdown render (render-markdown.nvim)
+    preview.lua            :Markdown preview (markdown-preview.nvim)
+    create.lua             :Markdown create fs
   setup/
     keymaps.lua            buffer-local keymap installer
     autocmds.lua           FileType autocmd driver
