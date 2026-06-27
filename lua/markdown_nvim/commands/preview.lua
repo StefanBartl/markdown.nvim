@@ -13,7 +13,13 @@ local function available()
   return vim.fn.exists(":MarkdownPreview") == 2
 end
 
---- Install the BufEnter auto-refresh autocmd once.
+-- Re-entrancy guard: while we drive markdown-preview ourselves, suppress the
+-- BufEnter auto-refresh so focus changes triggered by opening/closing the
+-- browser tab cannot spawn a second preview.
+local busy = false
+
+--- Install the BufEnter auto-refresh autocmd once. Only refreshes an already
+--- running preview; never starts one on its own beyond the active session.
 local function ensure_autorefresh()
   if aug then return end
   aug = vim.api.nvim_create_augroup("MarkdownNvimPreviewRefresh", { clear = true })
@@ -21,12 +27,30 @@ local function ensure_autorefresh()
     group   = aug,
     pattern = "*.md",
     callback = function()
-      if active and available() then
+      if active and not busy and available() then
         vim.cmd("silent! MarkdownPreview")
       end
     end,
     desc = "[markdown.nvim] Refresh preview on buffer switch while active",
   })
+end
+
+--- Start the preview (idempotent). Drives markdown-preview explicitly instead
+--- of using its toggle, so our `active` flag stays the single source of truth.
+local function start_preview()
+  busy = true
+  active = true
+  vim.cmd("silent! MarkdownPreview")
+  busy = false
+end
+
+--- Stop the preview (idempotent). `active` is cleared first so the BufEnter
+--- auto-refresh cannot re-open the browser tab during teardown.
+local function stop_preview()
+  active = false
+  busy = true
+  vim.cmd("silent! MarkdownPreviewStop")
+  busy = false
 end
 
 ---@param argv string[]
@@ -39,17 +63,19 @@ function M.run(argv)
   ensure_autorefresh()
 
   if arg == "start" or arg == "on" then
-    active = true
-    vim.cmd("silent! MarkdownPreview")
+    start_preview()
     notify.info("Markdown preview started")
   elseif arg == "stop" or arg == "off" then
-    active = false
-    vim.cmd("silent! MarkdownPreviewStop")
+    stop_preview()
     notify.info("Markdown preview stopped")
   elseif arg == "" or arg == "toggle" then
-    active = not active
-    vim.cmd("silent! MarkdownPreviewToggle")
-    notify.info("Markdown preview " .. (active and "started" or "stopped"))
+    if active then
+      stop_preview()
+      notify.info("Markdown preview stopped")
+    else
+      start_preview()
+      notify.info("Markdown preview started")
+    end
   else
     notify.warn("preview: invalid argument (start|stop|toggle)")
   end
