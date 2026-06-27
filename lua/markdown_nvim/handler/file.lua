@@ -103,6 +103,19 @@ end
 local function open_with_system_viewer(path)
   if not path or path == "" then return false end
 
+  -- Preferred path (Neovim 0.10+): robust across shell=pwsh/cmd.
+  if vim.ui and type(vim.ui.open) == "function" then
+    local ok, _obj, err = pcall(vim.ui.open, path)
+    if ok and err == nil then
+      return true
+    end
+    if M.config.notify_on_error then
+      notify.error("Failed to open: " .. tostring(err or path))
+    end
+    return false
+  end
+
+  -- Legacy fallback for older Neovim.
   local esc = vim.fn.shellescape(path)
   local sysname = (uv.os_uname() and uv.os_uname().sysname) or ""
   local cmd

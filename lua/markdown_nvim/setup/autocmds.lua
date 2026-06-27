@@ -31,6 +31,7 @@ end
 function M.setup()
   local aug_keymaps = vim.api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })
   local aug_cmds    = vim.api.nvim_create_augroup("MarkdownNvimUserCommands", { clear = true })
+  local aug_fold    = vim.api.nvim_create_augroup("MarkdownNvimFold", { clear = true })
 
   vim.api.nvim_create_autocmd("FileType", {
     group   = aug_keymaps,
@@ -56,6 +57,21 @@ function M.setup()
       end
     end,
     desc = "[markdown.nvim] Install buffer-local user commands",
+  })
+
+  vim.api.nvim_create_autocmd("FileType", {
+    group   = aug_fold,
+    pattern = { "markdown", "mdx", "md", "markdown.*" },
+    once    = false,
+    callback = function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      vim.opt_local.foldmethod    = "expr"
+      vim.opt_local.foldexpr      = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
+      vim.opt_local.foldenable    = true
+      vim.opt_local.foldlevel     = 99
+      vim.opt_local.foldlevelstart = 99
+    end,
+    desc = "[markdown.nvim] Set fold options for markdown buffers",
   })
 
   apply_to_already_loaded_md_buffers()

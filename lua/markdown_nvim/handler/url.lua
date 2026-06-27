@@ -79,6 +79,20 @@ end
 local function open_with_system_viewer(url)
   if not url or url == "" then return false end
 
+  -- Preferred path (Neovim 0.10+): vim.ui.open picks the correct OS opener and
+  -- does not route through 'shell', so it works regardless of shell=pwsh/cmd.
+  if vim.ui and type(vim.ui.open) == "function" then
+    local ok, _obj, err = pcall(vim.ui.open, url)
+    if ok and err == nil then
+      return true
+    end
+    if M.config.notify_on_error then
+      notify.error("Failed to open URL: " .. tostring(err or url))
+    end
+    return false
+  end
+
+  -- Legacy fallback for older Neovim.
   local esc = vim.fn.shellescape(url)
   local sysname = (uv.os_uname() and uv.os_uname().sysname) or ""
   local cmd

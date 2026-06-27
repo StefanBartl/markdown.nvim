@@ -24,7 +24,6 @@ function M.apply(bufnr)
   local fold      = require("markdown_nvim.core.fold")
   local fold_prev = require("markdown_nvim.core.fold_prev")
   local fold_lvl  = require("markdown_nvim.core.fold_levels")
-  local toc       = require("markdown_nvim.core.toc")
   local wrap      = require("markdown_nvim.core.wrap")
   local handler   = require("markdown_nvim.handler")
   local image     = require("markdown_nvim.handler.image")
@@ -54,10 +53,13 @@ function M.apply(bufnr)
   map(bufnr, "n", "zi", function() fold_prev.fold_prev_heading_then_center() end, "Fold prev heading")
   map(bufnr, "n", "zk", function() fold_lvl.fold_h2_plus() end, "Fold H2+")
 
-  -- TOC (count = max_level)
+  -- TOC (count = max_level); also ensures headline separators per config.
   map(bufnr, "n", "<leader>toc", function()
     local count = vim.v.count
-    toc.update_markdown_toc("## Table of content", count > 0 and { max_level = count } or nil)
+    require("markdown_nvim.commands.toc").update(
+      "## Table of content",
+      count > 0 and { max_level = count } or nil
+    )
   end, "Insert/refresh TOC")
 
   -- Cursor action (double-click, Ctrl+Click, ma)

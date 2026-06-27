@@ -12,6 +12,12 @@ local DEFAULTS = {
   ft_only                = true,
   ensure_headline_spacing = true,
 
+  -- `:Markdown links show` picker backend: "hover_select" | "select"
+  -- ("select" uses vim.ui.select; telescope/fzf can be added later).
+  links = {
+    picker = "hover_select",
+  },
+
   blockquote_hl = {
     marker_fg  = "#6A9955",
     text_fg    = "#7EE787",

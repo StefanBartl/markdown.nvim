@@ -72,6 +72,49 @@ function M.find_sections_needing_separator(lines)
   return result
 end
 
+--- Ensure the final H2+ section is also closed with a `---` separator at EOF.
+--- Operates on fresh buffer lines, so it is safe to run after the between-section
+--- pass. Idempotent: a no-op when the document already ends with a separator.
+---@param bufnr integer
+---@return boolean changed
+local function ensure_final_closer(bufnr)
+  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local n = #lines
+
+  -- Find the last H2+ heading (outside fenced code).
+  local in_fence = false
+  local last_heading = nil
+  for i = 1, n do
+    local line = lines[i] or ""
+    if line:match("^%s*```") or line:match("^%s*~~~") then
+      in_fence = not in_fence
+    end
+    if not in_fence and is_h2_or_more(line) then
+      last_heading = i
+    end
+  end
+  if not last_heading then return false end
+
+  -- Last line of actual content in the final section.
+  local section_end = last_heading
+  for i = n, last_heading + 1, -1 do
+    local l = lines[i] or ""
+    if l ~= "---" and l:match("%S") then
+      section_end = i
+      break
+    end
+  end
+
+  -- Already closed? A `---` anywhere after the content means it's done.
+  for i = section_end + 1, n do
+    if (lines[i] or "") == "---" then return false end
+  end
+
+  -- Replace any trailing blank lines after the content with the separator block.
+  api.nvim_buf_set_lines(bufnr, section_end, n, false, { "", "---", "" })
+  return true
+end
+
 function M.apply_headl_separators(bufnr, opts)
   opts = opts or {}
   local notify_enabled = opts.notify ~= false
@@ -79,13 +122,6 @@ function M.apply_headl_separators(bufnr, opts)
 
   local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local sections = M.find_sections_needing_separator(lines)
-
-  if #sections == 0 then
-    if notify_enabled then
-      notify.info("all sections properly formatted")
-    end
-    return 0
-  end
 
   if dry_run then
     if notify_enabled then
@@ -112,11 +148,19 @@ function M.apply_headl_separators(bufnr, opts)
     offset = offset + 3
   end
 
+  -- Close the final section at EOF as well.
+  local final_changed = ensure_final_closer(bufnr)
+
+  local fixed = #sections + (final_changed and 1 or 0)
   if notify_enabled then
-    notify.info(string.format("fixed %d sections", #sections))
+    if fixed == 0 then
+      notify.info("all sections properly formatted")
+    else
+      notify.info(string.format("fixed %d sections", fixed))
+    end
   end
 
-  return #sections
+  return fixed
 end
 
 return M

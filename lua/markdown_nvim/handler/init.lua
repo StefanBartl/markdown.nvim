@@ -148,6 +148,27 @@ local function open_file_in_current_window(path)
   return true
 end
 
+--- Open a raw target string (URL / path / anchor), resolving relative paths
+--- against the current buffer's directory. URLs open in the system browser,
+--- existing files open in the current window. Used by `:Markdown links show`
+--- and the multi-link `ml` fallback.
+---@param target string
+---@return boolean ok
+function M.open_target(target)
+  if not target or target == "" then return false end
+
+  if target:match("^https?://") then
+    return url.open(target)
+  end
+
+  local resolved = resolve_target_path(target)
+  if not resolved then
+    notify.warn("Could not resolve target: " .. tostring(target))
+    return false
+  end
+  return open_file_in_current_window(resolved)
+end
+
 function M.handle_cursor_action()
   local line = api.nvim_get_current_line()
 

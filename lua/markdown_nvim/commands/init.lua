@@ -2,7 +2,8 @@
 local M = {}
 
 local commands = {
-  links             = require("markdown_nvim.commands.markdown_links").run,
+  links             = require("markdown_nvim.commands.links").run,
+  toc               = require("markdown_nvim.commands.toc").run,
   headline_spacing  = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -26,7 +27,24 @@ function M.execute(argv)
   fn(argv)
 end
 
-function M.complete(arglead, _cmdline, _cursorpos)
+-- Subcommands exposing their own `complete(arglead)` for nested completion.
+local sub_complete = {
+  links = function(arglead) return require("markdown_nvim.commands.links").complete(arglead) end,
+}
+
+function M.complete(arglead, cmdline, _cursorpos)
+  -- Tokens already typed after ":Markdown".
+  local tokens = vim.split(vim.trim(cmdline), "%s+")
+  -- tokens[1] == "Markdown"; tokens[2] == first subcommand (if present).
+  local first = tokens[2]
+
+  -- If a first subcommand is complete and we are now on a later argument,
+  -- delegate to that subcommand's own completion.
+  local on_second = #tokens > 2 or (#tokens == 2 and arglead == "" and first ~= nil)
+  if first and on_second and sub_complete[first] then
+    return sub_complete[first](arglead)
+  end
+
   local result = {}
   for name in pairs(commands) do
     if vim.startswith(name, arglead) then
