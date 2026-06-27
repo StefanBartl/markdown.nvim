@@ -4,6 +4,7 @@ local M = {}
 local commands = {
   links             = require("markdown_nvim.commands.links").run,
   toc               = require("markdown_nvim.commands.toc").run,
+  table             = require("markdown_nvim.commands.table").run,
   headline_spacing  = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -27,9 +28,10 @@ function M.execute(argv)
   fn(argv)
 end
 
--- Subcommands exposing their own `complete(arglead)` for nested completion.
+-- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
 local sub_complete = {
   links = function(arglead) return require("markdown_nvim.commands.links").complete(arglead) end,
+  table = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
 }
 
 function M.complete(arglead, cmdline, _cursorpos)
@@ -42,7 +44,7 @@ function M.complete(arglead, cmdline, _cursorpos)
   -- delegate to that subcommand's own completion.
   local on_second = #tokens > 2 or (#tokens == 2 and arglead == "" and first ~= nil)
   if first and on_second and sub_complete[first] then
-    return sub_complete[first](arglead)
+    return sub_complete[first](arglead, cmdline)
   end
 
   local result = {}
