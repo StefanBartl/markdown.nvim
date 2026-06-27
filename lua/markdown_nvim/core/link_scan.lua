@@ -13,6 +13,7 @@ local api = vim.api
 ---@field kind    "mdlink"|"url"
 ---@field lnum    integer  1-based source line
 ---@field col     integer  0-based byte column of the match start
+---@field col_end integer  0-based byte column of the match end (inclusive)
 ---@field file?   string   Source file path (set for cross-file scans)
 
 local FENCE = "^%s*[`~][`~][`~]"
@@ -57,6 +58,7 @@ function M.from_line(line, lnum)
         kind    = "mdlink",
         lnum    = lnum,
         col     = s - 1,
+        col_end = e - 1,
       }
     end
     covered[#covered + 1] = { s, e }
@@ -83,6 +85,7 @@ function M.from_line(line, lnum)
         kind    = "url",
         lnum    = lnum,
         col     = s - 1,
+        col_end = e - 1,
       }
     end
     us = e + 1

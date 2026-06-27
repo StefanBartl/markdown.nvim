@@ -136,6 +136,13 @@ local function open_with_system_viewer(path)
   return true
 end
 
+--- Open an already-resolved path with the system application.
+---@param path string
+---@return boolean ok
+function M.system_open(path)
+  return open_with_system_viewer(path)
+end
+
 function M.is_file_line(line)
   local target = extract_file_target_from_line(line)
   if not target then return false end

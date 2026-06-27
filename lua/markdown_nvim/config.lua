@@ -18,6 +18,21 @@ local DEFAULTS = {
     picker = "hover_select",
   },
 
+  -- How followed file targets open. Media/binary extensions launch the system
+  -- application; everything else (text-like) opens in the current window via
+  -- :edit. Extend this list to taste.
+  open = {
+    external_extensions = {
+      "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff",
+      "pdf",
+      "mp4", "mkv", "mov", "avi", "webm", "wmv", "flv",
+      "mp3", "wav", "flac", "ogg", "m4a",
+      "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp",
+      "zip", "tar", "gz", "tgz", "7z", "rar",
+      "exe", "msi", "dmg", "app",
+    },
+  },
+
   blockquote_hl = {
     marker_fg  = "#6A9955",
     text_fg    = "#7EE787",

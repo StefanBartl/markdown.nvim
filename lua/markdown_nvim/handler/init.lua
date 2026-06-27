@@ -13,6 +13,22 @@ local is_html_anchor_line = require("markdown_nvim.anchor.is_html_anchor_line")
 local is_html_extern_anchor_line = require("markdown_nvim.anchor.is_html_extern_anchor_line")
 
 local uv = vim.loop
+local cfg = require("markdown_nvim.config").get
+
+--- Decide whether a path should open in the system application (media/binary)
+--- rather than via :edit (text-like). Driven by config.open.external_extensions.
+---@param path string
+---@return boolean
+local function should_open_externally(path)
+  local ext = path:match("%.([%w]+)$")
+  if not ext then return false end
+  ext = ext:lower()
+  local list = (cfg().open and cfg().open.external_extensions) or {}
+  for _, e in ipairs(list) do
+    if e:lower() == ext then return true end
+  end
+  return false
+end
 
 local function slugify(s)
   if not s then return "" end
@@ -144,14 +160,19 @@ local function open_file_in_current_window(path)
     notify.warn("External anchor: target file not found: " .. tostring(path))
     return false
   end
+  -- Media/binary -> system app; text-like -> open in the current window.
+  if should_open_externally(path) then
+    return file.system_open(path)
+  end
   vim.cmd("edit " .. vim.fn.fnameescape(path))
   return true
 end
 
 --- Open a raw target string (URL / path / anchor), resolving relative paths
 --- against the current buffer's directory. URLs open in the system browser,
---- existing files open in the current window. Used by `:Markdown links show`
---- and the multi-link `ml` fallback.
+--- in-document anchors jump within the buffer, existing files open in the
+--- current window. Used by `:Markdown links show` and the multi-link `ml`
+--- fallback.
 ---@param target string
 ---@return boolean ok
 function M.open_target(target)
@@ -159,6 +180,10 @@ function M.open_target(target)
 
   if target:match("^https?://") then
     return url.open(target)
+  end
+
+  if target:match("^#") then
+    return search_and_jump_to_fragment(target)
   end
 
   local resolved = resolve_target_path(target)
@@ -210,11 +235,42 @@ function M.handle_cursor_action()
     return
   end
 
-  if url.is_url_line(line) then
-    url.open(line)
+  -- Cursor-aware link/URL resolution (Feature 4):
+  --   * cursor on a link  -> use that one
+  --   * exactly one link  -> use it even if the cursor is elsewhere
+  --   * multiple links    -> let the user choose via the picker
+  local scan = require("markdown_nvim.core.link_scan")
+  local row = api.nvim_win_get_cursor(0)[1]
+  local links = scan.from_line(line, row)
+
+  if #links > 0 then
+    local col = api.nvim_win_get_cursor(0)[2]
+
+    for _, lk in ipairs(links) do
+      if col >= lk.col and col <= lk.col_end then
+        M.open_target(lk.target)
+        return
+      end
+    end
+
+    if #links == 1 then
+      M.open_target(links[1].target)
+      return
+    end
+
+    local conf = cfg()
+    require("markdown_nvim.util.picker").select(links, {
+      prompt  = string.format("Links on line (%d)", #links),
+      format  = function(lk) return lk.display end,
+      backend = (conf.links and conf.links.picker) or "hover_select",
+    }, function(lk)
+      M.open_target(lk.target)
+    end)
     return
   end
 
+  -- No structured markdown link / URL found: fall back to the legacy
+  -- single-target heuristics (handles bare file paths, HTML src, etc.).
   if file.is_file_line(line) then
     file.open(line)
     return
