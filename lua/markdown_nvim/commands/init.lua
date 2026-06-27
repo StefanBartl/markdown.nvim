@@ -5,6 +5,8 @@ local commands = {
   links             = require("markdown_nvim.commands.links").run,
   toc               = require("markdown_nvim.commands.toc").run,
   table             = require("markdown_nvim.commands.table").run,
+  render            = require("markdown_nvim.commands.render").run,
+  preview           = require("markdown_nvim.commands.preview").run,
   headline_spacing  = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -30,8 +32,10 @@ end
 
 -- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
 local sub_complete = {
-  links = function(arglead) return require("markdown_nvim.commands.links").complete(arglead) end,
-  table = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
+  links   = function(arglead) return require("markdown_nvim.commands.links").complete(arglead) end,
+  table   = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
+  render  = function(arglead) return require("markdown_nvim.commands.render").complete(arglead) end,
+  preview = function(arglead) return require("markdown_nvim.commands.preview").complete(arglead) end,
 }
 
 function M.complete(arglead, cmdline, _cursorpos)
