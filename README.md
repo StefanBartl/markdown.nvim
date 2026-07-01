@@ -1,11 +1,21 @@
-# markdown.nvim
+```
+                         __       __
+   ____ ___  ____ ______/ /______/ /___ _      ______
+  / __ `__ \/ __ `/ ___/ //_/ __  / __ \ | /| / / __ \
+ / / / / / / /_/ / /  / ,< / /_/ / /_/ / |/ |/ / / / /
+/_/ /_/ /_/\__,_/_/  /_/|_|\__,_/\____/|__/|__/_/ /_/
+            a self-contained markdown toolkit
+```
 
 ![version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![status](https://img.shields.io/badge/status-beta-orange.svg)
 ![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-success.svg)
 ![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)
+
+> 💡 Pairs well with [cascade.nvim](https://github.com/StefanBartl/cascade.nvim):
+> markdown.nvim renders and structures the document (TOC, folding, tables),
+> while cascade.nvim edits the list content inside it (continue, renumber, rotate).
 
 A self-contained Markdown toolkit for Neovim. Pure FileType-scoped — zero side
 effects on non-Markdown buffers.
@@ -45,6 +55,10 @@ No external tools required. All features run on built-in Neovim APIs.
 
 ## Installation
 
+The plugin is FileType-scoped, so `ft = { "markdown", "mdx", "md" }` is the
+natural lazy trigger. Use `lazy = false` / eager loading only if you want the
+`:Markdown` command available before opening a Markdown buffer.
+
 ### lazy.nvim
 
 ```lua
@@ -57,16 +71,26 @@ No external tools required. All features run on built-in Neovim APIs.
 }
 ```
 
-### Local development
+### packer.nvim
 
 ```lua
-{
-  dir = "E:/repos/markdown.nvim",
-  ft  = { "markdown", "mdx", "md" },
+use({
+  "StefanBartl/markdown.nvim",
+  ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown_nvim").setup()
   end,
-}
+})
+```
+
+### vim-plug
+
+```vim
+Plug 'StefanBartl/markdown.nvim', { 'for': ['markdown', 'mdx', 'md'] }
+```
+
+```lua
+require("markdown_nvim").setup()
 ```
 
 ---
@@ -372,9 +396,3 @@ plugin/
 doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
 ```
-
----
-
-## License
-
-MIT
