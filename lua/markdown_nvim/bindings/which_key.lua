@@ -1,4 +1,4 @@
----@module 'markdown_nvim.setup.which_key'
+---@module 'markdown_nvim.bindings.which_key'
 ---@brief Optional, guarded which-key group labels for markdown.nvim prefixes.
 ---@description
 --- which-key is a **soft** dependency: if it is not installed this is a no-op.

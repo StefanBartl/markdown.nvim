@@ -74,7 +74,7 @@ function M.check()
   end
 
   -- Optional which-key integration.
-  if require("markdown_nvim.setup.which_key").available() then
+  if require("markdown_nvim.bindings.which_key").available() then
     ok("which-key detected (<leader>t grouped as \"Markdown\")")
   else
     info("which-key not found — mappings still carry their own descriptions")

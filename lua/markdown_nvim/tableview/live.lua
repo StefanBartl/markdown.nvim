@@ -129,17 +129,11 @@ function M.stop()
   notify.info("Live preview stopped")
 end
 
-function M.setup_autocmds()
-  local aug = api.nvim_create_augroup("MarkdownNvimTableViewLive", { clear = true })
-  api.nvim_create_autocmd("BufWritePost", {
-    group   = aug,
-    pattern = { "*.md", "*.markdown", "*.mdx" },
-    callback = function(ev)
-      if not state.running then return end
-      M.regenerate(ev.buf)
-    end,
-    desc = "Regenerate TableView live preview on save",
-  })
+--- Whether the live preview is currently running (used by the save autocmd,
+--- registered in markdown_nvim.bindings.autocmds).
+---@return boolean
+function M.is_running()
+  return state.running == true
 end
 
 return M

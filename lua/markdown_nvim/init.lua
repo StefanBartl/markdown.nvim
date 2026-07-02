@@ -16,12 +16,6 @@ function M.setup(opts)
   cfg_mod.setup(opts or {})
   local cfg = cfg_mod.get()
 
-  -- TableView autocmds (buffer-local keymaps + commands)
-  require("markdown_nvim.tableview").setup()
-
-  -- TableView live autocmd (on BufWritePost)
-  require("markdown_nvim.tableview.live").setup_autocmds()
-
   -- HL options (blockquote + ColorScheme)
   require("markdown_nvim.hl_options").setup(cfg)
 
@@ -29,17 +23,8 @@ function M.setup(opts)
   local ff_opts = cfg.fenced_fix or {}
   require("markdown_nvim.fenced_fix").setup(ff_opts)
 
-  -- Define the <Plug> surface up front so it is available for manual remapping
-  -- even when the default keymaps are disabled.
-  require("markdown_nvim.setup.plugs").define()
-
-  -- Keymaps + user-commands via FileType autocmds
-  if cfg.enable_autocmds ~= false then
-    require("markdown_nvim.setup.autocmds").setup()
-  end
-
-  -- Optional which-key group labels (no-op if which-key is not installed).
-  require("markdown_nvim.setup.which_key").setup()
+  -- All keymaps, user commands and autocmds (see markdown_nvim.bindings).
+  require("markdown_nvim.bindings").setup(cfg)
 end
 
 -- Public façade -----------------------------------------------------------

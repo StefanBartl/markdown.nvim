@@ -2,9 +2,8 @@
 --
 -- A single, machine-readable overview of every keymap, user command and
 -- autocommand markdown.nvim defines. DOCUMENTATION only: not required at
--- runtime. It mirrors the source of truth in lua/markdown_nvim/setup/ and
--- lua/markdown_nvim/tableview/. If you add or rename a binding there, update
--- the matching entry here.
+-- runtime. It mirrors the source of truth in lua/markdown_nvim/bindings/. If
+-- you add or rename a binding there, update the matching entry here.
 --
 -- Structure:
 --   plug          — the stable <Plug>(markdown-*) surface (always defined).

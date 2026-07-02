@@ -1,10 +1,10 @@
----@module 'markdown_nvim.setup.plugs'
+---@module 'markdown_nvim.bindings.plugs'
 ---@brief The stable `<Plug>(markdown-*)` surface for every editing action.
 ---@description
 --- Defining `<Plug>` mappings (once, globally) decouples actions from concrete
---- keys: the default buffer-local keys in `markdown_nvim.setup.keymaps` map onto
---- these, and users can remap or disable the defaults and bind their own keys to
---- the same `<Plug>` names. Idempotent — safe to call on every setup().
+--- keys: the default buffer-local keys in `markdown_nvim.bindings.keymaps` map
+--- onto these, and users can remap or disable the defaults and bind their own
+--- keys to the same `<Plug>` names. Idempotent — safe to call on every setup().
 
 local M = {}
 

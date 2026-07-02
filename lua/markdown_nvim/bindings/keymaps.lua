@@ -1,13 +1,14 @@
----@module 'markdown_nvim.setup.keymaps'
+---@module 'markdown_nvim.bindings.keymaps'
 ---@brief Buffer-local default keymaps, bound onto the `<Plug>` surface.
 ---@description
---- Applies the opinionated default keys for a markdown buffer by mapping them to
---- the stable `<Plug>(markdown-*)` actions (see `markdown_nvim.setup.plugs`).
---- Users who want different keys can set `enable_keymaps = false` and bind their
---- own keys to the same `<Plug>` names. Honors the `map_double_asterisk`,
---- `map_wrap_link` and `use_zf_override` config flags.
+--- `apply` installs the opinionated editing keys (heading nav/shift, folding,
+--- TOC, cursor action, bold/link wrap) by mapping them to the stable
+--- `<Plug>(markdown-*)` actions (see `markdown_nvim.bindings.plugs`); it is a
+--- no-op when `enable_keymaps = false` (the `<Plug>` surface stays available).
+--- `apply_tableview` installs the `<leader>tv*` TableView keys, which drive the
+--- `:TableView*` commands and are independent of `enable_keymaps`.
 
-local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.setup.keymaps]")
+local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.bindings.keymaps]")
 
 local M = {}
 
@@ -25,9 +26,8 @@ local function map(bufnr, mode, lhs, rhs, desc)
   end
 end
 
---- Install the default buffer-local keymaps for `bufnr`.
---- No-op when `enable_keymaps = false`; the `<Plug>` surface stays available so
---- users can bind their own keys.
+--- Install the default editing keymaps for `bufnr`.
+--- No-op when `enable_keymaps = false`.
 ---@param bufnr integer
 ---@return nil
 function M.apply(bufnr)
@@ -35,7 +35,7 @@ function M.apply(bufnr)
   if cfg().enable_keymaps == false then return end
 
   -- Ensure the <Plug> actions exist (idempotent).
-  require("markdown_nvim.setup.plugs").define()
+  require("markdown_nvim.bindings.plugs").define()
 
   -- Bold toggle (visual)
   if cfg().map_double_asterisk then
@@ -89,6 +89,21 @@ function M.apply(bufnr)
   -- Whole-buffer heading shift (S-Right / S-Left); count = number of levels.
   map(bufnr, "n", "<S-Right>", "<Plug>(markdown-heading-inc-all)", "Increase all headings")
   map(bufnr, "n", "<S-Left>", "<Plug>(markdown-heading-dec-all)", "Decrease all headings")
+end
+
+--- Install the buffer-local TableView keys (`<leader>tv*`) for `bufnr`.
+--- These drive the `:TableView*` commands and are independent of enable_keymaps.
+---@param bufnr integer
+---@return nil
+function M.apply_tableview(bufnr)
+  if type(bufnr) ~= "number" then return end
+  local ft = vim.bo[bufnr].filetype
+  if not ft or not ft:match("markdown") then return end
+
+  map(bufnr, "n", "<leader>tvt", "<Cmd>TableViewToggle<CR>", "Toggle table preview at cursor")
+  map(bufnr, "n", "<leader>tvs", "<Cmd>TableViewSelect<CR>", "Select and preview table")
+  map(bufnr, "n", "<leader>tvb", "<Cmd>TableViewOpenBrowser<CR>", "Open table in browser")
+  map(bufnr, "n", "<leader>tvc", "<Cmd>TableViewClose<CR>", "Close TableView")
 end
 
 return M

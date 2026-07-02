@@ -399,13 +399,9 @@ lua/markdown_nvim/
     hl_groups/
       blockquote.lua       matchadd-based blockquote coloring
   tableview/
-    init.lua               setup (autocmds)
-    autocmds.lua           FileType autocmd -> install maps + commands
-    mappings.lua           buffer-local keymaps
-    commands.lua           buffer-local user commands
     parser.lua             pipe-table parser
     renderer.lua           floating window renderer
-    live.lua               BufWritePost-based live preview helper
+    live.lua               live preview helper (started by :Markdown table ...)
     views/
       browser_basic.lua    basic HTML export
       browser_niceified.lua styled HTML export
@@ -419,13 +415,13 @@ lua/markdown_nvim/
     render.lua             :Markdown render (render-markdown.nvim)
     preview.lua            :Markdown preview (markdown-preview.nvim)
     create.lua             :Markdown create fs
-  setup/
+  bindings/                all keymaps, user commands and autocmds live here
+    init.lua               orchestrator: setup(cfg)
     plugs.lua              <Plug>(markdown-*) surface
-    keymaps.lua            buffer-local default keys (onto <Plug>)
-    autocmds.lua           FileType autocmd driver
+    keymaps.lua            buffer-local default keys (editing + TableView)
+    usrcmds.lua            :Markdown + OpenWith + TableView* command registration
+    autocmds.lua           FileType / BufWritePost drivers
     which_key.lua          optional which-key group labels (guarded)
-    usercmds/
-      init.lua             buffer-local user-command installer
 plugin/
   markdown_nvim.lua        guard (vim.g.loaded_markdown_nvim)
 doc/
