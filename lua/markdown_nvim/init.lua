@@ -29,10 +29,17 @@ function M.setup(opts)
   local ff_opts = cfg.fenced_fix or {}
   require("markdown_nvim.fenced_fix").setup(ff_opts)
 
+  -- Define the <Plug> surface up front so it is available for manual remapping
+  -- even when the default keymaps are disabled.
+  require("markdown_nvim.setup.plugs").define()
+
   -- Keymaps + user-commands via FileType autocmds
   if cfg.enable_autocmds ~= false then
     require("markdown_nvim.setup.autocmds").setup()
   end
+
+  -- Optional which-key group labels (no-op if which-key is not installed).
+  require("markdown_nvim.setup.which_key").setup()
 end
 
 -- Public façade -----------------------------------------------------------
