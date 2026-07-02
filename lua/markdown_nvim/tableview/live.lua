@@ -2,7 +2,6 @@
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.tableview.live]")
 
 local api = vim.api
-local uv = vim.loop
 local parser = require("markdown_nvim.tableview.parser")
 
 local M = {}
@@ -73,14 +72,7 @@ local function open_browser_for_file(html_file, port)
   port = port or DEFAULT_PORT
   local filename = vim.fn.fnamemodify(html_file, ":t")
   local url = string.format("http://127.0.0.1:%d/%s", port, filename)
-  local sys = uv.os_uname().sysname or ""
-  if sys:match("Windows") or sys:match("windows") then
-    vim.fn.jobstart({ "cmd", "/C", "start", "", url }, { detach = true })
-  elseif sys == "Darwin" then
-    vim.fn.jobstart({ "open", url }, { detach = true })
-  else
-    vim.fn.jobstart({ "xdg-open", url }, { detach = true })
-  end
+  require("markdown_nvim.util.platform").open(url)
 end
 
 function M.start(bufnr)

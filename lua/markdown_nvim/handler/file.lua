@@ -1,13 +1,11 @@
 ---@module 'markdown_nvim.handler.file'
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.handler.file]")
+local platform = require("markdown_nvim.util.platform")
 
 local M = {}
 
 M.config = {
   resolve_relative_to_buffer = true,
-  cmd_unix    = "xdg-open",
-  cmd_macos   = "open",
-  cmd_windows = "cmd",
   notify_on_error = true,
   html_scan_radius = 12,
 }
@@ -101,39 +99,11 @@ local function resolve_target_to_path(target)
 end
 
 local function open_with_system_viewer(path)
-  if not path or path == "" then return false end
-
-  -- Preferred path (Neovim 0.10+): robust across shell=pwsh/cmd.
-  if vim.ui and type(vim.ui.open) == "function" then
-    local ok, _obj, err = pcall(vim.ui.open, path)
-    if ok and err == nil then
-      return true
-    end
-    if M.config.notify_on_error then
-      notify.error("Failed to open: " .. tostring(err or path))
-    end
-    return false
+  local ok, err = platform.open(path)
+  if not ok and M.config.notify_on_error then
+    notify.error("Failed to open: " .. tostring(err or path))
   end
-
-  -- Legacy fallback for older Neovim.
-  local esc = vim.fn.shellescape(path)
-  local sysname = (uv.os_uname() and uv.os_uname().sysname) or ""
-  local cmd
-
-  if sysname:match("Windows") or sysname:match("windows") then
-    cmd = string.format('cmd /C start "" %s', esc)
-  elseif sysname == "Darwin" then
-    cmd = string.format("open %s", esc)
-  else
-    cmd = string.format("%s %s", M.config.cmd_unix, esc)
-  end
-
-  local ok, jid = pcall(vim.fn.jobstart, cmd, { detach = true })
-  if not ok or jid == 0 or jid == -1 then
-    if M.config.notify_on_error then notify.error("Failed to spawn viewer for: " .. tostring(path)) end
-    return false
-  end
-  return true
+  return ok
 end
 
 --- Open an already-resolved path with the system application.

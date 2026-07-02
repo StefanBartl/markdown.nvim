@@ -99,15 +99,8 @@ return function(bufnr)
   fh:write(html)
   fh:close()
 
-  local esc = vim.fn.shellescape(tmp)
-  local sys = vim.loop.os_uname().sysname or ""
-  local cmd
-  if sys:match("Windows") or sys:match("windows") then
-    cmd = string.format('cmd /C start "" %s', esc)
-  elseif sys == "Darwin" then
-    cmd = string.format("open %s", esc)
-  else
-    cmd = string.format("xdg-open %s", esc)
+  local ok, open_err = require("markdown_nvim.util.platform").open(tmp)
+  if not ok then
+    notify.error("Failed to open browser preview: " .. tostring(open_err))
   end
-  pcall(vim.fn.jobstart, cmd, { detach = true })
 end
