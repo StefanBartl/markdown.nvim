@@ -4,26 +4,30 @@ Derived from reviewing [`docs/ROADMAP.md`](../ROADMAP.md) together with the
 checklist findings in this folder (`Arch&Coding.md`, `Zentral-Prinzipien.md`,
 `Checklist.md`). Ordered by value/effort; not binding.
 
-## Phase 0 — hygiene / foundation (from the checklists)
+## Phase 0 — hygiene / foundation (from the checklists) — ✅ DONE
 
-Small, low-risk, unblock the rest. IDs match the checklist docs.
+IDs match the checklist docs.
 
-1. **A1 — notify hygiene.** Replace raw `vim.notify` in `commands/init.lua`
-   (2×) and `commands/markdown_links.lua` (1×) and the bare `print(result)`
-   with `util/notify`. *~20 min.*
-2. **A4 — cross-platform opener.** Extract `util/platform.lua` with a single
-   `open(target)` and replace the duplicated `os_uname → xdg-open/open/start`
-   branches in `handler/{file,image,url}.lua`, `tableview/live.lua`,
-   `tableview/views/browser_{basic,niceified}.lua`. Prefer `vim.ui.open`,
-   fall back to the platform branch in one place. *~1 h.* Also the natural home
-   for the pdfport opener when that lands in filetree.nvim.
-3. **A3 — `@types/` folder.** Create `lua/markdown_nvim/@types/` (files
-   `return {}`) and move shared `@class`/`@alias` (config, `Mkdn.Link`, table
-   types) out of source. *~1 h.*
-4. **A7 — tooling.** Add `stylua.toml` + `.luacheckrc`; a minimal CI job that
-   runs stylua --check, luacheck, and `docs/TESTS/run.lua`. *~1 h.*
-5. **A2 — deferred handle re-validation.** Audit `tableview/renderer.lua`
-   callbacks; re-check win/buf validity inside `vim.defer_fn`/schedule. *~30 min.*
+1. **A1 — notify hygiene.** ✅ Raw `vim.notify`/`print` in `commands/init.lua`
+   and `commands/markdown_links.lua` now route through `util/notify`, which
+   bridges to `lib.nvim`'s notifier when present (soft dependency).
+2. **A4 — cross-platform opener.** ✅ Single `util/platform.lua` (`os()`,
+   `open()`); the six duplicated `xdg-open/open/start` branches
+   (`handler/{file,image,url}.lua`, `tableview/live.lua`,
+   `tableview/views/browser_{basic,niceified}.lua`) now delegate to it.
+3. **A3 — `@types/` folder.** ✅ `lua/markdown_nvim/@types/init.lua` holds the
+   shared `Mkdn.*` types; source files keep a one-line pointer.
+4. **A7 — tooling.** ✅ `stylua.toml`, `.luacheckrc`, `.github/workflows/ci.yml`
+   (headless test gate + advisory lint). *Follow-up: one `stylua .` pass, then
+   drop the lint job's `continue-on-error`.*
+5. **A2 — deferred handle re-validation.** ✅ Verified — **no change needed**.
+   `tableview/renderer.lua` is synchronous with thorough `is_valid` guards; the
+   only `vim.schedule` (`fenced_fix/init.lua`) emits a captured-string debug
+   message and touches no handle.
+6. **A6 — debug switch.** ✅ Already present (`vim.g.markdown_nvim_debug` gate in
+   `util/notify`, used via `notify.debug`).
+7. **A5 — handler `ctx` helper.** Deferred (low value): the per-call re-query in
+   `handler/*` is cheap; not worth the churn now.
 
 ## Phase 1 — high-value features (ROADMAP.md)
 
