@@ -10,9 +10,7 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
----@alias Mkdn.OS "windows"|"macos"|"unix"
-
---- Detect the OS family.
+--- Detect the OS family (`Mkdn.OS` is declared in `markdown_nvim.@types`).
 ---@return Mkdn.OS
 function M.os()
   local s = (uv.os_uname() and uv.os_uname().sysname) or ""

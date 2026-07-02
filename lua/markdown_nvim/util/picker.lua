@@ -4,10 +4,7 @@
 --- is requested. Telescope / fzf-lua backends can be added here later.
 local M = {}
 
----@class Mkdn.PickerOpts
----@field prompt?  string
----@field format?  fun(item: any): string
----@field backend? string
+-- `Mkdn.PickerOpts` is declared in `markdown_nvim.@types`.
 
 --- Present `items` and invoke `on_choose` with the picked item.
 ---@generic T

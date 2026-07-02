@@ -6,15 +6,7 @@ local M = {}
 
 local api = vim.api
 
----@class Mkdn.Link
----@field display string   Human-readable label for pickers
----@field target  string   The resolved URL / path / anchor
----@field text?   string   Link text for `[text](target)`
----@field kind    "mdlink"|"url"
----@field lnum    integer  1-based source line
----@field col     integer  0-based byte column of the match start
----@field col_end integer  0-based byte column of the match end (inclusive)
----@field file?   string   Source file path (set for cross-file scans)
+-- `Mkdn.Link` is declared in `markdown_nvim.@types`.
 
 local FENCE = "^%s*[`~][`~][`~]"
 
