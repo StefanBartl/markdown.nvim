@@ -1,0 +1,84 @@
+---@module 'markdown_nvim.health'
+---@brief `:checkhealth markdown_nvim` diagnostics.
+---@description
+--- Reports the Neovim version, config sanity, the state of the optional host
+--- plugins (`:Markdown render` / `:Markdown preview`), and the optional
+--- `lib.nvim` / `which-key` integrations. Read-only: never mutates state.
+
+local M = {}
+
+--- Run the health check.
+---@return nil
+function M.check()
+  local health = vim.health or require("health")
+  local start = health.start or health.report_start
+  local ok = health.ok or health.report_ok
+  local warn = health.warn or health.report_warn
+  local info = health.info or health.report_info
+
+  start("markdown.nvim")
+
+  -- Neovim version.
+  if vim.fn.has("nvim-0.9") == 1 then
+    ok("Neovim " .. tostring(vim.version()))
+  else
+    warn("markdown.nvim targets Neovim 0.9+")
+  end
+
+  -- System opener used by the link/file/image handlers (cross-platform path).
+  if vim.ui and type(vim.ui.open) == "function" then
+    ok("vim.ui.open available (native cross-platform opener for links/files)")
+  else
+    info("vim.ui.open missing (Neovim < 0.10) — using the legacy jobstart opener")
+  end
+
+  -- Config sanity.
+  local cfg_ok, config = pcall(require, "markdown_nvim.config")
+  if not cfg_ok then
+    warn("config module failed to load: " .. tostring(config))
+    return
+  end
+  local cfg = config.get()
+
+  local picker = cfg.links and cfg.links.picker
+  if picker == "hover_select" or picker == "select" then
+    info("links picker: " .. picker)
+  else
+    warn(("links.picker is %q — expected \"hover_select\" or \"select\""):format(tostring(picker)))
+  end
+
+  info(("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s"):format(
+    tostring(cfg.enable_autocmds ~= false),
+    tostring(cfg.enable_keymaps ~= false),
+    tostring(cfg.ft_only ~= false),
+    tostring(cfg.ensure_headline_spacing ~= false)
+  ))
+
+  -- Optional host plugins for :Markdown render / preview.
+  if vim.fn.exists(":RenderMarkdown") == 2 then
+    ok("render-markdown.nvim detected (:Markdown render available)")
+  else
+    info("render-markdown.nvim not found — :Markdown render will warn if used")
+  end
+  if vim.fn.exists(":MarkdownPreview") == 2 then
+    ok("markdown-preview.nvim detected (:Markdown preview available)")
+  else
+    info("markdown-preview.nvim not found — :Markdown preview will warn if used")
+  end
+
+  -- Optional lib.nvim integration (the default hover_select picker backend).
+  if pcall(require, "lib.nvim.ui.hover_select") then
+    ok("lib.nvim detected (hover_select picker backend)")
+  else
+    info("lib.nvim not found — picker falls back to vim.ui.select")
+  end
+
+  -- Optional which-key integration.
+  if require("markdown_nvim.setup.which_key").available() then
+    ok("which-key detected (<leader>t grouped as \"Markdown\")")
+  else
+    info("which-key not found — mappings still carry their own descriptions")
+  end
+end
+
+return M
