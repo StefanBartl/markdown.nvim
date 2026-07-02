@@ -2,6 +2,7 @@
 local M = {}
 
 local uv = vim.uv
+local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.commands.links]")
 local clipboard = require("markdown_nvim.util.clipboard")
 local default_ignore = require("markdown_nvim.util.ignore").as_set()
 
@@ -114,14 +115,13 @@ function M.run(args)
   local opts, path = parse_args(args)
 
   if not path or path == "" then
-    vim.notify("Usage: :Markdown links [-r] [--noignore] [--root <path|$ENV>] <path>", vim.log.levels.ERROR)
+    notify.error("Usage: :Markdown links [-r] [--noignore] [--root <path|$ENV>] <path>")
     return
   end
 
   local result = M.for_paths({ path }, opts)
   clipboard.copy(result)
-  print(result)
-  vim.notify("Markdown links copied to clipboard", vim.log.levels.INFO)
+  notify.info("Markdown links copied to clipboard")
 end
 
 return M

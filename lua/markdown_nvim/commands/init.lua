@@ -1,6 +1,8 @@
 ---@module 'markdown_nvim.commands'
 local M = {}
 
+local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.commands]")
+
 local commands = {
   links             = require("markdown_nvim.commands.links").run,
   toc               = require("markdown_nvim.commands.toc").run,
@@ -19,13 +21,13 @@ local commands = {
 function M.execute(argv, ctx)
   local command = argv[1]
   if not command then
-    vim.notify("Usage: :Markdown <subcommand>", vim.log.levels.INFO)
+    notify.info("Usage: :Markdown <subcommand>")
     return
   end
 
   local fn = commands[command]
   if not fn then
-    vim.notify(string.format("Unknown Markdown command: %s", command), vim.log.levels.ERROR)
+    notify.error(string.format("Unknown Markdown command: %s", command))
     return
   end
 
