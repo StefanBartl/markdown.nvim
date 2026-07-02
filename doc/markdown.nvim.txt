@@ -239,6 +239,17 @@ single-color overlay. Re-applied automatically on `:colorscheme` changes.
 All keymaps are buffer-local and installed only for Markdown filetypes.
 None of the keys are mapped globally.
 
+Every action is also exposed as a stable `<Plug>(markdown-*)` mapping. To use
+your own keys, set `enable_keymaps = false` and bind against the `<Plug>` names
+(the surface stays available even with the defaults off): >
+
+    require("markdown_nvim").setup({ enable_keymaps = false })
+    vim.keymap.set("n", "<C-n>", "<Plug>(markdown-next-heading)")
+    vim.keymap.set("n", "gO",    "<Plug>(markdown-toc)")
+<
+The full list of `<Plug>` names lives in `docs/BINDINGS.lua`. If which-key is
+installed, the `<leader>t` prefix is labelled "Markdown" automatically.
+
 ------------------------------------------------------------------------------
 6.1 Navigation                              *markdown.nvim-keymaps-nav*
 

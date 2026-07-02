@@ -231,6 +231,24 @@ in your config, or let the plugin handle it via the FileType autocmd.
 `(target)` part (cursor jumps into `[]`), plain text lands in the `[text]`
 part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 
+### Remapping / disabling
+
+Every action is exposed as a stable `<Plug>(markdown-*)` mapping (see
+[docs/BINDINGS.lua](docs/BINDINGS.lua) for the full list). To use your own keys,
+set `enable_keymaps = false` and bind against the `<Plug>` names — the surface
+stays available even with the defaults off:
+
+```lua
+require("markdown_nvim").setup({ enable_keymaps = false })
+
+vim.keymap.set("n", "<C-n>", "<Plug>(markdown-next-heading)")
+vim.keymap.set("n", "<C-p>", "<Plug>(markdown-prev-heading)")
+vim.keymap.set("n", "gO",    "<Plug>(markdown-toc)")
+```
+
+If [which-key](https://github.com/folke/which-key.nvim) is installed, the
+`<leader>t` prefix is labelled automatically (no config required).
+
 ### TableView
 
 | Key | Mode | Action |
@@ -325,12 +343,27 @@ URLs, `mailto:` and `#anchors` are skipped; existing paths are left untouched.
 
 ---
 
+## Health
+
+```vim
+:checkhealth markdown_nvim
+```
+
+Reports the Neovim version, the cross-platform opener (`vim.ui.open`), config
+sanity, the optional host plugins (`:Markdown render` / `preview`), and the
+optional `lib.nvim` / `which-key` integrations.
+
+---
+
 ## Architecture
 
 ```
 lua/markdown_nvim/
   init.lua                 setup() + public Lua facade
-  config.lua               merged defaults
+  config/
+    init.lua               runtime store (setup/get)
+    DEFAULTS.lua           typed default configuration
+  health.lua               :checkhealth markdown_nvim
   util/
     notify.lua             vim.notify wrapper
     clipboard.lua          setreg("+") helper
@@ -387,12 +420,18 @@ lua/markdown_nvim/
     preview.lua            :Markdown preview (markdown-preview.nvim)
     create.lua             :Markdown create fs
   setup/
-    keymaps.lua            buffer-local keymap installer
+    plugs.lua              <Plug>(markdown-*) surface
+    keymaps.lua            buffer-local default keys (onto <Plug>)
     autocmds.lua           FileType autocmd driver
+    which_key.lua          optional which-key group labels (guarded)
     usercmds/
       init.lua             buffer-local user-command installer
 plugin/
   markdown_nvim.lua        guard (vim.g.loaded_markdown_nvim)
 doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
+docs/
+  BINDINGS.lua             machine-readable binding cheatsheet
+  ROADMAP.md               planned work
+  TESTS/                   headless spec suite
 ```
