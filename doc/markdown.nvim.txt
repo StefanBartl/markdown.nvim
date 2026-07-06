@@ -247,7 +247,7 @@ your own keys, set `enable_keymaps = false` and bind against the `<Plug>` names
     vim.keymap.set("n", "<C-n>", "<Plug>(markdown-next-heading)")
     vim.keymap.set("n", "gO",    "<Plug>(markdown-toc)")
 <
-The full list of `<Plug>` names lives in `docs/BINDINGS.lua`. If which-key is
+The full list of `<Plug>` names lives in `docs/BINDINGS.md`. If which-key is
 installed, the `<leader>t` prefix is labelled "Markdown" automatically.
 
 ------------------------------------------------------------------------------

@@ -138,7 +138,7 @@ popup/preview surface. Maintenance: a second, smaller codebase to keep in parity
    behavior of `core/{table_fmt,link_scan,headings,toc,headline_spacing}` into
    fixtures under a neutral folder.
 2. Scaffold `markdown.vim` (`autoload/markdown/*.vim`, `plugin/markdown.vim`,
-   `<Plug>` surface mirroring `docs/BINDINGS.lua`, `g:markdown_*` config mirroring
+   `<Plug>` surface mirroring `docs/BINDINGS.md`, `g:markdown_*` config mirroring
    `Mkdn.Config`).
 3. Port Phase-1 features against the fixtures; wire the `:Markdown` command +
    `<Plug>` maps to match markdown.nvim's names for muscle-memory parity.

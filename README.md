@@ -234,7 +234,7 @@ part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 ### Remapping / disabling
 
 Every action is exposed as a stable `<Plug>(markdown-*)` mapping (see
-[docs/BINDINGS.lua](docs/BINDINGS.lua) for the full list). To use your own keys,
+[docs/BINDINGS.md](docs/BINDINGS.md) for the full list). To use your own keys,
 set `enable_keymaps = false` and bind against the `<Plug>` names — the surface
 stays available even with the defaults off:
 
@@ -427,7 +427,7 @@ plugin/
 doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
 docs/
-  BINDINGS.lua             machine-readable binding cheatsheet
+  BINDINGS.md             machine-readable binding cheatsheet
   ROADMAP.md               planned work
   TESTS/                   headless spec suite
 ```

@@ -1,4 +1,4 @@
--- docs/BINDINGS.lua — markdown.nvim binding cheatsheet.
+-- docs/BINDINGS.md — markdown.nvim binding cheatsheet.
 --
 -- A single, machine-readable overview of every keymap, user command and
 -- autocommand markdown.nvim defines. DOCUMENTATION only: not required at
