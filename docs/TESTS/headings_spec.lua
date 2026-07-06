@@ -35,5 +35,31 @@ return function(H)
   vim.api.nvim_buf_set_lines(plain, 0, -1, false, { "# A" })
   eq(head.shift_range(1, 1, 1), 0, "non-markdown buffer no-op")
 
+  -- goto_prev_heading reaches an H1 (regression: the old pattern required
+  -- 2+ hashes and could never land on a level-1 heading) and preserves the
+  -- cursor's column, clipped to the target line's length.
+  vim.api.nvim_set_current_buf(buf) -- H.scratch("text") above switched the window's buffer
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "# Top",
+    "prose prose prose prose",
+    "## Second",
+  })
+  vim.api.nvim_win_set_cursor(0, { 2, 10 })
+  head.goto_prev_heading()
+  local pos = vim.api.nvim_win_get_cursor(0)
+  eq(pos[1], 1, "goto_prev_heading reaches H1")
+  eq(pos[2], 4, "column clipped to the short H1 line's length")
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "# A",
+    "## Second Level Heading",
+    "prose",
+  })
+  vim.api.nvim_win_set_cursor(0, { 3, 4 })
+  head.goto_prev_heading()
+  pos = vim.api.nvim_win_get_cursor(0)
+  eq(pos[1], 2, "goto_prev_heading stops at nearest heading")
+  eq(pos[2], 4, "column preserved when the target line is long enough")
+
   config.setup({})
 end

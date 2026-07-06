@@ -194,7 +194,14 @@ function M.open_target(target)
   return open_file_in_current_window(resolved)
 end
 
-function M.handle_cursor_action()
+--- Handle the cursor/mouse action (open anchor/image/URL/file under cursor).
+--- `opts.silent`: suppress the final "nothing found" info notification —
+--- used for mouse-triggered invocations (double-click / ctrl-click), where a
+--- miss is a normal, frequent outcome rather than something to report. Actual
+--- problems (unresolvable target, missing file, ...) still notify regardless.
+---@param opts? { silent?: boolean }
+function M.handle_cursor_action(opts)
+  local silent = opts and opts.silent
   local line = api.nvim_get_current_line()
 
   if line and line:match("%(#[^)]+%)") then
@@ -276,7 +283,9 @@ function M.handle_cursor_action()
     return
   end
 
-  notify.info("Handler: No recognized target under cursor")
+  if not silent then
+    notify.info("Handler: No recognized target under cursor")
+  end
 end
 
 return M

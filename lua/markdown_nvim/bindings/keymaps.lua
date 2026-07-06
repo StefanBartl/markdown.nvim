@@ -69,9 +69,11 @@ function M.apply(bufnr)
   -- TOC (count = max_level); also ensures headline separators per config.
   map(bufnr, "n", "<leader>toc", "<Plug>(markdown-toc)", "Insert/refresh TOC")
 
-  -- Cursor action (double-click, Ctrl+Click, ma)
-  map(bufnr, "n", "<2-LeftMouse>", "<Plug>(markdown-cursor-action)", "Handle cursor action")
-  map(bufnr, "n", "<C-LeftMouse>", "<Plug>(markdown-cursor-action)", "Handle cursor action")
+  -- Cursor action (double-click, Ctrl+Click, ma). The mouse variants use the
+  -- silent <Plug>: moving/clicking the mouse over prose with no link/anchor
+  -- under it is a normal outcome, not worth a notification every time.
+  map(bufnr, "n", "<2-LeftMouse>", "<Plug>(markdown-cursor-action-mouse)", "Handle cursor action")
+  map(bufnr, "n", "<C-LeftMouse>", "<Plug>(markdown-cursor-action-mouse)", "Handle cursor action")
   map(bufnr, "n", "ma", "<Plug>(markdown-cursor-action)", "Handle cursor action")
 
   -- Image / anchor

@@ -114,6 +114,16 @@ local function set_win_opt(win, name, value)
   pcall(api.nvim_set_option_value, name, value, { scope = "local", win = win })
 end
 
+--- Bind `q` and `<Esc>` on the floating preview buffer to close it. `M.close_view`
+--- is resolved at call time, so this is safe even though it's defined below.
+---@param buf integer
+local function set_close_keymaps(buf)
+  local function close() M.close_view() end
+  local map_opts = { buffer = buf, nowait = true, silent = true, desc = "[markdown.nvim] Close TableView" }
+  vim.keymap.set("n", "q", close, map_opts)
+  vim.keymap.set("n", "<Esc>", close, map_opts)
+end
+
 local function ensure_view(opts)
   opts = opts or {}
 
@@ -131,6 +141,7 @@ local function ensure_view(opts)
   set_buf_opt(state.buf, "filetype", "markdown-tableview")
   set_buf_opt(state.buf, "modifiable", false)
   set_buf_opt(state.buf, "buftype", "nofile")
+  set_close_keymaps(state.buf)
 
   local max_w = math.floor(vim.o.columns * (opts.max_width_frac or default_opts.max_width_frac))
   local max_h = math.floor(vim.o.lines * (opts.max_height_frac or default_opts.max_height_frac))

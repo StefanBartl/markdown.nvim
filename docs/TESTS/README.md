@@ -22,7 +22,9 @@ The runner prints one line per spec and exits non-zero on the first failure
 | `config_spec.lua`    | Config defaults + deep-merge of user options.                   |
 | `table_fmt_spec.lua` | GFM formatter: `parse_args`, `complete`, buffer formatting.     |
 | `link_scan_spec.lua` | `from_line` / `from_lines` link extraction (+ fenced skip).     |
-| `headings_spec.lua`  | Heading level shift (up/down, H6 clamp, non-markdown no-op).    |
+| `headings_spec.lua`  | Heading level shift + nav (up/down, H6 clamp, H1 reach, column preservation, non-markdown no-op). |
+| `handler_spec.lua`   | Cursor-action handler: silent mode suppresses the "no target" notification for mouse invocation. |
+| `tableview_spec.lua` | Floating TableView preview closes via `q`/`<Esc>`.              |
 | `run.lua`            | Runner: loads every spec, reports results, sets the exit code.  |
 
 ## Adding a spec

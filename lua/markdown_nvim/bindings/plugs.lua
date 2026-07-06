@@ -58,6 +58,9 @@ function M.define()
 
   -- Cursor action / image / anchor
   pmap("n", "<Plug>(markdown-cursor-action)", function() handler.handle_cursor_action() end, "Handle cursor action")
+  -- Mouse-triggered variant: a miss is a normal/frequent outcome (moving the
+  -- mouse over prose), so suppress the "nothing found" notification.
+  pmap("n", "<Plug>(markdown-cursor-action-mouse)", function() handler.handle_cursor_action({ silent = true }) end, "Handle cursor action (mouse)")
   pmap("n", "<Plug>(markdown-open-image)", function() image.open() end, "Open image")
   pmap("n", "<Plug>(markdown-jump-anchor)", function() anchor.jump() end, "Jump to anchor")
 

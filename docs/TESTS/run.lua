@@ -16,6 +16,8 @@ local specs = {
   "table_fmt_spec.lua",
   "link_scan_spec.lua",
   "headings_spec.lua",
+  "handler_spec.lua",
+  "tableview_spec.lua",
 }
 
 local failed = 0

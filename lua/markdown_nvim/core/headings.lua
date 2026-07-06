@@ -4,37 +4,58 @@ local M = {}
 local api, fn = vim.api, vim.fn
 local cfg = require("markdown_nvim.config").get
 
-local ANY_HEADING = "^##\\+\\s\\+.*$"
+-- `#\+` (one-or-more) so H1 is included; the old `##\+` (two-or-more) meant
+-- goto_*_heading could never reach a level-1 heading.
+local ANY_HEADING = "^#\\+\\s\\+.*$"
 
 local function level_pattern(level)
   return "^" .. string.rep("#", level) .. "\\s\\+.*$"
 end
 
+--- Move to `lnum`, restoring `col` (clipped to the line's length by `cursor()`)
+--- so heading nav keeps the cursor's horizontal position instead of snapping
+--- to column 1.
+---@param lnum integer
+---@param col integer
+local function restore_col(lnum, col)
+  fn.cursor(lnum, col)
+end
+
 function M.goto_prev_heading()
+  local col = fn.col(".")
+  local moved = false
   for _ = 1, vim.v.count1 do
-    fn.search(ANY_HEADING, "bWs")
+    if fn.search(ANY_HEADING, "bWs") == 0 then break end
+    moved = true
   end
+  if moved then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
 function M.goto_next_heading()
+  local col = fn.col(".")
+  local moved = false
   for _ = 1, vim.v.count1 do
-    fn.search(ANY_HEADING, "Ws")
+    if fn.search(ANY_HEADING, "Ws") == 0 then break end
+    moved = true
   end
+  if moved then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
 function M.goto_prev_heading_level()
   local count = vim.v.count
   local pattern = count > 0 and level_pattern(count) or ANY_HEADING
-  fn.search(pattern, "bWs")
+  local col = fn.col(".")
+  if fn.search(pattern, "bWs") ~= 0 then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
 function M.goto_next_heading_level()
   local count = vim.v.count
   local pattern = count > 0 and level_pattern(count) or ANY_HEADING
-  fn.search(pattern, "Ws")
+  local col = fn.col(".")
+  if fn.search(pattern, "Ws") ~= 0 then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
