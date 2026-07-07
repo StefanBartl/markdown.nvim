@@ -24,7 +24,10 @@ local function frontmatter_end(bufnr)
   return 0
 end
 
-local FENCE_LINE = "^%s*([`~]{3,})%S*%s*$"
+-- A fenced-code delimiter line: 3+ backticks or 3+ tildes, then an optional info
+-- string. `{3,}` is NOT a Lua-pattern quantifier (it matches the literal chars
+-- `{3,}`), so three-or-more is spelled out explicitly.
+local FENCE_LINE = "^%s*[`~][`~][`~]+%S*%s*$"
 
 local function slugify_gfm(title)
   local s = title:lower()

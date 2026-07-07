@@ -35,6 +35,35 @@ return function(H)
   vim.api.nvim_buf_set_lines(plain, 0, -1, false, { "# A" })
   eq(head.shift_range(1, 1, 1), 0, "non-markdown buffer no-op")
 
+  -- shift_range skips fenced code: `#`-prefixed lines inside a ``` / ~~~ block
+  -- must NOT be treated as headings (regression: the old `[`~]{3,}` Lua pattern
+  -- never matched a real fence, so fenced `#` lines got shifted and corrupted).
+  vim.api.nvim_set_current_buf(buf)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "# A",             -- 1 heading (outside)
+    "```bash",         -- 2 fence open
+    "# not a heading", -- 3 comment inside the fence
+    "```",             -- 4 fence close
+    "## B",            -- 5 heading (outside)
+  })
+  eq(head.shift_range(1, 5, 1), 2, "only the two real headings shift")
+  local fenced = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  eq(fenced[1], "## A", "outer H1 shifted")
+  eq(fenced[3], "# not a heading", "fenced # comment left untouched")
+  eq(fenced[5], "### B", "outer H2 shifted")
+
+  -- same for a tilde fence
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "~~~",             -- 1 fence open (bare tilde)
+    "### inside",      -- 2 not a heading (fenced)
+    "~~~",             -- 3 fence close
+    "# After",         -- 4 heading (outside)
+  })
+  eq(head.shift_range(1, 4, 1), 1, "only the heading outside the ~~~ fence shifts")
+  local tfenced = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  eq(tfenced[2], "### inside", "tilde-fenced line untouched")
+  eq(tfenced[4], "## After", "heading after tilde fence shifted")
+
   -- goto_prev_heading reaches an H1 (regression: the old pattern required
   -- 2+ hashes and could never land on a level-1 heading) and preserves the
   -- cursor's column, clipped to the target line's length.

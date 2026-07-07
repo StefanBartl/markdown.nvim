@@ -168,7 +168,12 @@ local function shift_range_internal(bufnr, srow, erow, delta, min_level, allow_c
   local lines = api.nvim_buf_get_lines(bufnr, srow - 1, erow, false)
   local changed = 0
   local in_fence = false
-  local fence_pat = "^%s*([`~]{3,})"
+  -- A fenced-code delimiter line: 3+ backticks or 3+ tildes, then an optional
+  -- info string. NOTE: `{3,}` is NOT a Lua-pattern quantifier (it matches the
+  -- literal characters `{3,}`), so we spell out three-or-more explicitly. Without
+  -- this, `#`-prefixed lines inside code fences (shell comments, nested markdown)
+  -- were wrongly treated as headings and shifted.
+  local fence_pat = "^%s*[`~][`~][`~]+%S*%s*$"
 
   for i = 1, #lines do
     local line = lines[i]

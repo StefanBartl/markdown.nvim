@@ -67,7 +67,9 @@ local function jump_to_anchor(anchor)
   end
   local seen_count = {}
   local in_fence = false
-  local fence_pattern = "^%s*([`~]{3,})%S*%s*$"
+  -- 3+ backticks/tildes + optional info string. `{3,}` is not a Lua-pattern
+  -- quantifier, so three-or-more is spelled out explicitly.
+  local fence_pattern = "^%s*[`~][`~][`~]+%S*%s*$"
 
   for i = lower, upper do
     local line = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
