@@ -32,6 +32,21 @@
 ---@field inline_style Mkdn.FencedFixStyle # Extra style flags for inline code.
 ---@field delimiter_hl string # Highlight group for the backtick delimiters (`` ` ``).
 
+---@class Mkdn.FencedScopeOps
+---@field toc boolean # Scope TOC generation to the fenced block under the cursor.
+---@field nav boolean # Scope heading navigation (next/prev, level) to the block.
+---@field jump boolean # Scope anchor jump to the block.
+---@field shift boolean # Scope whole-"buffer" heading shift to the block.
+---@field fold boolean # Scope folding to the block (stretch; default off).
+
+---@alias Mkdn.FencedScopeProvider "auto"|"color_my_ascii"|"builtin"
+
+---@class Mkdn.FencedScope
+---@field enable boolean # Master switch: treat markdown-family fenced blocks as their own document scope. Default true.
+---@field langs string[] # Fence language tags whose blocks count as a markdown sub-document.
+---@field provider Mkdn.FencedScopeProvider # Fence-detection backend. "auto" prefers color_my_ascii, falls back to the built-in scanner.
+---@field operations Mkdn.FencedScopeOps # Per-operation opt-out.
+
 ---@class Mkdn.Config
 ---@field map_double_asterisk boolean # Map `**` in visual mode to toggle bold.
 ---@field map_wrap_link boolean # Map `<leader>[` to wrap the word/selection in a link.
@@ -46,6 +61,7 @@
 ---@field open Mkdn.OpenConfig
 ---@field blockquote_hl Mkdn.BlockquoteHL
 ---@field fenced_fix Mkdn.FencedFix
+---@field fenced_scope Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
 
 -- #####################################################################
 -- core/link_scan.lua

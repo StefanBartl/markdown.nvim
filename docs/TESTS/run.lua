@@ -18,6 +18,7 @@ local specs = {
   "headings_spec.lua",
   "handler_spec.lua",
   "tableview_spec.lua",
+  "fenced_scope_spec.lua",
 }
 
 local failed = 0

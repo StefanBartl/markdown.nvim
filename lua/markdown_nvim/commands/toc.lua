@@ -14,7 +14,29 @@ local DEFAULT_HEADER = "## Table of content"
 function M.update(header, opts)
   opts = opts or {}
 
+  -- When the cursor sits inside a markdown-family fenced block, scope the TOC to
+  -- that block's interior (scan + insert stay inside the block).
+  local scope = require("markdown_nvim.scope")
+  local sc = scope.op_enabled("toc") and scope.detect() or nil
+  local block_scoped = false
+
+  if sc and sc.kind == "block" then
+    block_scoped = true
+    opts = vim.tbl_extend("force", opts, {
+      scan_first     = sc.first,
+      scan_last      = sc.last,
+      no_frontmatter = true,
+    })
+  elseif sc and sc.kind == "buffer" then
+    -- Outside any block: keep every fenced block's headings out of the outer TOC.
+    opts = vim.tbl_extend("force", opts, { exclude = sc.exclude })
+  end
+
   require("markdown_nvim.core.toc").update_markdown_toc(header or DEFAULT_HEADER, opts)
+
+  -- Section separators are a whole-document concern; skip them when the TOC was
+  -- generated for a fenced sub-document.
+  if block_scoped then return end
 
   -- Per-call override wins; otherwise fall back to the user config
   -- (`ensure_headline_spacing`, default true).

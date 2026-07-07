@@ -10,6 +10,7 @@ local commands = {
   render            = require("markdown_nvim.commands.render").run,
   preview           = require("markdown_nvim.commands.preview").run,
   create            = require("markdown_nvim.commands.create").run,
+  scope             = require("markdown_nvim.commands.scope").run,
   headline_spacing  = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown_nvim.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -42,6 +43,7 @@ local sub_complete = {
   render  = function(arglead) return require("markdown_nvim.commands.render").complete(arglead) end,
   preview = function(arglead) return require("markdown_nvim.commands.preview").complete(arglead) end,
   create  = function(arglead) return require("markdown_nvim.commands.create").complete(arglead) end,
+  scope   = function(arglead) return require("markdown_nvim.commands.scope").complete(arglead) end,
 }
 
 function M.complete(arglead, cmdline, _cursorpos)

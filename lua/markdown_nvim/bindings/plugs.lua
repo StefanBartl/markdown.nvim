@@ -76,15 +76,19 @@ function M.define()
   pmap({ "v", "x" }, "<Plug>(markdown-heading-inc)", function() head.shift_visual_selection(vim.v.count1) end, "Increase heading level (visual)")
   pmap({ "v", "x" }, "<Plug>(markdown-heading-dec)", function() head.shift_visual_selection(-vim.v.count1) end, "Decrease heading level (visual)")
 
-  -- Whole-buffer heading shift
-  pmap("n", "<Plug>(markdown-heading-inc-all)", function()
-    local total = vim.api.nvim_buf_line_count(0)
-    head.shift_range(1, total, vim.v.count1)
-  end, "Increase all headings")
-  pmap("n", "<Plug>(markdown-heading-dec-all)", function()
-    local total = vim.api.nvim_buf_line_count(0)
-    head.shift_range(1, total, -vim.v.count1)
-  end, "Decrease all headings")
+  -- Whole-buffer heading shift. When the cursor is inside a markdown-family
+  -- fenced block, "all" means all headings *in that block* instead.
+  local function shift_all(delta)
+    local scope = require("markdown_nvim.scope")
+    local sc = scope.op_enabled("shift") and scope.detect() or nil
+    if sc and sc.kind == "block" then
+      head.shift_range(sc.first, sc.last, delta)
+    else
+      head.shift_range(1, vim.api.nvim_buf_line_count(0), delta)
+    end
+  end
+  pmap("n", "<Plug>(markdown-heading-inc-all)", function() shift_all(vim.v.count1) end, "Increase all headings")
+  pmap("n", "<Plug>(markdown-heading-dec-all)", function() shift_all(-vim.v.count1) end, "Decrease all headings")
 end
 
 return M

@@ -6,6 +6,18 @@ function M.foldexpr(lnum)
 
   local atx = line:match("^%s*(#+)%s+")
   if atx then
+    -- Fenced-scope gating (opt-in via fenced_scope.operations.fold). A `#`-line
+    -- inside a NON-markdown fenced block is code (e.g. a shell/python comment),
+    -- not a heading, so it must not open a fold. Inside a markdown-family fence
+    -- it stays a heading (the block is its own sub-document). Zero overhead when
+    -- the fold op is disabled — the scope module isn't even consulted.
+    local scope = require("markdown_nvim.scope")
+    if scope.op_enabled("fold") then
+      local kind = scope.row_fence_kind(vim.api.nvim_get_current_buf(), lnum - 1)
+      if kind == "code" then
+        return "="
+      end
+    end
     return ">" .. #atx
   end
 

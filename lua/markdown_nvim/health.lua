@@ -79,6 +79,34 @@ function M.check()
   else
     info("which-key not found — mappings still carry their own descriptions")
   end
+
+  -- Fenced-block scope (treat ```markdown/md/mdx/… blocks as sub-documents).
+  local fs = cfg.fenced_scope or {}
+  if fs.enable == false then
+    info("fenced_scope: disabled")
+  else
+    local ops = fs.operations or {}
+    info(("fenced_scope: enabled | provider: %s | ops toc:%s nav:%s jump:%s shift:%s fold:%s"):format(
+      tostring(fs.provider or "auto"),
+      tostring(ops.toc ~= false), tostring(ops.nav ~= false), tostring(ops.jump ~= false),
+      tostring(ops.shift ~= false), tostring(ops.fold == true)
+    ))
+    info("fenced_scope langs: " .. table.concat(fs.langs or {}, ", "))
+
+    local pref = fs.provider or "auto"
+    local has_cma = false
+    if pref ~= "builtin" then
+      local cma_ok, cma = pcall(require, "color_my_ascii")
+      has_cma = cma_ok and type(cma) == "table" and type(cma.fences) == "table"
+    end
+    if has_cma then
+      ok("fenced_scope provider: color_my_ascii fence API (robust heuristic + treesitter detection)")
+    elseif pref == "color_my_ascii" then
+      warn("fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner")
+    else
+      info("color_my_ascii not found — fenced_scope uses the built-in fallback scanner")
+    end
+  end
 end
 
 return M

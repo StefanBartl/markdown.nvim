@@ -128,22 +128,43 @@ function M.update_markdown_toc(header_line, opts)
   if min_level > max_level then min_level, max_level = max_level, min_level end
 
   local bufnr = vim.api.nvim_get_current_buf()
-  local start_after_fm = frontmatter_end(bufnr)
   local total = vim.api.nvim_buf_line_count(bufnr)
+
+  -- Optional scan bounds (1-indexed inclusive). When the TOC is generated for a
+  -- fenced markdown sub-document, callers pass the block interior as
+  -- scan_first/scan_last (+ no_frontmatter) so scanning AND insertion stay
+  -- inside the block. Unset → whole buffer (frontmatter-aware), i.e. unchanged.
+  local no_fm = opts.no_frontmatter == true
+  local start_after_fm = no_fm and 0 or frontmatter_end(bufnr)
+  local scan_lower = opts.scan_first or math.max(1, start_after_fm > 0 and (start_after_fm + 1) or 1)
+  local scan_upper = opts.scan_last or total
+
+  -- Optional excluded ranges (1-indexed inclusive). Buffer-scope callers pass the
+  -- interiors of every fenced block so their headings never leak into the outer
+  -- TOC. This uses color_my_ascii's robust detection instead of the fragile
+  -- in-fence line toggle below (retained only for the feature-disabled path).
+  local exclude = opts.exclude
+  local function excluded(i)
+    if not exclude then return false end
+    for _, r in ipairs(exclude) do
+      if i >= r.first and i <= r.last then return true end
+    end
+    return false
+  end
 
   local existing_start, existing_end
   do
     local re = "^%s*" .. vim.pesc(header_line) .. "%s*$"
-    for i = math.max(1, start_after_fm > 0 and (start_after_fm + 1) or 1), total do
+    for i = scan_lower, scan_upper do
       local l = vim.api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1]
       if l and l:match(re) then
         existing_start = i
-        for j = i + 1, total do
+        for j = i + 1, scan_upper do
           local lj = vim.api.nvim_buf_get_lines(bufnr, j - 1, j, false)[1]
           if lj then
             if lj:match("^%s*%-%-%-%s*$") then
               existing_end = j
-              for k = j + 1, total do
+              for k = j + 1, scan_upper do
                 local lk = vim.api.nvim_buf_get_lines(bufnr, k - 1, k, false)[1]
                 if lk and is_empty_line(lk) then
                   existing_end = k
@@ -158,7 +179,7 @@ function M.update_markdown_toc(header_line, opts)
             end
           end
         end
-        existing_end = existing_end or total
+        existing_end = existing_end or scan_upper
         break
       end
     end
@@ -169,9 +190,9 @@ function M.update_markdown_toc(header_line, opts)
   local in_toc_block = false
   local seen_count = {}
   local toc_header_pattern = "^%s*" .. vim.pesc(header_line) .. "%s*$"
-  local scan_start = math.max(1, start_after_fm > 0 and (start_after_fm + 1) or 1)
+  local scan_start = scan_lower
 
-  for i = scan_start, total do
+  for i = scan_start, scan_upper do
     local line = vim.api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
 
     if line:match(toc_header_pattern) then
@@ -182,7 +203,7 @@ function M.update_markdown_toc(header_line, opts)
 
     if line:match(FENCE_LINE) then
       in_fence = not in_fence
-    elseif not in_fence and not in_toc_block then
+    elseif not in_fence and not in_toc_block and not excluded(i) then
       local hashes, title = line:match("^(%s*#+)%s+(.*%S)")
       if hashes and title then
         local level = (#hashes:gsub("%s", "")) - 0
@@ -211,9 +232,9 @@ function M.update_markdown_toc(header_line, opts)
     total = vim.api.nvim_buf_line_count(bufnr)
   else
     local first_level1_idx = nil
-    for i = scan_start, total do
+    for i = scan_start, scan_upper do
       local l = vim.api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
-      if l:match("^%s*#%s+[^#]") then
+      if l:match("^%s*#%s+[^#]") and not excluded(i) then
         first_level1_idx = i
         break
       end
@@ -221,16 +242,16 @@ function M.update_markdown_toc(header_line, opts)
 
     if first_level1_idx then
       local first_level2_idx = nil
-      for j = first_level1_idx + 1, total do
+      for j = first_level1_idx + 1, scan_upper do
         local lj = vim.api.nvim_buf_get_lines(bufnr, j - 1, j, false)[1] or ""
         if lj:match("^%s*##%s+") then
           first_level2_idx = j
           break
         end
       end
-      insert_at = first_level2_idx or (total + 1)
+      insert_at = first_level2_idx or (scan_upper + 1)
     else
-      insert_at = total + 1
+      insert_at = scan_upper + 1
     end
   end
 

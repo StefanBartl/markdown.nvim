@@ -21,11 +21,62 @@ local function restore_col(lnum, col)
   fn.cursor(lnum, col)
 end
 
+--- Resolve the fenced-block scope for `op`, or nil when scoping is off for it
+--- (feature disabled or that op opted out) — callers then use the plain,
+--- whole-buffer `fn.search` path, so behavior is unchanged when disabled.
+---@param op "nav"
+---@return Mkdn.Scope|nil
+local function op_scope(op)
+  local scope = require("markdown_nvim.scope")
+  if not scope.op_enabled(op) then return nil end
+  return scope.detect()
+end
+
+--- One scope-bounded heading hop. Uses `fn.search`'s stopline to stay within
+--- `scope.first`/`scope.last`, and skips matches that fall inside an excluded
+--- fenced interior (buffer scope). Moves the cursor to the match on success;
+--- on failure the cursor is restored to where the hop started, so a partial
+--- count loop leaves it on the last real heading it reached.
+---@param pattern string Vim regex for the heading(s) to match
+---@param backward boolean Search direction
+---@param scope Mkdn.Scope
+---@return integer lnum Matched line (1-indexed), or 0 if none in scope
+local function scoped_search(pattern, backward, scope)
+  local scope_mod = require("markdown_nvim.scope")
+  local flags = (backward and "bW" or "W") .. "s"
+  local stopline = backward and scope.first or scope.last
+  local view = fn.winsaveview()
+  while true do
+    local lnum = fn.search(pattern, flags, stopline)
+    if lnum == 0 or lnum < scope.first or lnum > scope.last then
+      fn.winrestview(view)
+      return 0
+    end
+    if not scope_mod.is_excluded(scope, lnum) then
+      return lnum
+    end
+    -- Match sits inside an excluded fenced interior: keep searching from here.
+  end
+end
+
 function M.goto_prev_heading()
+  local scope = op_scope("nav")
+  if not scope then
+    local col = fn.col(".")
+    local moved = false
+    for _ = 1, vim.v.count1 do
+      if fn.search(ANY_HEADING, "bWs") == 0 then break end
+      moved = true
+    end
+    if moved then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+
   local col = fn.col(".")
   local moved = false
   for _ = 1, vim.v.count1 do
-    if fn.search(ANY_HEADING, "bWs") == 0 then break end
+    if scoped_search(ANY_HEADING, true, scope) == 0 then break end
     moved = true
   end
   if moved then restore_col(fn.line("."), col) end
@@ -33,10 +84,23 @@ function M.goto_prev_heading()
 end
 
 function M.goto_next_heading()
+  local scope = op_scope("nav")
+  if not scope then
+    local col = fn.col(".")
+    local moved = false
+    for _ = 1, vim.v.count1 do
+      if fn.search(ANY_HEADING, "Ws") == 0 then break end
+      moved = true
+    end
+    if moved then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+
   local col = fn.col(".")
   local moved = false
   for _ = 1, vim.v.count1 do
-    if fn.search(ANY_HEADING, "Ws") == 0 then break end
+    if scoped_search(ANY_HEADING, false, scope) == 0 then break end
     moved = true
   end
   if moved then restore_col(fn.line("."), col) end
@@ -47,7 +111,13 @@ function M.goto_prev_heading_level()
   local count = vim.v.count
   local pattern = count > 0 and level_pattern(count) or ANY_HEADING
   local col = fn.col(".")
-  if fn.search(pattern, "bWs") ~= 0 then restore_col(fn.line("."), col) end
+  local scope = op_scope("nav")
+  if not scope then
+    if fn.search(pattern, "bWs") ~= 0 then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+  if scoped_search(pattern, true, scope) ~= 0 then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
@@ -55,7 +125,13 @@ function M.goto_next_heading_level()
   local count = vim.v.count
   local pattern = count > 0 and level_pattern(count) or ANY_HEADING
   local col = fn.col(".")
-  if fn.search(pattern, "Ws") ~= 0 then restore_col(fn.line("."), col) end
+  local scope = op_scope("nav")
+  if not scope then
+    if fn.search(pattern, "Ws") ~= 0 then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+  if scoped_search(pattern, false, scope) ~= 0 then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 

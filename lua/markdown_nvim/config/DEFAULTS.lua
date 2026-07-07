@@ -50,6 +50,28 @@ local DEFAULTS = {
     inline_style   = { italic = false, bold = false },
     delimiter_hl   = "Comment",
   },
+
+  -- Treat a markdown-family fenced block (```markdown / md / mdx / ascii-markdown
+  -- / ascii-md) as its own document scope: when the cursor is inside such a
+  -- block, TOC/heading-nav/jump/shift operate on the block's interior instead of
+  -- the whole file. When the cursor is outside, those ops treat the buffer as a
+  -- whole but skip every fenced block's interior. Default on.
+  --
+  -- Fence detection is delegated to color_my_ascii (its parser is the robust
+  -- shared source of truth); a small built-in scanner is used as a fallback when
+  -- color_my_ascii isn't installed, so this stays usable standalone.
+  fenced_scope = {
+    enable   = true,
+    langs    = { "markdown", "md", "mdx", "ascii-markdown", "ascii-md" },
+    provider = "auto", -- "auto" | "color_my_ascii" | "builtin"
+    operations = {
+      toc   = true,
+      nav   = true,
+      jump  = true,
+      shift = true,
+      fold  = false, -- stretch: folding is per-line/global, off by default
+    },
+  },
 }
 
 return DEFAULTS
