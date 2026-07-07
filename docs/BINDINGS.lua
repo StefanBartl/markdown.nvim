@@ -86,6 +86,7 @@ return {
       { name = "Markdown preview [start|stop|toggle]",                desc = "markdown-preview.nvim wrapper (optional host)" },
       { name = "Markdown create fs",                                  desc = "Create files/dirs for local link targets" },
       { name = "Markdown headline_spacing",                           desc = "Enforce blank-dash-blank between H2+ sections" },
+      { name = "Markdown scope [on|off|toggle|status]",               desc = "Toggle fenced-block scope (TOC/nav/jump/shift/fold act on the block the cursor is in)" },
     },
 
     buffer_local = {

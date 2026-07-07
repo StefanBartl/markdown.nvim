@@ -169,12 +169,12 @@ require("markdown_nvim").setup({
     enable   = true, -- master switch (default on)
     langs    = { "markdown", "md", "mdx", "ascii-markdown", "ascii-md" },
     provider = "auto", -- "auto" | "color_my_ascii" | "builtin"
-    operations = {     -- per-operation opt-out
+    operations = {     -- per-operation opt-out (all on by default)
       toc   = true,
       nav   = true,
       jump  = true,
       shift = true,
-      fold  = false,   -- stretch; off by default
+      fold  = true,    -- scope-aware foldexpr: a `#` inside a non-markdown fence won't fold
     },
   },
 })
@@ -403,7 +403,7 @@ outside, they act on the file but skip every fenced block's interior.
 | `enable` | `true` | Master switch. Off ⇒ every op reverts to its whole-buffer behavior. |
 | `langs` | `{ "markdown", "md", "mdx", "ascii-markdown", "ascii-md" }` | Fence tags that count as a Markdown sub-document. |
 | `provider` | `"auto"` | Fence-detection backend. `"auto"` uses [color_my_ascii](https://github.com/StefanBartl/color_my_ascii.nvim)'s fence API when present, else a built-in scanner. |
-| `operations` | all on except `fold` | Per-op opt-out (`toc`, `nav`, `jump`, `shift`, `fold`). |
+| `operations` | all on | Per-op opt-out (`toc`, `nav`, `jump`, `shift`, `fold`). `fold` makes a `#` inside a non-markdown fence not open a fold. |
 
 ### Toggle at runtime
 

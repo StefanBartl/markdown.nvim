@@ -11,6 +11,7 @@ CONTENTS                                           *markdown.nvim-contents*
      5.1 General options ....... |markdown.nvim-config-general|
      5.2 blockquote_hl ......... |markdown.nvim-config-blockquote|
      5.3 fenced_fix ............ |markdown.nvim-config-fenced-fix|
+     5.4 fenced_scope .......... |markdown.nvim-config-fenced-scope|
   6. Keymaps ................... |markdown.nvim-keymaps|
      6.1 Navigation ............ |markdown.nvim-keymaps-nav|
      6.2 Heading shift ......... |markdown.nvim-keymaps-shift|
@@ -27,6 +28,7 @@ CONTENTS                                           *markdown.nvim-contents*
      7.5 render / preview ...... |:Markdown-render|
      7.6 create ................ |:Markdown-create|
      7.7 headline_spacing ...... |:Markdown-headline-spacing|
+     7.8 scope ................. |:Markdown-scope|
      7.8 Buffer commands ....... |markdown.nvim-buf-commands|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
@@ -233,6 +235,44 @@ The fix also clears `@markup.raw.block` / `@markup.fenced_code.block` so
 that injected language tokens use their own colors rather than a blanket
 single-color overlay. Re-applied automatically on `:colorscheme` changes.
 
+------------------------------------------------------------------------------
+5.4 fenced_scope                        *markdown.nvim-config-fenced-scope*
+>
+  fenced_scope = {
+    enable   = true,
+    langs    = { "markdown", "md", "mdx", "ascii-markdown", "ascii-md" },
+    provider = "auto",   -- "auto" | "color_my_ascii" | "builtin"
+    operations = {
+      toc = true, nav = true, jump = true, shift = true, fold = true,
+    },
+  },
+<
+Treat a markdown-family fenced block as its own document scope. When the
+cursor is inside such a block, the heading-aware operations act on the
+block's interior; when the cursor is outside, they act on the whole file but
+skip every fenced block's interior. On by default.
+
+`enable`     Master switch. When false, every operation reverts to its
+             whole-buffer behavior (turning it off is a true no-op).
+`langs`      Fence tags that count as a markdown sub-document.
+`provider`   Fence-detection backend. "auto" uses color_my_ascii's fence API
+             when installed, otherwise a small built-in scanner. color_my_ascii
+             is a soft dependency; the feature works without it.
+`operations` Per-operation opt-out:
+               toc    Generate/insert the TOC inside the block; outside, the
+                      outer TOC skips fenced interiors.
+               nav    Heading navigation stays within the block; outside, it
+                      jumps over fenced blocks.
+               jump   Anchor jump resolves within the block.
+               shift  Whole-"buffer" heading shift shifts only the block.
+               fold   Scope-aware 'foldexpr': a `#` inside a NON-markdown fence
+                      (e.g. a shell comment) no longer opens a fold.
+
+Toggle at runtime with `:Markdown scope` (see |:Markdown-scope|).
+
+Nesting: to nest a fenced block inside a ```markdown block, the outer fence
+must be longer (CommonMark), e.g. open the outer block with ````markdown.
+
 ==============================================================================
 6. KEYMAPS                                        *markdown.nvim-keymaps*
 
@@ -399,6 +439,7 @@ See |markdown.nvim-tableview| for details.
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
     create             Create files for link targets     |:Markdown-create|
     headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
+    scope              Toggle fenced-block scope         |:Markdown-scope|
 
 ------------------------------------------------------------------------------
 7.2 :Markdown links                                       *:Markdown-links*
@@ -501,7 +542,16 @@ See |markdown.nvim-tableview| for details.
   `ensure_headline_spacing` (see |markdown.nvim-config-general|).
 
 ------------------------------------------------------------------------------
-7.8 Buffer-local commands                        *markdown.nvim-buf-commands*
+7.8 :Markdown scope                                       *:Markdown-scope*
+
+:Markdown scope [on|off|toggle|status]
+
+  Control the fenced-block scope feature at runtime, overriding the
+  `fenced_scope.enable` config (see |markdown.nvim-config-fenced-scope|).
+  With no argument, toggles. `status` reports the current state.
+
+------------------------------------------------------------------------------
+7.9 Buffer-local commands                        *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):

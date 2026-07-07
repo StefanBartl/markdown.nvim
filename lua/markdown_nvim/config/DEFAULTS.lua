@@ -69,7 +69,7 @@ local DEFAULTS = {
       nav   = true,
       jump  = true,
       shift = true,
-      fold  = false, -- stretch: folding is per-line/global, off by default
+      fold  = true, -- scope-aware foldexpr (a `#` inside a non-markdown fence won't fold)
     },
   },
 }
