@@ -31,6 +31,8 @@ end
 local lib_has_win_sep = optional("lib.nvim.cross.fs.separators.has_win_sep")
 local lib_cwd         = optional("lib.nvim.cross.fs._cwd")
 local lib_sep_norm    = optional("lib.nvim.cross.fs.separators.normalize")
+local lib_unify       = optional("lib.nvim.cross.fs.separators.unify_slashes")
+local lib_collapse    = optional("lib.nvim.cross.fs.separators.collapse_dots")
 
 --- True when `p` starts with a Windows drive prefix (`C:/` or `C:\`).
 ---@param p string
@@ -66,6 +68,7 @@ end
 ---@param p string
 ---@return string
 local function to_slashes(p)
+  if lib_unify then return lib_unify(p) end
   return (p:gsub("\\", "/"))
 end
 
@@ -77,12 +80,14 @@ local function is_absolute(p)
   return p:match("^/") ~= nil or has_drive(p)
 end
 
---- Collapse `.`/`..` segments and repeated separators in a slash-form path.
+--- Collapse `.`/`..` segments and repeated separators; returns slash form.
 --- Keeps a leading `/` (POSIX root) and a `C:` drive prefix intact, and never
---- pops past either of them.
+--- pops past either of them. Delegates to lib.nvim; the inline fallback mirrors
+--- `lib.nvim.cross.fs.separators.collapse_dots` exactly.
 ---@param p string
 ---@return string
 local function collapse(p)
+  if lib_collapse then return lib_collapse(p) end
   p = to_slashes(p)
   local leading = p:match("^/") and "/" or ""
   local segs = {}
@@ -91,13 +96,15 @@ local function collapse(p)
       -- drop
     elseif seg == ".." then
       local top = segs[#segs]
-      if #segs > 0 and top ~= ".." and not top:match("^%a:$") then
+      if top and top:match("^%a:$") then
+        -- at a Windows drive root ('C:'): '..' is a no-op, drop it
+      elseif #segs > 0 and top ~= ".." then
         table.remove(segs)
       elseif leading == "" then
         -- relative path climbing above its base: keep the `..`
         table.insert(segs, seg)
       end
-      -- absolute path: a `..` at root is a no-op (drop it)
+      -- POSIX absolute at root: a `..` is a no-op (drop it)
     else
       table.insert(segs, seg)
     end
