@@ -78,24 +78,12 @@ local function is_url(target)
   return target and target:match("^https?://") ~= nil
 end
 
+local path = require("markdown_nvim.util.path")
+
 local function resolve_target_to_path(target)
   if not target then return nil end
   if is_url(target) then return target end
-
-  local expanded = vim.fn.expand(target)
-
-  if M.config.resolve_relative_to_buffer and not expanded:match("^/") and not expanded:match("^%a:[/\\]") then
-    local bufdir = vim.fn.expand("%:p:h")
-    if bufdir and bufdir ~= "" then
-      expanded = vim.fn.fnamemodify(bufdir .. "/" .. expanded, ":p")
-    else
-      expanded = vim.fn.fnamemodify(expanded, ":p")
-    end
-  else
-    expanded = vim.fn.fnamemodify(expanded, ":p")
-  end
-
-  return expanded
+  return path.resolve(target)
 end
 
 local function open_with_system_viewer(path)

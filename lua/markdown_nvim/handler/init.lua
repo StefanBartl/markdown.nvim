@@ -135,21 +135,12 @@ local function search_and_jump_to_fragment(fragment)
   return false
 end
 
+local path = require("markdown_nvim.util.path")
+
 local function resolve_target_path(target)
   if not target then return nil end
   if target:match("^https?://") then return target end
-  local expanded = vim.fn.expand(target)
-  if not expanded:match("^/") and not expanded:match("^%a:[/\\]") then
-    local bufdir = vim.fn.expand("%:p:h")
-    if bufdir and bufdir ~= "" then
-      expanded = vim.fn.fnamemodify(bufdir .. "/" .. expanded, ":p")
-    else
-      expanded = vim.fn.fnamemodify(expanded, ":p")
-    end
-  else
-    expanded = vim.fn.fnamemodify(expanded, ":p")
-  end
-  return expanded
+  return path.resolve(target)
 end
 
 local function open_file_in_current_window(path)
@@ -216,6 +207,10 @@ function M.handle_cursor_action(opts)
     return
   end
 
+  -- External anchor (markdown / HTML link to a file, optionally + #fragment).
+  -- This branch "claims" the line: a resolve/open miss has already notified via
+  -- open_file_in_current_window, so we return instead of cascading into the
+  -- image branch below (which would emit a second, redundant warning).
   local ext = is_html_extern_anchor_line(line)
   if ext and ext.target then
     local target = ext.target
@@ -223,18 +218,16 @@ function M.handle_cursor_action(opts)
     local resolved = resolve_target_path(target)
     if not resolved then
       notify.warn("External anchor: could not resolve target: " .. tostring(target))
-    else
-      local ok = open_file_in_current_window(resolved)
-      if ok then
-        if fragment and fragment ~= "" then
-          local jumped = search_and_jump_to_fragment(fragment)
-          if not jumped then
-            notify.info("External anchor: opened file but anchor '" .. fragment .. "' not found")
-          end
-        end
-        return
+      return
+    end
+    local ok = open_file_in_current_window(resolved)
+    if ok and fragment and fragment ~= "" then
+      local jumped = search_and_jump_to_fragment(fragment)
+      if not jumped then
+        notify.info("External anchor: opened file but anchor '" .. fragment .. "' not found")
       end
     end
+    return
   end
 
   if image.is_image_line(line) then
