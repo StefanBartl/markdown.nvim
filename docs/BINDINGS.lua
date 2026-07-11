@@ -6,64 +6,71 @@
 -- you add or rename a binding there, update the matching entry here.
 --
 -- Structure:
---   plug          — the stable <Plug>(markdown-*) surface (always defined).
+--   actions       — named functions on require("markdown_nvim").actions
+--                   (the implementation surface; bind your own keys to these).
 --   default_keys  — buffer-local defaults, installed on markdown filetypes.
---                     .editing   — setup/keymaps.lua (gated by enable_keymaps
+--                     .editing   — bindings/keymaps.lua (gated by enable_keymaps
 --                                  + the map_* / use_zf_override flags).
---                     .tableview — tableview/mappings.lua.
+--                     .tableview — bindings/keymaps.lua (apply_tableview).
 --   commands      — user commands.
 --                     .markdown      — the global :Markdown dispatcher.
 --                     .buffer_local  — commands created per markdown buffer.
 --   autocmds      — autocommands registered by setup().
 
 return {
-  plug = {
-    { lhs = "<Plug>(markdown-toggle-bold)",        mode = "v",            desc = "Toggle **bold** on selection" },
-    { lhs = "<Plug>(markdown-wrap-link)",          mode = { "n", "v" },   desc = "Wrap word/selection in a Markdown link" },
-    { lhs = "<Plug>(markdown-prev-heading)",       mode = { "n", "v", "x" }, desc = "Previous H2+ heading" },
-    { lhs = "<Plug>(markdown-next-heading)",       mode = { "n", "v", "x" }, desc = "Next H2+ heading" },
-    { lhs = "<Plug>(markdown-prev-heading-level)", mode = "n",            desc = "Previous heading of level {count}" },
-    { lhs = "<Plug>(markdown-next-heading-level)", mode = "n",            desc = "Next heading of level {count}" },
-    { lhs = "<Plug>(markdown-fold-toggle)",        mode = "n",            desc = "Toggle fold under cursor" },
-    { lhs = "<Plug>(markdown-unfold-all)",         mode = "n",            desc = "Unfold all, center" },
-    { lhs = "<Plug>(markdown-fold-prev-heading)",  mode = "n",            desc = "Fold previous heading, center" },
-    { lhs = "<Plug>(markdown-fold-h2plus)",        mode = "n",            desc = "Fold H2+ (keep H1 open)" },
-    { lhs = "<Plug>(markdown-toc)",                mode = "n",            desc = "Insert/refresh TOC ({count} = max level)" },
-    { lhs = "<Plug>(markdown-cursor-action)",      mode = "n",            desc = "Open anchor/image/URL/file under cursor" },
-    { lhs = "<Plug>(markdown-cursor-action-mouse)", mode = "n",           desc = "Same, but silent when nothing is found (mouse-triggered)" },
-    { lhs = "<Plug>(markdown-open-image)",         mode = "n",            desc = "Open image under cursor" },
-    { lhs = "<Plug>(markdown-jump-anchor)",        mode = "n",            desc = "Jump to anchor under cursor" },
-    { lhs = "<Plug>(markdown-heading-inc)",        mode = { "n", "v", "x" }, desc = "Increase heading level ({count} levels)" },
-    { lhs = "<Plug>(markdown-heading-dec)",        mode = { "n", "v", "x" }, desc = "Decrease heading level ({count} levels)" },
-    { lhs = "<Plug>(markdown-heading-inc-all)",    mode = "n",            desc = "Increase all headings in buffer" },
-    { lhs = "<Plug>(markdown-heading-dec-all)",    mode = "n",            desc = "Decrease all headings in buffer" },
+  actions = {
+    { action = "toggle_bold_visual",   mode = "v",               desc = "Toggle **bold** on selection" },
+    { action = "wrap_link_normal",     mode = "n",               desc = "Wrap word under cursor in a Markdown link" },
+    { action = "wrap_link_visual",     mode = "v",               desc = "Wrap selection in a Markdown link" },
+    { action = "prev_heading",         mode = { "n", "v", "x" }, desc = "Previous H2+ heading" },
+    { action = "next_heading",         mode = { "n", "v", "x" }, desc = "Next H2+ heading" },
+    { action = "prev_heading_level",   mode = "n",               desc = "Previous heading of level {count}" },
+    { action = "next_heading_level",   mode = "n",               desc = "Next heading of level {count}" },
+    { action = "fold_toggle",          mode = "n",               desc = "Toggle fold under cursor" },
+    { action = "unfold_all",           mode = "n",               desc = "Unfold all, center" },
+    { action = "fold_prev_heading",    mode = "n",               desc = "Fold previous heading, center" },
+    { action = "fold_h2plus",          mode = "n",               desc = "Fold H2+ (keep H1 open)" },
+    { action = "toc",                  mode = "n",               desc = "Insert/refresh TOC ({count} = max level)" },
+    { action = "cursor_action",        mode = "n",               desc = "Open anchor/image/URL/file under cursor" },
+    { action = "cursor_action_mouse",  mode = "n",               desc = "Same, silent on miss; heading -> fold toggle (mouse)" },
+    { action = "open_image",           mode = "n",               desc = "Open image under cursor" },
+    { action = "jump_anchor",          mode = "n",               desc = "Jump to anchor under cursor" },
+    { action = "heading_inc",          mode = "n",               desc = "Increase heading level ({count} levels)" },
+    { action = "heading_dec",          mode = "n",               desc = "Decrease heading level ({count} levels)" },
+    { action = "heading_inc_visual",   mode = { "v", "x" },      desc = "Increase heading level, selection" },
+    { action = "heading_dec_visual",   mode = { "v", "x" },      desc = "Decrease heading level, selection" },
+    { action = "heading_inc_all",      mode = "n",               desc = "Increase all headings in buffer" },
+    { action = "heading_dec_all",      mode = "n",               desc = "Decrease all headings in buffer" },
   },
 
   default_keys = {
     editing = {
-      { lhs = "**",              mode = "v",               rhs = "<Plug>(markdown-toggle-bold)",        flag = "map_double_asterisk", desc = "Toggle bold" },
-      { lhs = "<leader>[",       mode = { "n", "v" },      rhs = "<Plug>(markdown-wrap-link)",          flag = "map_wrap_link",       desc = "Wrap in link" },
-      { lhs = "<C-p>",           mode = { "n", "v", "x" }, rhs = "<Plug>(markdown-prev-heading)",       desc = "Prev heading" },
-      { lhs = "[[",              mode = "n",               rhs = "<Plug>(markdown-prev-heading)",       desc = "Prev heading" },
-      { lhs = "<C-f>",           mode = { "n", "v", "x" }, rhs = "<Plug>(markdown-next-heading)",       desc = "Next heading" },
-      { lhs = "]]",              mode = "n",               rhs = "<Plug>(markdown-next-heading)",       desc = "Next heading" },
-      { lhs = "<leader><C-p>",   mode = "n",               rhs = "<Plug>(markdown-prev-heading-level)", desc = "Prev heading of level" },
-      { lhs = "<leader><C-f>",   mode = "n",               rhs = "<Plug>(markdown-next-heading-level)", desc = "Next heading of level" },
-      { lhs = "zf",              mode = "n",               rhs = "<Plug>(markdown-fold-toggle)",        flag = "use_zf_override", desc = "Fold toggle" },
-      { lhs = "<localleader>f",  mode = "n",               rhs = "<Plug>(markdown-fold-toggle)",        desc = "Fold toggle" },
-      { lhs = "zu",              mode = "n",               rhs = "<Plug>(markdown-unfold-all)",         desc = "Unfold all" },
-      { lhs = "zi",              mode = "n",               rhs = "<Plug>(markdown-fold-prev-heading)",  desc = "Fold prev heading" },
-      { lhs = "zk",              mode = "n",               rhs = "<Plug>(markdown-fold-h2plus)",        desc = "Fold H2+" },
-      { lhs = "<leader>toc",     mode = "n",               rhs = "<Plug>(markdown-toc)",                desc = "Insert/refresh TOC" },
-      { lhs = "<2-LeftMouse>",   mode = "n",               rhs = "<Plug>(markdown-cursor-action-mouse)", desc = "Cursor action (silent miss)" },
-      { lhs = "<C-LeftMouse>",   mode = "n",               rhs = "<Plug>(markdown-cursor-action-mouse)", desc = "Cursor action (silent miss)" },
-      { lhs = "ma",              mode = "n",               rhs = "<Plug>(markdown-cursor-action)",      desc = "Cursor action" },
-      { lhs = "mi",              mode = "n",               rhs = "<Plug>(markdown-open-image)",         desc = "Open image" },
-      { lhs = "mj",              mode = "n",               rhs = "<Plug>(markdown-jump-anchor)",        desc = "Jump to anchor" },
-      { lhs = "<C-Right>",       mode = { "n", "v", "x" }, rhs = "<Plug>(markdown-heading-inc)",        desc = "Increase heading level" },
-      { lhs = "<C-Left>",        mode = { "n", "v", "x" }, rhs = "<Plug>(markdown-heading-dec)",        desc = "Decrease heading level" },
-      { lhs = "<S-Right>",       mode = "n",               rhs = "<Plug>(markdown-heading-inc-all)",    desc = "Increase all headings" },
-      { lhs = "<S-Left>",        mode = "n",               rhs = "<Plug>(markdown-heading-dec-all)",    desc = "Decrease all headings" },
+      { lhs = "**",              mode = "v",               action = "toggle_bold_visual",  flag = "map_double_asterisk", desc = "Toggle bold" },
+      { lhs = "<leader>[",       mode = "n",               action = "wrap_link_normal",    flag = "map_wrap_link",       desc = "Wrap word in link" },
+      { lhs = "<leader>[",       mode = "v",               action = "wrap_link_visual",    flag = "map_wrap_link",       desc = "Wrap selection in link" },
+      { lhs = "<C-p>",           mode = { "n", "v", "x" }, action = "prev_heading",        desc = "Prev heading" },
+      { lhs = "[[",              mode = "n",               action = "prev_heading",        desc = "Prev heading" },
+      { lhs = "<C-f>",           mode = { "n", "v", "x" }, action = "next_heading",        desc = "Next heading" },
+      { lhs = "]]",              mode = "n",               action = "next_heading",        desc = "Next heading" },
+      { lhs = "<leader><C-p>",   mode = "n",               action = "prev_heading_level",  desc = "Prev heading of level" },
+      { lhs = "<leader><C-f>",   mode = "n",               action = "next_heading_level",  desc = "Next heading of level" },
+      { lhs = "zf",              mode = "n",               action = "fold_toggle",         flag = "use_zf_override", desc = "Fold toggle" },
+      { lhs = "<localleader>f",  mode = "n",               action = "fold_toggle",         desc = "Fold toggle" },
+      { lhs = "zu",              mode = "n",               action = "unfold_all",          desc = "Unfold all" },
+      { lhs = "zi",              mode = "n",               action = "fold_prev_heading",   desc = "Fold prev heading" },
+      { lhs = "zk",              mode = "n",               action = "fold_h2plus",         desc = "Fold H2+" },
+      { lhs = "<leader>toc",     mode = "n",               action = "toc",                 desc = "Insert/refresh TOC" },
+      { lhs = "<2-LeftMouse>",   mode = "n",               action = "cursor_action_mouse", desc = "Cursor action / heading fold (silent miss)" },
+      { lhs = "<C-LeftMouse>",   mode = "n",               action = "cursor_action_mouse", desc = "Cursor action (silent miss)" },
+      { lhs = "ma",              mode = "n",               action = "cursor_action",       desc = "Cursor action" },
+      { lhs = "mi",              mode = "n",               action = "open_image",          desc = "Open image" },
+      { lhs = "mj",              mode = "n",               action = "jump_anchor",         desc = "Jump to anchor" },
+      { lhs = "<C-Right>",       mode = "n",               action = "heading_inc",         desc = "Increase heading level" },
+      { lhs = "<C-Left>",        mode = "n",               action = "heading_dec",         desc = "Decrease heading level" },
+      { lhs = "<C-Right>",       mode = { "v", "x" },      action = "heading_inc_visual",  desc = "Increase heading level (visual)" },
+      { lhs = "<C-Left>",        mode = { "v", "x" },      action = "heading_dec_visual",  desc = "Decrease heading level (visual)" },
+      { lhs = "<S-Right>",       mode = "n",               action = "heading_inc_all",     desc = "Increase all headings" },
+      { lhs = "<S-Left>",        mode = "n",               action = "heading_dec_all",     desc = "Decrease all headings" },
     },
 
     tableview = {
@@ -79,6 +86,7 @@ return {
       { name = "Markdown links show [%|cwd|<file>]",                    desc = "Collect links, pick one, open it" },
       { name = "Markdown links create [-r] [--noignore] [--root <p>] <path>", desc = "Generate links from a dir tree to clipboard" },
       { name = "Markdown toc [level] [--sep|--no-sep]",                desc = "Insert/refresh the TOC" },
+      { name = "Markdown refs [sync|check|live [on|off|toggle]|baseline]", desc = "Sync #anchor links + TOC on heading rename" },
       { name = "Markdown table view [toggle|select|close|browser|browsernice]", desc = "Drive the floating TableView" },
       { name = "Markdown table format [options]",                     desc = "GFM table formatter at cursor/in scope" },
       { name = "Markdown table new [cols] [rows]",                    desc = "Insert an empty GFM table template" },
@@ -103,6 +111,7 @@ return {
     { event = "FileType",     group = "MarkdownNvimKeymaps",      pattern = "markdown/mdx/md/markdown.*", desc = "Install buffer-local keymaps (if enable_keymaps)" },
     { event = "FileType",     group = "MarkdownNvimUserCommands", pattern = "markdown/mdx/md/markdown.*", desc = "Install buffer-local user commands" },
     { event = "FileType",     group = "MarkdownNvimFold",         pattern = "markdown/mdx/md/markdown.*", desc = "Set foldmethod=expr + fold options" },
+    { event = "FileType/BufWritePre/TextChanged", group = "MarkdownNvimRefs", pattern = "markdown/mdx/md/markdown.*", desc = "refs sync per config.refs.mode (off|save|live)" },
     { event = "BufWritePost", group = "(tableview.live)",         pattern = "markdown",                   desc = "Live table preview refresh" },
     { event = "ColorScheme",  group = "(hl_options)",             pattern = "*",                          desc = "Re-apply blockquote / fenced-code highlights" },
   },

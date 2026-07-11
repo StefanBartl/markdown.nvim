@@ -266,17 +266,18 @@ part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 
 ### Remapping / disabling
 
-Every action is exposed as a stable `<Plug>(markdown-*)` mapping (see
+Every action is a plain function on `require("markdown_nvim").actions` (see
 [docs/BINDINGS.md](docs/BINDINGS.md) for the full list). To use your own keys,
-set `enable_keymaps = false` and bind against the `<Plug>` names — the surface
-stays available even with the defaults off:
+set `enable_keymaps = false` and bind the functions directly — no `<Plug>`
+indirection:
 
 ```lua
 require("markdown_nvim").setup({ enable_keymaps = false })
 
-vim.keymap.set("n", "<C-n>", "<Plug>(markdown-next-heading)")
-vim.keymap.set("n", "<C-p>", "<Plug>(markdown-prev-heading)")
-vim.keymap.set("n", "gO",    "<Plug>(markdown-toc)")
+local a = require("markdown_nvim").actions
+vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
+vim.keymap.set("n", "<C-p>", a.prev_heading, { desc = "Prev heading" })
+vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 ```
 
 If [which-key](https://github.com/folke/which-key.nvim) is installed, the
@@ -533,13 +534,14 @@ lua/markdown_nvim/
     links.lua              :Markdown links show|create
     markdown_links.lua     directory-to-link generator (links create)
     toc.lua                :Markdown toc (TOC + separators)
+    refs.lua               :Markdown refs sync|check|live|baseline
     table.lua              :Markdown table view|format|new
     render.lua             :Markdown render (render-markdown.nvim)
     preview.lua            :Markdown preview (markdown-preview.nvim)
     create.lua             :Markdown create fs
   bindings/                all keymaps, user commands and autocmds live here
     init.lua               orchestrator: setup(cfg)
-    plugs.lua              <Plug>(markdown-*) surface
+    actions.lua            named editing actions (public via .actions)
     keymaps.lua            buffer-local default keys (editing + TableView)
     usrcmds.lua            :Markdown + OpenWith + TableView* command registration
     autocmds.lua           FileType / BufWritePost drivers

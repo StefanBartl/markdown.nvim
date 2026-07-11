@@ -322,15 +322,16 @@ must be longer (CommonMark), e.g. open the outer block with ````markdown.
 All keymaps are buffer-local and installed only for Markdown filetypes.
 None of the keys are mapped globally.
 
-Every action is also exposed as a stable `<Plug>(markdown-*)` mapping. To use
-your own keys, set `enable_keymaps = false` and bind against the `<Plug>` names
-(the surface stays available even with the defaults off): >
+Every action is a plain function on `require("markdown_nvim").actions`. To use
+your own keys, set `enable_keymaps = false` and bind the functions directly
+(no `<Plug>` indirection): >
 
     require("markdown_nvim").setup({ enable_keymaps = false })
-    vim.keymap.set("n", "<C-n>", "<Plug>(markdown-next-heading)")
-    vim.keymap.set("n", "gO",    "<Plug>(markdown-toc)")
+    local a = require("markdown_nvim").actions
+    vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
+    vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 <
-The full list of `<Plug>` names lives in `docs/BINDINGS.md`. If which-key is
+The full list of action names lives in `docs/BINDINGS.md`. If which-key is
 installed, the `<leader>t` prefix is labelled "Markdown" automatically.
 
 ------------------------------------------------------------------------------

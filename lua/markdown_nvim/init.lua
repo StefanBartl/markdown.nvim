@@ -29,6 +29,13 @@ end
 
 -- Public façade -----------------------------------------------------------
 
+--- Named editing actions for manual remapping (no `<Plug>` layer). E.g.:
+---   vim.keymap.set("n", "<F2>", require("markdown_nvim").actions.fold_toggle,
+---     { buffer = true, desc = "Fold toggle" })
+M.actions = setmetatable({}, {
+  __index = function(_, k) return require("markdown_nvim.bindings.actions")[k] end,
+})
+
 M.foldexpr           = function(lnum) return require("markdown_nvim.core.fold").foldexpr(lnum) end
 M.goto_prev_heading  = function() require("markdown_nvim.core.headings").goto_prev_heading() end
 M.goto_next_heading  = function() require("markdown_nvim.core.headings").goto_next_heading() end
