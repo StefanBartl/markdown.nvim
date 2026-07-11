@@ -40,18 +40,28 @@ function M.open(target)
     end
   end
 
-  local esc = vim.fn.shellescape(target)
+  -- Fallback: launch with a LIST argv so the call bypasses 'shell' entirely.
+  -- The previous string form went through &shell + vim.fn.shellescape, which
+  -- breaks on Windows when shell=pwsh (single-quoted path that cmd's `start`
+  -- cannot parse). A list argv needs no shell-specific quoting.
   local os = M.os()
-  local cmd
+  local argv
   if os == "windows" then
-    cmd = string.format('cmd /C start "" %s', esc)
+    -- Empty "" is the (required) window title for `start` when the target may
+    -- contain spaces; cmd.exe is invoked directly, not via the user's shell.
+    argv = { "cmd.exe", "/c", "start", "", target }
   elseif os == "macos" then
-    cmd = string.format("open %s", esc)
+    argv = { "open", target }
   else
-    cmd = string.format("xdg-open %s", esc)
+    argv = { "xdg-open", target }
   end
 
-  local ok, jid = pcall(vim.fn.jobstart, cmd, { detach = true })
+  if vim.system then
+    local ok = pcall(vim.system, argv, { detach = true })
+    if ok then return true end
+  end
+
+  local ok, jid = pcall(vim.fn.jobstart, argv, { detach = true })
   if not ok or jid == 0 or jid == -1 then
     return false, "failed to launch system opener for: " .. target
   end
