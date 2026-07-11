@@ -43,6 +43,14 @@ local DEFAULTS = {
   -- Empty by default (every binding uses its documented default key).
   keymaps = {},
 
+  -- Default style for the floating TableView (`:Markdown table view toggle` /
+  -- <leader>tvt). "markdown" = aligned GFM table; "box" = Unicode box-drawing
+  -- "spreadsheet" grid. The explicit `view markdown` / `view box` actions (and
+  -- <leader>tvx) always override this default.
+  tableview = {
+    style = "markdown", -- "markdown" | "box"
+  },
+
   -- `:Markdown links show` picker backend: "hover_select" | "select"
   -- ("select" uses vim.ui.select; telescope/fzf can be added later).
   links = {

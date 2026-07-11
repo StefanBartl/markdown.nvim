@@ -145,6 +145,13 @@ require("markdown_nvim").setup({
     underline = false,
   },
 
+  -- Default float style for :Markdown table view toggle / <leader>tvt.
+  -- "markdown" = aligned GFM table; "box" = Unicode spreadsheet grid. The
+  -- explicit `view markdown` / `view box` actions always override this.
+  tableview = {
+    style = "markdown", -- "markdown" | "box"
+  },
+
   -- Keep [text](#anchor) links + the TOC in sync when headings are renamed.
   -- Manual :Markdown refs sync|check work regardless of mode; `mode` only
   -- governs AUTOMATIC runs.
@@ -402,7 +409,7 @@ The single namespace for every table action — preview, format, and a focused,
 dependency-free reimplementation of the vim-table-mode essentials.
 
 ```vim
-:Markdown table view [toggle|box|select|close|browser|browsernice]
+:Markdown table view [toggle|markdown|box|select|close|browser|browsernice]
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
@@ -410,9 +417,10 @@ dependency-free reimplementation of the vim-table-mode essentials.
 ```
 
 - **view** renders the table under the cursor in a nicely formatted preview.
-  Styles: `toggle` (aligned Markdown, the default), `box` (a Unicode
-  box-drawing "spreadsheet" grid), `browser` / `browsernice` (open as basic /
-  GitHub-styled HTML in the system browser). `select` picks a table from a list;
+  `toggle` uses the configured default style (`tableview.style`, default
+  `markdown`); `markdown` / `box` force the aligned-Markdown or Unicode
+  box-drawing "spreadsheet" style; `browser` / `browsernice` open it as basic /
+  GitHub-styled HTML in the system browser. `select` picks a table from a list;
   `close` closes the float (also `q` / `<Esc>` inside it).
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope.

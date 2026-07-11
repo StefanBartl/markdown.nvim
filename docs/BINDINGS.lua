@@ -77,7 +77,7 @@ return {
     },
 
     tableview = {
-      { lhs = "<leader>tvt", mode = "n", cmd = "TableViewToggle",     desc = "Toggle table preview (Markdown style)" },
+      { lhs = "<leader>tvt", mode = "n", cmd = "TableViewToggle",     desc = "Toggle table preview (config default style)" },
       { lhs = "<leader>tvx", mode = "n", cmd = "TableViewBox",        desc = "Toggle table preview (box-drawing style)" },
       { lhs = "<leader>tvs", mode = "n", cmd = "TableViewSelect",     desc = "Select and preview table" },
       { lhs = "<leader>tvb", mode = "n", cmd = "TableViewOpenBrowser", desc = "Open table in browser (basic HTML)" },
@@ -92,7 +92,7 @@ return {
       { name = "Markdown links create [-r] [--noignore] [--root <p>] <path>", desc = "Generate links from a dir tree to clipboard" },
       { name = "Markdown toc [level] [--sep|--no-sep]",                desc = "Insert/refresh the TOC" },
       { name = "Markdown refs [sync|check|live [on|off|toggle]|baseline]", desc = "Sync #anchor links + TOC on heading rename" },
-      { name = "Markdown table view [toggle|box|select|close|browser|browsernice]", desc = "Render table preview (md/box float or HTML in browser)" },
+      { name = "Markdown table view [toggle|markdown|box|select|close|browser|browsernice]", desc = "Render table preview (md/box float or HTML in browser)" },
       { name = "Markdown table format [options]",                     desc = "GFM table formatter at cursor/in scope" },
       { name = "Markdown table new [cols] [rows]",                    desc = "Insert an empty GFM table template" },
       { name = "Markdown table mode [on|off|toggle]",                 desc = "Per-buffer table auto-format (vim-table-mode style)" },
@@ -106,7 +106,8 @@ return {
 
     buffer_local = {
       { name = "OpenWithSystemApplication",  desc = "Same as 'ma' — open target under cursor" },
-      { name = "TableViewToggle",            desc = "Toggle floating table preview (Markdown style)" },
+      { name = "TableViewToggle",            desc = "Toggle floating table preview (config default style)" },
+      { name = "TableViewMarkdown",          desc = "Toggle floating table preview (aligned Markdown style)" },
       { name = "TableViewBox",               desc = "Toggle floating table preview (box-drawing style)" },
       { name = "TableViewSelect",            desc = "Pick a table from the buffer" },
       { name = "TableViewClose",             desc = "Close floating preview" },

@@ -129,6 +129,7 @@ All keys are optional. Unset keys use the defaults shown below.
     ft_only                = true,
     ensure_headline_spacing = true,
     keymaps = {},  -- per-binding disable/remap by id (see |markdown.nvim-keymaps|)
+    tableview = { style = "markdown" },  -- default float style: "markdown" | "box"
     link_hl = { underline = false },
     refs = {
       mode        = "save",   -- "off" | "save" | "live"
@@ -210,6 +211,14 @@ All keys are optional. Unset keys use the defaults shown below.
   `underline = false` (default) that underline is stripped from the
   `markdown_inline` link groups only (other filetypes are untouched). Set to
   `true` to restore the built-in behaviour.
+
+`tableview`                                   *markdown.nvim-config-tableview*
+  Default float style for `:Markdown table view toggle` / <leader>tvt. >
+    tableview = { style = "markdown" }   -- "markdown" | "box"
+<
+  "markdown" is the aligned GFM table; "box" is a Unicode box-drawing
+  "spreadsheet" grid. The explicit `view markdown` / `view box` actions (and
+  <leader>tvx) always override this default. See |:Markdown-table|.
 
 `menu`                                             *markdown.nvim-config-menu*
   Context-aware entries for nvzone/menu (soft, opt-in). markdown.nvim does not
@@ -624,13 +633,14 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 ------------------------------------------------------------------------------
 7.5 :Markdown table                                       *:Markdown-table*
 
-:Markdown table view [toggle|box|select|close|browser|browsernice]
+:Markdown table view [toggle|markdown|box|select|close|browser|browsernice]
 
   Render the table under the cursor in a nicely formatted preview (see
-  |markdown.nvim-tableview|). Styles: `toggle` (aligned Markdown, default),
-  `box` (a Unicode box-drawing "spreadsheet" grid), `browser` / `browsernice`
-  (open as basic / GitHub-styled HTML in the browser). `select` picks a table
-  from a list; `close` closes the float (also `q` / `<Esc>`).
+  |markdown.nvim-tableview|). `toggle` uses the configured default style
+  (`tableview.style`, default "markdown"); `markdown` / `box` force the
+  aligned-Markdown or Unicode box-drawing "spreadsheet" style; `browser` /
+  `browsernice` open it as basic / GitHub-styled HTML in the browser. `select`
+  picks a table from a list; `close` closes the float (also `q` / `<Esc>`).
 
 :Markdown table format [options]
 

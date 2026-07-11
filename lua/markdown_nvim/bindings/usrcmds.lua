@@ -73,38 +73,37 @@ function M.apply_tableview(ev)
   local browser_view_nice    = require("markdown_nvim.tableview.views.browser_niceified")
   local table_selector       = require("markdown_nvim.tableview.views.table_selector")
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewToggle", function(_)
+  -- The table spanning the cursor row, or nil (with a notification).
+  local function table_at_cursor()
     local line = api.nvim_win_get_cursor(0)[1]
-    local tables = parser.get_tables(bufnr)
-    local chosen = nil
-    for _, t in ipairs(tables) do
+    for _, t in ipairs(parser.get_tables(bufnr)) do
       if t.start_line <= line and line <= (t.end_line or t.start_line) then
-        chosen = t
-        break
+        return t
       end
     end
-    if not chosen then
-      notify.info("No table under cursor")
-      return
-    end
-    ui.toggle_table(chosen, { floating = true })
-  end, { desc = "[markdown.nvim] Toggle preview for table under cursor", nargs = 0 })
+    notify.info("No table under cursor")
+    return nil
+  end
+
+  -- Resolved default float style ("markdown" | "box"), from config.tableview.
+  local function default_style()
+    local cfg = require("markdown_nvim.config").get()
+    return (cfg.tableview and cfg.tableview.style) or "markdown"
+  end
+
+  api.nvim_buf_create_user_command(bufnr, "TableViewToggle", function(_)
+    local chosen = table_at_cursor()
+    if chosen then ui.toggle_table(chosen, { floating = true, style = default_style() }) end
+  end, { desc = "[markdown.nvim] Toggle preview for table under cursor (config style)", nargs = 0 })
+
+  api.nvim_buf_create_user_command(bufnr, "TableViewMarkdown", function(_)
+    local chosen = table_at_cursor()
+    if chosen then ui.toggle_table(chosen, { floating = true, style = "markdown" }) end
+  end, { desc = "[markdown.nvim] Toggle aligned-Markdown table preview at cursor", nargs = 0 })
 
   api.nvim_buf_create_user_command(bufnr, "TableViewBox", function(_)
-    local line = api.nvim_win_get_cursor(0)[1]
-    local tables = parser.get_tables(bufnr)
-    local chosen = nil
-    for _, t in ipairs(tables) do
-      if t.start_line <= line and line <= (t.end_line or t.start_line) then
-        chosen = t
-        break
-      end
-    end
-    if not chosen then
-      notify.info("No table under cursor")
-      return
-    end
-    ui.toggle_table(chosen, { floating = true, style = "box" })
+    local chosen = table_at_cursor()
+    if chosen then ui.toggle_table(chosen, { floating = true, style = "box" }) end
   end, { desc = "[markdown.nvim] Toggle box-drawing table preview at cursor", nargs = 0 })
 
   api.nvim_buf_create_user_command(bufnr, "TableViewSelect", function()

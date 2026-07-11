@@ -13,6 +13,7 @@ local M = {}
 
 local VIEW_ACTIONS = {
   toggle      = "TableViewToggle",
+  markdown    = "TableViewMarkdown",
   box         = "TableViewBox",
   select      = "TableViewSelect",
   close       = "TableViewClose",
