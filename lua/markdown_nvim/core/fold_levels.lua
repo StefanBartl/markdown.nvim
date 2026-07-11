@@ -16,25 +16,39 @@ local function compute_foldlevel(levels_to_fold)
   return math.max(0, min_fold - 1)
 end
 
-function M.fold_levels(levels_to_fold)
-  if vim.bo.filetype ~= "markdown" then return end
-  local buf = api.nvim_get_current_buf()
-  if not (buf and api.nvim_buf_is_valid(buf)) then return end
-
+--- Set the window 'foldlevel' to `n` and reapply folds, preserving the view.
+---@param n integer
+local function apply_foldlevel(n)
   vim.opt_local.foldmethod = "expr"
   vim.opt_local.foldenable = true
-
-  local lvl = compute_foldlevel(levels_to_fold)
-  vim.opt_local.foldlevel = lvl
-  vim.opt_local.foldlevelstart = lvl
-
+  vim.opt_local.foldlevel = n
+  vim.opt_local.foldlevelstart = n
   local view = fn.winsaveview()
   cmd("silent! normal! zx")
   fn.winrestview(view)
 end
 
+function M.fold_levels(levels_to_fold)
+  if vim.bo.filetype ~= "markdown" then return end
+  local buf = api.nvim_get_current_buf()
+  if not (buf and api.nvim_buf_is_valid(buf)) then return end
+  apply_foldlevel(compute_foldlevel(levels_to_fold))
+end
+
+--- Toggle an "outline" view: keep H1 and H2 visible and fold everything below
+--- (H3+). Running it again unfolds all. `foldlevel = 2` closes folds whose level
+--- is > 2 (i.e. H3, H4, …) while H1/H2 folds stay open.
 function M.fold_h2_plus()
-  M.fold_levels({ 2, 3, 4, 5, 6 })
+  if vim.bo.filetype ~= "markdown" then return end
+  local buf = api.nvim_get_current_buf()
+  if not (buf and api.nvim_buf_is_valid(buf)) then return end
+
+  local cur = vim.wo.foldlevel or 99
+  if cur <= 2 then
+    apply_foldlevel(99) -- currently folded to the outline (or deeper) → unfold all
+  else
+    apply_foldlevel(2)  -- fold below H2 (keep H1/H2 open)
+  end
 end
 
 return M

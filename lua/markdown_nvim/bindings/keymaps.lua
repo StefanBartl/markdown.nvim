@@ -45,7 +45,7 @@ local DEFAULT_KEYMAPS = {
   { id = "fold_toggle",          mode = "n",               lhs = "<localleader>f", action = "fold_toggle",         desc = "Fold toggle" },
   { id = "unfold_all",           mode = "n",               lhs = "zu",             action = "unfold_all",          desc = "Unfold all" },
   { id = "fold_prev_heading",    mode = "n",               lhs = "zi",             action = "fold_prev_heading",   desc = "Fold prev heading" },
-  { id = "fold_h2plus",          mode = "n",               lhs = "zk",             action = "fold_h2plus",         desc = "Fold H2+" },
+  { id = "fold_h2plus",          mode = "n",               lhs = "zk",             action = "fold_h2plus",         desc = "Fold below H2 (toggle outline)" },
   { id = "toc",                  mode = "n",               lhs = "<leader>toc",    action = "toc",                 feature = "toc", desc = "Insert/refresh TOC" },
   { id = "cursor_action_2click", mode = "n",               lhs = "<2-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action / heading fold" },
   { id = "cursor_action_cclick", mode = "n",               lhs = "<C-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action" },

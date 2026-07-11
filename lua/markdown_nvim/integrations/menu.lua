@@ -36,9 +36,9 @@ function M.items(opts)
 
   -- Fold controls — only meaningful on a heading (or when forced).
   if mcfg.fold ~= false and (opts.force_fold or on_heading()) then
-    items[#items + 1] = { name = "Fold / Unfold Heading", cmd = actions.fold_toggle,  rtxt = "za" }
-    items[#items + 1] = { name = "Fold H2+",              cmd = actions.fold_h2plus,  rtxt = "zk" }
-    items[#items + 1] = { name = "Unfold All",            cmd = actions.unfold_all,   rtxt = "zu" }
+    items[#items + 1] = { name = "Fold / Unfold Heading",   cmd = actions.fold_toggle,  rtxt = "za" }
+    items[#items + 1] = { name = "Fold below H2 (toggle)",  cmd = actions.fold_h2plus,  rtxt = "zk" }
+    items[#items + 1] = { name = "Unfold All",              cmd = actions.unfold_all,   rtxt = "zu" }
   end
 
   -- Document-level actions (always available in a markdown buffer).

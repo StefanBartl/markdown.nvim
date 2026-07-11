@@ -216,7 +216,7 @@ All keys are optional. Unset keys use the defaults shown below.
   depend on a menu plugin; it provides entries and a host composes them. >
     menu = { enable = true, fold = true, toc = true, refs = true }
 <
-  The fold entries (Fold/Unfold Heading, Fold H2+, Unfold All) appear only when
+  The fold entries (Fold/Unfold Heading, Fold below H2 toggle, Unfold All) appear only when
   the cursor is on a heading; TOC and refs entries are always available. Get the
   entries from `require("markdown_nvim.integrations.menu").items()` (inline
   list) or `.submenu()` (a single fly-out), and compose into your menu, e.g.
@@ -431,7 +431,7 @@ Notes:
   <localleader>f      n     Toggle fold under cursor + center
   zu                  n     Unfold all, center
   zi                  n     Fold previous heading then center
-  zk                  n     Fold H2+ headings (keep H1 open)
+  zk                  n     Toggle outline: fold below H2 (keep H1+H2) / unfold
 
 See also |markdown.nvim-foldexpr|.
 
@@ -788,7 +788,8 @@ Helper functions:
     Open all folds (`zR`) and center the view.
 
   `require("markdown_nvim.core.fold_levels").fold_h2_plus()`
-    Fold all H2+ headings (equivalent to `set foldlevel=1`).
+    Toggle an outline view: fold everything below H2 (H3+, `foldlevel=2`),
+    keeping H1 and H2 open; running it again unfolds all.
 
   `require("markdown_nvim.core.fold_levels").fold_levels({2,3,4})`
     Fold the specified heading levels.

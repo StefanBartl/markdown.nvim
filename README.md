@@ -265,7 +265,7 @@ A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>`).
 | `zf` / `<localleader>f` | n | Toggle fold under cursor |
 | `zu` | n | Unfold all, center |
 | `zi` | n | Fold previous heading then center |
-| `zk` | n | Fold H2+ (keep H1 open) |
+| `zk` | n | Fold below H2 / unfold — toggle outline (keep H1 + H2 open) |
 
 Use `set foldmethod=expr foldexpr=v:lua.require('markdown_nvim').foldexpr(v:lnum)`
 in your config, or let the plugin handle it via the FileType autocmd.
@@ -542,7 +542,7 @@ and opt-out via `config.menu`:
 ```lua
 menu = {
   enable = true,
-  fold   = true, -- Fold/Unfold Heading, Fold H2+, Unfold All (only on a heading)
+  fold   = true, -- Fold/Unfold Heading, Fold below H2 (toggle), Unfold All (on a heading)
   toc    = true, -- Insert/Refresh TOC
   refs   = true, -- Sync References
 }
