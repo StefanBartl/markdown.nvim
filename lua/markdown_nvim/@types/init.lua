@@ -67,7 +67,13 @@
 ---@field orphans Mkdn.RefsOrphans # Whether to report links whose #anchor matches no heading.
 ---@field toc_header string # TOC header line to detect/refresh.
 
+---@class Mkdn.FeaturesConfig
+---@field disable? "all"|string[] # Turn off every gateable feature ("all") or the listed ones.
+---@field enable? string[] # Re-enable features (applied after `disable`).
+---@field just_enable? string[] # Hard allowlist: only these features on; wins over disable/enable.
+
 ---@class Mkdn.Config
+---@field features Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
 ---@field map_double_asterisk boolean # Map `**` in visual mode to toggle bold.
 ---@field map_wrap_link boolean # Map `<leader>[` to wrap the word/selection in a link.
 ---@field keep_inner_selection boolean # After toggling bold, keep the inner text selected.

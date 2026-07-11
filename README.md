@@ -102,6 +102,9 @@ Full reference with defaults:
 
 ```lua
 require("markdown_nvim").setup({
+  -- Feature gating (see "Feature gating" below). Empty = everything on.
+  features = {},
+
   -- Toggle ** mapping in visual mode
   map_double_asterisk    = true,
 
@@ -201,6 +204,32 @@ require("markdown_nvim").setup({
   },
 })
 ```
+
+### Feature gating
+
+Reduce the plugin to a subset without unsetting each option, via `features`:
+
+```lua
+require("markdown_nvim").setup({
+  features = {
+    -- disable = "all"                    -- turn every gateable feature off
+    -- disable = { "tableview", "refs" }  -- turn off just these
+    -- enable  = { "table" }              -- re-enable (applied after disable)
+    just_enable = { "table", "toc" },     -- hard allowlist: ONLY these run
+  },
+})
+```
+
+Precedence: `just_enable` (if set) wins — only the listed features are on,
+everything else off. Otherwise the resolver starts all-on, applies `disable`,
+then re-applies `enable`. Unknown names emit a warning.
+
+Gateable features: `keymaps`, `fold`, `hl`, `link_hl`, `fenced_fix`,
+`fenced_scope`, `tableview`, `refs`, and the `:Markdown` subcommand features
+`links`, `toc`, `table`, `render`, `preview`, `create`, `headline_spacing`,
+`scope`. A disabled subcommand drops out of completion and reports if invoked;
+disabled keymaps/autocmds are never installed. (The legacy `enable_keymaps` /
+`enable_autocmds` flags still work alongside this.)
 
 ---
 

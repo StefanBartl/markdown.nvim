@@ -33,6 +33,14 @@ function M.execute(argv, ctx)
     return
   end
 
+  -- Feature gate: subcommand names double as feature names (links, toc, table,
+  -- render, preview, create, headline_spacing, scope, refs). A disabled feature
+  -- reports instead of running.
+  if not require("markdown_nvim.config").feature_enabled(command) then
+    notify.warn(string.format("Markdown %s: feature disabled via features config", command))
+    return
+  end
+
   table.remove(argv, 1)
   fn(argv, ctx)
 end
@@ -61,9 +69,10 @@ function M.complete(arglead, cmdline, _cursorpos)
     return sub_complete[first](arglead, cmdline)
   end
 
+  local feat = require("markdown_nvim.config").feature_enabled
   local result = {}
   for name in pairs(commands) do
-    if vim.startswith(name, arglead) then
+    if vim.startswith(name, arglead) and feat(name) then
       result[#result + 1] = name
     end
   end

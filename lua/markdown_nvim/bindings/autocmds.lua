@@ -42,37 +42,40 @@ end
 ---@return nil
 function M.setup(cfg)
   local ftpat = { "markdown", "mdx", "md", "markdown.*" }
+  local feat = require("markdown_nvim.config").feature_enabled
 
-  -- Always: TableView buffer-local maps + commands.
-  local aug_tv = api.nvim_create_augroup("MarkdownNvimTableView", { clear = true })
-  api.nvim_create_autocmd("FileType", {
-    group = aug_tv,
-    pattern = ftpat,
-    callback = function(ev)
-      pcall(function()
-        keymaps().apply_tableview(ev.buf)
-        usrcmds().apply_tableview(ev)
-      end)
-    end,
-    desc = "[markdown.nvim] Install buffer-local TableView maps & commands",
-  })
+  -- TableView buffer-local maps + commands (+ live-preview refresh). Gated by
+  -- the "tableview" feature.
+  if feat("tableview") then
+    local aug_tv = api.nvim_create_augroup("MarkdownNvimTableView", { clear = true })
+    api.nvim_create_autocmd("FileType", {
+      group = aug_tv,
+      pattern = ftpat,
+      callback = function(ev)
+        pcall(function()
+          keymaps().apply_tableview(ev.buf)
+          usrcmds().apply_tableview(ev)
+        end)
+      end,
+      desc = "[markdown.nvim] Install buffer-local TableView maps & commands",
+    })
 
-  -- Always: TableView live-preview refresh on save.
-  local aug_live = api.nvim_create_augroup("MarkdownNvimTableViewLive", { clear = true })
-  api.nvim_create_autocmd("BufWritePost", {
-    group = aug_live,
-    pattern = { "*.md", "*.markdown", "*.mdx" },
-    callback = function(ev)
-      local live = require("markdown_nvim.tableview.live")
-      if live.is_running() then live.regenerate(ev.buf) end
-    end,
-    desc = "[markdown.nvim] Regenerate TableView live preview on save",
-  })
+    local aug_live = api.nvim_create_augroup("MarkdownNvimTableViewLive", { clear = true })
+    api.nvim_create_autocmd("BufWritePost", {
+      group = aug_live,
+      pattern = { "*.md", "*.markdown", "*.mdx" },
+      callback = function(ev)
+        local live = require("markdown_nvim.tableview.live")
+        if live.is_running() then live.regenerate(ev.buf) end
+      end,
+      desc = "[markdown.nvim] Regenerate TableView live preview on save",
+    })
+  end
 
   -- Reference sync automatic triggers (independent opt-in via config.refs.mode).
   -- "off" installs nothing; the manual :Markdown refs commands still work.
   local refs_mode = (cfg.refs and cfg.refs.mode) or "off"
-  if refs_mode == "save" or refs_mode == "live" then
+  if feat("refs") and (refs_mode == "save" or refs_mode == "live") then
     local aug_refs = api.nvim_create_augroup("MarkdownNvimRefs", { clear = true })
 
     -- Snapshot heading anchors when a markdown buffer opens, so later reconciles
@@ -151,6 +154,7 @@ function M.setup(cfg)
       pattern = ftpat,
       callback = function(ev)
         if not is_md(vim.bo[ev.buf].filetype) then return end
+        if not feat("fold") then return end
         vim.opt_local.foldmethod     = "expr"
         vim.opt_local.foldexpr       = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
         vim.opt_local.foldenable     = true

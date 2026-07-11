@@ -12,6 +12,7 @@ CONTENTS                                           *markdown.nvim-contents*
      5.2 blockquote_hl ......... |markdown.nvim-config-blockquote|
      5.3 fenced_fix ............ |markdown.nvim-config-fenced-fix|
      5.4 fenced_scope .......... |markdown.nvim-config-fenced-scope|
+     5.5 features (gating) ..... |markdown.nvim-config-features|
   6. Keymaps ................... |markdown.nvim-keymaps|
      6.1 Navigation ............ |markdown.nvim-keymaps-nav|
      6.2 Heading shift ......... |markdown.nvim-keymaps-shift|
@@ -117,6 +118,7 @@ All keys are optional. Unset keys use the defaults shown below.
 5.1 General options                          *markdown.nvim-config-general*
 >
   require("markdown_nvim").setup({
+    features = {},  -- feature gating; see |markdown.nvim-config-features|
     map_double_asterisk    = true,
     map_wrap_link          = true,
     keep_inner_selection   = true,
@@ -316,6 +318,33 @@ Toggle at runtime with `:Markdown scope` (see |:Markdown-scope|).
 
 Nesting: to nest a fenced block inside a ```markdown block, the outer fence
 must be longer (CommonMark), e.g. open the outer block with ````markdown.
+
+------------------------------------------------------------------------------
+5.5 features (gating)                       *markdown.nvim-config-features*
+
+Reduce the plugin to a subset without unsetting each option. >
+
+    require("markdown_nvim").setup({
+      features = {
+        -- disable = "all"                    -- turn every feature off
+        -- disable = { "tableview", "refs" }  -- turn off just these
+        -- enable  = { "table" }              -- re-enable (after disable)
+        just_enable = { "table", "toc" },     -- ONLY these run
+      },
+    })
+<
+Precedence: `just_enable` (if set) wins — only the listed features stay on and
+everything else is off. Otherwise the resolver starts all-on, applies
+`disable`, then re-applies `enable`. Unknown names emit a warning.
+
+Gateable feature names (also returned by `require("markdown_nvim.config")
+.features()`):
+    keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
+    links  toc  table  render  preview  create  headline_spacing  scope
+
+A disabled `:Markdown` subcommand drops out of completion and reports if
+invoked; disabled keymaps and autocmds are never installed. The legacy
+`enable_keymaps` / `enable_autocmds` flags still work alongside this gating.
 
 ==============================================================================
 6. KEYMAPS                                        *markdown.nvim-keymaps*

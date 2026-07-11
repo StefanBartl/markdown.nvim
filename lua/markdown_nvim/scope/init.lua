@@ -38,6 +38,10 @@ local backend = nil
 --- Whether the fenced-scope feature is active.
 ---@return boolean
 function M.enabled()
+  -- Hard gate: the "fenced_scope" feature can be turned off entirely.
+  if not require("markdown_nvim.config").feature_enabled("fenced_scope") then
+    return false
+  end
   if runtime_enable ~= nil then return runtime_enable end
   local c = cfg().fenced_scope
   return not (c and c.enable == false)

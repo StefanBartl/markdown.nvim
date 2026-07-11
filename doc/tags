@@ -19,6 +19,7 @@ markdown.nvim-buf-commands	markdown.nvim.txt	/*markdown.nvim-buf-commands*
 markdown.nvim-commands	markdown.nvim.txt	/*markdown.nvim-commands*
 markdown.nvim-config	markdown.nvim.txt	/*markdown.nvim-config*
 markdown.nvim-config-blockquote	markdown.nvim.txt	/*markdown.nvim-config-blockquote*
+markdown.nvim-config-features	markdown.nvim.txt	/*markdown.nvim-config-features*
 markdown.nvim-config-fenced-fix	markdown.nvim.txt	/*markdown.nvim-config-fenced-fix*
 markdown.nvim-config-fenced-scope	markdown.nvim.txt	/*markdown.nvim-config-fenced-scope*
 markdown.nvim-config-general	markdown.nvim.txt	/*markdown.nvim-config-general*

@@ -7,6 +7,14 @@
 
 ---@type Mkdn.Config
 local DEFAULTS = {
+  -- Feature gating. Reduce the plugin to a subset without unsetting each flag:
+  --   disable = "all"                    -- turn every gateable feature off
+  --   disable = { "tableview", "refs" }  -- turn off just these
+  --   enable  = { "table" }              -- re-enable (applied after disable)
+  --   just_enable = { "table", "toc" }   -- hard allowlist: ONLY these on
+  -- just_enable wins over disable/enable. See config.features() for the names.
+  features = {},
+
   map_double_asterisk    = true,
   map_wrap_link          = true,
   keep_inner_selection   = true,

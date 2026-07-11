@@ -16,12 +16,17 @@ function M.setup(opts)
   cfg_mod.setup(opts or {})
   local cfg = cfg_mod.get()
 
-  -- HL options (blockquote + ColorScheme)
-  require("markdown_nvim.hl_options").setup(cfg)
+  -- HL options (blockquote + link_hl + ColorScheme). Each part is gated
+  -- internally by its feature ("hl" / "link_hl").
+  if cfg_mod.feature_enabled("hl") or cfg_mod.feature_enabled("link_hl") then
+    require("markdown_nvim.hl_options").setup(cfg)
+  end
 
   -- Fenced-code fix (inline code / fenced block highlights)
-  local ff_opts = cfg.fenced_fix or {}
-  require("markdown_nvim.fenced_fix").setup(ff_opts)
+  if cfg_mod.feature_enabled("fenced_fix") then
+    local ff_opts = cfg.fenced_fix or {}
+    require("markdown_nvim.fenced_fix").setup(ff_opts)
+  end
 
   -- All keymaps, user commands and autocmds (see markdown_nvim.bindings).
   require("markdown_nvim.bindings").setup(cfg)
