@@ -38,6 +38,7 @@ effects on non-Markdown buffers.
 | **handler** | Double-click / `<C-LeftMouse>` / `ma`: open TOC links, HTML anchors, images; URLs in browser; media/binary in system app; text files via `:edit` |
 | **tableview** | Floating Markdown table browser; HTML export (basic + styled) |
 | **table\_fmt** | GFM table formatter (align columns, normalize separators) — self-contained |
+| **table\_mode** | Auto-format table mode, `tableize`, cell motions — a dependency-free vim-table-mode core |
 | **link\_scan** | Collect every link in a line/buffer; powers `:Markdown links show` and `create fs` |
 | **fenced\_scope** | Treat a ` ```markdown ` / `md` / `mdx` block as its own sub-document: TOC, heading nav, anchor jump and shift scope to the block your cursor is in (see below) |
 | **:Markdown** | Unified command: `links`, `toc`, `refs`, `table`, `render`, `preview`, `create`, `headline_spacing`, `scope` |
@@ -339,6 +340,8 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvs` | n | Select table from list |
 | `<leader>tvb` | n | Open table in browser (basic HTML) |
 | `<leader>tvc` | n | Close TableView float |
+| `<leader>tvm` | n | Toggle table mode (auto-format) |
+| `]\|` / `[\|` | n | Next / previous table cell |
 
 ---
 
@@ -394,14 +397,30 @@ automatic runs). The manual commands work regardless. Live mode is debounced by
 
 ### `:Markdown table`
 
+The single namespace for every table action — preview, format, and a focused,
+dependency-free reimplementation of the vim-table-mode essentials.
+
 ```vim
 :Markdown table view [toggle|select|close|browser|browsernice]
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
+:Markdown table mode [on|off|toggle]    " auto-format the table you're editing
+:Markdown table tableize [delimiter]    " turn delimited text into a GFM table
 ```
 
-`view` drives the floating TableView (defaults to `toggle`). `format` runs the
-self-contained GFM formatter on the table at the cursor / in scope.
+- **view** drives the floating TableView (defaults to `toggle`).
+- **format** runs the self-contained GFM formatter on the table at the cursor /
+  in scope.
+- **mode** turns on per-buffer *table mode*: after each edit inside a table it is
+  re-aligned automatically (debounced, on `InsertLeave` / `TextChanged`), reusing
+  the same alignment as `format`.
+- **tableize** converts the current line (or a `:'<,'>` visual range) of
+  delimited text into a GFM table — the delimiter is auto-detected (tab, comma,
+  or runs of 2+ spaces) or given explicitly (`:Markdown table tableize ";"`).
+
+Cell motions `[|` / `]|` jump to the previous / next cell on the current row.
+Everything lives under the `table` feature, and stays available when only the
+`tableview` feature is enabled, so the table stack works standalone.
 
 ### `:Markdown render` / `:Markdown preview`
 
@@ -585,6 +604,8 @@ lua/markdown_nvim/
     wrap_link.lua          <leader>[ wrap word/selection in a link
     link_scan.lua          collect links from a line/buffer
     table_fmt.lua          GFM table formatter (self-contained)
+    table_mode.lua         auto-format mode, tableize, cell motions
+    slug.lua               shared GFM slug + anchor map (toc + refs)
     headline_spacing/
       init.lua             ensure blank-dash-blank between H2+ sections (+ final closer)
   anchor/

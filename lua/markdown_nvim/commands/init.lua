@@ -3,6 +3,24 @@ local M = {}
 
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.commands]")
 
+-- A subcommand name usually equals its gating feature; a few map to several
+-- (enabled if ANY is on). Keeps "just enable tableview" == full table surface.
+local SUBCOMMAND_FEATURES = {
+  table = { "table", "tableview" },
+}
+
+--- Whether the `:Markdown <command>` subcommand is enabled by feature gating.
+---@param command string
+---@return boolean
+local function command_feature_enabled(command)
+  local feat = require("markdown_nvim.config").feature_enabled
+  local names = SUBCOMMAND_FEATURES[command] or { command }
+  for _, n in ipairs(names) do
+    if feat(n) then return true end
+  end
+  return false
+end
+
 local commands = {
   links             = require("markdown_nvim.commands.links").run,
   toc               = require("markdown_nvim.commands.toc").run,
@@ -35,8 +53,10 @@ function M.execute(argv, ctx)
 
   -- Feature gate: subcommand names double as feature names (links, toc, table,
   -- render, preview, create, headline_spacing, scope, refs). A disabled feature
-  -- reports instead of running.
-  if not require("markdown_nvim.config").feature_enabled(command) then
+  -- reports instead of running. `table` is available under either the "table"
+  -- or "tableview" feature so enabling just tableview keeps the whole table
+  -- surface (view/format/new/mode/tableize) working standalone.
+  if not command_feature_enabled(command) then
     notify.warn(string.format("Markdown %s: feature disabled via features config", command))
     return
   end
@@ -69,10 +89,9 @@ function M.complete(arglead, cmdline, _cursorpos)
     return sub_complete[first](arglead, cmdline)
   end
 
-  local feat = require("markdown_nvim.config").feature_enabled
   local result = {}
   for name in pairs(commands) do
-    if vim.startswith(name, arglead) and feat(name) then
+    if vim.startswith(name, arglead) and command_feature_enabled(name) then
       result[#result + 1] = name
     end
   end

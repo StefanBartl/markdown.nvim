@@ -72,6 +72,8 @@ return {
       { id = "heading_dec_visual",   lhs = "<C-Left>",       mode = { "v", "x" },      action = "heading_dec_visual",  desc = "Decrease heading level (visual)" },
       { id = "heading_inc_all",      lhs = "<S-Right>",      mode = "n",               action = "heading_inc_all",     desc = "Increase all headings" },
       { id = "heading_dec_all",      lhs = "<S-Left>",       mode = "n",               action = "heading_dec_all",     desc = "Decrease all headings" },
+      { id = "table_next_cell",      lhs = "]|",             mode = "n",               action = "table_next_cell",     feature = "table", desc = "Next table cell" },
+      { id = "table_prev_cell",      lhs = "[|",             mode = "n",               action = "table_prev_cell",     feature = "table", desc = "Prev table cell" },
     },
 
     tableview = {
@@ -79,6 +81,7 @@ return {
       { lhs = "<leader>tvs", mode = "n", cmd = "TableViewSelect",     desc = "Select and preview table" },
       { lhs = "<leader>tvb", mode = "n", cmd = "TableViewOpenBrowser", desc = "Open table in browser (basic HTML)" },
       { lhs = "<leader>tvc", mode = "n", cmd = "TableViewClose",      desc = "Close TableView" },
+      { lhs = "<leader>tvm", mode = "n", cmd = "Markdown table mode toggle", desc = "Toggle table mode (auto-format)" },
     },
   },
 
@@ -91,6 +94,8 @@ return {
       { name = "Markdown table view [toggle|select|close|browser|browsernice]", desc = "Drive the floating TableView" },
       { name = "Markdown table format [options]",                     desc = "GFM table formatter at cursor/in scope" },
       { name = "Markdown table new [cols] [rows]",                    desc = "Insert an empty GFM table template" },
+      { name = "Markdown table mode [on|off|toggle]",                 desc = "Per-buffer table auto-format (vim-table-mode style)" },
+      { name = "Markdown table tableize [delimiter]",                 desc = "Convert delimited text (range) into a GFM table" },
       { name = "Markdown render [on|off|toggle]",                     desc = "render-markdown.nvim wrapper (optional host)" },
       { name = "Markdown preview [start|stop|toggle]",                desc = "markdown-preview.nvim wrapper (optional host)" },
       { name = "Markdown create fs",                                  desc = "Create files/dirs for local link targets" },

@@ -92,4 +92,10 @@ end
 function M.heading_inc_all() shift_all(vim.v.count1) end
 function M.heading_dec_all() shift_all(-vim.v.count1) end
 
+-- Table (mode / cell motions) -----------------------------------------------
+
+function M.table_next_cell()   require("markdown_nvim.core.table_mode").next_cell() end
+function M.table_prev_cell()   require("markdown_nvim.core.table_mode").prev_cell() end
+function M.table_mode_toggle() require("markdown_nvim.core.table_mode").toggle() end
+
 return M

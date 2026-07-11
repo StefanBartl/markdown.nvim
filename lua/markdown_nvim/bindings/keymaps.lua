@@ -58,6 +58,8 @@ local DEFAULT_KEYMAPS = {
   { id = "heading_dec_visual",   mode = { "v", "x" },      lhs = "<C-Left>",       action = "heading_dec_visual",  desc = "Decrease heading level (visual)" },
   { id = "heading_inc_all",      mode = "n",               lhs = "<S-Right>",      action = "heading_inc_all",     desc = "Increase all headings" },
   { id = "heading_dec_all",      mode = "n",               lhs = "<S-Left>",       action = "heading_dec_all",     desc = "Decrease all headings" },
+  { id = "table_next_cell",      mode = "n",               lhs = "]|",             action = "table_next_cell",     feature = "table", desc = "Next table cell" },
+  { id = "table_prev_cell",      mode = "n",               lhs = "[|",             action = "table_prev_cell",     feature = "table", desc = "Prev table cell" },
 }
 
 --- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.
@@ -124,6 +126,7 @@ function M.apply_tableview(bufnr)
   map(bufnr, "n", "<leader>tvs", "<Cmd>TableViewSelect<CR>", "Select and preview table")
   map(bufnr, "n", "<leader>tvb", "<Cmd>TableViewOpenBrowser<CR>", "Open table in browser")
   map(bufnr, "n", "<leader>tvc", "<Cmd>TableViewClose<CR>", "Close TableView")
+  map(bufnr, "n", "<leader>tvm", "<Cmd>Markdown table mode toggle<CR>", "Toggle table auto-format mode")
 end
 
 return M

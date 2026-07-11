@@ -63,6 +63,48 @@ end
 -- new  (insert an empty GFM table template)
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- mode  (per-buffer auto-format, vim-table-mode style)
+-- ---------------------------------------------------------------------------
+
+local function do_mode(argv)
+  local tm = require("markdown_nvim.core.table_mode")
+  local action = (argv[1] or "toggle"):lower()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if action == "on" then
+    tm.enable(bufnr); notify.info("Table mode: on")
+  elseif action == "off" then
+    tm.disable(bufnr); notify.info("Table mode: off")
+  elseif action == "toggle" then
+    notify.info("Table mode: " .. (tm.toggle(bufnr) and "on" or "off"))
+  else
+    notify.warn("table mode: expected on|off|toggle")
+  end
+end
+
+-- ---------------------------------------------------------------------------
+-- tableize  (delimited text -> GFM table)
+-- ---------------------------------------------------------------------------
+
+local function do_tableize(argv, ctx)
+  local tm = require("markdown_nvim.core.table_mode")
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  -- Use the command's range when given (:'<,'> or :N,M), else the current line.
+  local line1, line2
+  if ctx and ctx.range and ctx.range > 0 then
+    line1, line2 = ctx.line1, ctx.line2
+  else
+    line1 = vim.api.nvim_win_get_cursor(0)[1]
+    line2 = line1
+  end
+
+  local delim = argv[1] -- optional explicit delimiter ("," / ";" / "tab" / …)
+  local ok, err = tm.tableize(bufnr, line1, line2, delim)
+  if ok then notify.info("Tableized " .. (line2 - line1 + 1) .. " line(s)")
+  else notify.warn(err or "tableize failed") end
+end
+
 local function do_new(argv)
   local cols = math.max(1, tonumber(argv[1] or 2) or 2)
   local rows = math.max(1, tonumber(argv[2] or 2) or 2)
@@ -91,22 +133,25 @@ end
 -- ---------------------------------------------------------------------------
 
 local subcommands = {
-  view   = do_view,
-  format = do_format,
-  new    = do_new,
+  view     = do_view,
+  format   = do_format,
+  new      = do_new,
+  mode     = do_mode,
+  tableize = do_tableize,
 }
 
 ---@param argv string[]
-function M.run(argv)
+---@param ctx? table  forwarded command context (range/line1/line2)
+function M.run(argv, ctx)
   argv = argv or {}
   local sub = argv[1]
   local fn = sub and subcommands[sub]
   if not fn then
-    notify.info("Usage: :Markdown table <view|format|new> ...")
+    notify.info("Usage: :Markdown table <view|format|new|mode|tableize> ...")
     return
   end
   table.remove(argv, 1)
-  fn(argv)
+  fn(argv, ctx)
 end
 
 ---@param arglead string
@@ -128,6 +173,13 @@ function M.complete(arglead, cmdline)
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     table.sort(out)
+    return out
+  end
+  if sub == "mode" and on_args then
+    local out = {}
+    for _, name in ipairs({ "on", "off", "toggle" }) do
+      if vim.startswith(name, arglead) then out[#out + 1] = name end
+    end
     return out
   end
 

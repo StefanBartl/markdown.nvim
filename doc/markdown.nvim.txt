@@ -58,7 +58,7 @@ Included subsystems:
   * Blockquote coloring via matchadd
   * Anchor / URL / image / file handler on double-click or `ma`
   * Floating Markdown table browser with HTML export
-  * GFM table formatter (`:Markdown table format`)
+  * GFM table stack: formatter, auto-format table mode, tableize, cell motions
   * Unified `:Markdown` command: links, toc, table, render, preview,
     create, headline_spacing
 
@@ -513,8 +513,11 @@ Link (`<leader>[`):
   <leader>tvs   n     Open table selector (list of all tables in buffer)
   <leader>tvb   n     Export table at cursor as basic HTML, open in browser
   <leader>tvc   n     Close TableView floating window
+  <leader>tvm   n     Toggle table mode (auto-format on edit)
+  ]|            n     Jump to the next cell on the current table row
+  [|            n     Jump to the previous cell on the current table row
 
-See |markdown.nvim-tableview| for details.
+See |markdown.nvim-tableview| and |:Markdown-table| for details.
 
 ==============================================================================
 7. COMMANDS                                      *markdown.nvim-commands*
@@ -533,7 +536,7 @@ See |markdown.nvim-tableview| for details.
     links              Show or generate Markdown links  |:Markdown-links|
     toc                Insert/refresh the TOC           |:Markdown-toc|
     refs               Sync #anchor links + TOC          |:Markdown-refs|
-    table              Table view / format / new        |:Markdown-table|
+    table              view/format/new/mode/tableize    |:Markdown-table|
     render             Toggle render-markdown.nvim       |:Markdown-render|
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
     create             Create files for link targets     |:Markdown-create|
@@ -634,6 +637,24 @@ See |markdown.nvim-tableview| for details.
 
   Insert an empty GFM table template with the given dimensions
   (defaults apply when omitted).
+
+:Markdown table mode [on|off|toggle]
+
+  Per-buffer table mode: a focused, dependency-free take on vim-table-mode.
+  While on, the table under the cursor is re-aligned automatically after each
+  edit (debounced, on InsertLeave / TextChanged), reusing the `format`
+  alignment. Also mapped to <leader>tvm.
+
+:Markdown table tableize [delimiter]
+
+  Convert delimited text into a GFM table. Operates on the command's range
+  (`:'<,'>` or `:N,M`) or the current line. The delimiter is auto-detected
+  (tab, comma, or runs of 2+ spaces) or given explicitly, e.g.
+  `:Markdown table tableize ";"`. The result is alignment-formatted.
+
+  Cell motions `]|` / `[|` jump to the next / previous cell on the current row.
+  The whole table surface lives under the `table` feature and stays available
+  when only `tableview` is enabled (see |markdown.nvim-config-features|).
 
 ------------------------------------------------------------------------------
 7.6 :Markdown render / preview                            *:Markdown-render*
