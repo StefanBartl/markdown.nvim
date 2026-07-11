@@ -25,6 +25,16 @@ local DEFAULTS = {
   ft_only                = true,
   ensure_headline_spacing = true,
 
+  -- nvzone/menu integration (opt-in on the host side; entries provided by
+  -- markdown_nvim.integrations.menu). Per-entry opt-out; set enable = false to
+  -- provide no entries at all. See :help markdown.nvim (menu) if documented.
+  menu = {
+    enable = true,
+    fold   = true, -- fold/unfold entries (only shown on a heading)
+    toc    = true, -- Insert/Refresh TOC
+    refs   = true, -- Sync References
+  },
+
   -- Per-binding keymap control, keyed by the stable ids in
   -- markdown_nvim.bindings.keymaps.defaults(). Each value may be:
   --   false                         -> disable this binding

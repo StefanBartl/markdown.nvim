@@ -24,6 +24,7 @@ markdown.nvim-config-fenced-fix	markdown.nvim.txt	/*markdown.nvim-config-fenced-
 markdown.nvim-config-fenced-scope	markdown.nvim.txt	/*markdown.nvim-config-fenced-scope*
 markdown.nvim-config-general	markdown.nvim.txt	/*markdown.nvim-config-general*
 markdown.nvim-config-link-hl	markdown.nvim.txt	/*markdown.nvim-config-link-hl*
+markdown.nvim-config-menu	markdown.nvim.txt	/*markdown.nvim-config-menu*
 markdown.nvim-config-refs	markdown.nvim.txt	/*markdown.nvim-config-refs*
 markdown.nvim-contents	markdown.nvim.txt	/*markdown.nvim-contents*
 markdown.nvim-foldexpr	markdown.nvim.txt	/*markdown.nvim-foldexpr*

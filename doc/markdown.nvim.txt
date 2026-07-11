@@ -211,6 +211,17 @@ All keys are optional. Unset keys use the defaults shown below.
   `markdown_inline` link groups only (other filetypes are untouched). Set to
   `true` to restore the built-in behaviour.
 
+`menu`                                             *markdown.nvim-config-menu*
+  Context-aware entries for nvzone/menu (soft, opt-in). markdown.nvim does not
+  depend on a menu plugin; it provides entries and a host composes them. >
+    menu = { enable = true, fold = true, toc = true, refs = true }
+<
+  The fold entries (Fold/Unfold Heading, Fold H2+, Unfold All) appear only when
+  the cursor is on a heading; TOC and refs entries are always available. Get the
+  entries from `require("markdown_nvim.integrations.menu").items()` (inline
+  list) or `.submenu()` (a single fly-out), and compose into your menu, e.g.
+  `require("menu").open(vim.list_extend(md.items(), require("menus.custom")))`.
+
 `refs`                                             *markdown.nvim-config-refs*
   Keep in-document `[text](#anchor)` links and the TOC in sync when headings
   are renamed (see |:Markdown-refs|). >

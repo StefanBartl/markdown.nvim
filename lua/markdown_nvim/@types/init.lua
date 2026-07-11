@@ -54,6 +54,12 @@
 ---   * `{ lhs?: string, mode?: string|string[] }`  remap lhs and/or mode
 ---@alias Mkdn.KeymapOverride boolean|string|{ lhs?: string, mode?: string|string[] }
 
+---@class Mkdn.MenuConfig
+---@field enable boolean # Provide nvzone/menu entries at all. Default true.
+---@field fold boolean # Include fold/unfold entries (shown on a heading). Default true.
+---@field toc boolean # Include the Insert/Refresh TOC entry. Default true.
+---@field refs boolean # Include the Sync References entry. Default true.
+
 ---@class Mkdn.LinkHL
 ---@field underline boolean # Keep the treesitter underline on inline-link URLs/labels. Default false.
 
@@ -89,6 +95,7 @@
 ---@field blockquote_hl Mkdn.BlockquoteHL
 ---@field fenced_fix Mkdn.FencedFix
 ---@field fenced_scope Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
+---@field menu Mkdn.MenuConfig # nvzone/menu integration entries (opt-out).
 ---@field link_hl Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
 ---@field refs Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
 
