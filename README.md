@@ -40,7 +40,7 @@ effects on non-Markdown buffers.
 | **table\_fmt** | GFM table formatter (align columns, normalize separators) — self-contained |
 | **link\_scan** | Collect every link in a line/buffer; powers `:Markdown links show` and `create fs` |
 | **fenced\_scope** | Treat a ` ```markdown ` / `md` / `mdx` block as its own sub-document: TOC, heading nav, anchor jump and shift scope to the block your cursor is in (see below) |
-| **:Markdown** | Unified command: `links`, `toc`, `table`, `render`, `preview`, `create`, `headline_spacing`, `scope` |
+| **:Markdown** | Unified command: `links`, `toc`, `refs`, `table`, `render`, `preview`, `create`, `headline_spacing`, `scope` |
 
 ---
 
@@ -129,6 +129,24 @@ require("markdown_nvim").setup({
   -- Default on: TOC refresh also ensures [blank]---[blank] between H2+ sections
   -- (including a closing separator after the last section)
   ensure_headline_spacing = true,
+
+  -- Inline-link highlight tweaks. Neovim's markdown treesitter underlines link
+  -- URLs; long URLs then draw a full-width underline across the wrapped line.
+  -- Default off; set underline = true to restore the built-in behaviour.
+  link_hl = {
+    underline = false,
+  },
+
+  -- Keep [text](#anchor) links + the TOC in sync when headings are renamed.
+  -- Manual :Markdown refs sync|check work regardless of mode; `mode` only
+  -- governs AUTOMATIC runs.
+  refs = {
+    mode        = "off",   -- "off" | "save" (on BufWritePre) | "live" (debounced)
+    debounce_ms = 2000,    -- live-mode debounce; 1500–3000 is a sane range
+    update_toc  = true,    -- refresh an existing TOC block on sync (never force-creates)
+    orphans     = "report",-- "report" surfaces #anchor links with no heading; "ignore" skips
+    toc_header  = "## Table of content",
+  },
 
   -- :Markdown links show — picker backend: "hover_select" | "select"
   links = {
@@ -305,6 +323,24 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
 Insert/refresh the TOC. `level` caps the max heading depth. By default the
 headline separators are applied too (per `ensure_headline_spacing`); override
 per-call with `--sep` / `--no-sep`.
+
+### `:Markdown refs`
+
+Keep in-document `[text](#anchor)` links and the TOC consistent when headings
+are renamed. Heading identity is tracked with extmarks (plus a positional
+fallback), so a rename is detected as `old-anchor → new-anchor` and propagated
+to every inline link and the TOC.
+
+```vim
+:Markdown refs sync                 " reconcile now: propagate renames + refresh TOC + report orphans
+:Markdown refs check                " dry run: list broken #anchor links in the quickfix list
+:Markdown refs live [on|off|toggle] " per-buffer debounced live tracking
+:Markdown refs baseline             " re-snapshot heading anchors (reset rename tracking)
+```
+
+Automatic runs are opt-in via `refs.mode` (`"off"` | `"save"` | `"live"`); the
+manual commands work regardless. Live mode is debounced by `refs.debounce_ms`
+(default 2000 ms) to keep it off the hot path.
 
 ### `:Markdown table`
 

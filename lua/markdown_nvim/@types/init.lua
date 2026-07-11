@@ -47,6 +47,19 @@
 ---@field provider Mkdn.FencedScopeProvider # Fence-detection backend. "auto" prefers color_my_ascii, falls back to the built-in scanner.
 ---@field operations Mkdn.FencedScopeOps # Per-operation opt-out.
 
+---@class Mkdn.LinkHL
+---@field underline boolean # Keep the treesitter underline on inline-link URLs/labels. Default false.
+
+---@alias Mkdn.RefsMode "off"|"save"|"live"
+---@alias Mkdn.RefsOrphans "report"|"ignore"
+
+---@class Mkdn.RefsConfig
+---@field mode Mkdn.RefsMode # Automatic sync trigger. Manual commands work regardless.
+---@field debounce_ms integer # Live-mode debounce in ms (generous; 1500–3000 sane).
+---@field update_toc boolean # Refresh an existing TOC block on sync (never force-creates).
+---@field orphans Mkdn.RefsOrphans # Whether to report links whose #anchor matches no heading.
+---@field toc_header string # TOC header line to detect/refresh.
+
 ---@class Mkdn.Config
 ---@field map_double_asterisk boolean # Map `**` in visual mode to toggle bold.
 ---@field map_wrap_link boolean # Map `<leader>[` to wrap the word/selection in a link.
@@ -62,6 +75,8 @@
 ---@field blockquote_hl Mkdn.BlockquoteHL
 ---@field fenced_fix Mkdn.FencedFix
 ---@field fenced_scope Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
+---@field link_hl Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
+---@field refs Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
 
 -- #####################################################################
 -- core/link_scan.lua

@@ -52,6 +52,26 @@ local DEFAULTS = {
     underline = false,
   },
 
+  -- Reference sync: keep `[text](#anchor)` links and the TOC consistent when
+  -- headings are renamed. The manual `:Markdown refs sync` / `:Markdown refs
+  -- check` commands work regardless of mode; `mode` only governs AUTOMATIC runs.
+  refs = {
+    -- "off"  — no automatic sync (manual commands only)
+    -- "save" — reconcile on BufWritePre
+    -- "live" — reconcile debounced after edits (see debounce_ms)
+    mode        = "off",
+    -- Live-mode debounce (ms). Deliberately generous: a rename is rare and a
+    -- full buffer scan is cheap, but we never want to run it on every keystroke.
+    -- 1500–3000 is a sane range.
+    debounce_ms = 2000,
+    -- Refresh an existing TOC block during a sync (never force-creates one).
+    update_toc  = true,
+    -- "report" surfaces links whose #anchor matches no heading; "ignore" skips.
+    orphans     = "report",
+    -- TOC header line to detect/refresh (matches the toc command default).
+    toc_header  = "## Table of content",
+  },
+
   fenced_fix = {
     inline_base_hl = { "DiagnosticWarn", "Special", "Constant", "String" },
     inline_style   = { italic = false, bold = false },

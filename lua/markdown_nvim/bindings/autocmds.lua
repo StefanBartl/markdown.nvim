@@ -69,6 +69,56 @@ function M.setup(cfg)
     desc = "[markdown.nvim] Regenerate TableView live preview on save",
   })
 
+  -- Reference sync automatic triggers (independent opt-in via config.refs.mode).
+  -- "off" installs nothing; the manual :Markdown refs commands still work.
+  local refs_mode = (cfg.refs and cfg.refs.mode) or "off"
+  if refs_mode == "save" or refs_mode == "live" then
+    local aug_refs = api.nvim_create_augroup("MarkdownNvimRefs", { clear = true })
+
+    -- Snapshot heading anchors when a markdown buffer opens, so later reconciles
+    -- can detect renames relative to this baseline.
+    api.nvim_create_autocmd("FileType", {
+      group = aug_refs,
+      pattern = ftpat,
+      callback = function(ev)
+        if not is_md(vim.bo[ev.buf].filetype) then return end
+        pcall(function() require("markdown_nvim.core.refs").attach(ev.buf) end)
+      end,
+      desc = "[markdown.nvim] refs: baseline heading anchors",
+    })
+
+    if refs_mode == "save" then
+      api.nvim_create_autocmd("BufWritePre", {
+        group = aug_refs,
+        pattern = { "*.md", "*.markdown", "*.mdx" },
+        callback = function(ev)
+          pcall(function() require("markdown_nvim.core.refs").reconcile(ev.buf, { silent = true }) end)
+        end,
+        desc = "[markdown.nvim] refs: sync on save",
+      })
+    else -- "live"
+      api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+        group = aug_refs,
+        pattern = ftpat,
+        callback = function(ev)
+          if not is_md(vim.bo[ev.buf].filetype) then return end
+          pcall(function() require("markdown_nvim.core.refs").on_change(ev.buf) end)
+        end,
+        desc = "[markdown.nvim] refs: debounced live sync",
+      })
+    end
+
+    -- Clean up timers/extmarks when a tracked buffer is wiped.
+    api.nvim_create_autocmd("BufWipeout", {
+      group = aug_refs,
+      pattern = { "*.md", "*.markdown", "*.mdx" },
+      callback = function(ev)
+        pcall(function() require("markdown_nvim.core.refs").detach(ev.buf) end)
+      end,
+      desc = "[markdown.nvim] refs: teardown",
+    })
+  end
+
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
     local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })

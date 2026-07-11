@@ -6,6 +6,7 @@ local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.comma
 local commands = {
   links             = require("markdown_nvim.commands.links").run,
   toc               = require("markdown_nvim.commands.toc").run,
+  refs              = require("markdown_nvim.commands.refs").run,
   table             = require("markdown_nvim.commands.table").run,
   render            = require("markdown_nvim.commands.render").run,
   preview           = require("markdown_nvim.commands.preview").run,
@@ -39,6 +40,7 @@ end
 -- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
 local sub_complete = {
   links   = function(arglead) return require("markdown_nvim.commands.links").complete(arglead) end,
+  refs    = function(arglead, cmdline) return require("markdown_nvim.commands.refs").complete(arglead, cmdline) end,
   table   = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
   render  = function(arglead) return require("markdown_nvim.commands.render").complete(arglead) end,
   preview = function(arglead) return require("markdown_nvim.commands.preview").complete(arglead) end,

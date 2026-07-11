@@ -29,14 +29,8 @@ end
 -- `{3,}`), so three-or-more is spelled out explicitly.
 local FENCE_LINE = "^%s*[`~][`~][`~]+%S*%s*$"
 
-local function slugify_gfm(title)
-  local s = title:lower()
-  s = s:gsub("%s+", "-")
-  s = s:gsub("[^%w%-%_]", "")
-  s = s:gsub("%-+", "-")
-  s = s:gsub("^[-_]+", ""):gsub("[-_]+$", "")
-  return s
-end
+-- Shared with core.refs so generated anchors and repaired links never drift.
+local slugify_gfm = require("markdown_nvim.core.slug").gfm
 
 local function is_empty_line(line)
   return not line or line:match("^%s*$") ~= nil
