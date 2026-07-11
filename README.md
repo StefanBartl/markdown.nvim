@@ -130,6 +130,10 @@ require("markdown_nvim").setup({
   -- (including a closing separator after the last section)
   ensure_headline_spacing = true,
 
+  -- Per-binding keymap control by id (see "Remapping / disabling" and
+  -- docs/BINDINGS.md). false disables; a string or { lhs, mode } remaps.
+  keymaps = {},
+
   -- Inline-link highlight tweaks. Neovim's markdown treesitter underlines link
   -- URLs; long URLs then draw a full-width underline across the wrapped line.
   -- Default off; set underline = true to restore the built-in behaviour.
@@ -266,17 +270,32 @@ part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 
 ### Remapping / disabling
 
-Every action is a plain function on `require("markdown_nvim").actions` (see
-[docs/BINDINGS.md](docs/BINDINGS.md) for the full list). To use your own keys,
-set `enable_keymaps = false` and bind the functions directly — no `<Plug>`
-indirection:
+**Per-binding, in config (recommended).** Every default key has a stable `id`
+(see the `editing` list in [docs/BINDINGS.md](docs/BINDINGS.md)). Set
+`keymaps[id]` to disable or remap just that one — everything else keeps its
+default:
 
 ```lua
-require("markdown_nvim").setup({ enable_keymaps = false })
+require("markdown_nvim").setup({
+  keymaps = {
+    jump_anchor = false,            -- disable this binding entirely
+    toc         = "<leader>T",      -- remap to a new key (same mode)
+    fold_toggle = { lhs = "<F2>" }, -- table form; may also override `mode`
+  },
+})
+```
 
+`enable_keymaps = false` still turns off **all** default keys at once. The
+legacy flags (`map_double_asterisk`, `map_wrap_link`, `use_zf_override`) keep
+working too.
+
+**Free-form, against the actions API.** Every action is also a plain function
+on `require("markdown_nvim").actions`, so you can bind anything by hand — no
+`<Plug>` indirection:
+
+```lua
 local a = require("markdown_nvim").actions
 vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
-vim.keymap.set("n", "<C-p>", a.prev_heading, { desc = "Prev heading" })
 vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 ```
 

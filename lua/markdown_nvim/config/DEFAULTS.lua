@@ -17,6 +17,14 @@ local DEFAULTS = {
   ft_only                = true,
   ensure_headline_spacing = true,
 
+  -- Per-binding keymap control, keyed by the stable ids in
+  -- markdown_nvim.bindings.keymaps.defaults(). Each value may be:
+  --   false                         -> disable this binding
+  --   "<newlhs>"                    -> remap to a new key (same mode)
+  --   { lhs = "<newlhs>", mode = … } -> remap key and/or mode
+  -- Empty by default (every binding uses its documented default key).
+  keymaps = {},
+
   -- `:Markdown links show` picker backend: "hover_select" | "select"
   -- ("select" uses vim.ui.select; telescope/fzf can be added later).
   links = {

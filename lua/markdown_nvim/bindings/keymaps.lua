@@ -27,68 +27,82 @@ local function map(bufnr, mode, lhs, rhs, desc)
   end
 end
 
+-- Default editing keymaps as DATA, each with a stable `id` the user config can
+-- target. `flag` (optional) is a legacy boolean option that still gates the
+-- binding when set to false. Order defines application order.
+---@type { id: string, mode: string|string[], lhs: string, action: string, flag?: string, desc: string }[]
+local DEFAULT_KEYMAPS = {
+  { id = "toggle_bold",          mode = "v",               lhs = "**",             action = "toggle_bold_visual",  flag = "map_double_asterisk", desc = "Toggle bold" },
+  { id = "wrap_link_n",          mode = "n",               lhs = "<leader>[",      action = "wrap_link_normal",    flag = "map_wrap_link",       desc = "Wrap word in link" },
+  { id = "wrap_link_v",          mode = "v",               lhs = "<leader>[",      action = "wrap_link_visual",    flag = "map_wrap_link",       desc = "Wrap selection in link" },
+  { id = "prev_heading",         mode = { "n", "v", "x" }, lhs = "<C-p>",          action = "prev_heading",        desc = "Prev heading" },
+  { id = "prev_heading_bracket", mode = "n",               lhs = "[[",             action = "prev_heading",        desc = "Prev heading" },
+  { id = "next_heading",         mode = { "n", "v", "x" }, lhs = "<C-f>",          action = "next_heading",        desc = "Next heading" },
+  { id = "next_heading_bracket", mode = "n",               lhs = "]]",             action = "next_heading",        desc = "Next heading" },
+  { id = "prev_heading_level",   mode = "n",               lhs = "<leader><C-p>",  action = "prev_heading_level",  desc = "Prev heading of level" },
+  { id = "next_heading_level",   mode = "n",               lhs = "<leader><C-f>",  action = "next_heading_level",  desc = "Next heading of level" },
+  { id = "fold_toggle_zf",       mode = "n",               lhs = "zf",             action = "fold_toggle",         flag = "use_zf_override",     desc = "Fold toggle" },
+  { id = "fold_toggle",          mode = "n",               lhs = "<localleader>f", action = "fold_toggle",         desc = "Fold toggle" },
+  { id = "unfold_all",           mode = "n",               lhs = "zu",             action = "unfold_all",          desc = "Unfold all" },
+  { id = "fold_prev_heading",    mode = "n",               lhs = "zi",             action = "fold_prev_heading",   desc = "Fold prev heading" },
+  { id = "fold_h2plus",          mode = "n",               lhs = "zk",             action = "fold_h2plus",         desc = "Fold H2+" },
+  { id = "toc",                  mode = "n",               lhs = "<leader>toc",    action = "toc",                 desc = "Insert/refresh TOC" },
+  { id = "cursor_action_2click", mode = "n",               lhs = "<2-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action / heading fold" },
+  { id = "cursor_action_cclick", mode = "n",               lhs = "<C-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action" },
+  { id = "cursor_action",        mode = "n",               lhs = "ma",             action = "cursor_action",       desc = "Cursor action" },
+  { id = "open_image",           mode = "n",               lhs = "mi",             action = "open_image",          desc = "Open image" },
+  { id = "jump_anchor",          mode = "n",               lhs = "mj",             action = "jump_anchor",         desc = "Jump to anchor" },
+  { id = "heading_inc",          mode = "n",               lhs = "<C-Right>",      action = "heading_inc",         desc = "Increase heading level" },
+  { id = "heading_dec",          mode = "n",               lhs = "<C-Left>",       action = "heading_dec",         desc = "Decrease heading level" },
+  { id = "heading_inc_visual",   mode = { "v", "x" },      lhs = "<C-Right>",      action = "heading_inc_visual",  desc = "Increase heading level (visual)" },
+  { id = "heading_dec_visual",   mode = { "v", "x" },      lhs = "<C-Left>",       action = "heading_dec_visual",  desc = "Decrease heading level (visual)" },
+  { id = "heading_inc_all",      mode = "n",               lhs = "<S-Right>",      action = "heading_inc_all",     desc = "Increase all headings" },
+  { id = "heading_dec_all",      mode = "n",               lhs = "<S-Left>",       action = "heading_dec_all",     desc = "Decrease all headings" },
+}
+
+--- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.
+---@return table[]
+function M.defaults()
+  return DEFAULT_KEYMAPS
+end
+
 --- Install the default editing keymaps for `bufnr`.
 --- No-op when `enable_keymaps = false`.
+---
+--- Per-binding control via `config.keymaps[id]`:
+---   * `false`                       — disable this binding
+---   * `"<newlhs>"`                  — remap to a new key (same mode)
+---   * `{ lhs = "<newlhs>", mode = … }` — remap key and/or mode
+--- The legacy boolean flags (`map_double_asterisk`, `map_wrap_link`,
+--- `use_zf_override`) still disable their bindings when set to false.
 ---@param bufnr integer
 ---@return nil
 function M.apply(bufnr)
   if type(bufnr) ~= "number" then return end
   if cfg().enable_keymaps == false then return end
 
-  -- Bold toggle (visual)
-  if cfg().map_double_asterisk then
-    map(bufnr, "v", "**", actions.toggle_bold_visual, "Toggle bold")
+  local overrides = cfg().keymaps or {}
+
+  for _, spec in ipairs(DEFAULT_KEYMAPS) do
+    -- Legacy flag gate (e.g. map_double_asterisk = false).
+    local flag_off = spec.flag and cfg()[spec.flag] == false
+    local ov = overrides[spec.id]
+
+    if not flag_off and ov ~= false then
+      local lhs, mode = spec.lhs, spec.mode
+      if type(ov) == "string" then
+        lhs = ov
+      elseif type(ov) == "table" then
+        lhs = ov.lhs or lhs
+        mode = ov.mode or mode
+      end
+
+      local fn = actions[spec.action]
+      if fn then
+        map(bufnr, mode, lhs, fn, spec.desc)
+      end
+    end
   end
-
-  -- Wrap word/selection in a Markdown link []()
-  if cfg().map_wrap_link then
-    map(bufnr, "n", "<leader>[", actions.wrap_link_normal, "Wrap word in link")
-    map(bufnr, "v", "<leader>[", actions.wrap_link_visual, "Wrap selection in link")
-  end
-
-  -- Heading navigation
-  map(bufnr, { "n", "v", "x" }, "<C-p>", actions.prev_heading, "Prev heading")
-  map(bufnr, "n", "[[", actions.prev_heading, "Prev heading")
-  map(bufnr, { "n", "v", "x" }, "<C-f>", actions.next_heading, "Next heading")
-  map(bufnr, "n", "]]", actions.next_heading, "Next heading")
-
-  map(bufnr, "n", "<leader><C-p>", actions.prev_heading_level, "Prev heading of level")
-  map(bufnr, "n", "<leader><C-f>", actions.next_heading_level, "Next heading of level")
-
-  -- Fold
-  if cfg().use_zf_override then
-    map(bufnr, "n", "zf", actions.fold_toggle, "Fold toggle")
-  end
-  map(bufnr, "n", "<localleader>f", actions.fold_toggle, "Fold toggle")
-  map(bufnr, "n", "zu", actions.unfold_all, "Unfold all")
-  map(bufnr, "n", "zi", actions.fold_prev_heading, "Fold prev heading")
-  map(bufnr, "n", "zk", actions.fold_h2plus, "Fold H2+")
-
-  -- TOC (count = max_level); also ensures headline separators per config.
-  map(bufnr, "n", "<leader>toc", actions.toc, "Insert/refresh TOC")
-
-  -- Cursor action (double-click, Ctrl+Click, ma). The mouse variants are
-  -- silent: moving/clicking the mouse over prose with no link/anchor under it
-  -- is a normal outcome, not worth a notification every time.
-  map(bufnr, "n", "<2-LeftMouse>", actions.cursor_action_mouse, "Handle cursor action")
-  map(bufnr, "n", "<C-LeftMouse>", actions.cursor_action_mouse, "Handle cursor action")
-  map(bufnr, "n", "ma", actions.cursor_action, "Handle cursor action")
-
-  -- Image / anchor
-  map(bufnr, "n", "mi", actions.open_image, "Open image")
-  map(bufnr, "n", "mj", actions.jump_anchor, "Jump to anchor")
-
-  -- Heading level shift (normal mode: single line); count = number of levels.
-  map(bufnr, "n", "<C-Right>", actions.heading_inc, "Increase heading level")
-  map(bufnr, "n", "<C-Left>", actions.heading_dec, "Decrease heading level")
-
-  -- Heading level shift (visual mode: selection only)
-  map(bufnr, { "v", "x" }, "<C-Right>", actions.heading_inc_visual, "Increase heading level (visual)")
-  map(bufnr, { "v", "x" }, "<C-Left>", actions.heading_dec_visual, "Decrease heading level (visual)")
-
-  -- Whole-buffer heading shift (S-Right / S-Left); count = number of levels.
-  map(bufnr, "n", "<S-Right>", actions.heading_inc_all, "Increase all headings")
-  map(bufnr, "n", "<S-Left>", actions.heading_dec_all, "Decrease all headings")
 end
 
 --- Install the buffer-local TableView keys (`<leader>tv*`) for `bufnr`.

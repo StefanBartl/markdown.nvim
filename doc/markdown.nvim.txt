@@ -126,6 +126,7 @@ All keys are optional. Unset keys use the defaults shown below.
     enable_keymaps         = true,
     ft_only                = true,
     ensure_headline_spacing = true,
+    keymaps = {},  -- per-binding disable/remap by id (see |markdown.nvim-keymaps|)
     link_hl = { underline = false },
     refs = {
       mode        = "save",   -- "off" | "save" | "live"
@@ -322,17 +323,30 @@ must be longer (CommonMark), e.g. open the outer block with ````markdown.
 All keymaps are buffer-local and installed only for Markdown filetypes.
 None of the keys are mapped globally.
 
-Every action is a plain function on `require("markdown_nvim").actions`. To use
-your own keys, set `enable_keymaps = false` and bind the functions directly
-(no `<Plug>` indirection): >
+Per-binding control (recommended). Every default key has a stable `id` (see the
+`editing` list in `docs/BINDINGS.md`). Set `keymaps[id]` to disable or remap a
+single binding; everything else keeps its default: >
 
-    require("markdown_nvim").setup({ enable_keymaps = false })
+    require("markdown_nvim").setup({
+      keymaps = {
+        jump_anchor = false,            -- disable this binding
+        toc         = "<leader>T",      -- remap to a new key (same mode)
+        fold_toggle = { lhs = "<F2>" }, -- table form; may also override mode
+      },
+    })
+<
+`enable_keymaps = false` disables ALL default keys at once. The legacy flags
+(`map_double_asterisk`, `map_wrap_link`, `use_zf_override`) still work too.
+
+Free-form remapping: every action is also a plain function on
+`require("markdown_nvim").actions`, bindable by hand (no `<Plug>` layer): >
+
     local a = require("markdown_nvim").actions
     vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
     vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 <
-The full list of action names lives in `docs/BINDINGS.md`. If which-key is
-installed, the `<leader>t` prefix is labelled "Markdown" automatically.
+The full list of action names and ids lives in `docs/BINDINGS.md`. If which-key
+is installed, the `<leader>t` prefix is labelled "Markdown" automatically.
 
 ------------------------------------------------------------------------------
 6.1 Navigation                              *markdown.nvim-keymaps-nav*

@@ -47,6 +47,13 @@
 ---@field provider Mkdn.FencedScopeProvider # Fence-detection backend. "auto" prefers color_my_ascii, falls back to the built-in scanner.
 ---@field operations Mkdn.FencedScopeOps # Per-operation opt-out.
 
+--- Per-binding keymap override, keyed by the ids in
+--- `markdown_nvim.bindings.keymaps.defaults()`:
+---   * `false`                         disable this binding
+---   * `string`                        remap to a new lhs (same mode)
+---   * `{ lhs?: string, mode?: string|string[] }`  remap lhs and/or mode
+---@alias Mkdn.KeymapOverride boolean|string|{ lhs?: string, mode?: string|string[] }
+
 ---@class Mkdn.LinkHL
 ---@field underline boolean # Keep the treesitter underline on inline-link URLs/labels. Default false.
 
@@ -70,6 +77,7 @@
 ---@field enable_keymaps boolean # Install buffer-local keymaps (requires enable_autocmds).
 ---@field ft_only boolean # Only activate for markdown filetypes.
 ---@field ensure_headline_spacing boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
+---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown_nvim.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
 ---@field open Mkdn.OpenConfig
 ---@field blockquote_hl Mkdn.BlockquoteHL
