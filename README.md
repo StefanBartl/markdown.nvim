@@ -141,7 +141,7 @@ require("markdown_nvim").setup({
   -- Manual :Markdown refs sync|check work regardless of mode; `mode` only
   -- governs AUTOMATIC runs.
   refs = {
-    mode        = "off",   -- "off" | "save" (on BufWritePre) | "live" (debounced)
+    mode        = "save",  -- "off" | "save" (on BufWritePre, default) | "live" (debounced)
     debounce_ms = 2000,    -- live-mode debounce; 1500–3000 is a sane range
     update_toc  = true,    -- refresh an existing TOC block on sync (never force-creates)
     orphans     = "report",-- "report" surfaces #anchor links with no heading; "ignore" skips
@@ -338,9 +338,10 @@ to every inline link and the TOC.
 :Markdown refs baseline             " re-snapshot heading anchors (reset rename tracking)
 ```
 
-Automatic runs are opt-in via `refs.mode` (`"off"` | `"save"` | `"live"`); the
-manual commands work regardless. Live mode is debounced by `refs.debounce_ms`
-(default 2000 ms) to keep it off the hot path.
+Automatic runs are governed by `refs.mode` (`"save"` — the default — reconciles
+on `BufWritePre`; `"live"` reconciles debounced after edits; `"off"` disables
+automatic runs). The manual commands work regardless. Live mode is debounced by
+`refs.debounce_ms` (default 2000 ms) to keep it off the hot path.
 
 ### `:Markdown table`
 

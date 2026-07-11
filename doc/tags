@@ -2,6 +2,7 @@
 :Markdown-create	markdown.nvim.txt	/*:Markdown-create*
 :Markdown-headline-spacing	markdown.nvim.txt	/*:Markdown-headline-spacing*
 :Markdown-links	markdown.nvim.txt	/*:Markdown-links*
+:Markdown-refs	markdown.nvim.txt	/*:Markdown-refs*
 :Markdown-render	markdown.nvim.txt	/*:Markdown-render*
 :Markdown-scope	markdown.nvim.txt	/*:Markdown-scope*
 :Markdown-table	markdown.nvim.txt	/*:Markdown-table*
@@ -21,6 +22,8 @@ markdown.nvim-config-blockquote	markdown.nvim.txt	/*markdown.nvim-config-blockqu
 markdown.nvim-config-fenced-fix	markdown.nvim.txt	/*markdown.nvim-config-fenced-fix*
 markdown.nvim-config-fenced-scope	markdown.nvim.txt	/*markdown.nvim-config-fenced-scope*
 markdown.nvim-config-general	markdown.nvim.txt	/*markdown.nvim-config-general*
+markdown.nvim-config-link-hl	markdown.nvim.txt	/*markdown.nvim-config-link-hl*
+markdown.nvim-config-refs	markdown.nvim.txt	/*markdown.nvim-config-refs*
 markdown.nvim-contents	markdown.nvim.txt	/*markdown.nvim-contents*
 markdown.nvim-foldexpr	markdown.nvim.txt	/*markdown.nvim-foldexpr*
 markdown.nvim-installation	markdown.nvim.txt	/*markdown.nvim-installation*

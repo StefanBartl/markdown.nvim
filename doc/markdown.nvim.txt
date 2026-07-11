@@ -24,12 +24,13 @@ CONTENTS                                           *markdown.nvim-contents*
      7.1 :Markdown ............. |:Markdown|
      7.2 links ................. |:Markdown-links|
      7.3 toc ................... |:Markdown-toc|
-     7.4 table ................. |:Markdown-table|
-     7.5 render / preview ...... |:Markdown-render|
-     7.6 create ................ |:Markdown-create|
-     7.7 headline_spacing ...... |:Markdown-headline-spacing|
-     7.8 scope ................. |:Markdown-scope|
-     7.8 Buffer commands ....... |markdown.nvim-buf-commands|
+     7.4 refs .................. |:Markdown-refs|
+     7.5 table ................. |:Markdown-table|
+     7.6 render / preview ...... |:Markdown-render|
+     7.7 create ................ |:Markdown-create|
+     7.8 headline_spacing ...... |:Markdown-headline-spacing|
+     7.9 scope ................. |:Markdown-scope|
+     7.10 Buffer commands ...... |markdown.nvim-buf-commands|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -47,6 +48,7 @@ Included subsystems:
   * Heading navigation and level shifting (count-aware)
   * Custom fold expression for ATX and Setext headings
   * Table of Contents generator (GFM slug + duplicate suffix)
+  * Reference sync: auto-update `#anchor` links + TOC on heading rename
   * Visual bold (`**`) toggle
   * Link wrap (`<leader>[`) — wrap word/selection in `[]()`
   * Headline spacing enforcer (blank-dash-blank between H2+ sections,
@@ -124,6 +126,14 @@ All keys are optional. Unset keys use the defaults shown below.
     enable_keymaps         = true,
     ft_only                = true,
     ensure_headline_spacing = true,
+    link_hl = { underline = false },
+    refs = {
+      mode        = "save",   -- "off" | "save" | "live"
+      debounce_ms = 2000,
+      update_toc  = true,
+      orphans     = "report", -- "report" | "ignore"
+      toc_header  = "## Table of content",
+    },
     links = { picker = "hover_select" },
     open  = { external_extensions = { "png", "pdf", "mp4", ... } },
   })
@@ -187,6 +197,39 @@ All keys are optional. Unset keys use the defaults shown below.
   (text-like) target opens in the current window via `:edit`. The default list
   covers common image, video, audio, office, archive and binary formats;
   extend or replace it to taste.
+
+`link_hl`                                        *markdown.nvim-config-link-hl*
+  Inline-link highlight tweaks. >
+    link_hl = { underline = false }
+<
+  Neovim's markdown treesitter underlines link URLs/labels; a long URL then
+  draws a full-width underline across the soft-wrapped screen line. With
+  `underline = false` (default) that underline is stripped from the
+  `markdown_inline` link groups only (other filetypes are untouched). Set to
+  `true` to restore the built-in behaviour.
+
+`refs`                                             *markdown.nvim-config-refs*
+  Keep in-document `[text](#anchor)` links and the TOC in sync when headings
+  are renamed (see |:Markdown-refs|). >
+    refs = {
+      mode        = "save",   -- "off" | "save" | "live"
+      debounce_ms = 2000,
+      update_toc  = true,
+      orphans     = "report", -- "report" | "ignore"
+      toc_header  = "## Table of content",
+    }
+<
+  `mode` governs only AUTOMATIC syncs; the manual `:Markdown refs` commands
+  work regardless.
+    "off"    No automatic sync (manual commands only).
+    "save"   Reconcile on |BufWritePre| (default).
+    "live"   Reconcile after edits, debounced by `debounce_ms` milliseconds
+             (default 2000; 1500–3000 is a sane range) so it never runs on the
+             hot path.
+  `update_toc` refreshes an existing TOC block during a sync (it never
+  force-creates one). `orphans = "report"` surfaces links whose `#anchor`
+  matches no heading; `"ignore"` skips that report. `toc_header` is the TOC
+  header line used to detect/refresh the block.
 
 ------------------------------------------------------------------------------
 5.2 blockquote_hl                          *markdown.nvim-config-blockquote*
@@ -434,6 +477,7 @@ See |markdown.nvim-tableview| for details.
   Subcommands:
     links              Show or generate Markdown links  |:Markdown-links|
     toc                Insert/refresh the TOC           |:Markdown-toc|
+    refs               Sync #anchor links + TOC          |:Markdown-refs|
     table              Table view / format / new        |:Markdown-table|
     render             Toggle render-markdown.nvim       |:Markdown-render|
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
@@ -488,7 +532,38 @@ See |markdown.nvim-tableview| for details.
     --no-sep   never apply separators
 
 ------------------------------------------------------------------------------
-7.4 :Markdown table                                       *:Markdown-table*
+7.4 :Markdown refs                                        *:Markdown-refs*
+
+:Markdown refs [sync]
+
+  Reconcile now: detect heading renames since the baseline, propagate each
+  `old-anchor -> new-anchor` to every inline `[text](#anchor)` link and to an
+  existing TOC block, then report orphaned anchor links. A bare `:Markdown
+  refs` is the same as `:Markdown refs sync`.
+
+:Markdown refs check
+
+  Dry run. List every `#anchor` link with no matching heading in the |quickfix|
+  list (open it with |:copen|). Changes nothing.
+
+:Markdown refs live [on|off|toggle]
+
+  Enable/disable debounced live tracking for the current buffer at runtime,
+  independent of the `refs.mode` config default.
+
+:Markdown refs baseline
+
+  Re-snapshot the current heading anchors, resetting rename tracking. Useful
+  after large restructuring when you do not want prior edits interpreted as
+  renames.
+
+  Heading identity is tracked with extmarks (which survive in-line edits) plus
+  a positional-diff fallback (which catches whole-line replacements without
+  inventing renames on structural add/delete). See |markdown.nvim-config-refs|
+  for the automatic-trigger mode and the debounce.
+
+------------------------------------------------------------------------------
+7.5 :Markdown table                                       *:Markdown-table*
 
 :Markdown table view [toggle|select|close|browser|browsernice]
 
@@ -506,7 +581,7 @@ See |markdown.nvim-tableview| for details.
   (defaults apply when omitted).
 
 ------------------------------------------------------------------------------
-7.5 :Markdown render / preview                            *:Markdown-render*
+7.6 :Markdown render / preview                            *:Markdown-render*
 
 :Markdown render [on|off|toggle]
 
@@ -520,7 +595,7 @@ See |markdown.nvim-tableview| for details.
   buffer switch (BufEnter for `*.md`). Also an optional host dependency.
 
 ------------------------------------------------------------------------------
-7.6 :Markdown create                                      *:Markdown-create*
+7.7 :Markdown create                                      *:Markdown-create*
 
 :Markdown create fs
 
@@ -532,7 +607,7 @@ See |markdown.nvim-tableview| for details.
   existing / failed counts.
 
 ------------------------------------------------------------------------------
-7.7 :Markdown headline_spacing                  *:Markdown-headline-spacing*
+7.8 :Markdown headline_spacing                  *:Markdown-headline-spacing*
 
 :Markdown headline_spacing
 
@@ -542,7 +617,7 @@ See |markdown.nvim-tableview| for details.
   `ensure_headline_spacing` (see |markdown.nvim-config-general|).
 
 ------------------------------------------------------------------------------
-7.8 :Markdown scope                                       *:Markdown-scope*
+7.9 :Markdown scope                                       *:Markdown-scope*
 
 :Markdown scope [on|off|toggle|status]
 
@@ -551,7 +626,7 @@ See |markdown.nvim-tableview| for details.
   With no argument, toggles. `status` reports the current state.
 
 ------------------------------------------------------------------------------
-7.9 Buffer-local commands                        *markdown.nvim-buf-commands*
+7.10 Buffer-local commands                       *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):

@@ -57,9 +57,9 @@ local DEFAULTS = {
   -- check` commands work regardless of mode; `mode` only governs AUTOMATIC runs.
   refs = {
     -- "off"  — no automatic sync (manual commands only)
-    -- "save" — reconcile on BufWritePre
+    -- "save" — reconcile on BufWritePre (default)
     -- "live" — reconcile debounced after edits (see debounce_ms)
-    mode        = "off",
+    mode        = "save",
     -- Live-mode debounce (ms). Deliberately generous: a rename is rare and a
     -- full buffer scan is cheap, but we never want to run it on every keystroke.
     -- 1500–3000 is a sane range.
