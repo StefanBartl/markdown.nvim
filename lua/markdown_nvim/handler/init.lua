@@ -195,12 +195,19 @@ function M.handle_cursor_action(opts)
   local silent = opts and opts.silent
   local line = api.nvim_get_current_line()
 
-  -- Mouse-only: a double-click on an ATX heading (`#`, `##`, …) toggles that
-  -- heading's fold instead of running the link/anchor handler. Keyboard `ma`
-  -- (no `mouse` flag) keeps the pure cursor-action behaviour.
-  if opts and opts.mouse and line:match("^%s*#+%s") then
-    require("markdown_nvim.core.fold").toggle_under_cursor()
-    return
+  -- Mouse-only: a double-click on a heading (ATX `#…` or either half of a Setext
+  -- heading) toggles that heading's fold instead of running the link/anchor
+  -- handler. Keyboard `ma` (no `mouse` flag) keeps the pure cursor-action path.
+  if opts and opts.mouse then
+    local fold = require("markdown_nvim.core.fold")
+    local bufnr = api.nvim_get_current_buf()
+    local row = api.nvim_win_get_cursor(0)[1]
+    local frow = fold.heading_fold_row(bufnr, row)
+    if frow then
+      if frow ~= row then api.nvim_win_set_cursor(0, { frow, 0 }) end
+      fold.toggle_under_cursor()
+      return
+    end
   end
 
   if line and line:match("%(#[^)]+%)") then

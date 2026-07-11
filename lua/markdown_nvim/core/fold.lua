@@ -29,6 +29,47 @@ function M.foldexpr(lnum)
   return "="
 end
 
+--- Resolve the row whose fold should toggle when acting on `row`, covering both
+--- heading styles, or nil when `row` is not on a heading. Mirrors `foldexpr`:
+---   * ATX (`#`, `##`, …)               → the heading line itself
+---   * Setext underline (`===` / `---`) → that line (the fold starts here)
+---   * Setext title (next line is an underline) → the underline row
+--- Used by the mouse handler so a double-click on either half of a Setext
+--- heading toggles the section, not just ATX headings.
+---@param bufnr integer
+---@param row integer  1-indexed
+---@return integer|nil  1-indexed row to toggle, or nil
+function M.heading_fold_row(bufnr, row)
+  local function get(r)
+    if r < 1 then return nil end
+    return vim.api.nvim_buf_get_lines(bufnr, r - 1, r, false)[1]
+  end
+
+  local line = get(row) or ""
+
+  -- ATX heading.
+  if line:match("^%s*#+%s") then return row end
+
+  local is_underline = function(s) return s ~= nil and s:match("^%s*[-=]+%s*$") ~= nil end
+
+  -- Setext underline: a `===`/`---` line under a content line (not itself a
+  -- heading or another underline). The fold starts on this line.
+  if is_underline(line) then
+    local prev = get(row - 1)
+    if prev and prev:match("%S") and not prev:match("^%s*#") and not is_underline(prev) then
+      return row
+    end
+  end
+
+  -- Setext title: a content line whose next line is the underline. Toggle at the
+  -- underline row (where the fold actually starts).
+  if line:match("%S") and not line:match("^%s*#") and not is_underline(line) then
+    if is_underline(get(row + 1)) then return row + 1 end
+  end
+
+  return nil
+end
+
 function M.toggle_under_cursor()
   vim.cmd.normal({ args = { "za" }, bang = false })
   vim.cmd.normal({ args = { "zz" }, bang = false })
