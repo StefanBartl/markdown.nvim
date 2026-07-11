@@ -70,14 +70,25 @@ function M.heading_fold_row(bufnr, row)
   return nil
 end
 
+-- Re-assert the window's fold state before a normal-mode fold command. When
+-- these run from a menu callback (nvzone/menu) rather than a keymap, 'foldenable'
+-- may be off / the method reset, which makes `za`/`zR` silent no-ops. Mirrors
+-- core.fold_levels.fold_levels(), which works from the menu for this reason.
+local function ensure_folding()
+  vim.opt_local.foldmethod = "expr"
+  vim.opt_local.foldenable = true
+end
+
 function M.toggle_under_cursor()
-  vim.cmd.normal({ args = { "za" }, bang = false })
-  vim.cmd.normal({ args = { "zz" }, bang = false })
+  ensure_folding()
+  vim.cmd("silent! normal! za")
+  vim.cmd("silent! normal! zz")
 end
 
 function M.unfold_all_center()
-  vim.cmd.normal({ args = { "zR" }, bang = false })
-  vim.cmd.normal({ args = { "zz" }, bang = false })
+  ensure_folding()
+  vim.cmd("silent! normal! zR")
+  vim.cmd("silent! normal! zz")
 end
 
 return M
