@@ -123,6 +123,7 @@ function M.apply_tableview(bufnr)
   if not require("markdown_nvim.config").feature_enabled("tableview") then return end
 
   map(bufnr, "n", "<leader>tvt", "<Cmd>TableViewToggle<CR>", "Toggle table preview at cursor")
+  map(bufnr, "n", "<leader>tvx", "<Cmd>TableViewBox<CR>", "Toggle box-drawing table preview")
   map(bufnr, "n", "<leader>tvs", "<Cmd>TableViewSelect<CR>", "Select and preview table")
   map(bufnr, "n", "<leader>tvb", "<Cmd>TableViewOpenBrowser<CR>", "Open table in browser")
   map(bufnr, "n", "<leader>tvc", "<Cmd>TableViewClose<CR>", "Close TableView")

@@ -44,8 +44,7 @@ function M.setup(cfg)
   local ftpat = { "markdown", "mdx", "md", "markdown.*" }
   local feat = require("markdown_nvim.config").feature_enabled
 
-  -- TableView buffer-local maps + commands (+ live-preview refresh). Gated by
-  -- the "tableview" feature.
+  -- TableView buffer-local maps + commands. Gated by the "tableview" feature.
   if feat("tableview") then
     local aug_tv = api.nvim_create_augroup("MarkdownNvimTableView", { clear = true })
     api.nvim_create_autocmd("FileType", {
@@ -58,17 +57,6 @@ function M.setup(cfg)
         end)
       end,
       desc = "[markdown.nvim] Install buffer-local TableView maps & commands",
-    })
-
-    local aug_live = api.nvim_create_augroup("MarkdownNvimTableViewLive", { clear = true })
-    api.nvim_create_autocmd("BufWritePost", {
-      group = aug_live,
-      pattern = { "*.md", "*.markdown", "*.mdx" },
-      callback = function(ev)
-        local live = require("markdown_nvim.tableview.live")
-        if live.is_running() then live.regenerate(ev.buf) end
-      end,
-      desc = "[markdown.nvim] Regenerate TableView live preview on save",
     })
   end
 

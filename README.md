@@ -336,7 +336,8 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 
 | Key | Mode | Action |
 |-----|------|--------|
-| `<leader>tvt` | n | Toggle table preview (floating) |
+| `<leader>tvt` | n | Toggle table preview (floating, Markdown style) |
+| `<leader>tvx` | n | Toggle table preview (box-drawing / spreadsheet style) |
 | `<leader>tvs` | n | Select table from list |
 | `<leader>tvb` | n | Open table in browser (basic HTML) |
 | `<leader>tvc` | n | Close TableView float |
@@ -401,14 +402,18 @@ The single namespace for every table action — preview, format, and a focused,
 dependency-free reimplementation of the vim-table-mode essentials.
 
 ```vim
-:Markdown table view [toggle|select|close|browser|browsernice]
+:Markdown table view [toggle|box|select|close|browser|browsernice]
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table tableize [delimiter]    " turn delimited text into a GFM table
 ```
 
-- **view** drives the floating TableView (defaults to `toggle`).
+- **view** renders the table under the cursor in a nicely formatted preview.
+  Styles: `toggle` (aligned Markdown, the default), `box` (a Unicode
+  box-drawing "spreadsheet" grid), `browser` / `browsernice` (open as basic /
+  GitHub-styled HTML in the system browser). `select` picks a table from a list;
+  `close` closes the float (also `q` / `<Esc>` inside it).
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope.
 - **mode** turns on per-buffer *table mode*: after each edit inside a table it is
@@ -627,8 +632,7 @@ lua/markdown_nvim/
       blockquote.lua       matchadd-based blockquote coloring
   tableview/
     parser.lua             pipe-table parser
-    renderer.lua           floating window renderer
-    live.lua               live preview helper (started by :Markdown table ...)
+    renderer.lua           floating window renderer (Markdown + box style)
     views/
       browser_basic.lua    basic HTML export
       browser_niceified.lua styled HTML export

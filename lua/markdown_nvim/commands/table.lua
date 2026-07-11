@@ -13,6 +13,7 @@ local M = {}
 
 local VIEW_ACTIONS = {
   toggle      = "TableViewToggle",
+  box         = "TableViewBox",
   select      = "TableViewSelect",
   close       = "TableViewClose",
   browser     = "TableViewOpenBrowser",

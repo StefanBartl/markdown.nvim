@@ -106,6 +106,42 @@ local function build_lines_from_markdowntable(mt)
   return lines
 end
 
+--- Build a Unicode box-drawing ("spreadsheet") rendering of the table, with a
+--- full grid: top border, header row, a double-rule header separator, each data
+--- row separated by a rule, and a bottom border. Column widths reuse the same
+--- content-width calc as the markdown renderer.
+---@param mt table
+---@return string[]
+local function build_box_lines(mt)
+  local matrix = table_to_matrix(mt)
+  if #matrix == 0 then return {} end
+  local widths = compute_col_widths(matrix)
+
+  local function border(left, mid, right, fill)
+    local parts = {}
+    for _, w in ipairs(widths) do parts[#parts + 1] = string.rep(fill, w + 2) end
+    return left .. table.concat(parts, mid) .. right
+  end
+  local function row(cells)
+    local parts = {}
+    for i, w in ipairs(widths) do
+      parts[#parts + 1] = " " .. align_cell(cells[i] or "", w, (mt.alignments and mt.alignments[i]) or "left") .. " "
+    end
+    return "│" .. table.concat(parts, "│") .. "│"
+  end
+
+  local lines = {}
+  lines[#lines + 1] = border("┌", "┬", "┐", "─")
+  lines[#lines + 1] = row(matrix[1])
+  lines[#lines + 1] = border("╞", "╪", "╡", "═")
+  for r = 2, #matrix do
+    lines[#lines + 1] = row(matrix[r])
+    if r < #matrix then lines[#lines + 1] = border("├", "┼", "┤", "─") end
+  end
+  lines[#lines + 1] = border("└", "┴", "┘", "─")
+  return lines
+end
+
 local function set_buf_opt(buf, name, value)
   pcall(api.nvim_set_option_value, name, value, { scope = "local", buf = buf })
 end
@@ -176,7 +212,8 @@ end
 
 function M.render_markdowntable(mt, opts)
   opts = merge(default_opts, opts or {})
-  local lines = build_lines_from_markdowntable(mt)
+  local box = opts.style == "box"
+  local lines = box and build_box_lines(mt) or build_lines_from_markdowntable(mt)
 
   if opts.floating then
     local buf, _ = ensure_view(opts)
@@ -192,11 +229,23 @@ function M.render_markdowntable(mt, opts)
       local ns = state.namespace
       local header_hl = opts.highlight and opts.highlight.header or "Title"
       local sep_hl = opts.highlight and opts.highlight.separator or "Comment"
-      if #lines >= 1 and hl and hl.range then
-        hl.range(buf, ns, header_hl, { 0, 0 }, { 0, -1 }, { inclusive = false })
-      end
-      if #lines >= 2 and hl and hl.range then
-        hl.range(buf, ns, sep_hl, { 1, 0 }, { 1, -1 }, { inclusive = false })
+      -- Box: line 0 = top border, line 1 = header row, line 2 = header rule.
+      -- Markdown: line 0 = header row, line 1 = separator.
+      local header_line = box and 1 or 0
+      if hl and hl.range then
+        if #lines > header_line then
+          hl.range(buf, ns, header_hl, { header_line, 0 }, { header_line, -1 }, { inclusive = false })
+        end
+        if box then
+          -- Dim every border/rule line (they don't start with the │ cell edge).
+          for i = 0, #lines - 1 do
+            if i ~= header_line and not (lines[i + 1] or ""):match("^│") then
+              hl.range(buf, ns, sep_hl, { i, 0 }, { i, -1 }, { inclusive = false })
+            end
+          end
+        elseif #lines >= 2 then
+          hl.range(buf, ns, sep_hl, { 1, 0 }, { 1, -1 }, { inclusive = false })
+        end
       end
     end)
   else

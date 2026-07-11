@@ -509,7 +509,8 @@ Link (`<leader>[`):
 6.7 TableView                               *markdown.nvim-keymaps-tableview*
 
   Key           Mode  Action~
-  <leader>tvt   n     Toggle floating table preview for table at cursor
+  <leader>tvt   n     Toggle floating table preview (aligned Markdown style)
+  <leader>tvx   n     Toggle floating table preview (box-drawing / spreadsheet)
   <leader>tvs   n     Open table selector (list of all tables in buffer)
   <leader>tvb   n     Export table at cursor as basic HTML, open in browser
   <leader>tvc   n     Close TableView floating window
@@ -623,10 +624,13 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 ------------------------------------------------------------------------------
 7.5 :Markdown table                                       *:Markdown-table*
 
-:Markdown table view [toggle|select|close|browser|browsernice]
+:Markdown table view [toggle|box|select|close|browser|browsernice]
 
-  Drive the floating TableView (see |markdown.nvim-tableview|). Defaults to
-  `toggle`. `browser` / `browsernice` export the table as basic / styled HTML.
+  Render the table under the cursor in a nicely formatted preview (see
+  |markdown.nvim-tableview|). Styles: `toggle` (aligned Markdown, default),
+  `box` (a Unicode box-drawing "spreadsheet" grid), `browser` / `browsernice`
+  (open as basic / GitHub-styled HTML in the browser). `select` picks a table
+  from a list; `close` closes the float (also `q` / `<Esc>`).
 
 :Markdown table format [options]
 
