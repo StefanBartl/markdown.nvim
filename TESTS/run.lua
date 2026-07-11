@@ -20,6 +20,7 @@ local specs = {
   "handler_spec.lua",
   "tableview_spec.lua",
   "fenced_scope_spec.lua",
+  "session_features_spec.lua",
 }
 
 local failed = 0
