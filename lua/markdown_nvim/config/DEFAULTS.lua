@@ -45,6 +45,13 @@ local DEFAULTS = {
     text_italic = false,
   },
 
+  -- Inline-link highlight tweaks. Neovim's markdown treesitter underlines link
+  -- URLs/labels; long URLs then draw a full-width underline across the wrapped
+  -- line. Default off. Set underline = true to restore the built-in behaviour.
+  link_hl = {
+    underline = false,
+  },
+
   fenced_fix = {
     inline_base_hl = { "DiagnosticWarn", "Special", "Constant", "String" },
     inline_style   = { italic = false, bold = false },

@@ -190,10 +190,18 @@ end
 --- used for mouse-triggered invocations (double-click / ctrl-click), where a
 --- miss is a normal, frequent outcome rather than something to report. Actual
 --- problems (unresolvable target, missing file, ...) still notify regardless.
----@param opts? { silent?: boolean }
+---@param opts? { silent?: boolean, mouse?: boolean }
 function M.handle_cursor_action(opts)
   local silent = opts and opts.silent
   local line = api.nvim_get_current_line()
+
+  -- Mouse-only: a double-click on an ATX heading (`#`, `##`, …) toggles that
+  -- heading's fold instead of running the link/anchor handler. Keyboard `ma`
+  -- (no `mouse` flag) keeps the pure cursor-action behaviour.
+  if opts and opts.mouse and line:match("^%s*#+%s") then
+    require("markdown_nvim.core.fold").toggle_under_cursor()
+    return
+  end
 
   if line and line:match("%(#[^)]+%)") then
     if is_inside_toc_block() or line:match("^%s*%-+%s*%[") then
