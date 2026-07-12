@@ -66,9 +66,9 @@ function M.check()
     info("markdown-preview.nvim not found — :Markdown preview will warn if used")
   end
 
-  -- Optional lib.nvim integration (the default hover_select picker backend).
-  if pcall(require, "lib.nvim.ui.hover_select") then
-    ok("lib.nvim detected (hover_select picker backend)")
+  -- Optional lib.nvim integration (the default float picker backend).
+  if pcall(require, "lib.nvim.ui.kit") then
+    ok("lib.nvim detected (kit.select picker backend)")
   else
     info("lib.nvim not found — picker falls back to vim.ui.select")
   end

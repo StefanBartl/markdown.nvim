@@ -1,7 +1,8 @@
 ---@module 'markdown_nvim.util.picker'
---- Thin selection abstraction. Default backend is lib.nvim's hover_select;
---- falls back to vim.ui.select when lib.nvim is unavailable or another backend
---- is requested. Telescope / fzf-lua backends can be added here later.
+--- Thin selection abstraction. Default backend is lib.nvim's float chooser
+--- (lib.nvim.ui.kit.select); falls back to vim.ui.select when lib.nvim is
+--- unavailable or another backend is requested. The backend name "hover_select"
+--- is kept for config compatibility. Telescope / fzf-lua can be added later.
 local M = {}
 
 -- `Mkdn.PickerOpts` is declared in `markdown_nvim.@types`.
@@ -19,11 +20,11 @@ function M.select(items, opts, on_choose)
   local backend = opts.backend or "hover_select"
 
   if backend == "hover_select" then
-    local ok, hs = pcall(require, "lib.nvim.ui.hover_select")
-    if ok and hs and type(hs.open) == "function" then
+    local ok, kit = pcall(require, "lib.nvim.ui.kit")
+    if ok and kit and type(kit.select) == "function" then
       local labels = {}
       for i, it in ipairs(items) do labels[i] = format(it) end
-      hs.open({
+      kit.select({
         items     = labels,
         title     = opts.prompt or "Select",
         relative  = "editor",
