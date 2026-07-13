@@ -123,8 +123,14 @@ function M.normalize(p)
 end
 
 --- Ordered list of base directories a relative target is resolved against.
+---@param first_base? string  Override for the primary base (defaults to the
+---                            current buffer's directory — the markdown
+---                            convention). Pass the containing file's own
+---                            directory when resolving links found while
+---                            scanning a file on disk that isn't the current
+---                            buffer.
 ---@return string[]
-local function candidate_bases()
+local function candidate_bases(first_base)
   local bases = {}
   local seen = {}
   local function add(dir)
@@ -136,19 +142,17 @@ local function candidate_bases()
       end
     end
   end
-  add(vim.fn.expand("%:p:h")) -- buffer's own directory (markdown convention)
-  add(cwd())                  -- project root / nvim cwd
+  add(first_base or vim.fn.expand("%:p:h")) -- containing file's directory
+  add(cwd())                                -- project root / nvim cwd
   return bases
 end
 
---- Resolve a raw link target to an absolute filesystem path (OS-native seps).
---- URLs (scheme://…) are returned unchanged. Absolute paths are only
---- normalized. Relative paths are joined against each candidate base in order;
---- the first that exists on disk wins. If none exist, the buffer-relative
---- candidate is returned so the caller can notify with a clean path.
+--- Resolve a raw link target to an absolute filesystem path (OS-native seps),
+--- against an explicit base directory list (see `candidate_bases`).
 ---@param target string
----@return string|nil path  Resolved path, original URL, or nil for empty input.
-function M.resolve(target)
+---@param first_base? string
+---@return string|nil path
+local function resolve_impl(target, first_base)
   if not target or target == "" then return nil end
   if target:match("^%w[%w+.%-]*://") then return target end
 
@@ -159,7 +163,7 @@ function M.resolve(target)
   end
 
   local first
-  for _, base in ipairs(candidate_bases()) do
+  for _, base in ipairs(candidate_bases(first_base)) do
     local cand = collapse(base .. "/" .. expanded)
     if not first then first = cand end
     if uv.fs_stat(cand) then
@@ -168,6 +172,28 @@ function M.resolve(target)
   end
 
   return to_os(first or collapse(expanded))
+end
+
+--- Resolve a raw link target to an absolute filesystem path (OS-native seps).
+--- URLs (scheme://…) are returned unchanged. Absolute paths are only
+--- normalized. Relative paths are joined against each candidate base in order;
+--- the first that exists on disk wins. If none exist, the buffer-relative
+--- candidate is returned so the caller can notify with a clean path.
+---@param target string
+---@return string|nil path  Resolved path, original URL, or nil for empty input.
+function M.resolve(target)
+  return resolve_impl(target, nil)
+end
+
+--- Like `M.resolve`, but resolves relative targets against `base_dir` first
+--- (instead of the current buffer's directory) before falling back to cwd.
+--- For resolving links found while scanning a file on disk that is not the
+--- current buffer (e.g. a project-wide reference search).
+---@param target string
+---@param base_dir string
+---@return string|nil path
+function M.resolve_from(target, base_dir)
+  return resolve_impl(target, base_dir)
 end
 
 return M

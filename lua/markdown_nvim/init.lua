@@ -63,4 +63,13 @@ M.apply_headline_separators = function(bufnr, opts)
   )
 end
 
+---Find every markdown file under `opts.root` (default cwd) that links to
+---`target_path`. Read-only — pure search, does not touch buffers or files.
+---@param target_path string  Absolute filesystem path to search for.
+---@param opts? { root?: string }
+---@return MarkdownFileRef[]
+M.find_references = function(target_path, opts)
+  return require("markdown_nvim.core.file_refs").find_references(target_path, opts)
+end
+
 return M
