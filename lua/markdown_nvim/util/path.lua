@@ -196,4 +196,62 @@ function M.resolve_from(target, base_dir)
   return resolve_impl(target, base_dir)
 end
 
+--- Like `M.resolve_from`, but also reports *how* the target resolved, so a
+--- caller can later re-express a moved/renamed target in the same style the
+--- original link used (relative-to-a-base vs absolute vs URL). This is what
+--- lets a rename rewrite `./old.md` -> `./new.md` and `docs/old.md` ->
+--- `docs/new.md` instead of collapsing every link to one canonical form.
+---@param target string
+---@param base_dir string
+---@return string|nil path        Resolved path (OS-native), URL, or nil.
+---@return string|nil base_used   The base dir a *relative* target resolved
+---                               against (slash-normalized); nil for
+---                               absolute paths and URLs.
+---@return boolean is_absolute    True when the raw target was already absolute.
+function M.resolve_traced(target, base_dir)
+  if not target or target == "" then return nil, nil, false end
+  if target:match("^%w[%w+.%-]*://") then return target, nil, false end
+
+  local expanded = to_slashes(vim.fn.expand(target))
+  if is_absolute(expanded) then
+    return to_os(collapse(expanded)), nil, true
+  end
+
+  local first, first_base
+  for _, base in ipairs(candidate_bases(base_dir)) do
+    local cand = collapse(base .. "/" .. expanded)
+    if not first then first, first_base = cand, base end
+    if uv.fs_stat(cand) then
+      return to_os(cand), base, false
+    end
+  end
+
+  return to_os(first or collapse(expanded)), first_base, false
+end
+
+--- POSIX-style relative path from `base_dir` to `target_path`, using `..`
+--- segments where the target isn't a descendant of the base. Both sides are
+--- logically normalized first (no filesystem access). Returns "." when the
+--- two paths are the same directory.
+---@param base_dir string
+---@param target_path string
+---@return string
+function M.relative_to(base_dir, target_path)
+  local b = collapse(to_slashes(vim.fn.expand(base_dir)))
+  local t = collapse(to_slashes(vim.fn.expand(target_path)))
+
+  local bp, tp = {}, {}
+  for seg in b:gmatch("[^/]+") do bp[#bp + 1] = seg end
+  for seg in t:gmatch("[^/]+") do tp[#tp + 1] = seg end
+
+  local i = 1
+  while bp[i] and tp[i] and bp[i] == tp[i] do i = i + 1 end
+
+  local parts = {}
+  for _ = i, #bp do parts[#parts + 1] = ".." end
+  for j = i, #tp do parts[#parts + 1] = tp[j] end
+
+  return #parts > 0 and table.concat(parts, "/") or "."
+end
+
 return M

@@ -65,11 +65,31 @@ end
 
 ---Find every markdown file under `opts.root` (default cwd) that links to
 ---`target_path`. Read-only — pure search, does not touch buffers or files.
+---Uses a ripgrep prefilter when available for speed.
 ---@param target_path string  Absolute filesystem path to search for.
 ---@param opts? { root?: string }
 ---@return MarkdownFileRef[]
 M.find_references = function(target_path, opts)
   return require("markdown_nvim.core.file_refs").find_references(target_path, opts)
+end
+
+---Async variant of `find_references`: runs candidate discovery off the main
+---loop; `callback` receives the ref list, scheduled on the main loop.
+---@param target_path string
+---@param opts? { root?: string }
+---@param callback fun(refs: MarkdownFileRef[])
+M.find_references_async = function(target_path, opts, callback)
+  return require("markdown_nvim.core.file_refs").find_references_async(target_path, opts, callback)
+end
+
+---Re-express a moved/renamed target in the same style a found ref used
+---(absolute stays absolute, `./x` → `./y`, `docs/x` → `docs/y`). For callers
+---rewriting links after a rename/move.
+---@param ref MarkdownFileRef
+---@param new_abs_path string
+---@return string
+M.retarget = function(ref, new_abs_path)
+  return require("markdown_nvim.core.file_refs").retarget(ref, new_abs_path)
 end
 
 return M

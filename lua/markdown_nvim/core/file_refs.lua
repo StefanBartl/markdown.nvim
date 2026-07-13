@@ -1,16 +1,20 @@
 ---@module 'markdown_nvim.core.file_refs'
 ---@brief Find markdown files that link to a given filesystem path.
 ---@description
---- Project-wide reference search: scans every `*.md` file under a root
---- directory for inline links (`link_scan`) whose target resolves
---- (`util.path.resolve_from`) to the given path. Used by third-party
---- integrations (e.g. a file manager's delete-confirmation flow) to warn
---- before a linked-to file disappears; markdown.nvim itself has no delete
---- feature and does not act on the results.
+--- Project-wide reference search: finds `*.md` files whose inline links
+--- (`link_scan`) resolve (`util.path.resolve_traced`) to a given path. Used by
+--- third-party integrations (e.g. a file manager's delete/rename flow) to warn
+--- before a linked-to file disappears, or to rewrite links after it moves;
+--- markdown.nvim itself has no delete/rename feature and does not act on the
+--- results.
 ---
---- Files are read directly off disk (not via buffers), so this works for
---- paths outside the current buffer's project without touching the jumplist
---- or opening windows.
+--- Performance: instead of reading every `*.md` file under the root, a ripgrep
+--- prefilter (`rg --files-with-matches --fixed-strings <basename>`) narrows the
+--- set to files that even mention the target's basename — a link to the file
+--- must contain its basename verbatim — so only those handful of files are
+--- read and parsed. A pure-Lua `globpath` path is kept as a fallback when
+--- ripgrep isn't installed. Both sync and async entry points share the same
+--- candidate → scan pipeline.
 
 local link_scan = require("markdown_nvim.core.link_scan")
 local path      = require("markdown_nvim.util.path")
@@ -19,10 +23,13 @@ local ignore    = require("markdown_nvim.util.ignore")
 local M = {}
 
 ---@class MarkdownFileRef
----@field file    string   Absolute path of the markdown file containing the link.
----@field line    integer  1-indexed line number.
----@field target  string   Raw link target as written (e.g. `./old.md`).
----@field display string   Full `[text](target)` as it appears in the file.
+---@field file           string   Absolute path of the markdown file containing the link.
+---@field line           integer  1-indexed line number.
+---@field target         string   Raw link target as written (e.g. `./old.md`).
+---@field display        string   Full `[text](target)` as it appears in the file.
+---@field base_dir       string|nil  Dir a relative target resolved against (for `retarget`); nil if absolute.
+---@field is_absolute    boolean  Whether the raw target was already absolute.
+---@field had_dot_prefix boolean  Whether the raw target started with `./` or `.\`.
 
 --- True when any path segment of `p` is in the default ignore set
 --- (`.git`, `node_modules`, `dist`, …).
@@ -36,20 +43,57 @@ local function is_ignored(p)
   return false
 end
 
---- Find every `*.md` file under `root` whose link(s) resolve to `target_path`.
----@param target_path string  Absolute filesystem path being searched for.
----@param opts? { root?: string }  `root` defaults to the current working directory.
+--- Basename used as the ripgrep prefilter needle. A link to `target_path` must
+--- contain its final path component verbatim (works for files and directories).
+---@param target_path string
+---@return string|nil
+local function needle_for(target_path)
+  local base = vim.fn.fnamemodify(target_path, ":t")
+  return (base ~= "") and base or nil
+end
+
+--- Build the `rg --files-with-matches` argv for the prefilter.
+---@param root string
+---@param needle string
+---@return string[]
+local function rg_cmd(root, needle)
+  return {
+    "rg", "--files-with-matches", "--fixed-strings", "--color=never",
+    "-g", "*.md", "-g", "!.git/*", "-g", "!node_modules/*",
+    "--", needle, root,
+  }
+end
+
+--- Parse `rg --files-with-matches` stdout into a file list. rg exits 0 with
+--- matches, 1 with none (both fine), >1 on error (treated as "no candidates").
+---@param result vim.SystemCompleted
+---@return string[]
+local function rg_files(result)
+  local files = {}
+  if result.code and result.code <= 1 then
+    for line in (result.stdout or ""):gmatch("[^\r\n]+") do
+      files[#files + 1] = line
+    end
+  end
+  return files
+end
+
+--- Pure-Lua fallback candidate list (every `*.md` under root).
+---@param root string
+---@return string[]
+local function glob_files(root)
+  return vim.fn.globpath(root, "**/*.md", false, true)
+end
+
+--- Scan a candidate file list for links resolving to `wanted` (a normalized,
+--- lower-cased absolute path). Reads each file fully so fenced code blocks are
+--- skipped (link_scan.from_lines is fence-aware) — the same correctness the
+--- non-prefiltered version had.
+---@param files string[]
+---@param wanted string
 ---@return MarkdownFileRef[]
-function M.find_references(target_path, opts)
-  opts = opts or {}
-  if not target_path or target_path == "" then return {} end
-
-  local root = opts.root or vim.fn.getcwd()
-  local wanted = path.normalize(target_path):lower()
-
+local function scan(files, wanted)
   local out = {}
-  local files = vim.fn.globpath(root, "**/*.md", false, true)
-
   for _, file in ipairs(files) do
     if not is_ignored(file) then
       local ok, lines = pcall(vim.fn.readfile, file)
@@ -57,13 +101,16 @@ function M.find_references(target_path, opts)
         local file_dir = vim.fn.fnamemodify(file, ":h")
         for _, lk in ipairs(link_scan.from_lines(lines)) do
           if lk.kind == "mdlink" and lk.target and not lk.target:match("^#") then
-            local resolved = path.resolve_from(lk.target, file_dir)
+            local resolved, base_used, is_abs = path.resolve_traced(lk.target, file_dir)
             if resolved and path.normalize(resolved):lower() == wanted then
               out[#out + 1] = {
-                file    = file,
-                line    = lk.lnum,
-                target  = lk.target,
-                display = lk.display,
+                file           = file,
+                line           = lk.lnum,
+                target         = lk.target,
+                display        = lk.display,
+                base_dir       = base_used,
+                is_absolute    = is_abs,
+                had_dot_prefix = lk.target:match("^%.[/\\]") ~= nil,
               }
             end
           end
@@ -71,8 +118,82 @@ function M.find_references(target_path, opts)
       end
     end
   end
-
   return out
+end
+
+--- Find every `*.md` file under `root` whose link(s) resolve to `target_path`.
+--- Synchronous. Uses the ripgrep prefilter when available, else globs.
+---@param target_path string  Absolute filesystem path being searched for.
+---@param opts? { root?: string }  `root` defaults to the current working directory.
+---@return MarkdownFileRef[]
+function M.find_references(target_path, opts)
+  opts = opts or {}
+  if not target_path or target_path == "" then return {} end
+
+  local root   = opts.root or vim.fn.getcwd()
+  local wanted = path.normalize(target_path):lower()
+  local needle = needle_for(target_path)
+
+  local files
+  if needle and vim.fn.executable("rg") == 1 then
+    files = rg_files(vim.system(rg_cmd(root, needle), { text = true }):wait())
+  else
+    files = glob_files(root)
+  end
+
+  return scan(files, wanted)
+end
+
+--- Async variant: identical result to `find_references`, but the (potentially
+--- slow) candidate discovery runs off the main loop via `vim.system`. The
+--- `callback` receives the ref list, scheduled on the main loop so it may touch
+--- buffers/vim state freely. Falls back to a scheduled sync glob+scan when
+--- ripgrep isn't installed.
+---@param target_path string
+---@param opts? { root?: string }
+---@param callback fun(refs: MarkdownFileRef[])
+function M.find_references_async(target_path, opts, callback)
+  opts = opts or {}
+  if not target_path or target_path == "" then
+    vim.schedule(function() callback({}) end)
+    return
+  end
+
+  local root   = opts.root or vim.fn.getcwd()
+  local wanted = path.normalize(target_path):lower()
+  local needle = needle_for(target_path)
+
+  if needle and vim.fn.executable("rg") == 1 then
+    vim.system(rg_cmd(root, needle), { text = true }, function(result)
+      local files = rg_files(result)
+      vim.schedule(function() callback(scan(files, wanted)) end)
+    end)
+  else
+    vim.schedule(function() callback(scan(glob_files(root), wanted)) end)
+  end
+end
+
+--- Re-express a moved/renamed target in the same style the original ref used,
+--- so an auto-updated link reads the way the author wrote it:
+---   - absolute original          → absolute new path (slash-normalized)
+---   - relative-to-a-base original → new path relative to that same base,
+---                                   preserving a leading `./` when it doesn't
+---                                   climb up
+--- Falls back to a cwd-relative path if the ref carries no base info.
+---@param ref MarkdownFileRef
+---@param new_abs_path string  New absolute path of the moved/renamed file.
+---@return string  The link target to write in place of `ref.target`.
+function M.retarget(ref, new_abs_path)
+  if ref.is_absolute then
+    return (path.normalize(new_abs_path))
+  end
+
+  local base = ref.base_dir or vim.fn.getcwd()
+  local rel  = path.relative_to(base, new_abs_path)
+  if ref.had_dot_prefix and not rel:match("^%.%.?/") and rel ~= "." then
+    rel = "./" .. rel
+  end
+  return rel
 end
 
 return M
