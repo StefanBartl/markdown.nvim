@@ -73,7 +73,8 @@ function M.apply_tableview(ev)
   local browser_view_nice    = require("markdown_nvim.tableview.views.browser_niceified")
   local table_selector       = require("markdown_nvim.tableview.views.table_selector")
 
-  -- The table spanning the cursor row, or nil (with a notification).
+  -- The table spanning the cursor row, or nil (no notification here — the
+  -- caller decides whether a miss falls back to "all tables" or is an error).
   local function table_at_cursor()
     local line = api.nvim_win_get_cursor(0)[1]
     for _, t in ipairs(parser.get_tables(bufnr)) do
@@ -81,8 +82,81 @@ function M.apply_tableview(ev)
         return t
       end
     end
-    notify.info("No table under cursor")
     return nil
+  end
+
+  local function all_tables()
+    local list = parser.get_tables(bufnr)
+    if #list == 0 then
+      notify.info("No tables found in buffer")
+      return nil
+    end
+    return list
+  end
+
+  -- Every table in every *.md file under `path` (recursive), or every table in
+  -- `path` itself when it names a single file. Returns nil (with a
+  -- notification) when the path doesn't resolve to anything with tables.
+  ---@param path string
+  ---@return table[]|nil
+  local function tables_from_path(path)
+    local expanded = vim.fn.expand(path)
+
+    if vim.fn.isdirectory(expanded) == 1 then
+      local files = require("markdown_nvim.util.md_files").collect(expanded)
+      if #files == 0 then
+        notify.info("No *.md files found under " .. expanded)
+        return nil
+      end
+      local all = {}
+      for _, f in ipairs(files) do
+        vim.list_extend(all, parser.get_tables_from_file(f))
+      end
+      if #all == 0 then
+        notify.info("No tables found under " .. expanded)
+        return nil
+      end
+      return all
+    end
+
+    if vim.fn.filereadable(expanded) == 1 then
+      local list = parser.get_tables_from_file(expanded)
+      if #list == 0 then
+        notify.info("No tables found in " .. expanded)
+        return nil
+      end
+      return list
+    end
+
+    notify.warn("TableView: path not found: " .. path)
+    return nil
+  end
+
+  -- Resolve what a TableView* invocation should act on, given its optional
+  -- `scope` argument:
+  --   scope == "%"           -> every table in the current buffer, stacked
+  --   scope == "cwd"         -> every table in every *.md file under the cwd
+  --   scope == <path>        -> every table in that file, or (if a directory)
+  --                             every table in every *.md file under it
+  --   scope == "" / nil       -> the table at the cursor; if there is none,
+  --                             fall back to every table in the buffer
+  -- Returns ("one", table) | ("all", table[]) | (nil, nil).
+  local function resolve_target(scope)
+    if scope == "%" then
+      return "all", all_tables()
+    elseif scope == "cwd" then
+      local target = tables_from_path(vim.fn.getcwd())
+      if not target then return nil, nil end
+      return "all", target
+    elseif scope ~= nil and scope ~= "" then
+      local target = tables_from_path(scope)
+      if not target then return nil, nil end
+      return "all", target
+    end
+
+    local at_cursor = table_at_cursor()
+    if at_cursor then return "one", at_cursor end
+    return "all", all_tables()
   end
 
   -- Resolved default float style ("markdown" | "box"), from config.tableview.
@@ -91,20 +165,54 @@ function M.apply_tableview(ev)
     return (cfg.tableview and cfg.tableview.style) or "markdown"
   end
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewToggle", function(_)
-    local chosen = table_at_cursor()
-    if chosen then ui.toggle_table(chosen, { floating = true, style = default_style() }) end
-  end, { desc = "[markdown.nvim] Toggle preview for table under cursor (config style)", nargs = 0 })
+  --- Build a TableViewToggle/Markdown/Box handler for a fixed `style`
+  --- ("config" resolves default_style() at call time; "markdown"/"box" force it).
+  ---@param style "config"|"markdown"|"box"
+  local function make_view_handler(style)
+    return function(cmd_opts)
+      local scope = cmd_opts.args ~= "" and cmd_opts.args or nil
+      local kind, target = resolve_target(scope)
+      if not kind then return end
+      local resolved_style = style == "config" and default_style() or style
+      if kind == "one" then
+        ui.toggle_table(target, { floating = true, style = resolved_style })
+      else
+        ui.toggle_tables(target, { floating = true, style = resolved_style })
+      end
+    end
+  end
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewMarkdown", function(_)
-    local chosen = table_at_cursor()
-    if chosen then ui.toggle_table(chosen, { floating = true, style = "markdown" }) end
-  end, { desc = "[markdown.nvim] Toggle aligned-Markdown table preview at cursor", nargs = 0 })
+  --- Completion for the scope argument: `%`, `cwd`, then file/dir completion.
+  ---@param arglead string
+  ---@return string[]
+  local function complete_scope(arglead)
+    local out = {}
+    if vim.startswith("%", arglead) then out[#out + 1] = "%" end
+    if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
+    vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
+    return out
+  end
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewBox", function(_)
-    local chosen = table_at_cursor()
-    if chosen then ui.toggle_table(chosen, { floating = true, style = "box" }) end
-  end, { desc = "[markdown.nvim] Toggle box-drawing table preview at cursor", nargs = 0 })
+  local view_desc = "[markdown.nvim] Toggle %s preview: table at cursor, or every table with"
+    .. " scope=%%|cwd|<path> (falls back to all-in-buffer off any table)"
+
+  api.nvim_buf_create_user_command(bufnr, "TableViewToggle", make_view_handler("config"), {
+    desc     = view_desc:format("config-style"),
+    nargs    = "?",
+    complete = complete_scope,
+  })
+
+  api.nvim_buf_create_user_command(bufnr, "TableViewMarkdown", make_view_handler("markdown"), {
+    desc     = view_desc:format("aligned-Markdown"),
+    nargs    = "?",
+    complete = complete_scope,
+  })
+
+  api.nvim_buf_create_user_command(bufnr, "TableViewBox", make_view_handler("box"), {
+    desc     = view_desc:format("box-drawing"),
+    nargs    = "?",
+    complete = complete_scope,
+  })
 
   api.nvim_buf_create_user_command(bufnr, "TableViewSelect", function()
     local tables = parser.get_tables(bufnr)

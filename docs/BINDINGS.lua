@@ -92,7 +92,7 @@ return {
       { name = "Markdown links create [-r] [--noignore] [--root <p>] <path>", desc = "Generate links from a dir tree to clipboard" },
       { name = "Markdown toc [level] [--sep|--no-sep]",                desc = "Insert/refresh the TOC" },
       { name = "Markdown refs [sync|check|live [on|off|toggle]|baseline]", desc = "Sync #anchor links + TOC on heading rename" },
-      { name = "Markdown table view [toggle|markdown|box|select|close|browser|browsernice]", desc = "Render table preview (md/box float or HTML in browser)" },
+      { name = "Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope]", desc = "Render table preview; scope=%|cwd|<path> or off-table cursor = every matching table, stacked" },
       { name = "Markdown table format [options]",                     desc = "GFM table formatter at cursor/in scope" },
       { name = "Markdown table new [cols] [rows]",                    desc = "Insert an empty GFM table template" },
       { name = "Markdown table mode [on|off|toggle]",                 desc = "Per-buffer table auto-format (vim-table-mode style)" },
@@ -121,7 +121,6 @@ return {
     { event = "FileType",     group = "MarkdownNvimUserCommands", pattern = "markdown/mdx/md/markdown.*", desc = "Install buffer-local user commands" },
     { event = "FileType",     group = "MarkdownNvimFold",         pattern = "markdown/mdx/md/markdown.*", desc = "Set foldmethod=expr + fold options" },
     { event = "FileType/BufWritePre/TextChanged", group = "MarkdownNvimRefs", pattern = "markdown/mdx/md/markdown.*", desc = "refs sync per config.refs.mode (off|save|live)" },
-    { event = "BufWritePost", group = "(tableview.live)",         pattern = "markdown",                   desc = "Live table preview refresh" },
     { event = "ColorScheme",  group = "(hl_options)",             pattern = "*",                          desc = "Re-apply blockquote / fenced-code highlights" },
   },
 }

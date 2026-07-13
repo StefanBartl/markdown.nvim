@@ -409,19 +409,34 @@ The single namespace for every table action — preview, format, and a focused,
 dependency-free reimplementation of the vim-table-mode essentials.
 
 ```vim
-:Markdown table view [toggle|markdown|box|select|close|browser|browsernice]
+:Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope]
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table tableize [delimiter]    " turn delimited text into a GFM table
 ```
 
-- **view** renders the table under the cursor in a nicely formatted preview.
+- **view** renders a table (or every table) in a nicely formatted preview.
   `toggle` uses the configured default style (`tableview.style`, default
   `markdown`); `markdown` / `box` force the aligned-Markdown or Unicode
   box-drawing "spreadsheet" style; `browser` / `browsernice` open it as basic /
   GitHub-styled HTML in the system browser. `select` picks a table from a list;
   `close` closes the float (also `q` / `<Esc>` inside it).
+
+  `toggle` / `markdown` / `box` accept an optional `scope`:
+  | scope | Shows |
+  |---|---|
+  | *(none)* | The table at the cursor; off any table, falls back to every table in the current buffer |
+  | `%` | Every table in the current buffer, even with the cursor on one |
+  | `cwd` | Every table in every `*.md` file under the working directory (recursive) |
+  | `<path>` | Every table in that file, or — if `<path>` is a directory — every table in every `*.md` file under it (recursive) |
+
+  Multiple tables render stacked one after another, separated by a blank line
+  and a label (`── Table i/N (line L) ──`, or `── path:line (Table i/N) ──`
+  when the table came from a file on disk rather than the current buffer).
+  Tab-completion on the scope argument offers `%`, `cwd`, and path completion.
+  Same via the buffer-local commands directly: `:TableViewToggle`,
+  `:TableViewToggle %`, `:TableViewBox cwd`, `:TableViewToggle ./docs`, …
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope.
 - **mode** turns on per-buffer *table mode*: after each edit inside a table it is

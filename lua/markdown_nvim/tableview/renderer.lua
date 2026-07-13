@@ -210,6 +210,72 @@ local function clear_highlights(buf)
   pcall(api.nvim_buf_clear_namespace, buf, state.namespace, 0, -1)
 end
 
+--- Build the stacked lines for every table in `tables` (rendered one after
+--- another, separated by a blank line), plus per-table highlight metadata so
+--- the caller can re-derive header/separator/label rows in the combined
+--- buffer. A short "── Table i/N (line L) ──" label precedes each table when
+--- there is more than one; a table with `.source` set (read from a file on
+--- disk — the %/path/cwd scopes) is always labelled with its file path, even
+--- when it is the only table, so it stays clear which table came from where
+--- while scrolling a long, possibly multi-file stack.
+---@param tables table[]  markdown_nvim.tableview.parser table objects (optionally with `.source`)
+---@param style "markdown"|"box"
+---@return string[] lines
+---@return { header_line: integer, sep_lines: integer[], label_line: integer|nil }[] blocks
+local function build_stacked_lines(tables, style)
+  local box = style == "box"
+  local lines = {}
+  local blocks = {}
+
+  for idx, mt in ipairs(tables) do
+    if idx > 1 then lines[#lines + 1] = "" end
+
+    -- A table read from disk (`.source` set by parser.get_tables_from_file, for
+    -- the %/path/cwd scopes) always gets a label naming its file, even when it
+    -- is the only table shown; a same-buffer stack only labels when there is
+    -- more than one table (unchanged from the single-file behaviour).
+    local label_line = nil
+    if mt.source then
+      label_line = #lines
+      lines[#lines + 1] = string.format("── %s:%d  (Table %d/%d) ──", mt.source, mt.start_line or 0, idx, #tables)
+    elseif #tables > 1 then
+      label_line = #lines
+      lines[#lines + 1] = string.format("── Table %d/%d (line %d) ──", idx, #tables, mt.start_line or 0)
+    end
+
+    local block_start = #lines -- 0-indexed row of this table's first line
+    local table_lines = box and build_box_lines(mt) or build_lines_from_markdowntable(mt)
+
+    -- Header/separator rows, computed relative to table_lines first (0-indexed)
+    -- so the box-vs-markdown logic below matches render_markdowntable exactly,
+    -- then offset by block_start for the combined buffer.
+    local header_local = box and 1 or 0
+    local sep_local = {}
+    if box then
+      for i = 0, #table_lines - 1 do
+        if i ~= header_local and not (table_lines[i + 1] or ""):match("^│") then
+          sep_local[#sep_local + 1] = i
+        end
+      end
+    elseif #table_lines >= 2 then
+      sep_local[1] = 1
+    end
+
+    for _, l in ipairs(table_lines) do lines[#lines + 1] = l end
+
+    local sep_abs = {}
+    for _, i in ipairs(sep_local) do sep_abs[#sep_abs + 1] = block_start + i end
+
+    blocks[#blocks + 1] = {
+      header_line = block_start + header_local,
+      sep_lines   = sep_abs,
+      label_line  = label_line,
+    }
+  end
+
+  return lines, blocks
+end
+
 function M.render_markdowntable(mt, opts)
   opts = merge(default_opts, opts or {})
   local box = opts.style == "box"
@@ -274,6 +340,64 @@ function M.toggle_markdowntable(mt, opts)
     return
   end
   M.render_markdowntable(mt, opts)
+end
+
+--- Render every table in `tables`, stacked one after another (see
+--- build_stacked_lines). Used when the cursor is not on any table, or when the
+--- caller explicitly asked for the whole buffer (`TableViewToggle %`).
+---@param tables table[]
+---@param opts? table
+function M.render_tables(tables, opts)
+  opts = merge(default_opts, opts or {})
+  local style = opts.style == "box" and "box" or "markdown"
+  local lines, blocks = build_stacked_lines(tables, style)
+
+  if not opts.floating then
+    local buf = api.nvim_create_buf(true, false)
+    api.nvim_buf_set_name(buf, opts.bufname or "[Markdown Tables]")
+    api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    pcall(api.nvim_set_option_value, "filetype", "markdown", { scope = "local", buf = buf })
+    api.nvim_set_current_buf(buf)
+    return
+  end
+
+  local buf, _ = ensure_view(opts)
+  if not (buf and api.nvim_buf_is_valid(buf)) then return end
+
+  set_buf_opt(state.buf, "modifiable", true)
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  set_buf_opt(state.buf, "modifiable", false)
+
+  clear_highlights(buf)
+  pcall(function()
+    local ns = state.namespace
+    local header_hl = opts.highlight and opts.highlight.header or "Title"
+    local sep_hl = opts.highlight and opts.highlight.separator or "Comment"
+    if hl and hl.range then
+      for _, block in ipairs(blocks) do
+        if block.label_line then
+          hl.range(buf, ns, sep_hl, { block.label_line, 0 }, { block.label_line, -1 }, { inclusive = false })
+        end
+        if #lines > block.header_line then
+          hl.range(buf, ns, header_hl, { block.header_line, 0 }, { block.header_line, -1 }, { inclusive = false })
+        end
+        for _, sl in ipairs(block.sep_lines) do
+          hl.range(buf, ns, sep_hl, { sl, 0 }, { sl, -1 }, { inclusive = false })
+        end
+      end
+    end
+  end)
+end
+
+--- Toggle the stacked all-tables preview (see render_tables).
+---@param tables table[]
+---@param opts? table
+function M.toggle_tables(tables, opts)
+  if state.win and api.nvim_win_is_valid(state.win) then
+    M.close_view()
+    return
+  end
+  M.render_tables(tables, opts)
 end
 
 M.render_table = M.render_markdowntable

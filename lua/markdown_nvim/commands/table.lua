@@ -32,7 +32,15 @@ local function do_view(argv)
     notify.warn("table view: " .. cmd .. " not available (open a markdown buffer first)")
     return
   end
-  vim.cmd(cmd)
+  -- Forward any remaining argument (e.g. the `%` scope for toggle/markdown/box)
+  -- to the buffer-local command: `:Markdown table view toggle %` -> `:TableViewToggle %`.
+  local rest = {}
+  for i = 2, #argv do rest[#rest + 1] = argv[i] end
+  if #rest > 0 then
+    vim.cmd(cmd .. " " .. table.concat(rest, " "))
+  else
+    vim.cmd(cmd)
+  end
 end
 
 -- ---------------------------------------------------------------------------
@@ -169,13 +177,27 @@ function M.complete(arglead, cmdline)
   if sub == "format" and on_args then
     return require("markdown_nvim.core.table_fmt").complete(arglead)
   end
-  if sub == "view" and on_args then
-    local out = {}
-    for name in pairs(VIEW_ACTIONS) do
-      if vim.startswith(name, arglead) then out[#out + 1] = name end
+  if sub == "view" then
+    -- tokens: Markdown(1) table(2) view(3) <action>(4) <scope>(5)
+    local completing_scope = #tokens > 4 or (#tokens == 4 and arglead == "")
+    if completing_scope then
+      local action = (tokens[4] or ""):lower()
+      local out = {}
+      if action == "toggle" or action == "markdown" or action == "box" then
+        if vim.startswith("%", arglead) then out[#out + 1] = "%" end
+        if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
+        vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
+      end
+      return out
     end
-    table.sort(out)
-    return out
+    if on_args then -- completing the action itself (token 4)
+      local out = {}
+      for name in pairs(VIEW_ACTIONS) do
+        if vim.startswith(name, arglead) then out[#out + 1] = name end
+      end
+      table.sort(out)
+      return out
+    end
   end
   if sub == "mode" and on_args then
     local out = {}

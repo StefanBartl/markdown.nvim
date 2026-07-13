@@ -270,13 +270,7 @@ local function format_file(path, header_align, entry_align)
   return true, nil
 end
 
-local function collect_md_files(dir)
-  local result = vim.fn.glob(dir:gsub("[/\\]$", "") .. "/**/*.md", false, true)
-  for _, f in ipairs(vim.fn.glob(dir:gsub("[/\\]$", "") .. "/*.md", false, true)) do
-    result[#result + 1] = f
-  end
-  return result
-end
+local collect_md_files = require("markdown_nvim.util.md_files").collect
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Public API

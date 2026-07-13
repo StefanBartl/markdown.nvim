@@ -633,14 +633,31 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 ------------------------------------------------------------------------------
 7.5 :Markdown table                                       *:Markdown-table*
 
-:Markdown table view [toggle|markdown|box|select|close|browser|browsernice]
+:Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope]
 
-  Render the table under the cursor in a nicely formatted preview (see
+  Render a table (or every table) in a nicely formatted preview (see
   |markdown.nvim-tableview|). `toggle` uses the configured default style
   (`tableview.style`, default "markdown"); `markdown` / `box` force the
   aligned-Markdown or Unicode box-drawing "spreadsheet" style; `browser` /
   `browsernice` open it as basic / GitHub-styled HTML in the browser. `select`
   picks a table from a list; `close` closes the float (also `q` / `<Esc>`).
+
+  `toggle` / `markdown` / `box` accept an optional `scope`:
+    (none)   cursor ON a table    -> preview just that table
+             cursor OFF any table -> every table in the current buffer
+    %        every table in the current buffer, even with the cursor on one
+    cwd      every table in every *.md file under the working directory
+             (recursive)
+    <path>   every table in that file, or — if <path> is a directory — every
+             table in every *.md file under it (recursive)
+
+  Multiple tables render stacked one after another, separated by a blank line
+  and a label: `── Table i/N (line L) ──` for same-buffer tables, or
+  `── path:line (Table i/N) ──` when a table came from a file on disk rather
+  than the current buffer. Tab-completion on the scope argument offers `%`,
+  `cwd`, and path completion. Same via the buffer-local commands directly:
+  `:TableViewToggle`, `:TableViewToggle %`, `:TableViewBox cwd`,
+  `:TableViewToggle ./docs`, …
 
 :Markdown table format [options]
 
@@ -773,11 +790,14 @@ The floating window reuses the same buffer for successive renders. It is
 closed by `:TableViewClose`, by pressing `q` or `<Esc>` in the selection
 list, or when the buffer is wiped.
 
+With the cursor on a table, `:TableViewToggle` (and `:TableViewMarkdown` /
+`:TableViewBox`) preview just that one. Off any table, or with an explicit
+scope (`%`, `cwd`, or a file/directory path), they preview every matching
+table instead, stacked one after another and separated by a blank line plus a
+label. See |:Markdown-table|.
+
 Browser export creates a temporary `.html` file in `vim.fn.tempname()` and
 opens it with the system application (xdg-open / open / cmd start).
-
-Live preview (BufWritePost) is available via
-`require("markdown_nvim.tableview.live").start()`.
 
 ==============================================================================
 9. FOLD EXPRESSION                              *markdown.nvim-foldexpr*
@@ -907,8 +927,7 @@ Sub-modules can be imported individually, e.g.: >
       mappings.lua           buffer-local keymaps
       commands.lua           buffer-local user commands
       parser.lua             pipe-table parser
-      renderer.lua           floating window renderer
-      live.lua               BufWritePost live preview helper
+      renderer.lua           floating window renderer (single + stacked all-tables view)
       views/
         browser_basic.lua    basic HTML export
         browser_niceified.lua styled HTML export

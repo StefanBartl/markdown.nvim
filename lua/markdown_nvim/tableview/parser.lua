@@ -68,11 +68,12 @@ function M.parse_table(lines, start_line)
   return tbl
 end
 
-function M.get_tables(bufnr)
-  bufnr = bufnr or 0
-  local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, 0, -1, false)
-  if not ok or not lines then return {} end
-
+--- Parse every GFM table out of a plain list of lines. Pure (no buffer or file
+--- I/O), so it works equally for a live buffer's lines and a file read from
+--- disk via `vim.fn.readfile`.
+---@param lines string[]
+---@return table[]
+function M.get_tables_from_lines(lines)
   local tables = {}
   local i = 1
   while i <= #lines do
@@ -96,6 +97,27 @@ function M.get_tables(bufnr)
     end
   end
 
+  return tables
+end
+
+function M.get_tables(bufnr)
+  bufnr = bufnr or 0
+  local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, 0, -1, false)
+  if not ok or not lines then return {} end
+  return M.get_tables_from_lines(lines)
+end
+
+--- Parse every GFM table in a file on disk (no buffer needed — used for the
+--- `%`/path/`cwd` TableView scopes reading files that are not open). Each
+--- returned table additionally carries `.source = path`, so callers can label
+--- which file a table came from when aggregating across several files.
+---@param path string
+---@return table[]
+function M.get_tables_from_file(path)
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if not ok or not lines then return {} end
+  local tables = M.get_tables_from_lines(lines)
+  for _, t in ipairs(tables) do t.source = path end
   return tables
 end
 
