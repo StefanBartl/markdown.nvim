@@ -27,7 +27,7 @@ CONTENTS                                           *markdown.nvim-contents*
      7.3 toc ................... |:Markdown-toc|
      7.4 refs .................. |:Markdown-refs|
      7.5 table ................. |:Markdown-table|
-     7.6 render / preview ...... |:Markdown-render|
+     7.6 render / preview / mdview |:Markdown-render|
      7.7 create ................ |:Markdown-create|
      7.8 headline_spacing ...... |:Markdown-headline-spacing|
      7.9 scope ................. |:Markdown-scope|
@@ -59,7 +59,7 @@ Included subsystems:
   * Anchor / URL / image / file handler on double-click or `ma`
   * Floating Markdown table browser with HTML export
   * GFM table stack: formatter, auto-format table mode, tableize, cell motions
-  * Unified `:Markdown` command: links, toc, table, render, preview,
+  * Unified `:Markdown` command: links, toc, table, render, preview, mdview,
     create, headline_spacing
 
 ==============================================================================
@@ -360,7 +360,7 @@ everything else is off. Otherwise the resolver starts all-on, applies
 Gateable feature names (also returned by `require("markdown_nvim.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
-    links  toc  table  render  preview  create  headline_spacing  scope
+    links  toc  table  render  preview  mdview  create  headline_spacing  scope
 
 A disabled `:Markdown` subcommand drops out of completion and reports if
 invoked; disabled keymaps and autocmds are never installed. The legacy
@@ -549,6 +549,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     table              view/format/new/mode/tableize    |:Markdown-table|
     render             Toggle render-markdown.nvim       |:Markdown-render|
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
+    mdview             Open file via mdview.nvim         |:Markdown-render|
     create             Create files for link targets     |:Markdown-create|
     headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
     scope              Toggle fenced-block scope         |:Markdown-scope|
@@ -688,7 +689,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   when only `tableview` is enabled (see |markdown.nvim-config-features|).
 
 ------------------------------------------------------------------------------
-7.6 :Markdown render / preview                            *:Markdown-render*
+7.6 :Markdown render / preview / mdview                   *:Markdown-render*
 
 :Markdown render [on|off|toggle]
 
@@ -700,6 +701,16 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 
   Control markdown-preview.nvim. While active, the preview is refreshed on
   buffer switch (BufEnter for `*.md`). Also an optional host dependency.
+
+:Markdown mdview [path]
+
+  Open `path` (default: the current buffer's file) directly in the browser
+  via mdview.nvim's `:MDViewStart`, which starts a session or — if one is
+  already running — pushes the file and re-opens the preview surface for it.
+  mdview.nvim is an optional host dependency; the command warns gracefully
+  when it is not installed or loaded (e.g. omitted as a dependency of
+  markdown.nvim and not installed standalone). `:checkhealth markdown_nvim`
+  reports whether it was detected.
 
 ------------------------------------------------------------------------------
 7.7 :Markdown create                                      *:Markdown-create*
@@ -952,6 +963,7 @@ Sub-modules can be imported individually, e.g.: >
       table.lua              :Markdown table view|format|new
       render.lua             :Markdown render (render-markdown.nvim)
       preview.lua            :Markdown preview (markdown-preview.nvim)
+      mdview.lua             :Markdown mdview (mdview.nvim)
       create.lua             :Markdown create fs
     setup/
       keymaps.lua            buffer-local keymap installer

@@ -41,7 +41,7 @@ effects on non-Markdown buffers.
 | **table\_mode** | Auto-format table mode, `tableize`, cell motions — a dependency-free vim-table-mode core |
 | **link\_scan** | Collect every link in a line/buffer; powers `:Markdown links show` and `create fs` |
 | **fenced\_scope** | Treat a ` ```markdown ` / `md` / `mdx` block as its own sub-document: TOC, heading nav, anchor jump and shift scope to the block your cursor is in (see below) |
-| **:Markdown** | Unified command: `links`, `toc`, `refs`, `table`, `render`, `preview`, `create`, `headline_spacing`, `scope` |
+| **:Markdown** | Unified command: `links`, `toc`, `refs`, `table`, `render`, `preview`, `mdview`, `create`, `headline_spacing`, `scope` |
 
 ---
 
@@ -234,7 +234,7 @@ then re-applies `enable`. Unknown names emit a warning.
 
 Gateable features: `keymaps`, `fold`, `hl`, `link_hl`, `fenced_fix`,
 `fenced_scope`, `tableview`, `refs`, and the `:Markdown` subcommand features
-`links`, `toc`, `table`, `render`, `preview`, `create`, `headline_spacing`,
+`links`, `toc`, `table`, `render`, `preview`, `mdview`, `create`, `headline_spacing`,
 `scope`. A disabled subcommand drops out of completion and reports if invoked;
 disabled keymaps/autocmds are never installed. (The legacy `enable_keymaps` /
 `enable_autocmds` flags still work alongside this.)
@@ -456,16 +456,22 @@ Cell motions `[|` / `]|` jump to the previous / next cell on the current row.
 Everything lives under the `table` feature, and stays available when only the
 `tableview` feature is enabled, so the table stack works standalone.
 
-### `:Markdown render` / `:Markdown preview`
+### `:Markdown render` / `:Markdown preview` / `:Markdown mdview`
 
 ```vim
 :Markdown render  [on|off|toggle]        " render-markdown.nvim (optional host)
 :Markdown preview [start|stop|toggle]    " markdown-preview.nvim (optional host)
+:Markdown mdview   [path]                " mdview.nvim (optional host)
 ```
 
 Thin wrappers around the optional host plugins; they warn gracefully if the
 plugin is not installed. `preview` also auto-refreshes on buffer switch while
-active.
+active. `mdview` opens `path` (default: the current buffer's file) directly in
+the browser via [mdview.nvim](https://github.com/StefanBartl/mdview.nvim)'s
+`:MDViewStart`, which starts a session or — if one is already running — pushes
+the file and re-opens the preview surface for it. It only does anything when
+mdview.nvim is actually installed and loaded; `:checkhealth markdown_nvim`
+reports whether it was detected.
 
 ### `:Markdown create`
 
@@ -608,9 +614,9 @@ local sub = md.submenu()               -- { name = "  Markdown", items = {…} }
 ```
 
 Reports the Neovim version, the cross-platform opener (`vim.ui.open`), config
-sanity, the optional host plugins (`:Markdown render` / `preview`), the optional
-`lib.nvim` / `which-key` integrations, and the `fenced_scope` state (enabled
-ops + which fence-detection backend is active).
+sanity, the optional host plugins (`:Markdown render` / `preview` / `mdview`),
+the optional `lib.nvim` / `which-key` integrations, and the `fenced_scope`
+state (enabled ops + which fence-detection backend is active).
 
 ---
 
@@ -678,6 +684,7 @@ lua/markdown_nvim/
     table.lua              :Markdown table view|format|new
     render.lua             :Markdown render (render-markdown.nvim)
     preview.lua            :Markdown preview (markdown-preview.nvim)
+    mdview.lua             :Markdown mdview (mdview.nvim)
     create.lua             :Markdown create fs
   bindings/                all keymaps, user commands and autocmds live here
     init.lua               orchestrator: setup(cfg)

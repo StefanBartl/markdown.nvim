@@ -28,6 +28,7 @@ local commands = {
   table             = require("markdown_nvim.commands.table").run,
   render            = require("markdown_nvim.commands.render").run,
   preview           = require("markdown_nvim.commands.preview").run,
+  mdview            = require("markdown_nvim.commands.mdview").run,
   create            = require("markdown_nvim.commands.create").run,
   scope             = require("markdown_nvim.commands.scope").run,
   headline_spacing  = function()
@@ -72,6 +73,7 @@ local sub_complete = {
   table   = function(arglead, cmdline) return require("markdown_nvim.commands.table").complete(arglead, cmdline) end,
   render  = function(arglead) return require("markdown_nvim.commands.render").complete(arglead) end,
   preview = function(arglead) return require("markdown_nvim.commands.preview").complete(arglead) end,
+  mdview  = function(arglead) return require("markdown_nvim.commands.mdview").complete(arglead) end,
   create  = function(arglead) return require("markdown_nvim.commands.create").complete(arglead) end,
   scope   = function(arglead) return require("markdown_nvim.commands.scope").complete(arglead) end,
 }

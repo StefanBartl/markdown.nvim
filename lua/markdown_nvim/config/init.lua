@@ -22,7 +22,7 @@ local FEATURES = {
   "keymaps", "fold", "hl", "link_hl", "fenced_fix", "fenced_scope",
   "tableview", "refs",
   -- :Markdown subcommand features
-  "links", "toc", "table", "render", "preview", "create", "headline_spacing", "scope",
+  "links", "toc", "table", "render", "preview", "mdview", "create", "headline_spacing", "scope",
 }
 
 local FEATURE_SET = {}

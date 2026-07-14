@@ -99,6 +99,7 @@ return {
       { name = "Markdown table tableize [delimiter]",                 desc = "Convert delimited text (range) into a GFM table" },
       { name = "Markdown render [on|off|toggle]",                     desc = "render-markdown.nvim wrapper (optional host)" },
       { name = "Markdown preview [start|stop|toggle]",                desc = "markdown-preview.nvim wrapper (optional host)" },
+      { name = "Markdown mdview [path]",                              desc = "Open a file directly via mdview.nvim (optional host)" },
       { name = "Markdown create fs",                                  desc = "Create files/dirs for local link targets" },
       { name = "Markdown headline_spacing",                           desc = "Enforce blank-dash-blank between H2+ sections" },
       { name = "Markdown scope [on|off|toggle|status]",               desc = "Toggle fenced-block scope (TOC/nav/jump/shift/fold act on the block the cursor is in)" },

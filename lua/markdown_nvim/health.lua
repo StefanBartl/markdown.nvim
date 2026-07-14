@@ -2,8 +2,9 @@
 ---@brief `:checkhealth markdown_nvim` diagnostics.
 ---@description
 --- Reports the Neovim version, config sanity, the state of the optional host
---- plugins (`:Markdown render` / `:Markdown preview`), and the optional
---- `lib.nvim` / `which-key` integrations. Read-only: never mutates state.
+--- plugins (`:Markdown render` / `:Markdown preview` / `:Markdown mdview`), and
+--- the optional `lib.nvim` / `which-key` integrations. Read-only: never
+--- mutates state.
 
 local M = {}
 
@@ -64,6 +65,11 @@ function M.check()
     ok("markdown-preview.nvim detected (:Markdown preview available)")
   else
     info("markdown-preview.nvim not found — :Markdown preview will warn if used")
+  end
+  if vim.fn.exists(":MDViewStart") == 2 then
+    ok("mdview.nvim detected (:Markdown mdview available)")
+  else
+    info("mdview.nvim not found — :Markdown mdview will warn if used")
   end
 
   -- Optional lib.nvim integration (the default float picker backend).
