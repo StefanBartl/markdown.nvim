@@ -784,7 +784,16 @@ Table format supported: >
   | left     | center   | right    |
 <
 Alignment markers (`:---`, `:---:`, `---:`) are respected in the rendered
-output.
+output. Column widths are computed from screen-DISPLAY width
+(`vim.fn.strdisplaywidth`), not byte length, so cells containing multi-byte
+UTF-8 (umlauts, em dashes, curly quotes, arrows, …) still keep every `|` / `│`
+divider lined up across rows.
+
+`require("markdown_nvim.tableview.renderer").validate_alignment(lines)` checks
+a rendered table's lines and reports (`ok`, `err`) — `err` names the first line
+whose divider count or display column doesn't match the reference row. Use it
+to verify a rendering programmatically (e.g. in a test) instead of eyeballing a
+screenshot for drifted columns.
 
 The floating window reuses the same buffer for successive renders. It is
 closed by `:TableViewClose`, by pressing `q` or `<Esc>` in the selection
@@ -879,6 +888,9 @@ Sub-modules can be imported individually, e.g.: >
 
   local hs = require("markdown_nvim.core.headline_spacing")
   hs.apply_headl_separators(0, { notify = false })
+
+  local renderer = require("markdown_nvim.tableview.renderer")
+  local ok, err = renderer.validate_alignment(rendered_lines)
 <
 ==============================================================================
 11. ARCHITECTURE                              *markdown.nvim-architecture*

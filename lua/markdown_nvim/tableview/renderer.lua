@@ -29,6 +29,18 @@ local function merge(a, b)
   return out
 end
 
+--- Screen-column width of `str`, not its byte length. Table cells routinely
+--- contain multi-byte UTF-8 (German umlauts ü/ö/ä, em dashes —, ellipses …,
+--- curly quotes „", arrows →, …), which are 2-3 bytes but occupy a single
+--- screen column; padding by `#str` (byte length) over-pads such cells and
+--- drifts the `|` column separators out of alignment across rows.
+---@param str string
+---@return integer
+local function display_width(str)
+  local ok, w = pcall(vim.fn.strdisplaywidth, str)
+  return ok and w or #str
+end
+
 local function table_to_matrix(mt)
   local matrix = {}
   local header_cells = {}
@@ -48,7 +60,7 @@ local function compute_col_widths(matrix)
   local widths = {}
   for _, row in ipairs(matrix) do
     for col_idx, cell in ipairs(row) do
-      local len = #cell
+      local len = display_width(cell)
       if not widths[col_idx] or len > widths[col_idx] then widths[col_idx] = len end
     end
   end
@@ -57,7 +69,7 @@ end
 
 local function align_cell(text, width, align)
   align = align or "left"
-  local len = #text
+  local len = display_width(text)
   if width <= len then return text end
   local pad = width - len
   if align == "left" then
@@ -403,5 +415,61 @@ end
 M.render_table = M.render_markdowntable
 M.toggle_table = M.toggle_markdowntable
 M.close        = M.close_view
+
+--- Every DISPLAY column (not byte column) at which a `|` or box-drawing `│`
+--- cell divider occurs on `line`. Iterates by character (via strcharpart), not
+--- byte, so a preceding multi-byte character (ü, —, …, „", →, …) advances the
+--- running column by its actual screen width rather than its byte count.
+---@param line string
+---@return integer[]
+local function divider_columns(line)
+  local cols = {}
+  local col = 0
+  local nchars = vim.fn.strchars(line)
+  for i = 0, nchars - 1 do
+    local ch = vim.fn.strcharpart(line, i, 1)
+    if ch == "|" or ch == "│" then
+      cols[#cols + 1] = col
+    end
+    col = col + display_width(ch)
+  end
+  return cols
+end
+
+--- Verify that a rendered table block (as returned by build_lines_from_
+--- markdowntable / build_box_lines / render_tables' stacked output) has every
+--- `|`/`│` divider at the same DISPLAY column on every line that has any —
+--- i.e. the table is actually visually aligned, not just byte-aligned. This is
+--- the de-facto check for the "content with umlauts/em-dashes/curly quotes
+--- drifts the columns" bug class: run it over rendered output (in a test, or
+--- ad hoc via `:lua print(require(...).validate_alignment(lines))`) rather
+--- than eyeballing a screenshot.
+---@param lines string[]
+---@return boolean ok
+---@return string|nil err  description of the first mismatch found
+function M.validate_alignment(lines)
+  local reference, reference_lineno = nil, nil
+  for lineno, line in ipairs(lines) do
+    local cols = divider_columns(line)
+    if #cols > 0 then
+      if not reference then
+        reference, reference_lineno = cols, lineno
+      elseif #cols ~= #reference then
+        return false, string.format(
+          "line %d has %d divider(s), line %d (reference) has %d",
+          lineno, #cols, reference_lineno, #reference)
+      else
+        for i, c in ipairs(cols) do
+          if c ~= reference[i] then
+            return false, string.format(
+              "line %d: divider %d is at display column %d, expected %d (from line %d)",
+              lineno, i, c, reference[i], reference_lineno)
+          end
+        end
+      end
+    end
+  end
+  return true, nil
+end
 
 return M

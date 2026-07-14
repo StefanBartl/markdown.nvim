@@ -20,6 +20,7 @@ local specs = {
   "headings_spec.lua",
   "handler_spec.lua",
   "tableview_spec.lua",
+  "tableview_alignment_spec.lua",
   "fenced_scope_spec.lua",
   "session_features_spec.lua",
 }

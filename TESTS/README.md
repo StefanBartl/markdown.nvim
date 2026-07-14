@@ -25,6 +25,7 @@ The runner prints one line per spec and exits non-zero on the first failure
 | `headings_spec.lua`  | Heading level shift + nav (up/down, H6 clamp, H1 reach, column preservation, non-markdown no-op). |
 | `handler_spec.lua`   | Cursor-action handler: silent mode suppresses the "no target" notification for mouse invocation. |
 | `tableview_spec.lua` | Floating TableView preview closes via `q`/`<Esc>`.              |
+| `tableview_alignment_spec.lua` | TableView column alignment with multi-byte UTF-8 content (umlauts, em dashes, curly quotes, arrows, ellipses) — regression coverage for the byte-length-vs-display-width padding bug, using the new `renderer.validate_alignment(lines)` de-facto check (also verifies the validator itself catches a genuinely drifted table, not just rubber-stamps everything). |
 | `fenced_scope_spec.lua` | Fenced-block scope: detection + TOC/nav/jump/shift/fold wiring. |
 | `session_features_spec.lua` | De-facto coverage for refs sync, actions/keymaps, feature gating, the menu integration, double-click fold (ATX + Setext), the link-underline fix, the fold H2+ outline toggle, the fold-from-menu-context bug fix, TableView box style + configurable default, table mode/tableize/cell motions, and the Windows `platform.open` fix. Drives the real `:Markdown` commands and public `actions` API, not private internals. |
 | `run.lua`            | Runner: loads every spec, reports results, sets the exit code.  |

@@ -351,6 +351,12 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvm` | n | Toggle table mode (auto-format) |
 | `]\|` / `[\|` | n | Next / previous table cell |
 
+Column widths are computed from screen-display width (`vim.fn.strdisplaywidth`),
+not byte length, so cells containing multi-byte UTF-8 (umlauts, em dashes,
+curly quotes, arrows, …) still line up — see `renderer.validate_alignment()`
+in [Architecture](#architecture) if you want to verify a rendered table's `|`
+columns programmatically instead of eyeballing it.
+
 ---
 
 ## Commands
@@ -655,7 +661,10 @@ lua/markdown_nvim/
       blockquote.lua       matchadd-based blockquote coloring
   tableview/
     parser.lua             pipe-table parser
-    renderer.lua           floating window renderer (Markdown + box style)
+    renderer.lua           floating window renderer (Markdown + box style);
+                            widths use display-width, not byte length;
+                            validate_alignment(lines) checks a rendered
+                            table's | / │ dividers actually line up
     views/
       browser_basic.lua    basic HTML export
       browser_niceified.lua styled HTML export
