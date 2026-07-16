@@ -12,15 +12,16 @@
 --- `:Markdown table format`.
 
 local fmt = require("markdown_nvim.core.table_fmt")
+local lib_debounce_buffer = require("lib.nvim.debounce.buffer")
 
 local api = vim.api
-local uv  = vim.uv or vim.loop
 
 local M = {}
 
--- Per-buffer state: augroup id, debounce timer, and a re-entrancy guard so the
--- reformat's own buffer write does not retrigger the TextChanged handler.
----@type table<integer, { aug: integer, timer: any, busy: boolean }>
+-- Per-buffer state: augroup id and a re-entrancy guard so the reformat's own
+-- buffer write does not retrigger the TextChanged handler. The debounce timer
+-- itself is shared (buffer-scoped internally) — see `_debounce` below.
+---@type table<integer, { aug: integer, busy: boolean }>
 local S = {}
 
 -- ---------------------------------------------------------------------------
@@ -68,6 +69,13 @@ end
 -- Mode (per-buffer auto-format)
 -- ---------------------------------------------------------------------------
 
+-- One shared, buffer-scoped debounce handle: `lib.nvim.debounce.buffer`
+-- keeps an independent 120ms timer per bufnr internally, matching what the
+-- old per-buffer `S[bufnr].timer` bookkeeping did by hand.
+local _debounce = lib_debounce_buffer.new(function(bufnr)
+  M.reformat(bufnr)
+end, { ms = 120 })
+
 ---@param bufnr integer
 ---@return boolean
 function M.is_enabled(bufnr)
@@ -82,21 +90,12 @@ function M.enable(bufnr)
   if S[bufnr] then return end
 
   local aug = api.nvim_create_augroup("MarkdownNvimTableMode_" .. bufnr, { clear = true })
-  S[bufnr] = { aug = aug, timer = nil, busy = false }
+  S[bufnr] = { aug = aug, busy = false }
 
   local function schedule()
     local st = S[bufnr]
     if not st or st.busy then return end
-    if st.timer then st.timer:stop(); pcall(function() st.timer:close() end); st.timer = nil end
-    local t = uv.new_timer()
-    st.timer = t
-    t:start(120, 0, function()
-      t:stop(); pcall(function() t:close() end)
-      if S[bufnr] and S[bufnr].timer == t then S[bufnr].timer = nil end
-      vim.schedule(function()
-        if S[bufnr] and api.nvim_buf_is_valid(bufnr) then M.reformat(bufnr) end
-      end)
-    end)
+    _debounce.call(bufnr)
   end
 
   api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
@@ -117,7 +116,7 @@ function M.disable(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   local st = S[bufnr]
   if not st then return end
-  if st.timer then st.timer:stop(); pcall(function() st.timer:close() end) end
+  _debounce.cancel(bufnr)
   pcall(api.nvim_del_augroup_by_id, st.aug)
   S[bufnr] = nil
 end
