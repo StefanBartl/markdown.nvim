@@ -132,20 +132,14 @@ end
 ---                            buffer.
 ---@return string[]
 local function candidate_bases(first_base)
+  local raw = { first_base or vim.fn.expand("%:p:h"), cwd() } -- file dir, project root/cwd
   local bases = {}
-  local seen = {}
-  local function add(dir)
+  for _, dir in ipairs(raw) do
     if dir and dir ~= "" then
-      local norm = collapse(to_slashes(dir))
-      if not seen[norm] then
-        seen[norm] = true
-        bases[#bases + 1] = norm
-      end
+      bases[#bases + 1] = collapse(to_slashes(dir))
     end
   end
-  add(first_base or vim.fn.expand("%:p:h")) -- containing file's directory
-  add(cwd())                                -- project root / nvim cwd
-  return bases
+  return require("lib.lua.tables").dedup_list(bases)
 end
 
 --- Resolve a raw link target to an absolute filesystem path (OS-native seps),
