@@ -10,9 +10,30 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 
+---@param name string
+---@return function|nil
+local function try_lib_detector(name)
+  local ok, fn = pcall(require, "lib.nvim.cross.platform." .. name)
+  if ok and type(fn) == "function" then
+    return fn
+  end
+  return nil
+end
+
 --- Detect the OS family (`Mkdn.OS` is declared in `markdown_nvim.@types`).
+--- Delegates to `lib.nvim.cross.platform.*` when present (soft dependency,
+--- matching this repo's `util/notify.lua`/`util/picker.lua` pattern), falling
+--- back to a native `uv.os_uname()` check otherwise.
 ---@return Mkdn.OS
 function M.os()
+  local is_windows = try_lib_detector("is_windows")
+  if is_windows then
+    if is_windows() then return "windows" end
+    local is_macos = try_lib_detector("is_macos")
+    if is_macos and is_macos() then return "macos" end
+    return "unix"
+  end
+
   local s = (uv.os_uname() and uv.os_uname().sysname) or ""
   if s:match("[Ww]indows") then
     return "windows"

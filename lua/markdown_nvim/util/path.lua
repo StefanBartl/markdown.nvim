@@ -33,6 +33,7 @@ local lib_cwd         = optional("lib.nvim.cross.fs._cwd")
 local lib_sep_norm    = optional("lib.nvim.cross.fs.separators.normalize")
 local lib_unify       = optional("lib.nvim.cross.fs.separators.unify_slashes")
 local lib_collapse    = optional("lib.nvim.cross.fs.separators.collapse_dots")
+local lib_relpath     = optional("lib.nvim.fs.relpath")
 
 --- True when `p` starts with a Windows drive prefix (`C:/` or `C:\`).
 ---@param p string
@@ -233,12 +234,25 @@ end
 --- segments where the target isn't a descendant of the base. Both sides are
 --- logically normalized first (no filesystem access). Returns "." when the
 --- two paths are the same directory.
+---
+--- Delegates the actual computation to lib.nvim.fs.relpath when present
+--- (identical common-ancestor-climb algorithm, upstreamed from this
+--- function — see lib.nvim commit 43b49db); as a bonus that version also
+--- correctly declines to climb across differing Windows drive letters,
+--- which this file's inline fallback below does not guard against.
 ---@param base_dir string
 ---@param target_path string
 ---@return string
 function M.relative_to(base_dir, target_path)
   local b = collapse(to_slashes(vim.fn.expand(base_dir)))
   local t = collapse(to_slashes(vim.fn.expand(target_path)))
+
+  if lib_relpath then
+    local ok, rel = pcall(lib_relpath, t, b)
+    if ok and type(rel) == "string" then
+      return rel
+    end
+  end
 
   local bp, tp = {}, {}
   for seg in b:gmatch("[^/]+") do bp[#bp + 1] = seg end

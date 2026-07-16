@@ -33,8 +33,11 @@ local function display_width(str)
   return ok and w or #str
 end
 
+local ok_lib_trim, lib_trim = pcall(require, "lib.lua.strings.core")
+
 local function trim(str)
   if type(str) ~= "string" then return "" end
+  if ok_lib_trim then return lib_trim.trim(str) end
   return str:match("^%s*(.-)%s*$") or ""
 end
 

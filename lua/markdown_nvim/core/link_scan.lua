@@ -13,7 +13,10 @@ local FENCE = "^%s*[`~][`~][`~]"
 -- Conservative bare-URL character class (mirrors handler/url.lua).
 local URL_PATTERN = "https?://[%w%-%_%.%/%?%%=&~#@:+,;]+"
 
+local ok_lib_trim, lib_strings_core = pcall(require, "lib.lua.strings.core")
+
 local function trim(s)
+  if ok_lib_trim then return lib_strings_core.trim(s) end
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
