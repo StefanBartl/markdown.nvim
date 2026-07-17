@@ -231,13 +231,21 @@ function M.apply_tableview(ev)
     ui.close()
   end, { desc = "[markdown.nvim] Close persistent table preview", nargs = 0 })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowser", function()
-    browser_view_basic(bufnr)
-  end, { desc = "[markdown.nvim] Open table in browser (basic HTML)", nargs = 0 })
+  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowser", function(cmd_opts)
+    local force_new = (cmd_opts.fargs[1] or ""):lower() == "reopen"
+    browser_view_basic(bufnr, force_new)
+  end, {
+    desc = "[markdown.nvim] Open table in browser (basic HTML); reuses the tab across calls, 'reopen' forces a new one",
+    nargs = "?",
+  })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowserNice", function()
-    browser_view_nice(bufnr)
-  end, { desc = "[markdown.nvim] Open table in browser (nice HTML)", nargs = 0 })
+  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowserNice", function(cmd_opts)
+    local force_new = (cmd_opts.fargs[1] or ""):lower() == "reopen"
+    browser_view_nice(bufnr, force_new)
+  end, {
+    desc = "[markdown.nvim] Open table in browser (nice HTML); reuses the tab across calls, 'reopen' forces a new one",
+    nargs = "?",
+  })
 end
 
 return M

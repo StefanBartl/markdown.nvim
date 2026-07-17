@@ -112,8 +112,8 @@ return {
       { name = "TableViewBox",               desc = "Toggle floating table preview (box-drawing style)" },
       { name = "TableViewSelect",            desc = "Pick a table from the buffer" },
       { name = "TableViewClose",             desc = "Close floating preview" },
-      { name = "TableViewOpenBrowser",       desc = "Export table as basic HTML and open in browser" },
-      { name = "TableViewOpenBrowserNice",   desc = "Export table as styled HTML and open in browser" },
+      { name = "TableViewOpenBrowser [reopen]",     desc = "Export table as basic HTML; reuses one tab across calls (auto-refreshing), 'reopen' forces a new tab" },
+      { name = "TableViewOpenBrowserNice [reopen]", desc = "Export table as styled HTML; reuses one tab across calls (auto-refreshing), 'reopen' forces a new tab" },
     },
   },
 

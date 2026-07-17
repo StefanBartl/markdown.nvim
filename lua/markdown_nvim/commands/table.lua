@@ -187,6 +187,8 @@ function M.complete(arglead, cmdline)
         if vim.startswith("%", arglead) then out[#out + 1] = "%" end
         if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
         vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
+      elseif action == "browser" or action == "browsernice" then
+        if vim.startswith("reopen", arglead) then out[#out + 1] = "reopen" end
       end
       return out
     end

@@ -3,6 +3,7 @@ local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.table
 
 local api = vim.api
 local parser = require("markdown_nvim.tableview.parser")
+local session = require("markdown_nvim.tableview.views.browser_session")
 
 local function html_escape(s)
   if s == nil then return "" end
@@ -61,7 +62,10 @@ local function build_html(chosen, source)
   return table.concat(buf, "")
 end
 
-return function(bufnr)
+---@param bufnr integer|nil
+---@param force_new boolean|nil open a fresh tab even if one is already open
+---                              (`reopen` argument — use if it was closed by hand)
+return function(bufnr, force_new)
   bufnr = bufnr or api.nvim_get_current_buf()
   if not (api.nvim_buf_is_valid(bufnr) and api.nvim_buf_is_loaded(bufnr)) then
     notify.error("Invalid buffer for browser preview")
@@ -90,17 +94,8 @@ return function(bufnr)
   local source = string.format("col %d; %s", chosen.start_line or 0, table.concat(headers, ", "))
 
   local html = build_html(chosen, source)
-  local tmp = vim.fn.tempname() .. ".html"
-  local fh, err = io.open(tmp, "w")
-  if not fh then
-    notify.error("Failed to write preview file: " .. tostring(err))
-    return
-  end
-  fh:write(html)
-  fh:close()
-
-  local ok, open_err = require("markdown_nvim.util.platform").open(tmp)
+  local ok, err = session.show(html, "niceified", force_new)
   if not ok then
-    notify.error("Failed to open browser preview: " .. tostring(open_err))
+    notify.error("Failed to open browser preview: " .. tostring(err))
   end
 end

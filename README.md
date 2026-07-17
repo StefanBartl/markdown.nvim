@@ -346,7 +346,7 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvt` | n | Toggle table preview (floating, Markdown style) |
 | `<leader>tvx` | n | Toggle table preview (box-drawing / spreadsheet style) |
 | `<leader>tvs` | n | Select table from list |
-| `<leader>tvb` | n | Open table in browser (basic HTML) |
+| `<leader>tvb` | n | Open table in browser (basic HTML); reuses the same tab on later calls |
 | `<leader>tvc` | n | Close TableView float |
 | `<leader>tvm` | n | Toggle table mode (auto-format) |
 | `]\|` / `[\|` | n | Next / previous table cell |
@@ -415,7 +415,7 @@ The single namespace for every table action — preview, format, and a focused,
 dependency-free reimplementation of the vim-table-mode essentials.
 
 ```vim
-:Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope]
+:Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope|reopen]
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
@@ -443,6 +443,14 @@ dependency-free reimplementation of the vim-table-mode essentials.
   Tab-completion on the scope argument offers `%`, `cwd`, and path completion.
   Same via the buffer-local commands directly: `:TableViewToggle`,
   `:TableViewToggle %`, `:TableViewBox cwd`, `:TableViewToggle ./docs`, …
+
+  `browser` / `browsernice` write to a fixed file per style and open the
+  system browser only the **first** call per Neovim session; later calls just
+  update that file, and a small script embedded in the page auto-refreshes it
+  (scroll position preserved) — so re-checking a table repeatedly reuses the
+  same tab instead of piling up a new one each time. Pass `reopen` if you
+  closed that tab by hand and want a fresh one: `:Markdown table view browser
+  reopen`, `:TableViewOpenBrowserNice reopen`.
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope.
 - **mode** turns on per-buffer *table mode*: after each edit inside a table it is
