@@ -61,6 +61,18 @@ function M.open(target)
     end
   end
 
+  -- lib.nvim.cross.open_default (soft dependency, matching this repo's
+  -- util/notify.lua/util/picker.lua pattern): same per-OS dispatch as the
+  -- manual fallback below, plus WSL->Windows path translation via wslpath,
+  -- which the manual fallback does not have.
+  local ok_lib, open_default = pcall(require, "lib.nvim.cross.open_default")
+  if ok_lib then
+    local ok_open, err = open_default(target)
+    if ok_open then
+      return true
+    end
+  end
+
   -- Fallback: launch with a LIST argv so the call bypasses 'shell' entirely.
   -- The previous string form went through &shell + vim.fn.shellescape, which
   -- breaks on Windows when shell=pwsh (single-quoted path that cmd's `start`
