@@ -10,6 +10,7 @@
 --- `:TableView*` commands and are independent of `enable_keymaps`.
 
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.bindings.keymaps]")
+local libmap = require("lib.nvim.map")
 
 local M = {}
 
@@ -17,7 +18,7 @@ local cfg = require("markdown_nvim.config").get
 local actions = require("markdown_nvim.bindings.actions")
 
 local function map(bufnr, mode, lhs, rhs, desc)
-  local ok, err = pcall(vim.keymap.set, mode, lhs, rhs, {
+  local ok, err = pcall(libmap, mode, lhs, rhs, {
     buffer  = bufnr,
     silent  = true,
     desc    = "[markdown.nvim] " .. desc,

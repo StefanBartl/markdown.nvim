@@ -1,5 +1,6 @@
 ---@module 'markdown_nvim.fenced_fix'
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.fenced_fix]")
+local autocmd = require("lib.nvim.autocmd")
 
 local M = {}
 
@@ -105,11 +106,10 @@ function M.setup(opts)
   return M
 end
 
-vim.api.nvim_create_autocmd("ColorScheme", {
+autocmd.create("ColorScheme", function()
+  M.apply()
+end, {
   group = vim.api.nvim_create_augroup("MarkdownNvimFencedFix", { clear = true }),
-  callback = function()
-    pcall(M.apply)
-  end,
   desc = "Re-apply fenced fix after colorscheme changes",
 })
 

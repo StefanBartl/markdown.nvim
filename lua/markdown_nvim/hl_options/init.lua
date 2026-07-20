@@ -1,6 +1,7 @@
 ---@module 'markdown_nvim.hl_options'
 local M = {}
 
+local autocmd = require("lib.nvim.autocmd")
 local blockquote = require("markdown_nvim.hl_options.hl_groups.blockquote")
 local link       = require("markdown_nvim.hl_options.hl_groups.link")
 
@@ -23,14 +24,13 @@ function M.setup(opts)
     link.apply(_opts)
   end
 
-  vim.api.nvim_create_autocmd("ColorScheme", {
-    group    = aug,
-    pattern  = "*",
-    callback = function()
-      if want_bq then blockquote.apply(_opts) end
-      -- Colorschemes reset treesitter groups, so re-strip the link underline.
-      if want_link then link.apply(_opts) end
-    end,
+  autocmd.create("ColorScheme", function()
+    if want_bq then blockquote.apply(_opts) end
+    -- Colorschemes reset treesitter groups, so re-strip the link underline.
+    if want_link then link.apply(_opts) end
+  end, {
+    group   = aug,
+    pattern = "*",
   })
 end
 

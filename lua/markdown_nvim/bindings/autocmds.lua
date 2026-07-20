@@ -8,6 +8,7 @@
 --- (mirroring the previous behavior). All augroups are cleared on every setup().
 
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.bindings.autocmds]")
+local autocmd = require("lib.nvim.autocmd")
 
 local M = {}
 
@@ -47,15 +48,12 @@ function M.setup(cfg)
   -- TableView buffer-local maps + commands. Gated by the "tableview" feature.
   if feat("tableview") then
     local aug_tv = api.nvim_create_augroup("MarkdownNvimTableView", { clear = true })
-    api.nvim_create_autocmd("FileType", {
+    autocmd.create("FileType", function(ev)
+      keymaps().apply_tableview(ev.buf)
+      usrcmds().apply_tableview(ev)
+    end, {
       group = aug_tv,
       pattern = ftpat,
-      callback = function(ev)
-        pcall(function()
-          keymaps().apply_tableview(ev.buf)
-          usrcmds().apply_tableview(ev)
-        end)
-      end,
       desc = "[markdown.nvim] Install buffer-local TableView maps & commands",
     })
   end
@@ -68,44 +66,40 @@ function M.setup(cfg)
 
     -- Snapshot heading anchors when a markdown buffer opens, so later reconciles
     -- can detect renames relative to this baseline.
-    api.nvim_create_autocmd("FileType", {
+    autocmd.create("FileType", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      require("markdown_nvim.core.refs").attach(ev.buf)
+    end, {
       group = aug_refs,
       pattern = ftpat,
-      callback = function(ev)
-        if not is_md(vim.bo[ev.buf].filetype) then return end
-        pcall(function() require("markdown_nvim.core.refs").attach(ev.buf) end)
-      end,
       desc = "[markdown.nvim] refs: baseline heading anchors",
     })
 
     if refs_mode == "save" then
-      api.nvim_create_autocmd("BufWritePre", {
+      autocmd.create("BufWritePre", function(ev)
+        require("markdown_nvim.core.refs").reconcile(ev.buf, { silent = true })
+      end, {
         group = aug_refs,
         pattern = { "*.md", "*.markdown", "*.mdx" },
-        callback = function(ev)
-          pcall(function() require("markdown_nvim.core.refs").reconcile(ev.buf, { silent = true }) end)
-        end,
         desc = "[markdown.nvim] refs: sync on save",
       })
     else -- "live"
-      api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+      autocmd.create({ "TextChanged", "TextChangedI" }, function(ev)
+        if not is_md(vim.bo[ev.buf].filetype) then return end
+        require("markdown_nvim.core.refs").on_change(ev.buf)
+      end, {
         group = aug_refs,
         pattern = ftpat,
-        callback = function(ev)
-          if not is_md(vim.bo[ev.buf].filetype) then return end
-          pcall(function() require("markdown_nvim.core.refs").on_change(ev.buf) end)
-        end,
         desc = "[markdown.nvim] refs: debounced live sync",
       })
     end
 
     -- Clean up timers/extmarks when a tracked buffer is wiped.
-    api.nvim_create_autocmd("BufWipeout", {
+    autocmd.create("BufWipeout", function(ev)
+      require("markdown_nvim.core.refs").detach(ev.buf)
+    end, {
       group = aug_refs,
       pattern = { "*.md", "*.markdown", "*.mdx" },
-      callback = function(ev)
-        pcall(function() require("markdown_nvim.core.refs").detach(ev.buf) end)
-      end,
       desc = "[markdown.nvim] refs: teardown",
     })
   end
@@ -113,42 +107,37 @@ function M.setup(cfg)
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
     local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })
-    api.nvim_create_autocmd("FileType", {
+    autocmd.create("FileType", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      keymaps().apply(ev.buf)
+    end, {
       group = aug_keymaps,
       pattern = ftpat,
-      callback = function(ev)
-        if not is_md(vim.bo[ev.buf].filetype) then return end
-        local ok, err = pcall(keymaps().apply, ev.buf)
-        if not ok then notify.warn("Error applying keymaps: " .. tostring(err)) end
-      end,
       desc = "[markdown.nvim] Install buffer-local keymaps",
     })
 
     local aug_cmds = api.nvim_create_augroup("MarkdownNvimUserCommands", { clear = true })
-    api.nvim_create_autocmd("FileType", {
+    autocmd.create("FileType", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      usrcmds().apply(ev)
+    end, {
       group = aug_cmds,
       pattern = ftpat,
-      callback = function(ev)
-        if not is_md(vim.bo[ev.buf].filetype) then return end
-        local ok, err = pcall(usrcmds().apply, ev)
-        if not ok then notify.warn("Error applying usercmds: " .. tostring(err)) end
-      end,
       desc = "[markdown.nvim] Install buffer-local user commands",
     })
 
     local aug_fold = api.nvim_create_augroup("MarkdownNvimFold", { clear = true })
-    api.nvim_create_autocmd("FileType", {
+    autocmd.create("FileType", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      if not feat("fold") then return end
+      vim.opt_local.foldmethod     = "expr"
+      vim.opt_local.foldexpr       = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
+      vim.opt_local.foldenable     = true
+      vim.opt_local.foldlevel      = 99
+      vim.opt_local.foldlevelstart = 99
+    end, {
       group = aug_fold,
       pattern = ftpat,
-      callback = function(ev)
-        if not is_md(vim.bo[ev.buf].filetype) then return end
-        if not feat("fold") then return end
-        vim.opt_local.foldmethod     = "expr"
-        vim.opt_local.foldexpr       = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
-        vim.opt_local.foldenable     = true
-        vim.opt_local.foldlevel      = 99
-        vim.opt_local.foldlevelstart = 99
-      end,
       desc = "[markdown.nvim] Set fold options for markdown buffers",
     })
   end

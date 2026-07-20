@@ -1,4 +1,6 @@
 ---@module 'markdown_nvim.hl_options.hl_groups.blockquote'
+local autocmd = require("lib.nvim.autocmd")
+
 local M = {}
 
 local GROUP_MARKER = "MarkdownBlockquoteMarker"
@@ -78,15 +80,14 @@ function M.apply(opts)
 end
 
 function M.setup_autocmds(augroup)
-  vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
+  autocmd.create({ "FileType", "BufEnter" }, function(ev)
+    local bufnr = ev.buf
+    local ft = vim.bo[bufnr].filetype
+    if ft ~= "markdown" and ft ~= "markdown.mdx" and ft ~= "mdx" then return end
+    add_match(bufnr)
+  end, {
     group   = augroup,
     pattern = { "markdown", "markdown.mdx", "mdx" },
-    callback = function(ev)
-      local bufnr = ev.buf
-      local ft = vim.bo[bufnr].filetype
-      if ft ~= "markdown" and ft ~= "markdown.mdx" and ft ~= "mdx" then return end
-      add_match(bufnr)
-    end,
   })
 end
 

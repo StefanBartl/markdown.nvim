@@ -3,6 +3,7 @@
 --- Tracks an "active" flag and refreshes the preview on BufEnter for *.md while
 --- active. markdown-preview.nvim is an optional host dependency.
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.commands.preview]")
+local autocmd = require("lib.nvim.autocmd")
 
 local M = {}
 
@@ -23,14 +24,13 @@ local busy = false
 local function ensure_autorefresh()
   if aug then return end
   aug = vim.api.nvim_create_augroup("MarkdownNvimPreviewRefresh", { clear = true })
-  vim.api.nvim_create_autocmd("BufEnter", {
+  autocmd.create("BufEnter", function()
+    if active and not busy and available() then
+      vim.cmd("silent! MarkdownPreview")
+    end
+  end, {
     group   = aug,
     pattern = "*.md",
-    callback = function()
-      if active and not busy and available() then
-        vim.cmd("silent! MarkdownPreview")
-      end
-    end,
     desc = "[markdown.nvim] Refresh preview on buffer switch while active",
   })
 end
