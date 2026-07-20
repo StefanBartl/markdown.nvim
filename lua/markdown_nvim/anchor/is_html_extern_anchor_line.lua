@@ -11,6 +11,8 @@ local function looks_like_file_uri(uri)
   uri = trim(uri)
   if not uri then return nil end
   if uri:match("^#") then return false end
+  -- Windows drive-letter absolute path (`C:/…`, `C:\…`), not a URI scheme.
+  if uri:match("^%a:[/\\]") then return true end
   if uri:match("^%w[%w+.-]*:") then return false end
   if uri:match("[/\\]") then return true end
   if uri:match("%.[%w%d]+%s*$") then return true end

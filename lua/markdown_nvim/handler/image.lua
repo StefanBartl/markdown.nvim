@@ -43,8 +43,9 @@ end
 local function extract_image_target_from_line(line)
   if not line or line == "" then return nil end
 
+  -- Requires the leading `!` (real image syntax); a plain `[text](target)`
+  -- link is not an image and must fall through to the link/file handlers.
   local t = line:match("!%b[]%(([^)]+)%)")
-  if not t then t = line:match("%[.-%]%((.-)%)") end
 
   if t and type(t) == "string" and t ~= "" then
     t = trim(t --[[@as string]])
