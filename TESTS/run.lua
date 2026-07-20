@@ -1,9 +1,9 @@
--- docs/TESTS/run.lua — headless test runner for markdown.nvim.
+-- TESTS/run.lua — headless test runner for markdown.nvim.
 --
 -- Run from the repo root:
---   nvim --headless -u NONE -c "set rtp+=." -c "luafile docs/TESTS/run.lua" -c "qa!"
+--   nvim --headless -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
 -- or:
---   nvim --headless -u NONE -c "set rtp+=." -l docs/TESTS/run.lua
+--   nvim --headless -u NONE -c "set rtp+=." -l TESTS/run.lua
 --
 -- Loads every *_spec.lua listed below, runs it against the shared harness,
 -- prints a per-spec result, and exits non-zero on the first failing spec.

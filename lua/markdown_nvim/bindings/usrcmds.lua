@@ -1,12 +1,23 @@
 ---@module 'markdown_nvim.bindings.usrcmds'
----@brief User commands: the global `:Markdown` plus buffer-local commands.
+---@brief User commands: the global `:Markdown` plus buffer-local commands,
+--- built via lib.nvim.usercmd.composer.
 ---@description
 --- `apply` creates the global `:Markdown` dispatcher (once) and the buffer-local
 --- `OpenWithSystemApplication`. `apply_tableview` creates the buffer-local
 --- `:TableView*` commands. Command *logic* lives in `markdown_nvim.commands.*`
 --- and `markdown_nvim.tableview.*`; this module only registers the commands.
+---
+--- `:Markdown`'s subcommand routes forward ctx.raw.fargs (composer's
+--- untouched nvim-callback fargs -- includes the subcommand token itself,
+--- same shape M.execute already expects) straight into the unmodified
+--- markdown_nvim.commands.execute()/.complete(); a shared MARKDOWN_SUBARG
+--- composer type reuses M.complete() itself for first-arg completion by
+--- synthesizing the "Markdown {subcmd} {arg_lead}" cmdline string
+--- M.complete()'s own parsing expects, rather than duplicating its
+--- per-subcommand delegation table.
 
 local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.bindings.usrcmds]")
+local composer = require("lib.nvim.usercmd.composer")
 
 local M = {}
 
@@ -17,30 +28,68 @@ local function create_open_command(bufnr)
   if not ok then cmds = {} end
   if cmds["OpenWithSystemApplication"] then return end
 
-  api.nvim_buf_create_user_command(bufnr, "OpenWithSystemApplication", function()
-    require("markdown_nvim.handler").handle_cursor_action()
-  end, {
-    desc  = "[markdown.nvim] Open image/url/file under cursor",
-    nargs = 0,
+  composer.verb("OpenWithSystemApplication", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Open image/url/file under cursor",
+    routes = { { path = {}, run = function() require("markdown_nvim.handler").handle_cursor_action() end } },
   })
 end
+
+-- :Markdown's 10 subcommands, feature-gated at registration time (matches
+-- create_markdown_command()'s own idempotency: :Markdown is only ever
+-- registered once per session, on the first buffer that triggers it, so a
+-- feature flag flipped after that point was never live-checked either).
+local SUBCOMMAND_NAMES = {
+  "links", "toc", "refs", "table", "render", "preview",
+  "mdview", "create", "scope", "headline_spacing",
+}
+
+composer.register_type("MARKDOWN_SUBARG", {
+  validate = function(raw) return true, raw, nil end,
+  complete = function(arg_lead, spec)
+    local synthetic = "Markdown " .. spec.subcmd .. " " .. arg_lead
+    local ok, result = pcall(require("markdown_nvim.commands").complete, arg_lead, synthetic, 0)
+    return (ok and result) or {}
+  end,
+})
 
 local function create_markdown_command()
   if vim.fn.exists(":Markdown") == 2 then return end
 
-  vim.api.nvim_create_user_command("Markdown", function(opts)
-    require("markdown_nvim.commands").execute(opts.fargs, {
-      range = opts.range,
-      line1 = opts.line1,
-      line2 = opts.line2,
-    })
-  end, {
-    nargs    = "*",
-    range    = true,
-    complete = function(arglead, cmdline, cursorpos)
-      return require("markdown_nvim.commands").complete(arglead, cmdline, cursorpos)
-    end,
+  local commands_mod = require("markdown_nvim.commands")
+  local feat = require("markdown_nvim.config").feature_enabled
+  -- Mirrors commands/init.lua's own SUBCOMMAND_FEATURES gating exactly (a
+  -- subcommand name usually equals its gating feature; `table` maps to
+  -- either "table" or "tableview").
+  local function enabled(name)
+    local names = (name == "table") and { "table", "tableview" } or { name }
+    for _, n in ipairs(names) do
+      if feat(n) then return true end
+    end
+    return false
+  end
+
+  local routes = {}
+  for _, name in ipairs(SUBCOMMAND_NAMES) do
+    if enabled(name) then
+      routes[#routes + 1] = {
+        path = { name },
+        args = { { name = "a1", type = "MARKDOWN_SUBARG", optional = true, subcmd = name } },
+        run = function(ctx)
+          commands_mod.execute(ctx.raw.fargs, {
+            range = ctx.raw.range,
+            line1 = ctx.raw.line1,
+            line2 = ctx.raw.line2,
+          })
+        end,
+      }
+    end
+  end
+
+  composer.verb("Markdown", {
     desc = "[markdown.nvim] Markdown utility commands",
+    range = true,
+    routes = routes,
   })
 end
 
@@ -169,8 +218,8 @@ function M.apply_tableview(ev)
   --- ("config" resolves default_style() at call time; "markdown"/"box" force it).
   ---@param style "config"|"markdown"|"box"
   local function make_view_handler(style)
-    return function(cmd_opts)
-      local scope = cmd_opts.args ~= "" and cmd_opts.args or nil
+    return function(ctx)
+      local scope = ctx.args.scope
       local kind, target = resolve_target(scope)
       if not kind then return end
       local resolved_style = style == "config" and default_style() or style
@@ -193,58 +242,75 @@ function M.apply_tableview(ev)
     return out
   end
 
+  composer.register_type("MARKDOWN_TABLEVIEW_SCOPE", {
+    validate = function(raw) return true, raw, nil end,
+    complete = complete_scope,
+  })
+
   local view_desc = "[markdown.nvim] Toggle %s preview: table at cursor, or every table with"
     .. " scope=%%|cwd|<path> (falls back to all-in-buffer off any table)"
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewToggle", make_view_handler("config"), {
-    desc     = view_desc:format("config-style"),
-    nargs    = "?",
-    complete = complete_scope,
+  local scope_arg = { { name = "scope", type = "MARKDOWN_TABLEVIEW_SCOPE", optional = true } }
+
+  composer.verb("TableViewToggle", {
+    buffer = bufnr,
+    desc = view_desc:format("config-style"),
+    routes = { { path = {}, args = scope_arg, run = make_view_handler("config") } },
   })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewMarkdown", make_view_handler("markdown"), {
-    desc     = view_desc:format("aligned-Markdown"),
-    nargs    = "?",
-    complete = complete_scope,
+  composer.verb("TableViewMarkdown", {
+    buffer = bufnr,
+    desc = view_desc:format("aligned-Markdown"),
+    routes = { { path = {}, args = scope_arg, run = make_view_handler("markdown") } },
   })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewBox", make_view_handler("box"), {
-    desc     = view_desc:format("box-drawing"),
-    nargs    = "?",
-    complete = complete_scope,
+  composer.verb("TableViewBox", {
+    buffer = bufnr,
+    desc = view_desc:format("box-drawing"),
+    routes = { { path = {}, args = scope_arg, run = make_view_handler("box") } },
   })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewSelect", function()
-    local tables = parser.get_tables(bufnr)
-    if #tables == 0 then
-      notify.info("No tables found in buffer")
-      return
-    end
-    if #tables == 1 then
-      ui.render_table(tables[1], { floating = true })
-      return
-    end
-    table_selector(tables)
-  end, { desc = "[markdown.nvim] Select and preview table", nargs = 0 })
+  composer.verb("TableViewSelect", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Select and preview table",
+    routes = { { path = {}, run = function()
+      local tables = parser.get_tables(bufnr)
+      if #tables == 0 then
+        notify.info("No tables found in buffer")
+        return
+      end
+      if #tables == 1 then
+        ui.render_table(tables[1], { floating = true })
+        return
+      end
+      table_selector(tables)
+    end } },
+  })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewClose", function()
-    ui.close()
-  end, { desc = "[markdown.nvim] Close persistent table preview", nargs = 0 })
+  composer.verb("TableViewClose", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Close persistent table preview",
+    routes = { { path = {}, run = function() ui.close() end } },
+  })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowser", function(cmd_opts)
-    local force_new = (cmd_opts.fargs[1] or ""):lower() == "reopen"
-    browser_view_basic(bufnr, force_new)
-  end, {
+  local reopen_arg = { { name = "reopen", type = "STRING", optional = true, values = { "reopen" } } }
+
+  composer.verb("TableViewOpenBrowser", {
+    buffer = bufnr,
     desc = "[markdown.nvim] Open table in browser (basic HTML); reuses the tab across calls, 'reopen' forces a new one",
-    nargs = "?",
+    routes = { { path = {}, args = reopen_arg, run = function(ctx)
+      local force_new = (ctx.args.reopen or ""):lower() == "reopen"
+      browser_view_basic(bufnr, force_new)
+    end } },
   })
 
-  api.nvim_buf_create_user_command(bufnr, "TableViewOpenBrowserNice", function(cmd_opts)
-    local force_new = (cmd_opts.fargs[1] or ""):lower() == "reopen"
-    browser_view_nice(bufnr, force_new)
-  end, {
+  composer.verb("TableViewOpenBrowserNice", {
+    buffer = bufnr,
     desc = "[markdown.nvim] Open table in browser (nice HTML); reuses the tab across calls, 'reopen' forces a new one",
-    nargs = "?",
+    routes = { { path = {}, args = reopen_arg, run = function(ctx)
+      local force_new = (ctx.args.reopen or ""):lower() == "reopen"
+      browser_view_nice(bufnr, force_new)
+    end } },
   })
 end
 

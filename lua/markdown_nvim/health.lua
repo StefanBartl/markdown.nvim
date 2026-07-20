@@ -2,9 +2,10 @@
 ---@brief `:checkhealth markdown_nvim` diagnostics.
 ---@description
 --- Reports the Neovim version, config sanity, the state of the optional host
---- plugins (`:Markdown render` / `:Markdown preview` / `:Markdown mdview`), and
---- the optional `lib.nvim` / `which-key` integrations. Read-only: never
---- mutates state.
+--- plugins (`:Markdown render` / `:Markdown preview` / `:Markdown mdview`),
+--- required `lib.nvim` (the command layer + buffer debouncing; the picker
+--- backend on top of that stays a soft, cosmetic choice), and the optional
+--- `which-key` integration. Read-only: never mutates state.
 
 local M = {}
 
@@ -72,11 +73,21 @@ function M.check()
     info("mdview.nvim not found — :Markdown mdview will warn if used")
   end
 
-  -- Optional lib.nvim integration (the default float picker backend).
-  if pcall(require, "lib.nvim.ui.kit") then
-    ok("lib.nvim detected (kit.select picker backend)")
+  -- lib.nvim: required for the :Markdown/:TableView* command layer
+  -- (lib.nvim.usercmd.composer) and core/table_mode.lua's buffer debouncing,
+  -- both unconditional requires with no pcall.
+  if pcall(require, "lib.nvim.usercmd.composer") then
+    ok("lib.nvim detected (:Markdown/:TableView* command layer available)")
   else
-    info("lib.nvim not found — picker falls back to vim.ui.select")
+    warn("lib.nvim not found — :Markdown/:TableView* will fail to register; install \"StefanBartl/lib.nvim\"")
+  end
+
+  -- Optional lib.nvim integration on top of the above (the default float
+  -- picker backend specifically — cosmetic, falls back cleanly).
+  if pcall(require, "lib.nvim.ui.kit") then
+    ok("lib.nvim.ui.kit detected (kit.select picker backend)")
+  else
+    info("lib.nvim.ui.kit not found — picker falls back to vim.ui.select")
   end
 
   -- Optional which-key integration.

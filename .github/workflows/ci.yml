@@ -11,12 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: markdown.nvim
+      # markdown.nvim depends on lib.nvim at runtime (bindings/usrcmds.lua's
+      # command layer, core/table_mode.lua's buffer debouncing) -- TESTS/run.lua
+      # hard-fails without it on the runtimepath, and picks it up via
+      # $LIB_NVIM_PATH.
+      - uses: actions/checkout@v4
+        with:
+          repository: StefanBartl/lib.nvim
+          path: lib.nvim
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
           version: stable
-      - name: Run docs/TESTS suite
-        run: nvim --headless -i NONE -u NONE -c "set rtp+=." -c "luafile docs/TESTS/run.lua" -c "qa!"
+      - name: Run TESTS suite
+        working-directory: markdown.nvim
+        env:
+          LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
+        run: nvim --headless -i NONE -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
 
   lint:
     name: lint (stylua + luacheck)

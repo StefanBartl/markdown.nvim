@@ -5,8 +5,10 @@
 | Tool | Required | Purpose |
 |------|----------|---------|
 | Neovim | **>= 0.9** | core |
+| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.usercmd.composer`), plus buffer debouncing |
 
-No external tools required. All features run on built-in Neovim APIs.
+No other external tools required beyond lib.nvim — every other feature runs
+on built-in Neovim APIs.
 
 ## Setup
 
@@ -19,6 +21,7 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
 ```lua
 {
   "StefanBartl/markdown.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown_nvim").setup()
@@ -31,6 +34,7 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
 ```lua
 use({
   "StefanBartl/markdown.nvim",
+  requires = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown_nvim").setup()
@@ -41,6 +45,7 @@ use({
 ### vim-plug
 
 ```vim
+Plug 'StefanBartl/lib.nvim'
 Plug 'StefanBartl/markdown.nvim', { 'for': ['markdown', 'mdx', 'md'] }
 ```
 

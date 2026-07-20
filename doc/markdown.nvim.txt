@@ -66,8 +66,12 @@ Included subsystems:
 2. REQUIREMENTS                                *markdown.nvim-requirements*
 
   * Neovim >= 0.9
+  * lib.nvim (https://github.com/StefanBartl/lib.nvim) — REQUIRED. Supplies
+    the :Markdown/:TableView* command layer (lib.nvim.usercmd.composer) and
+    core/table_mode.lua's buffer debouncing.
 
-No external tools required. All features use built-in Neovim APIs.
+No other external tools required. Every other feature uses built-in Neovim
+APIs.
 
 ==============================================================================
 3. INSTALLATION                                *markdown.nvim-installation*
@@ -75,6 +79,7 @@ No external tools required. All features use built-in Neovim APIs.
 lazy.nvim: >
   {
     "StefanBartl/markdown.nvim",
+    dependencies = { "StefanBartl/lib.nvim" },
     ft = { "markdown", "mdx", "md" },
     config = function()
       require("markdown_nvim").setup()

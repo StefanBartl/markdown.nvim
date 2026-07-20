@@ -18,8 +18,9 @@
 > while cascade.nvim edits the list content inside it (continue, renumber, rotate).
 
 A self-contained Markdown toolkit for Neovim. Pure FileType-scoped — zero side
-effects on non-Markdown buffers. Requires only Neovim >= 0.9, no external
-tools.
+effects on non-Markdown buffers. Requires Neovim >= 0.9 and
+[lib.nvim](https://github.com/StefanBartl/lib.nvim) (the `:Markdown`/
+`:TableView*` command layer, plus buffer debouncing); no external tools.
 
 ---
 
@@ -29,6 +30,7 @@ tools.
 -- lazy.nvim
 {
   "StefanBartl/markdown.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown_nvim").setup()
