@@ -372,8 +372,15 @@ return function(H)
     local platform = require("markdown_nvim.util.platform")
     local orig_ui_open = vim.ui and vim.ui.open
     local orig_system = vim.system
+    local had_open_default = package.loaded["lib.nvim.cross.open_default"] ~= nil
+    local orig_open_default = package.loaded["lib.nvim.cross.open_default"]
 
     if vim.ui then vim.ui.open = nil end -- force the fallback path deterministically
+    -- Also stub out the lib.nvim.cross.open_default soft dependency: when
+    -- lib.nvim is on the runtimepath it would otherwise handle the open
+    -- itself (via a real jobstart call) before platform.lua ever reaches
+    -- its own list-argv/vim.system fallback below.
+    package.loaded["lib.nvim.cross.open_default"] = function() return false, "stubbed: forced fallback" end
     local captured
     vim.system = function(argv, opts) captured = { argv = argv, detach = opts and opts.detach }; return {} end
 
@@ -392,6 +399,7 @@ return function(H)
 
     if vim.ui then vim.ui.open = orig_ui_open end
     vim.system = orig_system
+    package.loaded["lib.nvim.cross.open_default"] = had_open_default and orig_open_default or nil
   end
 
   -- ===========================================================================
