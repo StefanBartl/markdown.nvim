@@ -150,10 +150,12 @@ return function(H)
     cfg.setup({ features = { just_enable = { "table", "toc" } } })
     local comp = commands.complete("", "Markdown ")
     table.sort(comp)
+    -- "gaps" is gated by the "toc" feature -- it is a sub-behaviour of TOC
+    -- generation, the way "table" maps to either "table" or "tableview".
     eq(
       table.concat(comp, ","),
-      "table,toc",
-      "just_enable={table,toc}: completion lists exactly those two"
+      "gaps,table,toc",
+      "just_enable={table,toc}: completion lists exactly those (gaps rides on toc)"
     )
 
     cfg.setup({ features = { disable = "all" } })

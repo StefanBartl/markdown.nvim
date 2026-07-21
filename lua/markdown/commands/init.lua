@@ -7,6 +7,7 @@ local notify = require("markdown.util.notify").create("[markdown.commands]")
 -- (enabled if ANY is on). Keeps "just enable tableview" == full table surface.
 local SUBCOMMAND_FEATURES = {
   table = { "table", "tableview" },
+  gaps = { "toc" },
 }
 
 --- Whether the `:Markdown <command>` subcommand is enabled by feature gating.
@@ -37,6 +38,10 @@ local commands = {
   headline_spacing = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
+  end,
+  gaps = function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    require("markdown.core.heading_gaps").check(bufnr, {})
   end,
 }
 

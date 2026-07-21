@@ -217,6 +217,7 @@
 ---@field ft_only boolean # Only activate for markdown filetypes.
 ---@field ensure_headline_spacing boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
 ---@field underline_headings Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
+---@field check_heading_gaps boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
 ---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
 ---@field list Mkdn.ListConfig # `:Markdown list` picker backend.

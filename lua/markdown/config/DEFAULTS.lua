@@ -24,6 +24,7 @@ local DEFAULTS = {
   enable_keymaps = true,
   ft_only = true,
   ensure_headline_spacing = true,
+  check_heading_gaps = true,
 
   -- `:MarkdownNvimUnderlineHeadings` (manual, buffer-local): the underline
   -- character drawn below each ATX heading's text, matching its length.

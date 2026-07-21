@@ -47,13 +47,16 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
 
 ```vim
 :Markdown toc [level] [min=N] [max=N] [marker=X] [--sep | --no-sep]
+              [--check-gaps | --no-check-gaps]
 ```
 
 Insert/refresh the TOC, using `config.toc` (header/marker/min_level/max_level/
 anchor_style/anchor_separator) for anything not given here. A bare `level` is
 shorthand for `max=N` (legacy). By default the headline separators are
 applied too (per `ensure_headline_spacing`); override per-call with `--sep` /
-`--no-sep`.
+`--no-sep`. Skipped heading levels are checked afterwards as well (per
+`check_heading_gaps`); override per-call with `--check-gaps` /
+`--no-check-gaps` (see `:Markdown gaps` below).
 
 ## `:Markdown refs`
 
@@ -282,6 +285,19 @@ Which producer actually runs (pandoc + a PDF engine) is entirely pdfport's
 own `create_chain` — markdown.nvim neither knows nor names one. Without
 pdfport.nvim installed, or without an available markdown producer (no
 pandoc/PDF engine), reports a warning instead of erroring.
+
+## `:Markdown gaps`
+
+```vim
+:Markdown gaps                           " check for skipped heading levels; offers to fix them
+```
+
+Scans the buffer for headings whose level skips one or more levels (e.g. an
+H1 followed directly by an H3, with no H2 in between). When gaps are found,
+you're notified and asked whether to fix them right away (each offending
+heading is renumbered to close the gap). This is the on-demand form of the
+behaviour described under `check_heading_gaps`; `<leader>toc` /
+`:Markdown toc` also run it automatically unless disabled.
 
 ## `:MDTable*` (width-limited table wrapping)
 

@@ -18,6 +18,7 @@ lua/markdown/
     fold_levels.lua        fold by heading level
     fold_prev.lua          fold previous heading
     toc.lua                TOC generator (GFM slugs, de-dup)
+    heading_gaps.lua       detect/fix skipped heading levels
     wrap.lua               visual bold toggle
     wrap_link.lua          <leader>[ wrap word/selection in a link
     link_scan.lua          collect links from a line/buffer

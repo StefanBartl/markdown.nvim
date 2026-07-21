@@ -51,11 +51,12 @@ function M.check()
   info("links sanitize_on_save: " .. tostring(not cfg.links or cfg.links.sanitize_on_save ~= false))
 
   info(
-    ("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s"):format(
+    ("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s | heading_gaps: %s"):format(
       tostring(cfg.enable_autocmds ~= false),
       tostring(cfg.enable_keymaps ~= false),
       tostring(cfg.ft_only ~= false),
-      tostring(cfg.ensure_headline_spacing ~= false)
+      tostring(cfg.ensure_headline_spacing ~= false),
+      tostring(cfg.check_heading_gaps ~= false)
     )
   )
 

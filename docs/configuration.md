@@ -39,6 +39,10 @@ require("markdown").setup({
   -- (including a closing separator after the last section)
   ensure_headline_spacing = true,
 
+  -- Default on: TOC refresh also checks for skipped heading levels (e.g. an
+  -- H1 followed directly by an H3) and offers to fix them immediately
+  check_heading_gaps     = true,
+
   -- Per-binding keymap control by id (see docs/keymaps.md "Remapping / disabling"
   -- and docs/BINDINGS.lua). false disables; a string or { lhs, mode } remaps.
   keymaps = {},

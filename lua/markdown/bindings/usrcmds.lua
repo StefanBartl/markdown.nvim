@@ -231,6 +231,7 @@ end
 local SUBCOMMAND_NAMES = {
   "links",
   "toc",
+  "gaps",
   "refs",
   "table",
   "render",
@@ -261,9 +262,17 @@ local function create_markdown_command()
   local feat = require("markdown.config").feature_enabled
   -- Mirrors commands/init.lua's own SUBCOMMAND_FEATURES gating exactly (a
   -- subcommand name usually equals its gating feature; `table` maps to
-  -- either "table" or "tableview").
+  -- either "table" or "tableview", and `gaps` (heading-level gap checker) is
+  -- gated by the `toc` feature since it's a sub-behavior of TOC generation).
   local function enabled(name)
-    local names = (name == "table") and { "table", "tableview" } or { name }
+    local names
+    if name == "table" then
+      names = { "table", "tableview" }
+    elseif name == "gaps" then
+      names = { "toc" }
+    else
+      names = { name }
+    end
     for _, n in ipairs(names) do
       if feat(n) then return true end
     end

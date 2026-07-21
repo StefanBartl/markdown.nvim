@@ -36,8 +36,9 @@ CONTENTS                                           *markdown.nvim-contents*
      7.9 scope ................. |:Markdown-scope|
      7.10 list .................. |:Markdown-list|
      7.11 image ................. |:Markdown-image|
-     7.12 Buffer commands ....... |markdown.nvim-buf-commands|
-     7.13 :MDTable* (wrapping) .. |markdown.nvim-mdtable|
+     7.12 gaps .................. |:Markdown-gaps|
+     7.13 Buffer commands ....... |markdown.nvim-buf-commands|
+     7.14 :MDTable* (wrapping) .. |markdown.nvim-mdtable|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -70,7 +71,7 @@ Included subsystems:
   * Link diagnostics: dead relative-file links + duplicate heading anchors
     via vim.diagnostic
   * Unified `:Markdown` command: links, toc, table, render, preview, mdview,
-    create, headline_spacing
+    create, headline_spacing, gaps
   * Width-limited table wrapping (`:MDTable*`): wraps over-wide cells onto
     GFM-valid continuation rows, with unwrap, lint, CSV roundtrip, and more
 
@@ -214,6 +215,14 @@ GitHub-only, not duplicated into this helpfile.
   Override per call with the `--sep` / `--no-sep` flags of `:Markdown toc`,
   or apply on demand with `:Markdown headline_spacing` (see
   |:Markdown-headline-spacing|).
+
+`check_heading_gaps`
+  When `true` (default), refreshing the TOC (`<leader>toc` or
+  `:Markdown toc`) also checks for skipped heading levels (e.g. an H1
+  followed directly by an H3, with no H2 in between) and, when any are
+  found, notifies and asks whether to fix them immediately. Override per
+  call with the `--check-gaps` / `--no-check-gaps` flags of `:Markdown toc`,
+  or run the check on demand with `:Markdown gaps` (see |:Markdown-gaps|).
 
 `underline_headings`
   `char` (default `"="`) is the underline character drawn below each ATX
@@ -672,6 +681,10 @@ Placement rules:
 Spacing is normalized: exactly one blank line before the TOC header, one
 blank line before the `---` separator, and one blank line after it.
 
+Every refresh also checks for skipped heading levels (see
+`check_heading_gaps`, |markdown.nvim-config-general|); when gaps are found,
+you are notified and asked whether to fix them right away.
+
 ------------------------------------------------------------------------------
 6.5 Cursor handler                          *markdown.nvim-keymaps-handler*
 
@@ -833,6 +846,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     scope              Toggle fenced-block scope         |:Markdown-scope|
     list               List document items in a picker   |:Markdown-list|
     image              Delegate to images.nvim paste/screenshot |:Markdown-image|
+    gaps               Check/fix skipped heading levels  |:Markdown-gaps|
 
 ------------------------------------------------------------------------------
 7.2 :Markdown links                                       *:Markdown-links*
@@ -907,6 +921,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 7.3 :Markdown toc                                          *:Markdown-toc*
 
 :Markdown toc [level] [min=N] [max=N] [marker=X] [--sep | --no-sep]
+              [--check-gaps | --no-check-gaps]
 
   Insert or refresh the Table of Contents (see |markdown.nvim-keymaps-toc|
   for placement and slug rules), using `config.toc` for anything not given
@@ -919,6 +934,11 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   `ensure_headline_spacing` option. Force the behaviour per call:
     --sep      always apply separators
     --no-sep   never apply separators
+
+  By default, skipped heading levels are also checked afterwards, following
+  the `check_heading_gaps` option. Force the behaviour per call:
+    --check-gaps      always check for gaps
+    --no-check-gaps   skip the gap check
 
 ------------------------------------------------------------------------------
 7.4 :Markdown refs                                        *:Markdown-refs*
@@ -1147,7 +1167,20 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   logic lives entirely in images.nvim.
 
 ------------------------------------------------------------------------------
-7.12 Buffer-local commands                       *markdown.nvim-buf-commands*
+7.12 :Markdown gaps                                       *:Markdown-gaps*
+
+:Markdown gaps
+
+  Check the current buffer for skipped heading levels (e.g. an H1 followed
+  directly by an H3, with no H2 in between) and report them. When gaps are
+  found, you are asked whether to fix them immediately (each offending
+  heading is renumbered to close the gap). This is the on-demand form of the
+  behaviour described under `check_heading_gaps` (see
+  |markdown.nvim-config-general|); `<leader>toc` / `:Markdown toc` also run
+  it automatically unless disabled.
+
+------------------------------------------------------------------------------
+7.13 Buffer-local commands                       *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):
@@ -1200,7 +1233,7 @@ autocmd):
   rows, rounded card) and open it in the system default browser.
 
 ------------------------------------------------------------------------------
-7.13 :MDTable* (width-limited wrapping)              *markdown.nvim-mdtable*
+7.14 :MDTable* (width-limited wrapping)              *markdown.nvim-mdtable*
 
 A separate, opt-in command family (buffer-local, feature `table_wrap`, on by
 default) -- not nested under |:Markdown-table|. `table_fmt`'s formatter
@@ -1410,6 +1443,9 @@ Sub-modules can be imported individually, e.g.: >
   local hs = require("markdown.core.headline_spacing")
   hs.apply_headl_separators(0, { notify = false })
 
+  local gaps = require("markdown.core.heading_gaps")
+  gaps.check(0, { silent_ok = true })
+
   local renderer = require("markdown.tableview.renderer")
   local ok, err = renderer.validate_alignment(rendered_lines)
 
@@ -1438,6 +1474,7 @@ Sub-modules can be imported individually, e.g.: >
       fold_levels.lua        fold by heading level
       fold_prev.lua          fold previous heading
       toc.lua                TOC generator (GFM slugs, de-dup)
+      heading_gaps.lua       detect/fix skipped heading levels
       wrap.lua               visual bold toggle
       wrap_link.lua          <leader>[ wrap word/selection in a link
       link_scan.lua          collect links from a line/buffer

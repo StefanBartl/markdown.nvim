@@ -495,6 +495,10 @@ return {
         name = "Markdown export [pdf] [path]",
         desc = "Delegates to pdfport.nvim's create() (optional host); default sub is pdf",
       },
+      {
+        name = "Markdown gaps",
+        desc = "Check for skipped heading levels; offers to fix them",
+      },
     },
 
     buffer_local = {

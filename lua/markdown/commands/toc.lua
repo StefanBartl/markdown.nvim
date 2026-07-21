@@ -10,7 +10,7 @@ local DEFAULT_HEADER = "## Table of content"
 --- Update/insert the TOC and, unless disabled, ensure every section is closed
 --- with a `---` separator.
 ---@param header? string                       TOC header line
----@param opts? { min_level?: integer, max_level?: integer, marker?: string, separators?: boolean, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }
+---@param opts? { min_level?: integer, max_level?: integer, marker?: string, separators?: boolean, check_gaps?: boolean, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }
 ---@return nil
 function M.update(header, opts)
   opts = opts or {}
@@ -60,9 +60,20 @@ function M.update(header, opts)
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = false })
   end
+
+  -- Per-call override wins; otherwise fall back to the user config
+  -- (`check_heading_gaps`, default true).
+  local want_gap_check = opts.check_gaps
+  if want_gap_check == nil then want_gap_check = cfg().check_heading_gaps ~= false end
+
+  if want_gap_check then
+    local bufnr = vim.api.nvim_get_current_buf()
+    require("markdown.core.heading_gaps").check(bufnr, { silent_ok = true })
+  end
 end
 
---- `:Markdown toc [level] [--sep|--no-sep] [min=N] [max=N] [marker=X]` entry point.
+--- `:Markdown toc [level] [--sep|--no-sep] [--check-gaps|--no-check-gaps]
+--- [min=N] [max=N] [marker=X]` entry point.
 --- A bare numeric arg is shorthand for `max=N` (kept for backwards compat).
 ---@param argv string[]
 ---@return nil
@@ -85,6 +96,10 @@ function M.run(argv)
       opts.separators = false
     elseif a == "--sep" then
       opts.separators = true
+    elseif a == "--no-check-gaps" then
+      opts.check_gaps = false
+    elseif a == "--check-gaps" then
+      opts.check_gaps = true
     end
   end
 
