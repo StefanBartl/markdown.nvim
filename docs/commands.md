@@ -58,7 +58,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
 :Markdown table format [options]        " align columns / normalize separators
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
-:Markdown table tableize [delimiter]    " turn delimited text into a GFM table
+:Markdown table tableize [format]       " turn delimited text into a GFM table
 ```
 
 - **view** renders a table (or every table) in a nicely formatted preview.
@@ -96,8 +96,30 @@ dependency-free reimplementation of the vim-table-mode essentials.
   re-aligned automatically (debounced, on `InsertLeave` / `TextChanged`), reusing
   the same alignment as `format`.
 - **tableize** converts the current line (or a `:'<,'>` visual range) of
-  delimited text into a GFM table — the delimiter is auto-detected (tab, comma,
-  or runs of 2+ spaces) or given explicitly (`:Markdown table tableize ";"`).
+  delimited text into a GFM table. The separator is auto-detected (tab, comma,
+  or runs of 2+ spaces) or named explicitly:
+
+  | argument | separator |
+  |---|---|
+  | *(none)* / `auto` | auto-detect: tab, then comma, then runs of 2+ spaces |
+  | `csv` / `comma` | a single comma |
+  | `tsv` / `tab` | a tab |
+  | `psv` / `pipe` | a single `\|` |
+  | `scsv` / `semicolon` | a single `;` |
+  | `colon` | a single `:` |
+  | `space` | a single space |
+  | `spaces` / `whitespace` | a run of 2+ whitespace |
+  | `";"`, `":"`, `"\|"`, … | any bare or quoted literal delimiter |
+
+  Single-character separators honor **RFC-4180 double quoting**, so a field
+  wrapped in `"…"` may contain the delimiter (`"Smith, John",42` → two cells),
+  and `""` inside such a field is a literal quote. **Consecutive separators
+  produce empty cells**, so leading separators map to leading empty columns.
+
+  A literal space must be quoted — `:Markdown table tableize " "` — because
+  Neovim splits the command line on unquoted spaces. Note that with a single
+  space `header header2 header 3` becomes **four** columns; quote a value that
+  should stay whole: `header header2 "header 3"`.
 
 Cell motions `[|` / `]|` jump to the previous / next cell on the current row.
 Everything lives under the `table` feature, and stays available when only the

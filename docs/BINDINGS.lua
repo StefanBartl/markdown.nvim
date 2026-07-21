@@ -96,7 +96,7 @@ return {
       { name = "Markdown table format [options]",                     desc = "GFM table formatter at cursor/in scope" },
       { name = "Markdown table new [cols] [rows]",                    desc = "Insert an empty GFM table template" },
       { name = "Markdown table mode [on|off|toggle]",                 desc = "Per-buffer table auto-format (vim-table-mode style)" },
-      { name = "Markdown table tableize [delimiter]",                 desc = "Convert delimited text (range) into a GFM table" },
+      { name = "Markdown table tableize [format]",                    desc = "Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…)" },
       { name = "Markdown render [on|off|toggle]",                     desc = "render-markdown.nvim wrapper (optional host)" },
       { name = "Markdown preview [start|stop|toggle]",                desc = "markdown-preview.nvim wrapper (optional host)" },
       { name = "Markdown mdview [path]",                              desc = "Open a file directly via mdview.nvim (optional host)" },

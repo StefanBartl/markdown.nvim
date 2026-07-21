@@ -80,6 +80,10 @@ local function create_markdown_command()
             range = ctx.raw.range,
             line1 = ctx.raw.line1,
             line2 = ctx.raw.line2,
+            -- Full unsplit argument text (quotes preserved). fargs mangles
+            -- quoted tokens, so subcommands that take a literal separator
+            -- (e.g. `:Markdown table tableize " "`) recover it from here.
+            args  = ctx.raw.args,
           })
         end,
       }

@@ -340,7 +340,37 @@ return function(H)
     ok(out[2]:find("%-%-%-"), "tableize: separator row inserted")
     ok(out[3]:find("Alice") and out[4]:find("Bob"), "tableize: data rows preserved")
 
+    -- tableize with an explicit space separator, recovered from the raw arg
+    -- string (fargs mangles the quoted `" "`, so the dispatcher forwards ctx.args).
+    -- Leading spaces must map to leading empty columns.
+    api.nvim_buf_set_lines(buf, 0, -1, false, { "a b", "  c" })
+    commands.execute({ "table", "tableize" },
+      { range = 2, line1 = 1, line2 = 2, args = 'table tableize " "' })
+    out = api.nvim_buf_get_lines(buf, 0, -1, false)
+    ok(out[1]:find("| a ") and out[1]:find(" b "), "tableize space: two header columns")
+    ok(out[3]:find("| c ") or out[3]:match("|%s+|%s+c%s+|"), "tableize space: leading space -> 3rd column")
+
+    -- Named format keyword (csv) plus RFC-4180 quoting: a quoted field keeps its
+    -- embedded comma as a single cell.
+    local qb = H.scratch("markdown")
+    api.nvim_buf_set_lines(qb, 0, -1, false, { 'Name,City', '"Smith, John","New York"' })
+    table_mode.tableize(qb, 1, 2, "csv")
+    local qout = api.nvim_buf_get_lines(qb, 0, -1, false)
+    ok(qout[3]:find("Smith, John") and qout[3]:find("New York"), "tableize csv: quoted comma stays in one cell")
+    ok(not qout[3]:find('"'), "tableize csv: surrounding quotes stripped from cells")
+
+    -- 'spaces' (runs of 2+ whitespace) collapses whitespace runs into one delim.
+    local sb = H.scratch("markdown")
+    api.nvim_buf_set_lines(sb, 0, -1, false, { "a    b   c", "1  2  3" })
+    table_mode.tableize(sb, 1, 2, "spaces")
+    local sout = api.nvim_buf_get_lines(sb, 0, -1, false)
+    ok(sout[1]:find("a") and sout[1]:find("b") and sout[1]:find("c") and not sout[2]:find("|%s*|%s*|%s*|%s*|"),
+      "tableize spaces: 2+ whitespace runs -> exactly three columns")
+
     -- table mode: toggle on, mangle a cell, reformat re-aligns the columns.
+    -- (the tableize cases above created scratch buffers; re-front the main one so
+    -- the current-buffer :Markdown table mode commands act on it.)
+    api.nvim_set_current_buf(buf)
     api.nvim_buf_set_lines(buf, 0, -1, false, { "| a | b |", "| --- | --- |", "| 1 | 2000000 |" })
     commands.execute({ "table", "mode", "on" })
     ok(table_mode.is_enabled(buf), "table mode: 'on' enables auto-format tracking for the buffer")

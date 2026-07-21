@@ -5,7 +5,12 @@
 --- Provides the most-used table-mode features without a Vimscript dependency:
 ---   * mode      — per-buffer auto-format: after each edit inside a GFM table the
 ---                 table is re-aligned (InsertLeave + TextChanged, debounced).
----   * tableize  — convert delimited text (CSV/TSV/2+ spaces) into a GFM table.
+---   * tableize  — convert delimited text into a GFM table. The separator is
+---                 auto-detected (tab/comma/2+ spaces) or named explicitly:
+---                 csv, tsv, psv, scsv, space, spaces, a bare punctuation char,
+---                 or a quoted literal like `" "`. Single-char separators honor
+---                 RFC-4180 double quoting, and leading separators map to
+---                 leading empty columns.
 ---   * motions   — jump to the previous / next cell on the current row.
 --- Alignment is delegated to `core.table_fmt.format_table_at_cursor`, so the
 --- header/cell alignment config and separator style stay consistent with
@@ -138,29 +143,117 @@ end
 -- Tableize
 -- ---------------------------------------------------------------------------
 
---- Pick a field delimiter for `lines`. Explicit `delim` wins; otherwise auto:
---- tab, then comma, then runs of 2+ spaces. Returns a Lua pattern and a label.
----@param lines string[]
----@param delim? string  literal delimiter, or nil for auto
----@return string pattern, string label
-local function pick_delim(lines, delim)
-  if delim and delim ~= "" and delim ~= "auto" then
-    if delim == "\\t" or delim == "tab" then return "\t", "tab" end
-    return vim.pesc(delim), delim
+-- Named separator formats. Each maps to a single-character delimiter (the
+-- common case: CSV, TSV, PSV, …) or the special "whitespace" run mode. Users
+-- pass these as `:Markdown table tableize <name>`; a bare punctuation char or a
+-- quoted literal (e.g. `" "`) is accepted too and treated as a literal
+-- delimiter. Everything here is lower-cased before lookup.
+---@type table<string, { char?: string, ws?: boolean, label: string }>
+local FORMATS = {
+  csv        = { char = ",",  label = "csv" },
+  comma      = { char = ",",  label = "csv" },
+  tsv        = { char = "\t", label = "tsv" },
+  tab        = { char = "\t", label = "tsv" },
+  ["\\t"]    = { char = "\t", label = "tsv" },
+  psv        = { char = "|",  label = "psv" },
+  pipe       = { char = "|",  label = "psv" },
+  bar        = { char = "|",  label = "psv" },
+  ssv        = { char = ";",  label = "scsv" },
+  scsv       = { char = ";",  label = "scsv" },
+  semicolon  = { char = ";",  label = "scsv" },
+  colon      = { char = ":",  label = "colon" },
+  space      = { char = " ",  label = "space" },
+  spaces     = { ws = true,   label = "whitespace" },
+  whitespace = { ws = true,   label = "whitespace" },
+}
+
+--- Strip a `sep=` / `separator=` prefix and one matching pair of surrounding
+--- quotes from a raw separator argument. `sep="\t"` -> `\t`, `" "` -> ` `.
+---@param spec string
+---@return string
+local function clean_spec(spec)
+  spec = spec:gsub("^%s*separator%s*=%s*", ""):gsub("^%s*sep%s*=%s*", "")
+  local q = spec:sub(1, 1)
+  if (q == '"' or q == "'") and spec:sub(-1) == q and #spec >= 2 then
+    spec = spec:sub(2, -2)
   end
-  local sample = ""
-  for _, l in ipairs(lines) do if l:match("%S") then sample = l; break end end
-  if sample:find("\t") then return "\t", "tab" end
-  if sample:find(",") then return ",", "," end
-  if sample:find("%s%s+") then return "%s%s+", "whitespace" end
-  return "\t", "tab" -- single-column fallback (no delimiter present)
+  return spec
 end
 
---- Split `line` into trimmed fields on the (Lua-pattern) delimiter.
+--- Resolve a separator spec into a split mode. Explicit `spec` wins; otherwise
+--- auto-detect (tab, then comma, then runs of 2+ spaces). Returns:
+---   "char", <char>  — split on a single literal char, CSV-style quoting honored
+---   "ws",   "%s%s+" — split on runs of 2+ whitespace, no quoting
+---@param lines string[]
+---@param spec? string  format name, literal delimiter, or nil/"" for auto
+---@return "char"|"ws" mode, string val, string label
+local function resolve_delim(lines, spec)
+  if spec ~= nil then spec = clean_spec(spec) end
+
+  if spec == nil or spec == "" or spec:lower() == "auto" then
+    local sample = ""
+    for _, l in ipairs(lines) do if l:match("%S") then sample = l; break end end
+    if sample:find("\t") then return "char", "\t", "tsv" end
+    if sample:find(",") then return "char", ",", "csv" end
+    if sample:find("%s%s+") then return "ws", "%s%s+", "whitespace" end
+    return "char", "\t", "single-column" -- no delimiter present
+  end
+
+  local f = FORMATS[spec:lower()]
+  if f then
+    if f.ws then return "ws", "%s%s+", f.label end
+    return "char", f.char, f.label
+  end
+
+  -- Fall through: a literal delimiter. A single char goes through the
+  -- quoting-aware char splitter; a multi-char string is matched literally.
+  if vim.fn.strchars(spec) == 1 then return "char", spec, spec end
+  return "ws", vim.pesc(spec), spec
+end
+
+--- Split `line` on a single-character delimiter, honoring RFC-4180-style double
+--- quoting: a field may be wrapped in `"..."` to contain the delimiter, and a
+--- literal quote inside is written `""`. Each field is trimmed of outer spaces.
+--- Consecutive delimiters yield empty fields, so leading delimiters produce
+--- leading empty columns.
+---@param line string
+---@param sep string  single character
+---@return string[]
+local function split_char(line, sep)
+  local out, buf = {}, {}
+  local in_q, ws_only = false, true -- ws_only: field so far is empty/whitespace
+  local i, n = 1, #line
+  while i <= n do
+    local c = line:sub(i, i)
+    if in_q then
+      if c == '"' then
+        if line:sub(i + 1, i + 1) == '"' then buf[#buf + 1] = '"'; i = i + 1
+        else in_q = false end
+      else
+        buf[#buf + 1] = c
+      end
+    elseif c == '"' and ws_only then
+      in_q = true
+      buf = {} -- drop any leading whitespace collected before the quote
+    elseif c == sep then
+      out[#out + 1] = vim.trim(table.concat(buf))
+      buf, ws_only = {}, true
+    else
+      buf[#buf + 1] = c
+      if not c:match("%s") then ws_only = false end
+    end
+    i = i + 1
+  end
+  out[#out + 1] = vim.trim(table.concat(buf))
+  return out
+end
+
+--- Split `line` into trimmed fields on the (Lua-pattern) delimiter. Runs of the
+--- pattern are single delimiters, so no empty fields are produced between them.
 ---@param line string
 ---@param pat string
 ---@return string[]
-local function split_fields(line, pat)
+local function split_pattern(line, pat)
   local out = {}
   local pos = 1
   while true do
@@ -179,7 +272,7 @@ end
 ---@param bufnr integer
 ---@param line1 integer
 ---@param line2 integer
----@param delim? string
+---@param delim? string  format name / literal separator / nil for auto-detect
 ---@return boolean ok, string|nil err
 function M.tableize(bufnr, line1, line2, delim)
   bufnr = bufnr or api.nvim_get_current_buf()
@@ -191,11 +284,11 @@ function M.tableize(bufnr, line1, line2, delim)
   end
   if #rows == 0 then return false, "tableize: no non-empty lines in range" end
 
-  local pat = pick_delim(rows, delim)
+  local mode, val = resolve_delim(rows, delim)
   local matrix = {}
   local cols = 0
   for _, l in ipairs(rows) do
-    local f = split_fields(l, pat)
+    local f = (mode == "char") and split_char(l, val) or split_pattern(l, val)
     matrix[#matrix + 1] = f
     cols = math.max(cols, #f)
   end

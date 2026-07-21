@@ -96,6 +96,25 @@ end
 -- tableize  (delimited text -> GFM table)
 -- ---------------------------------------------------------------------------
 
+--- Recover the separator argument as typed. `fargs` splits (and mangles) quoted
+--- tokens, so a literal space in `:Markdown table tableize " "` is lost there;
+--- when the full raw arg string is available (ctx.args) we take everything after
+--- the `table tableize` path instead, preserving quotes. Falls back to argv[1].
+---@param argv string[]
+---@param ctx? table
+---@return string|nil
+local function tableize_sep(argv, ctx)
+  local raw = ctx and ctx.args
+  if type(raw) == "string" then
+    -- Strip the two leading path tokens ("table" "tableize"); keep the rest
+    -- verbatim (quotes intact). resolve_delim/clean_spec handle the quoting.
+    local rest = vim.trim((raw:gsub("^%s*%S+%s+%S+%s*", "")))
+    if rest ~= "" then return rest end -- a literal space is passed quoted: `" "`
+    return nil
+  end
+  return argv[1]
+end
+
 local function do_tableize(argv, ctx)
   local tm = require("markdown_nvim.core.table_mode")
   local bufnr = vim.api.nvim_get_current_buf()
@@ -109,7 +128,9 @@ local function do_tableize(argv, ctx)
     line2 = line1
   end
 
-  local delim = argv[1] -- optional explicit delimiter ("," / ";" / "tab" / …)
+  -- Optional separator: a format name (csv/tsv/psv/space/spaces/…), a bare
+  -- punctuation char, or a quoted literal such as `" "`. nil = auto-detect.
+  local delim = tableize_sep(argv, ctx)
   local ok, err = tm.tableize(bufnr, line1, line2, delim)
   if ok then notify.info("Tableized " .. (line2 - line1 + 1) .. " line(s)")
   else notify.warn(err or "tableize failed") end
@@ -204,6 +225,17 @@ function M.complete(arglead, cmdline)
   if sub == "mode" and on_args then
     local out = {}
     for _, name in ipairs({ "on", "off", "toggle" }) do
+      if vim.startswith(name, arglead) then out[#out + 1] = name end
+    end
+    return out
+  end
+  if sub == "tableize" and on_args then
+    -- Offer the named separator formats; a literal/quoted delimiter is typed
+    -- freehand. `auto` is the default (omit the argument entirely).
+    local out = {}
+    local names = { "auto", "csv", "tsv", "psv", "scsv", "space", "spaces",
+      "comma", "tab", "semicolon", "colon", "pipe", "whitespace" }
+    for _, name in ipairs(names) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     return out

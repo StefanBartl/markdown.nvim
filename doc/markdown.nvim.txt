@@ -682,12 +682,28 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   edit (debounced, on InsertLeave / TextChanged), reusing the `format`
   alignment. Also mapped to <leader>tvm.
 
-:Markdown table tableize [delimiter]
+:Markdown table tableize [format]
 
   Convert delimited text into a GFM table. Operates on the command's range
-  (`:'<,'>` or `:N,M`) or the current line. The delimiter is auto-detected
-  (tab, comma, or runs of 2+ spaces) or given explicitly, e.g.
-  `:Markdown table tableize ";"`. The result is alignment-formatted.
+  (`:'<,'>` or `:N,M`) or the current line. The separator is auto-detected
+  (tab, comma, or runs of 2+ spaces) or named explicitly:
+
+    auto              auto-detect (default)
+    csv / comma       a single comma
+    tsv / tab         a tab
+    psv / pipe        a single |
+    scsv / semicolon  a single ;
+    colon             a single :
+    space             a single space
+    spaces            a run of 2+ whitespace
+    ";" / ":" / …     any bare or quoted literal delimiter
+
+  Single-character separators honor RFC-4180 double quoting: a field wrapped
+  in "..." may contain the delimiter (`"Smith, John",42` -> two cells), and
+  "" inside is a literal quote. Consecutive separators produce empty cells, so
+  leading separators map to leading empty columns. A literal space must be
+  quoted: `:Markdown table tableize " "` (Neovim splits unquoted spaces). The
+  result is alignment-formatted.
 
   Cell motions `]|` / `[|` jump to the next / previous cell on the current row.
   The whole table surface lives under the `table` feature and stays available
