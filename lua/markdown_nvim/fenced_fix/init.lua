@@ -106,6 +106,10 @@ function M.setup(opts)
   return M
 end
 
+-- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
+-- name and would skip the clear on a second load of this module (e.g. a
+-- hot-reload via package.loaded reset), leaving the previous ColorScheme
+-- autocmd registered alongside the new one instead of replaced.
 autocmd.create("ColorScheme", function()
   M.apply()
 end, {

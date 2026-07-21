@@ -23,6 +23,10 @@ local busy = false
 --- running preview; never starts one on its own beyond the active session.
 local function ensure_autorefresh()
   if aug then return end
+  -- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
+  -- name and would stop re-clearing on a second ensure_autorefresh() after a
+  -- hot-reload (which resets the local `aug` and re-enters this branch),
+  -- leaving the previous instance's autocmd registered alongside the new one.
   aug = vim.api.nvim_create_augroup("MarkdownNvimPreviewRefresh", { clear = true })
   autocmd.create("BufEnter", function()
     if active and not busy and available() then

@@ -14,6 +14,10 @@ function M.setup(opts)
   local want_bq   = feat("hl")
   local want_link = feat("link_hl")
 
+  -- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
+  -- name and would skip the clear on a repeated M.setup() call, leaving
+  -- earlier ColorScheme/blockquote autocmds registered alongside the new ones
+  -- instead of replaced.
   local aug = vim.api.nvim_create_augroup("MarkdownNvimHL", { clear = true })
 
   if want_bq then
