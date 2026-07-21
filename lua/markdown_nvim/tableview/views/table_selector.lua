@@ -3,6 +3,7 @@ local notify = require("markdown_nvim.util.notify").create("[markdown_nvim.table
 
 local api = vim.api
 local ui = require("markdown_nvim.tableview.renderer")
+local window = require("lib.nvim.window")
 
 local function set_buf_opt(buf, name, value)
   pcall(api.nvim_set_option_value, name, value, { scope = "local", buf = buf })
@@ -92,12 +93,7 @@ return function(tables)
     end,
   })
 
-  for _, key in ipairs({ "q", "<Esc>" }) do
-    api.nvim_buf_set_keymap(sel_buf, "n", key, "", {
-      nowait = true, noremap = true, silent = true,
-      callback = function() close_selector() end,
-    })
-  end
+  window.nice_quit(sel_win, { force = true })
 
   api.nvim_win_set_cursor(sel_win, { 1, 0 })
 end
