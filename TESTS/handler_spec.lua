@@ -6,10 +6,10 @@ return function(H)
   local eq = H.eq
 
   -- Stub util.notify to record calls without depending on lib.nvim/vim.notify.
-  package.loaded["markdown_nvim.util.notify"] = nil
-  package.loaded["markdown_nvim.handler"] = nil
+  package.loaded["markdown.util.notify"] = nil
+  package.loaded["markdown.handler"] = nil
   local calls = {}
-  package.loaded["markdown_nvim.util.notify"] = {
+  package.loaded["markdown.util.notify"] = {
     create = function()
       return {
         info = function(msg) calls[#calls + 1] = { level = "info", msg = msg } end,
@@ -19,7 +19,7 @@ return function(H)
       }
     end,
   }
-  local handler = require("markdown_nvim.handler")
+  local handler = require("markdown.handler")
 
   local buf = H.scratch("markdown")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "just plain prose, no links or targets here" })
@@ -37,7 +37,7 @@ return function(H)
   -- `![alt](src)`, so every link was misclassified as an image and opened
   -- externally instead of via :edit).
   do
-    local image = require("markdown_nvim.handler.image")
+    local image = require("markdown.handler.image")
     eq(image.is_image_line("[Review answer](C:/repos/foo/bar.md)"), false,
       "plain link is not an image")
     eq(image.is_image_line("![alt](C:/repos/foo/pic.png)"), true,
@@ -47,7 +47,7 @@ return function(H)
   -- A Windows drive-letter absolute path (`C:/…`) is a file target, not a
   -- URI scheme (regression: `^%w[%w+.-]*:` matched `C:` the same as `http:`).
   do
-    local is_extern = require("markdown_nvim.anchor.is_html_extern_anchor_line")
+    local is_extern = require("markdown.anchor.is_html_extern_anchor_line")
     local extern = is_extern("[Review answer](C:/repos/foo/bar.md)")
     eq(type(extern), "table", "drive-letter path recognized as a file target")
     eq(extern.target, "C:/repos/foo/bar.md", "extracted target unchanged")
@@ -60,8 +60,8 @@ return function(H)
   -- End-to-end: double-clicking a `[text](C:/…)` link opens the target via
   -- :edit in the current window, never via the system's default application.
   do
-    package.loaded["markdown_nvim.handler"] = nil
-    local h2 = require("markdown_nvim.handler")
+    package.loaded["markdown.handler"] = nil
+    local h2 = require("markdown.handler")
 
     local target = vim.fn.tempname() .. "_mdnvim_target.md"
     local fh = io.open(target, "w"); if fh then fh:write("# target"); fh:close() end
@@ -92,6 +92,6 @@ return function(H)
 
   -- Restore the real notify module so later specs (if any run after this one
   -- in the same process) are unaffected.
-  package.loaded["markdown_nvim.util.notify"] = nil
-  package.loaded["markdown_nvim.handler"] = nil
+  package.loaded["markdown.util.notify"] = nil
+  package.loaded["markdown.handler"] = nil
 end

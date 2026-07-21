@@ -82,7 +82,7 @@ lazy.nvim: >
     dependencies = { "StefanBartl/lib.nvim" },
     ft = { "markdown", "mdx", "md" },
     config = function()
-      require("markdown_nvim").setup()
+      require("markdown").setup()
     end,
   }
 <
@@ -91,7 +91,7 @@ Local development: >
     dir = "E:/repos/markdown.nvim",
     ft  = { "markdown", "mdx", "md" },
     config = function()
-      require("markdown_nvim").setup()
+      require("markdown").setup()
     end,
   }
 <
@@ -100,7 +100,7 @@ Local development: >
 
 Call `setup()` once during Neovim startup: >
 
-  require("markdown_nvim").setup({
+  require("markdown").setup({
     -- options (see |markdown.nvim-config|)
   })
 <
@@ -122,7 +122,7 @@ All keys are optional. Unset keys use the defaults shown below.
 ------------------------------------------------------------------------------
 5.1 General options                          *markdown.nvim-config-general*
 >
-  require("markdown_nvim").setup({
+  require("markdown").setup({
     features = {},  -- feature gating; see |markdown.nvim-config-features|
     map_double_asterisk    = true,
     map_wrap_link          = true,
@@ -172,7 +172,7 @@ All keys are optional. Unset keys use the defaults shown below.
 
 `enable_autocmds`
   When `false`, no FileType autocmds are registered — you must call
-  `require("markdown_nvim.setup.keymaps").apply(bufnr)` manually.
+  `require("markdown.setup.keymaps").apply(bufnr)` manually.
 
 `enable_keymaps`
   Currently unused at runtime; all keymaps are controlled by `enable_autocmds`.
@@ -232,7 +232,7 @@ All keys are optional. Unset keys use the defaults shown below.
 <
   The fold entries (Fold/Unfold Heading, Fold below H2 toggle, Unfold All) appear only when
   the cursor is on a heading; TOC and refs entries are always available. Get the
-  entries from `require("markdown_nvim.integrations.menu").items()` (inline
+  entries from `require("markdown.integrations.menu").items()` (inline
   list) or `.submenu()` (a single fly-out), and compose into your menu, e.g.
   `require("menu").open(vim.list_extend(md.items(), require("menus.custom")))`.
 
@@ -349,7 +349,7 @@ must be longer (CommonMark), e.g. open the outer block with ````markdown.
 
 Reduce the plugin to a subset without unsetting each option. >
 
-    require("markdown_nvim").setup({
+    require("markdown").setup({
       features = {
         -- disable = "all"                    -- turn every feature off
         -- disable = { "tableview", "refs" }  -- turn off just these
@@ -362,7 +362,7 @@ Precedence: `just_enable` (if set) wins — only the listed features stay on and
 everything else is off. Otherwise the resolver starts all-on, applies
 `disable`, then re-applies `enable`. Unknown names emit a warning.
 
-Gateable feature names (also returned by `require("markdown_nvim.config")
+Gateable feature names (also returned by `require("markdown.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
     links  toc  table  render  preview  mdview  create  headline_spacing  scope
@@ -381,7 +381,7 @@ Per-binding control (recommended). Every default key has a stable `id` (see the
 `editing` list in `docs/BINDINGS.md`). Set `keymaps[id]` to disable or remap a
 single binding; everything else keeps its default: >
 
-    require("markdown_nvim").setup({
+    require("markdown").setup({
       keymaps = {
         jump_anchor = false,            -- disable this binding
         toc         = "<leader>T",      -- remap to a new key (same mode)
@@ -393,9 +393,9 @@ single binding; everything else keeps its default: >
 (`map_double_asterisk`, `map_wrap_link`, `use_zf_override`) still work too.
 
 Free-form remapping: every action is also a plain function on
-`require("markdown_nvim").actions`, bindable by hand (no `<Plug>` layer): >
+`require("markdown").actions`, bindable by hand (no `<Plug>` layer): >
 
-    local a = require("markdown_nvim").actions
+    local a = require("markdown").actions
     vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
     vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 <
@@ -730,7 +730,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   already running — pushes the file and re-opens the preview surface for it.
   mdview.nvim is an optional host dependency; the command warns gracefully
   when it is not installed or loaded (e.g. omitted as a dependency of
-  markdown.nvim and not installed standalone). `:checkhealth markdown_nvim`
+  markdown.nvim and not installed standalone). `:checkhealth markdown`
   reports whether it was detected.
 
 ------------------------------------------------------------------------------
@@ -821,7 +821,7 @@ output. Column widths are computed from screen-DISPLAY width
 UTF-8 (umlauts, em dashes, curly quotes, arrows, …) still keep every `|` / `│`
 divider lined up across rows.
 
-`require("markdown_nvim.tableview.renderer").validate_alignment(lines)` checks
+`require("markdown.tableview.renderer").validate_alignment(lines)` checks
 a rendered table's lines and reports (`ok`, `err`) — `err` names the first line
 whose divider count or display column doesn't match the reference row. Use it
 to verify a rendering programmatically (e.g. in a test) instead of eyeballing a
@@ -846,7 +846,7 @@ opens it with the system application (xdg-open / open / cmd start).
 To enable fold support, add to your config (or use an ftplugin): >
 
   vim.opt_local.foldmethod = "expr"
-  vim.opt_local.foldexpr   = "v:lua.require('markdown_nvim').foldexpr(v:lnum)"
+  vim.opt_local.foldexpr   = "v:lua.require('markdown').foldexpr(v:lnum)"
   vim.opt_local.foldenable  = true
 <
 The expression recognizes:
@@ -856,20 +856,20 @@ The expression recognizes:
 
 Helper functions:
 
-  `require("markdown_nvim.core.fold").toggle_under_cursor()`
+  `require("markdown.core.fold").toggle_under_cursor()`
     Toggle fold under cursor and center the view.
 
-  `require("markdown_nvim.core.fold").unfold_all_center()`
+  `require("markdown.core.fold").unfold_all_center()`
     Open all folds (`zR`) and center the view.
 
-  `require("markdown_nvim.core.fold_levels").fold_h2_plus()`
+  `require("markdown.core.fold_levels").fold_h2_plus()`
     Toggle an outline view: fold everything below H2 (H3+, `foldlevel=2`),
     keeping H1 and H2 open; running it again unfolds all.
 
-  `require("markdown_nvim.core.fold_levels").fold_levels({2,3,4})`
+  `require("markdown.core.fold_levels").fold_levels({2,3,4})`
     Fold the specified heading levels.
 
-  `require("markdown_nvim.core.fold_prev").fold_prev_heading_then_center()`
+  `require("markdown.core.fold_prev").fold_prev_heading_then_center()`
     Move to the previous heading, close its fold, and center.
 
 ==============================================================================
@@ -878,57 +878,57 @@ Helper functions:
 After calling `setup()`, the following functions are exported from the
 top-level module:
 
-                                               *markdown_nvim.foldexpr()*
-`require("markdown_nvim").foldexpr(lnum)`
+                                               *markdown.foldexpr()*
+`require("markdown").foldexpr(lnum)`
 
   Fold expression function. Pass it to `foldexpr` (see |markdown.nvim-foldexpr|).
 
-                                          *markdown_nvim.goto_prev_heading()*
-`require("markdown_nvim").goto_prev_heading()`
+                                          *markdown.goto_prev_heading()*
+`require("markdown").goto_prev_heading()`
 
   Jump to the previous H2+ heading. Respects `vim.v.count1`.
 
-                                          *markdown_nvim.goto_next_heading()*
-`require("markdown_nvim").goto_next_heading()`
+                                          *markdown.goto_next_heading()*
+`require("markdown").goto_next_heading()`
 
   Jump to the next H2+ heading. Respects `vim.v.count1`.
 
-                                         *markdown_nvim.toggle_visual_bold()*
-`require("markdown_nvim").toggle_visual_bold()`
+                                         *markdown.toggle_visual_bold()*
+`require("markdown").toggle_visual_bold()`
 
   Toggle `**bold**` on the current visual selection.
 
-                                               *markdown_nvim.update_toc()*
-`require("markdown_nvim").update_toc([header [, opts]])`
+                                               *markdown.update_toc()*
+`require("markdown").update_toc([header [, opts]])`
 
   Insert or refresh the TOC in the current buffer.
   `header`     String: the TOC heading line (default `"## Table of content"`).
   `opts`       Table with optional `min_level` and `max_level` (integers 1-6).
 
-                                        *markdown_nvim.handle_cursor_action()*
-`require("markdown_nvim").handle_cursor_action()`
+                                        *markdown.handle_cursor_action()*
+`require("markdown").handle_cursor_action()`
 
   Dispatch the cursor-action handler (anchor / image / URL / file).
 
 Sub-modules can be imported individually, e.g.: >
 
-  local headings = require("markdown_nvim.core.headings")
+  local headings = require("markdown.core.headings")
   headings.shift_range(srow, erow, delta)
 
-  local toc = require("markdown_nvim.core.toc")
+  local toc = require("markdown.core.toc")
   toc.update_markdown_toc("## Contents", { max_level = 3 })
 
-  local hs = require("markdown_nvim.core.headline_spacing")
+  local hs = require("markdown.core.headline_spacing")
   hs.apply_headl_separators(0, { notify = false })
 
-  local renderer = require("markdown_nvim.tableview.renderer")
+  local renderer = require("markdown.tableview.renderer")
   local ok, err = renderer.validate_alignment(rendered_lines)
 <
 ==============================================================================
 11. ARCHITECTURE                              *markdown.nvim-architecture*
 
 >
-  lua/markdown_nvim/
+  lua/markdown/
     init.lua                 setup() + public Lua facade
     config.lua               merged defaults
     util/
@@ -992,7 +992,7 @@ Sub-modules can be imported individually, e.g.: >
       usercmds/
         init.lua             buffer-local user-command installer
   plugin/
-    markdown_nvim.lua        guard (vim.g.loaded_markdown_nvim)
+    markdown.lua        guard (vim.g.loaded_markdown)
 <
 ==============================================================================
 vim:ft=help:tw=78:ts=2:et:

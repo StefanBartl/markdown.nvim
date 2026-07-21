@@ -3,7 +3,7 @@
 Full reference with defaults:
 
 ```lua
-require("markdown_nvim").setup({
+require("markdown").setup({
   -- Feature gating (see "Feature gating" below). Empty = everything on.
   features = {},
 
@@ -120,7 +120,7 @@ require("markdown_nvim").setup({
 Reduce the plugin to a subset without unsetting each option, via `features`:
 
 ```lua
-require("markdown_nvim").setup({
+require("markdown").setup({
   features = {
     -- disable = "all"                    -- turn every gateable feature off
     -- disable = { "tableview", "refs" }  -- turn off just these

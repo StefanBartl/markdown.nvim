@@ -3,7 +3,7 @@
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local config = require("markdown_nvim.config")
+  local config = require("markdown.config")
 
   -- defaults
   config.setup({})

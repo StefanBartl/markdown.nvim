@@ -33,7 +33,7 @@ effects on non-Markdown buffers. Requires Neovim >= 0.9 and
   dependencies = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
-    require("markdown_nvim").setup()
+    require("markdown").setup()
   end,
 }
 ```
@@ -51,7 +51,7 @@ See [docs/installation.md](docs/installation.md) for packer.nvim and vim-plug.
 - [Commands](docs/commands.md) — the `:Markdown` command and all its subcommands.
 - [Fenced-block scope](docs/fenced-scope.md) — treating a fenced Markdown block as its own sub-document.
 - [Menu integration](docs/menu.md) — context-aware entries for nvzone/menu.
-- [Health](docs/health.md) — what `:checkhealth markdown_nvim` reports.
+- [Health](docs/health.md) — what `:checkhealth markdown` reports.
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.
 - [Bindings cheatsheet](docs/BINDINGS.lua) — machine-readable list of every binding.
 - [Roadmap](docs/ROADMAP.md) — planned work.

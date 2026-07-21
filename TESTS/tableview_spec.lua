@@ -3,7 +3,7 @@
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local renderer = require("markdown_nvim.tableview.renderer")
+  local renderer = require("markdown.tableview.renderer")
 
   local mt = {
     header = { cells = { { content = "A" }, { content = "B" } } },

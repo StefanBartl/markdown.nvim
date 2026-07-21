@@ -2,11 +2,11 @@
 --
 -- A single, machine-readable overview of every keymap, user command and
 -- autocommand markdown.nvim defines. DOCUMENTATION only: not required at
--- runtime. It mirrors the source of truth in lua/markdown_nvim/bindings/. If
+-- runtime. It mirrors the source of truth in lua/markdown/bindings/. If
 -- you add or rename a binding there, update the matching entry here.
 --
 -- Structure:
---   actions       — named functions on require("markdown_nvim").actions
+--   actions       — named functions on require("markdown").actions
 --                   (the implementation surface; bind your own keys to these).
 --   default_keys  — buffer-local defaults, installed on markdown filetypes.
 --                     .editing   — bindings/keymaps.lua (gated by enable_keymaps

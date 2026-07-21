@@ -51,7 +51,7 @@ outside, they act on the file but skip every fenced block's interior.
   heuristic + treesitter fence detection is used as the source of truth. It's a
   *soft* dependency: markdown.nvim ships a small built-in fence scanner and works
   without it — install it for the most accurate detection. `:checkhealth
-  markdown_nvim` reports which backend is active.
+  markdown` reports which backend is active.
 - **Nesting.** To nest a fenced block *inside* a `` ```markdown `` block, the
   outer fence must be longer (CommonMark rule), e.g. open the outer block with
   ```` ````markdown ````. The detector honours fence length, matching CommonMark.

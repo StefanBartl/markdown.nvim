@@ -1,12 +1,12 @@
 # Architecture
 
 ```
-lua/markdown_nvim/
+lua/markdown/
   init.lua                 setup() + public Lua facade
   config/
     init.lua               runtime store (setup/get)
     DEFAULTS.lua           typed default configuration
-  health.lua               :checkhealth markdown_nvim
+  health.lua               :checkhealth markdown
   util/
     notify.lua             vim.notify wrapper
     clipboard.lua          setreg("+") helper
@@ -72,7 +72,7 @@ lua/markdown_nvim/
     autocmds.lua           FileType / BufWritePost drivers
     which_key.lua          optional which-key group labels (guarded)
 plugin/
-  markdown_nvim.lua        guard (vim.g.loaded_markdown_nvim)
+  markdown.lua        guard (vim.g.loaded_markdown)
 doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
 docs/

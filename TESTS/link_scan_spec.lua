@@ -3,7 +3,7 @@
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local ls = require("markdown_nvim.core.link_scan")
+  local ls = require("markdown.core.link_scan")
 
   -- a markdown link and a bare URL on one line
   local got = ls.from_line("see [docs](./a.md) and https://example.com here", 5)

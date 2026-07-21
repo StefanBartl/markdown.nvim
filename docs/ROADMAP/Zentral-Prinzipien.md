@@ -13,7 +13,7 @@ Application of [`Zentrale-Prinzipien.md`](../../../Notes/MyNotes/Checklists/Lua/
 | 6 | Treesitter necessary? | Not used — pure line-scan/regex, matching the "reicht ein Zeilen-Scan?" guidance. | ✅ |
 | 7 | Cache present & explicit? | No repeated expensive computation; no cache needed. | N/A |
 | 8 | Avoid hot-path allocations | No `CursorMoved`/`TextChanged`; `table_fmt` uses `t[#t+1]`+`concat`. No hot path. | ✅ |
-| 9 | Debuggability planned? | `util/notify` tags every message with the module (`[markdown_nvim.x]`); `:checkhealth markdown_nvim` reports state. No dedicated debug switch. | 🟡 (A6) |
+| 9 | Debuggability planned? | `util/notify` tags every message with the module (`[markdown.x]`); `:checkhealth markdown` reports state. No dedicated debug switch. | 🟡 (A6) |
 | 10 | Runtime > startup? | `ft`-scoped, minimal per-buffer work; startup cost negligible. | ✅ |
 
 ## Findings
@@ -23,5 +23,5 @@ improvements:
 
 - **A5** — optional shared `ctx` helper for `handler/*` (build `{ bufnr, line, row }`
   once instead of re-querying). Low priority.
-- **A6** — optional lightweight debug flag (e.g. `vim.g.markdown_nvim_debug`) that
+- **A6** — optional lightweight debug flag (e.g. `vim.g.markdown_debug`) that
   makes `util/notify` emit trace-level messages. Low priority.

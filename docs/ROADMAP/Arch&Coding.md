@@ -34,11 +34,11 @@ Legend: ✅ compliant · 🟡 partial · ❌ gap · N/A not applicable.
 ## 5. Documentation & annotations
 - ✅ File head tags (`@module`/`@brief`/`@description`) throughout.
 - ✅ Config now fully typed (`config/DEFAULTS.lua`: `Mkdn.Config` + sub-classes).
-- ❌ **No project-wide `@types/` folder.** The rule wants a `lua/markdown_nvim/@types/`
+- ❌ **No project-wide `@types/` folder.** The rule wants a `lua/markdown/@types/`
   with type files that `return {}`, keeping source free of large annotation blocks.
   Types currently live inline in `config/DEFAULTS.lua` and scattered (`Mkdn.Link`
   in `core/link_scan.lua`, table types in `tableview/`).
-  - **Action A3:** create `lua/markdown_nvim/@types/init.lua` (+ split files) and
+  - **Action A3:** create `lua/markdown/@types/init.lua` (+ split files) and
     move shared `@class`/`@alias` there.
 
 ## 6. Testability & readability
@@ -68,5 +68,5 @@ Legend: ✅ compliant · 🟡 partial · ❌ gap · N/A not applicable.
 ## Action backlog (this checklist)
 - **A1** — route `commands/init.lua` + `commands/markdown_links.lua` messages through `util/notify`; drop bare `print`.
 - **A2** — audit `tableview/renderer.lua` deferred callbacks for handle re-validation.
-- **A3** — introduce `lua/markdown_nvim/@types/` and move shared types there.
+- **A3** — introduce `lua/markdown/@types/` and move shared types there.
 - **A4** — extract a single cross-platform `util/platform.lua` opener; replace the 6 duplicated branches.

@@ -59,7 +59,7 @@ Legend: 🟢 portable (pure Vimscript/vim9) · 🟡 portable with a different Vi
 | TableView preview (floating window) | `tableview/renderer`, `nvim_open_win` | Vim **`popup_create()`** (Vim 8.2+) | 🟡 |
 | Live browser export/preview | `tableview/live`, temp HTML + opener | `writefile()` + `job_start()` | 🟡 |
 | Fenced-code HL fix | `fenced_fix`, targets Treesitter `@markup.*` groups + `nvim_set_hl` | Vim `syntax`/`markdownCode*` groups only | 🟡 (different groups) |
-| `:checkhealth markdown_nvim` | `health.lua`, `vim.health` | no Vim equivalent | 🔴 drop |
+| `:checkhealth markdown` | `health.lua`, `vim.health` | no Vim equivalent | 🔴 drop |
 | which-key labels | `bindings/which_key` | Neovim plugin | 🔴 drop |
 | render-markdown / markdown-preview wrappers | `commands/{render,preview}` | Neovim plugins | 🔴 drop (Vim has its own preview plugins) |
 | lib.nvim notify/picker soft-deps | `util/{notify,picker}` | Vim: `echomsg` / `popup_menu()` | 🟡 |

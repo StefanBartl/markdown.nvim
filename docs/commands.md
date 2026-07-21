@@ -139,7 +139,7 @@ active. `mdview` opens `path` (default: the current buffer's file) directly in
 the browser via [mdview.nvim](https://github.com/StefanBartl/mdview.nvim)'s
 `:MDViewStart`, which starts a session or — if one is already running — pushes
 the file and re-opens the preview surface for it. It only does anything when
-mdview.nvim is actually installed and loaded; `:checkhealth markdown_nvim`
+mdview.nvim is actually installed and loaded; `:checkhealth markdown`
 reports whether it was detected.
 
 ## `:Markdown create`

@@ -9,8 +9,8 @@
 return function(H)
   local eq, ok = H.eq, H.ok
   local api = vim.api
-  local config = require("markdown_nvim.config")
-  local scope = require("markdown_nvim.scope")
+  local config = require("markdown.config")
+  local scope = require("markdown.scope")
 
   local DOC = {
     "# Doc Title",   -- 1
@@ -62,7 +62,7 @@ return function(H)
   do
     local buf = fresh()
     api.nvim_win_set_cursor(0, { 8, 0 }) -- on ## Inner A
-    require("markdown_nvim.commands.toc").update("## Table of content", { separators = false })
+    require("markdown.commands.toc").update("## Table of content", { separators = false })
     local L = api.nvim_buf_get_lines(buf, 0, -1, false)
     local toc_i, open_i, close_i
     for i, l in ipairs(L) do
@@ -79,7 +79,7 @@ return function(H)
   do
     local buf = fresh()
     api.nvim_win_set_cursor(0, { 1, 0 }) -- on the title, outside
-    require("markdown_nvim.commands.toc").update("## Table of content", { separators = false })
+    require("markdown.commands.toc").update("## Table of content", { separators = false })
     ok(has_sub(buf, "- [Section A](#section-a)"), "buffer TOC lists Section A")
     ok(not has_sub(buf, "- [Inner A](#inner-a)"), "buffer TOC excludes fenced Inner A")
   end
@@ -87,7 +87,7 @@ return function(H)
   -- ---- heading nav is scope-bounded ---------------------------------------
   do
     local buf = fresh()
-    local head = require("markdown_nvim.core.headings")
+    local head = require("markdown.core.headings")
     api.nvim_win_set_cursor(0, { 8, 0 }) -- ## Inner A
     head.goto_next_heading()
     eq(api.nvim_win_get_cursor(0)[1], 10, "next heading -> Inner B")
@@ -106,7 +106,7 @@ return function(H)
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, vim.deepcopy(DOC))
     api.nvim_win_set_cursor(0, { 3, 0 })
-    require("markdown_nvim.core.headings").goto_next_heading()
+    require("markdown.core.headings").goto_next_heading()
     eq(api.nvim_win_get_cursor(0)[1], 6, "disabled: legacy nav enters fence")
   end
 
@@ -125,7 +125,7 @@ return function(H)
       "```",
     })
     api.nvim_win_set_cursor(0, { 6, 4 })
-    require("markdown_nvim.anchor.jump").jump()
+    require("markdown.anchor.jump").jump()
     eq(api.nvim_win_get_cursor(0)[1], 4, "anchor jump resolves inside the block")
   end
 
@@ -134,7 +134,7 @@ return function(H)
     local buf = fresh()
     api.nvim_win_set_cursor(0, { 8, 0 })
     local s = scope.detect()
-    require("markdown_nvim.core.headings").shift_range(s.first, s.last, 1)
+    require("markdown.core.headings").shift_range(s.first, s.last, 1)
     ok(has_sub(buf, "### Inner A"), "block shift deepened Inner A")
     ok(has_sub(buf, "## Section A"), "outer Section A unchanged")
   end
@@ -153,7 +153,7 @@ return function(H)
       "## Inner",    -- 6
       "```",         -- 7
     })
-    local fold = require("markdown_nvim.core.fold")
+    local fold = require("markdown.core.fold")
     eq(fold.foldexpr(3), "=", "python-fence # comment does not fold")
     eq(fold.foldexpr(6), ">2", "markdown-fence ## Inner folds as heading")
     eq(fold.foldexpr(1), ">1", "outer # Doc folds")

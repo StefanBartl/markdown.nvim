@@ -12,8 +12,8 @@
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local renderer = require("markdown_nvim.tableview.renderer")
-  local parser = require("markdown_nvim.tableview.parser")
+  local renderer = require("markdown.tableview.renderer")
+  local parser = require("markdown.tableview.parser")
 
   -- Reproduces the reported content almost verbatim: umlauts (Überschneidet,
   -- Kürzung, zusammenführen, überall), an em dash (→ is U+2192, not an em

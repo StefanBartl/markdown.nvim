@@ -18,7 +18,7 @@ Wire it into your menu dispatcher — get a ready entry list (or a `Markdown ▸
 submenu) and compose it with your own menu:
 
 ```lua
-local md = require("markdown_nvim.integrations.menu")
+local md = require("markdown.integrations.menu")
 
 -- inline entries for the current context (empty table when nothing applies):
 local items = md.items()               -- { { name, cmd, rtxt }, … }

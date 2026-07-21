@@ -3,9 +3,9 @@
 
 return function(H)
   local eq = H.eq
-  local config = require("markdown_nvim.config")
+  local config = require("markdown.config")
   config.setup({})
-  local head = require("markdown_nvim.core.headings")
+  local head = require("markdown.core.headings")
 
   local buf = H.scratch("markdown")
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "# A", "## B", "### C" })

@@ -6,7 +6,7 @@
 -- motions, and the Windows platform.open list-argv fix.
 --
 -- Each section drives the same entry points a user would: `:Markdown <sub>`
--- (via commands.execute/complete), `require("markdown_nvim").setup()`
+-- (via commands.execute/complete), `require("markdown").setup()`
 -- config, and the public action functions — not private internals — so a
 -- pass here means the actual user-facing surface works, not just a helper.
 --
@@ -24,8 +24,8 @@ return function(H)
   -- 1) Reference sync (:Markdown refs sync|check|live|baseline)
   -- ===========================================================================
   do
-    require("markdown_nvim.config").setup({})
-    local commands = require("markdown_nvim.commands")
+    require("markdown.config").setup({})
+    local commands = require("markdown.commands")
 
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
@@ -36,7 +36,7 @@ return function(H)
       "## Setup", "",
       "See [the setup section](#setup) for details.",
     })
-    require("markdown_nvim.core.refs").baseline(buf)
+    require("markdown.core.refs").baseline(buf)
 
     -- Rename "## Setup" -> "## Installation" via an in-place edit (survives
     -- the extmark tracking, exactly like a user typing over the word).
@@ -70,10 +70,10 @@ return function(H)
   -- 2) Actions API + declarative per-binding keymaps (config.keymaps)
   -- ===========================================================================
   do
-    local keymaps = require("markdown_nvim.bindings.keymaps")
+    local keymaps = require("markdown.bindings.keymaps")
 
     local function apply_with(user_cfg)
-      require("markdown_nvim.config").setup(user_cfg)
+      require("markdown.config").setup(user_cfg)
       local buf = H.scratch("markdown")
       keymaps.apply(buf)
       local lhs_list = {}
@@ -106,16 +106,16 @@ return function(H)
     ok(not has(flag_off, "v:**"), "legacy flag: map_double_asterisk=false removes ** in visual mode")
 
     -- The public actions facade exposes plain functions (no <Plug> indirection).
-    eq(type(require("markdown_nvim").actions.fold_toggle), "function", "actions.fold_toggle is a function")
-    eq(type(require("markdown_nvim").actions.toc), "function", "actions.toc is a function")
+    eq(type(require("markdown").actions.fold_toggle), "function", "actions.fold_toggle is a function")
+    eq(type(require("markdown").actions.toc), "function", "actions.toc is a function")
   end
 
   -- ===========================================================================
   -- 3) Feature gating (config.features: disable / enable / just_enable)
   -- ===========================================================================
   do
-    local cfg = require("markdown_nvim.config")
-    local commands = require("markdown_nvim.commands")
+    local cfg = require("markdown.config")
+    local commands = require("markdown.commands")
 
     cfg.setup({ features = { just_enable = { "table", "toc" } } })
     local comp = commands.complete("", "Markdown ")
@@ -140,8 +140,8 @@ return function(H)
   -- 4) Menu integration (context-aware, self-gating, opt-out)
   -- ===========================================================================
   do
-    require("markdown_nvim.config").setup({})
-    local menu = require("markdown_nvim.integrations.menu")
+    require("markdown.config").setup({})
+    local menu = require("markdown.integrations.menu")
 
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# Title", "", "some prose", "## Section" })
@@ -160,16 +160,16 @@ return function(H)
     ok(not vim.tbl_contains(names, "Fold / Unfold Heading"), "menu off heading: fold entries hidden")
     ok(vim.tbl_contains(names, "Insert / Refresh TOC"), "menu off heading: doc-level entries still present")
 
-    require("markdown_nvim.config").setup({ menu = { fold = false } })
+    require("markdown.config").setup({ menu = { fold = false } })
     names = {}
     api.nvim_win_set_cursor(0, { 4, 0 })
     for _, it in ipairs(menu.items()) do names[#names + 1] = it.name end
     ok(not vim.tbl_contains(names, "Fold / Unfold Heading"), "menu opt-out: menu.fold=false hides fold entries")
 
-    require("markdown_nvim.config").setup({ menu = { enable = false } })
+    require("markdown.config").setup({ menu = { enable = false } })
     eq(#menu.items(), 0, "menu master switch: menu.enable=false yields zero entries")
 
-    require("markdown_nvim.config").setup({})
+    require("markdown.config").setup({})
     local sub = menu.submenu()
     ok(sub and sub.name and #sub.items > 0, "menu.submenu() returns a non-empty fly-out entry")
   end
@@ -178,8 +178,8 @@ return function(H)
   -- 5) Double-click fold on ATX and Setext headings
   -- ===========================================================================
   do
-    require("markdown_nvim.config").setup({})
-    local handler = require("markdown_nvim.handler")
+    require("markdown.config").setup({})
+    local handler = require("markdown.handler")
 
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
@@ -187,7 +187,7 @@ return function(H)
       "Setext Title", "============", "setext body",
     })
     vim.wo.foldmethod = "expr"
-    vim.wo.foldexpr = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
+    vim.wo.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
     vim.wo.foldenable = true
     vim.wo.foldlevel = 99
     vim.cmd("normal! zx")
@@ -209,24 +209,24 @@ return function(H)
   -- 6) Link-underline fix (long wrapped URLs no longer draw a full underline)
   -- ===========================================================================
   do
-    require("markdown_nvim.config").setup({})
-    require("markdown_nvim.hl_options").setup(require("markdown_nvim.config").get())
+    require("markdown.config").setup({})
+    require("markdown.hl_options").setup(require("markdown.config").get())
     local hlU = api.nvim_get_hl(0, { name = "@markup.link.url.markdown_inline" })
     ok(hlU.underline ~= true, "link_hl default: underline stripped from @markup.link.url.markdown_inline")
 
-    require("markdown_nvim.config").setup({ link_hl = { underline = true } })
-    require("markdown_nvim.hl_options").setup(require("markdown_nvim.config").get())
+    require("markdown.config").setup({ link_hl = { underline = true } })
+    require("markdown.hl_options").setup(require("markdown.config").get())
     local hlU2 = api.nvim_get_hl(0, { name = "@markup.link.url.markdown_inline" })
     eq(hlU2.underline, true, "link_hl.underline=true restores the underline")
 
-    require("markdown_nvim.config").setup({}) -- reset
+    require("markdown.config").setup({}) -- reset
   end
 
   -- ===========================================================================
   -- 7) Fold H2+ as an outline TOGGLE (fold below H2, keep H1/H2 open; toggle back)
   -- ===========================================================================
   do
-    local fold_levels = require("markdown_nvim.core.fold_levels")
+    local fold_levels = require("markdown.core.fold_levels")
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
       "# H1", "intro",
@@ -235,7 +235,7 @@ return function(H)
       "## H2 B", "b body",
     })
     vim.wo.foldmethod = "expr"
-    vim.wo.foldexpr = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
+    vim.wo.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
     vim.wo.foldenable = true
     vim.wo.foldlevel = 99
     vim.cmd("normal! zx")
@@ -255,11 +255,11 @@ return function(H)
   --    unfold-all silently no-op'd from an nvzone/menu callback).
   -- ===========================================================================
   do
-    local fold = require("markdown_nvim.core.fold")
+    local fold = require("markdown.core.fold")
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# H1", "a", "## H2", "b" })
     vim.wo.foldmethod = "expr"
-    vim.wo.foldexpr = "v:lua.require'markdown_nvim.core.fold'.foldexpr(v:lnum)"
+    vim.wo.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
     vim.wo.foldenable = true
     vim.wo.foldlevel = 99
     vim.cmd("normal! zx")
@@ -278,7 +278,7 @@ return function(H)
   -- 9) TableView box-drawing style + configurable default (config.tableview.style)
   -- ===========================================================================
   do
-    local renderer = require("markdown_nvim.tableview.renderer")
+    local renderer = require("markdown.tableview.renderer")
 
     local mt = {
       header = { cells = { { content = "Name" }, { content = "Age" } } },
@@ -293,8 +293,8 @@ return function(H)
 
     -- Configurable default: TableViewToggle (view "toggle") should honour
     -- config.tableview.style, while view "markdown" / "box" force it either way.
-    local usrcmds = require("markdown_nvim.bindings.usrcmds")
-    local commands = require("markdown_nvim.commands")
+    local usrcmds = require("markdown.bindings.usrcmds")
+    local commands = require("markdown.commands")
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, { "| a | b |", "| - | - |", "| 1 | 2 |" })
     usrcmds.apply_tableview({ buf = buf })
@@ -304,7 +304,7 @@ return function(H)
     local orig_render = renderer.render_markdowntable
     renderer.render_markdowntable = function(t, opts) seen_style = opts and opts.style; orig_render(t, opts) end
 
-    require("markdown_nvim.config").setup({ tableview = { style = "box" } })
+    require("markdown.config").setup({ tableview = { style = "box" } })
     commands.execute({ "table", "view", "toggle" })
     eq(seen_style, "box", "config.tableview.style=box: view toggle renders in box style")
     renderer.close_view()
@@ -313,7 +313,7 @@ return function(H)
     eq(seen_style, "markdown", "view 'markdown' always forces markdown style regardless of config")
     renderer.close_view()
 
-    require("markdown_nvim.config").setup({})
+    require("markdown.config").setup({})
     commands.execute({ "table", "view", "toggle" })
     eq(seen_style, "markdown", "config default (unset): view toggle renders in markdown style")
     renderer.close_view()
@@ -325,10 +325,10 @@ return function(H)
   -- 10) Table mode (auto-format), tableize, and cell motions
   -- ===========================================================================
   do
-    require("markdown_nvim.config").setup({})
-    local commands = require("markdown_nvim.commands")
-    local table_mode = require("markdown_nvim.core.table_mode")
-    local actions = require("markdown_nvim").actions
+    require("markdown.config").setup({})
+    local commands = require("markdown.commands")
+    local table_mode = require("markdown.core.table_mode")
+    local actions = require("markdown").actions
 
     -- tableize: CSV -> aligned GFM table, driven through the real dispatcher
     -- with an explicit range (as :'<,'>Markdown table tableize would pass).
@@ -399,7 +399,7 @@ return function(H)
   -- 11) platform.open: list-argv fallback (Windows pwsh fix), no shellescape
   -- ===========================================================================
   do
-    local platform = require("markdown_nvim.util.platform")
+    local platform = require("markdown.util.platform")
     local orig_ui_open = vim.ui and vim.ui.open
     local orig_system = vim.system
     local had_open_default = package.loaded["lib.nvim.cross.open_default"] ~= nil
@@ -436,7 +436,7 @@ return function(H)
   -- 12) Dead code actually removed (tableview/live.lua)
   -- ===========================================================================
   do
-    local okReq = pcall(require, "markdown_nvim.tableview.live")
+    local okReq = pcall(require, "markdown.tableview.live")
     ok(not okReq, "tableview/live.lua was removed (dead code; never started, no server)")
   end
 end

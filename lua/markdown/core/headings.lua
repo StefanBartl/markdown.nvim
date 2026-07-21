@@ -1,0 +1,263 @@
+---@module 'markdown.core.headings'
+local M = {}
+
+local api, fn = vim.api, vim.fn
+local cfg = require("markdown.config").get
+
+-- `#\+` (one-or-more) so H1 is included; the old `##\+` (two-or-more) meant
+-- goto_*_heading could never reach a level-1 heading.
+local ANY_HEADING = "^#\\+\\s\\+.*$"
+
+local function level_pattern(level)
+  return "^" .. string.rep("#", level) .. "\\s\\+.*$"
+end
+
+--- Move to `lnum`, restoring `col` (clipped to the line's length by `cursor()`)
+--- so heading nav keeps the cursor's horizontal position instead of snapping
+--- to column 1.
+---@param lnum integer
+---@param col integer
+local function restore_col(lnum, col)
+  fn.cursor(lnum, col)
+end
+
+--- Resolve the fenced-block scope for `op`, or nil when scoping is off for it
+--- (feature disabled or that op opted out) — callers then use the plain,
+--- whole-buffer `fn.search` path, so behavior is unchanged when disabled.
+---@param op "nav"
+---@return Mkdn.Scope|nil
+local function op_scope(op)
+  local scope = require("markdown.scope")
+  if not scope.op_enabled(op) then return nil end
+  return scope.detect()
+end
+
+--- One scope-bounded heading hop. Uses `fn.search`'s stopline to stay within
+--- `scope.first`/`scope.last`, and skips matches that fall inside an excluded
+--- fenced interior (buffer scope). Moves the cursor to the match on success;
+--- on failure the cursor is restored to where the hop started, so a partial
+--- count loop leaves it on the last real heading it reached.
+---@param pattern string Vim regex for the heading(s) to match
+---@param backward boolean Search direction
+---@param scope Mkdn.Scope
+---@return integer lnum Matched line (1-indexed), or 0 if none in scope
+local function scoped_search(pattern, backward, scope)
+  local scope_mod = require("markdown.scope")
+  local flags = (backward and "bW" or "W") .. "s"
+  local stopline = backward and scope.first or scope.last
+  local view = fn.winsaveview()
+  while true do
+    local lnum = fn.search(pattern, flags, stopline)
+    if lnum == 0 or lnum < scope.first or lnum > scope.last then
+      fn.winrestview(view)
+      return 0
+    end
+    if not scope_mod.is_excluded(scope, lnum) then
+      return lnum
+    end
+    -- Match sits inside an excluded fenced interior: keep searching from here.
+  end
+end
+
+function M.goto_prev_heading()
+  local scope = op_scope("nav")
+  if not scope then
+    local col = fn.col(".")
+    local moved = false
+    for _ = 1, vim.v.count1 do
+      if fn.search(ANY_HEADING, "bWs") == 0 then break end
+      moved = true
+    end
+    if moved then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+
+  local col = fn.col(".")
+  local moved = false
+  for _ = 1, vim.v.count1 do
+    if scoped_search(ANY_HEADING, true, scope) == 0 then break end
+    moved = true
+  end
+  if moved then restore_col(fn.line("."), col) end
+  vim.cmd("nohlsearch")
+end
+
+function M.goto_next_heading()
+  local scope = op_scope("nav")
+  if not scope then
+    local col = fn.col(".")
+    local moved = false
+    for _ = 1, vim.v.count1 do
+      if fn.search(ANY_HEADING, "Ws") == 0 then break end
+      moved = true
+    end
+    if moved then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+
+  local col = fn.col(".")
+  local moved = false
+  for _ = 1, vim.v.count1 do
+    if scoped_search(ANY_HEADING, false, scope) == 0 then break end
+    moved = true
+  end
+  if moved then restore_col(fn.line("."), col) end
+  vim.cmd("nohlsearch")
+end
+
+function M.goto_prev_heading_level()
+  local count = vim.v.count
+  local pattern = count > 0 and level_pattern(count) or ANY_HEADING
+  local col = fn.col(".")
+  local scope = op_scope("nav")
+  if not scope then
+    if fn.search(pattern, "bWs") ~= 0 then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+  if scoped_search(pattern, true, scope) ~= 0 then restore_col(fn.line("."), col) end
+  vim.cmd("nohlsearch")
+end
+
+function M.goto_next_heading_level()
+  local count = vim.v.count
+  local pattern = count > 0 and level_pattern(count) or ANY_HEADING
+  local col = fn.col(".")
+  local scope = op_scope("nav")
+  if not scope then
+    if fn.search(pattern, "Ws") ~= 0 then restore_col(fn.line("."), col) end
+    vim.cmd("nohlsearch")
+    return
+  end
+  if scoped_search(pattern, false, scope) ~= 0 then restore_col(fn.line("."), col) end
+  vim.cmd("nohlsearch")
+end
+
+local function shift_heading_line(line, delta, min_level, allow_creation)
+  if line == "" or line:match("^%s*$") then
+    return line, false
+  end
+
+  local hashes, rest = line:match("^(%s*#+)%s+(.*)$")
+
+  if not hashes then
+    if delta > 0 and allow_creation then
+      return "# " .. line, true
+    end
+    return line, false
+  end
+
+  local indent = hashes:match("^%s*") or ""
+  local level = #hashes - #indent
+
+  if level == 1 and delta < 0 then
+    return rest, true
+  end
+
+  local new_level = math.max(min_level, math.min(6, level + delta))
+  if new_level == level then
+    return line, false
+  end
+
+  return string.format("%s%s %s", indent, string.rep("#", new_level), rest), true
+end
+
+local function shift_range_internal(bufnr, srow, erow, delta, min_level, allow_creation)
+  local lines = api.nvim_buf_get_lines(bufnr, srow - 1, erow, false)
+  local changed = 0
+  local in_fence = false
+  -- A fenced-code delimiter line: 3+ backticks or 3+ tildes, then an optional
+  -- info string. NOTE: `{3,}` is NOT a Lua-pattern quantifier (it matches the
+  -- literal characters `{3,}`), so we spell out three-or-more explicitly. Without
+  -- this, `#`-prefixed lines inside code fences (shell comments, nested markdown)
+  -- were wrongly treated as headings and shifted.
+  local fence_pat = "^%s*[`~][`~][`~]+%S*%s*$"
+
+  for i = 1, #lines do
+    local line = lines[i]
+    local fence = line:match(fence_pat)
+    if fence then
+      in_fence = not in_fence
+    end
+    if not in_fence then
+      local out, did = shift_heading_line(line, delta, min_level, allow_creation)
+      if did then
+        lines[i] = out
+        changed = changed + 1
+      end
+    end
+  end
+
+  if changed > 0 then
+    api.nvim_buf_set_lines(bufnr, srow - 1, erow, false, lines)
+  end
+
+  return changed
+end
+
+function M.shift_range(srow, erow, delta)
+  if type(srow) ~= "number" or type(erow) ~= "number" then return 0 end
+  if srow < 1 or erow < srow then return 0 end
+  if type(delta) ~= "number" or delta == 0 then return 0 end
+  if vim.bo.filetype ~= "markdown" then return 0 end
+
+  local bufnr = api.nvim_get_current_buf()
+  if not (api.nvim_buf_is_loaded(bufnr) and api.nvim_buf_is_valid(bufnr)) then return 0 end
+
+  local min_level = cfg().protect_h1 and 2 or 1
+  local allow_creation = (srow == erow)
+
+  local view = fn.winsaveview()
+  local changed = shift_range_internal(bufnr, srow, erow, delta, min_level, allow_creation)
+  if changed > 0 then fn.winrestview(view) end
+
+  return changed
+end
+
+function M.shift_visual_selection(delta)
+  if type(delta) ~= "number" or delta == 0 then return end
+  if vim.bo.filetype ~= "markdown" then return end
+
+  local bufnr = api.nvim_get_current_buf()
+  if not (api.nvim_buf_is_loaded(bufnr) and api.nvim_buf_is_valid(bufnr)) then return end
+
+  local start_line = fn.line("v")
+  local end_line = fn.line(".")
+  local srow = math.min(start_line, end_line)
+  local erow = math.max(start_line, end_line)
+
+  vim.cmd('normal! \\<Esc>')
+
+  if srow > 0 and erow > 0 then
+    M.shift_range(srow, erow, delta)
+  end
+end
+
+local function op_get_repeat()
+  local n = vim.b._markdown_heading_op_count
+  if type(n) ~= "number" or n < 1 then return 1 end
+  vim.b._markdown_heading_op_count = nil
+  return n
+end
+
+function M._op_increase(_)
+  local n = op_get_repeat()
+  local srow = api.nvim_buf_get_mark(0, "[")[1]
+  local erow = api.nvim_buf_get_mark(0, "]")[1]
+  if srow and erow and srow > 0 and erow > 0 then
+    M.shift_range(math.min(srow, erow), math.max(srow, erow), n)
+  end
+end
+
+function M._op_decrease(_)
+  local n = op_get_repeat()
+  local srow = api.nvim_buf_get_mark(0, "[")[1]
+  local erow = api.nvim_buf_get_mark(0, "]")[1]
+  if srow and erow and srow > 0 and erow > 0 then
+    M.shift_range(math.min(srow, erow), math.max(srow, erow), -n)
+  end
+end
+
+return M

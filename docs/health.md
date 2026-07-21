@@ -1,7 +1,7 @@
 # Health
 
 ```vim
-:checkhealth markdown_nvim
+:checkhealth markdown
 ```
 
 Reports the Neovim version, the cross-platform opener (`vim.ui.open`), config

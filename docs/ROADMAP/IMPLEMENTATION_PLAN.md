@@ -15,7 +15,7 @@ IDs match the checklist docs.
    `open()`); the six duplicated `xdg-open/open/start` branches
    (`handler/{file,image,url}.lua`, `tableview/live.lua`,
    `tableview/views/browser_{basic,niceified}.lua`) now delegate to it.
-3. **A3 — `@types/` folder.** ✅ `lua/markdown_nvim/@types/init.lua` holds the
+3. **A3 — `@types/` folder.** ✅ `lua/markdown/@types/init.lua` holds the
    shared `Mkdn.*` types; source files keep a one-line pointer.
 4. **A7 — tooling.** ✅ `stylua.toml`, `.luacheckrc`, `.github/workflows/ci.yml`
    (headless test gate + advisory lint). *Follow-up: one `stylua .` pass, then
@@ -24,7 +24,7 @@ IDs match the checklist docs.
    `tableview/renderer.lua` is synchronous with thorough `is_valid` guards; the
    only `vim.schedule` (`fenced_fix/init.lua`) emits a captured-string debug
    message and touches no handle.
-6. **A6 — debug switch.** ✅ Already present (`vim.g.markdown_nvim_debug` gate in
+6. **A6 — debug switch.** ✅ Already present (`vim.g.markdown_debug` gate in
    `util/notify`, used via `notify.debug`).
 7. **A5 — handler `ctx` helper.** Deferred (low value): the per-call re-query in
    `handler/*` is cheap; not worth the churn now.

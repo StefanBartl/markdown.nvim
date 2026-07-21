@@ -24,7 +24,7 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
   dependencies = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
-    require("markdown_nvim").setup()
+    require("markdown").setup()
   end,
 }
 ```
@@ -37,7 +37,7 @@ use({
   requires = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
-    require("markdown_nvim").setup()
+    require("markdown").setup()
   end,
 })
 ```
@@ -50,5 +50,5 @@ Plug 'StefanBartl/markdown.nvim', { 'for': ['markdown', 'mdx', 'md'] }
 ```
 
 ```lua
-require("markdown_nvim").setup()
+require("markdown").setup()
 ```

@@ -3,7 +3,7 @@
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local tf = require("markdown_nvim.core.table_fmt")
+  local tf = require("markdown.core.table_fmt")
 
   -- parse_args: key=value form
   local o1, e1 = tf.parse_args({ "header=left", "cell=right" })

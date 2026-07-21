@@ -7,10 +7,10 @@ return function(H)
   local eq = H.eq
   local ok = H.ok
 
-  package.loaded["markdown_nvim.util.path"] = nil
-  package.loaded["markdown_nvim.core.file_refs"] = nil
-  local path      = require("markdown_nvim.util.path")
-  local file_refs = require("markdown_nvim.core.file_refs")
+  package.loaded["markdown.util.path"] = nil
+  package.loaded["markdown.core.file_refs"] = nil
+  local path      = require("markdown.util.path")
+  local file_refs = require("markdown.core.file_refs")
 
   local win = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
   local function os_native(p) return win and (p:gsub("/", "\\")) or p end
@@ -57,8 +57,8 @@ return function(H)
   pcall(vim.fn.delete, root, "rf")
 
   if not run_ok then
-    package.loaded["markdown_nvim.util.path"] = nil
-    package.loaded["markdown_nvim.core.file_refs"] = nil
+    package.loaded["markdown.util.path"] = nil
+    package.loaded["markdown.core.file_refs"] = nil
     error(err, 0)
   end
 
@@ -111,8 +111,8 @@ return function(H)
 
   pcall(vim.cmd, "cd " .. vim.fn.fnameescape(prev_cwd))
   pcall(vim.fn.delete, root2, "rf")
-  package.loaded["markdown_nvim.util.path"] = nil
-  package.loaded["markdown_nvim.core.file_refs"] = nil
+  package.loaded["markdown.util.path"] = nil
+  package.loaded["markdown.core.file_refs"] = nil
 
   if not run_ok2 then error(err2, 0) end
 end

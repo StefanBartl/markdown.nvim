@@ -1,12 +1,12 @@
 -- docs/TESTS/browser_session_spec.lua — TableView browser export: one tab
 -- reused across calls (fixed file + open-once-per-session + auto-refresh
 -- script), 'reopen' forcing a fresh tab. See
--- lua/markdown_nvim/tableview/views/browser_session.lua.
+-- lua/markdown/tableview/views/browser_session.lua.
 
 return function(H)
   local eq, ok = H.eq, H.ok
 
-  local session = require("markdown_nvim.tableview.views.browser_session")
+  local session = require("markdown.tableview.views.browser_session")
 
   local function read_file(path)
     local fh = io.open(path, "r")

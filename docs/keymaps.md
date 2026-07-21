@@ -31,7 +31,7 @@ A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>`).
 | `zi` | n | Fold previous heading then center |
 | `zk` | n | Fold below H2 / unfold — toggle outline (keep H1 + H2 open) |
 
-Use `set foldmethod=expr foldexpr=v:lua.require('markdown_nvim').foldexpr(v:lnum)`
+Use `set foldmethod=expr foldexpr=v:lua.require('markdown').foldexpr(v:lnum)`
 in your config, or let the plugin handle it via the FileType autocmd.
 
 ## TOC
@@ -70,7 +70,7 @@ part (cursor jumps into `()`). On empty space it inserts an empty `[]()`.
 default:
 
 ```lua
-require("markdown_nvim").setup({
+require("markdown").setup({
   keymaps = {
     jump_anchor = false,            -- disable this binding entirely
     toc         = "<leader>T",      -- remap to a new key (same mode)
@@ -84,11 +84,11 @@ legacy flags (`map_double_asterisk`, `map_wrap_link`, `use_zf_override`) keep
 working too.
 
 **Free-form, against the actions API.** Every action is also a plain function
-on `require("markdown_nvim").actions`, so you can bind anything by hand — no
+on `require("markdown").actions`, so you can bind anything by hand — no
 `<Plug>` indirection:
 
 ```lua
-local a = require("markdown_nvim").actions
+local a = require("markdown").actions
 vim.keymap.set("n", "<C-n>", a.next_heading, { desc = "Next heading" })
 vim.keymap.set("n", "gO",    a.toc,          { desc = "Insert/refresh TOC" })
 ```

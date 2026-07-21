@@ -6,8 +6,8 @@ return function(H)
   local eq = H.eq
   local ok = H.ok
 
-  package.loaded["markdown_nvim.util.path"] = nil
-  local path = require("markdown_nvim.util.path")
+  package.loaded["markdown.util.path"] = nil
+  local path = require("markdown.util.path")
 
   -- resolve() returns OS-native separators; normalize() stays slash-canonical.
   local win = vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1
@@ -58,7 +58,7 @@ return function(H)
   -- Teardown (always).
   pcall(vim.cmd, "cd " .. vim.fn.fnameescape(prev_cwd))
   pcall(vim.fn.delete, root, "rf")
-  package.loaded["markdown_nvim.util.path"] = nil
+  package.loaded["markdown.util.path"] = nil
 
   if not run_ok then error(err, 0) end
 end
