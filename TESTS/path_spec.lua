@@ -44,7 +44,7 @@ return function(H)
 
     local resolved = path.resolve("./sub/deep/file.md")
     eq(resolved, os_native(root .. "/sub/deep/file.md"), "resolve: falls back to cwd base when buffer base misses")
-    ok(vim.loop.fs_stat(resolved), "resolve: returned path exists on disk")
+    ok(vim.uv.fs_stat(resolved), "resolve: returned path exists on disk")
 
     -- Backslash-authored relative link resolves identically.
     local resolved_bs = path.resolve(".\\sub\\deep\\file.md")
