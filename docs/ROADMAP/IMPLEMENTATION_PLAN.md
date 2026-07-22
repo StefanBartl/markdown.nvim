@@ -45,6 +45,13 @@ IDs match the checklist docs.
 
 ## Phase 2 — nice-to-have
 
+9a. **In-nvim image preview via snacks.nvim (`snacks.image`) or image.nvim** —
+    `mi` (`handler.image.open`) currently always shells out to the system
+    viewer (`util/platform.open`). If a supported image-preview plugin is
+    installed (soft dep, `pcall(require, ...)`, mirroring the pdfport.nvim
+    choice added to `handler/file.lua`'s PDF path), offer a popup preview
+    inside nvim as an alternative to the system app; without one installed,
+    keep today's system-app behavior with no prompt.
 9. **Link diagnostics** — flag dead relative-file links / duplicate anchors
    (reuse `core/link_scan` + the anchor slug logic). Optionally a `vim.diagnostic`
    source.

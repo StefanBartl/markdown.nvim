@@ -71,6 +71,11 @@ require("markdown").setup({
 
   -- How followed file targets open. Extensions in this list launch the system
   -- application (image viewer, PDF reader, …); everything else opens via :edit.
+  -- Exception: "pdf" gets its own opener (markdown.handler.file.open_pdf) —
+  -- if pdfport.nvim (github.com/StefanBartl/pdfport.nvim) is installed, you're
+  -- asked "System app" vs. "pdfport (new buffer)" (the latter renders the PDF
+  -- into a new buffer via pdfport's own backend fallback chain); without
+  -- pdfport.nvim installed it opens via the system app directly, no prompt.
   open = {
     external_extensions = {
       "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff",

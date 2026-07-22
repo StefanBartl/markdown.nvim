@@ -101,6 +101,32 @@ function M.system_open(path)
   return open_with_system_viewer(path)
 end
 
+--- Open a resolved `.pdf` path. If pdfport.nvim is installed, ask whether to
+--- open with the system application or render it into a new buffer via
+--- pdfport's own backend fallback chain; otherwise open with the system
+--- application directly (no prompt, since there is no in-nvim alternative).
+---@param path string
+---@return boolean ok
+function M.open_pdf(path)
+  local ok_pdfport = pcall(require, "pdfport")
+  if not ok_pdfport then
+    return open_with_system_viewer(path)
+  end
+
+  require("markdown.util.picker").select(
+    { "System app", "pdfport (new buffer)" },
+    { prompt = "Open PDF with:" },
+    function(choice)
+      if choice == "pdfport (new buffer)" then
+        require("pdfport").open({ path = path, mode = "buffer" })
+      else
+        open_with_system_viewer(path)
+      end
+    end
+  )
+  return true
+end
+
 function M.is_file_line(line)
   local target = extract_file_target_from_line(line)
   if not target then return false end

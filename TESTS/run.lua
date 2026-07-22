@@ -65,6 +65,7 @@ local specs = {
   "link_scan_spec.lua",
   "headings_spec.lua",
   "handler_spec.lua",
+  "handler_pdf_spec.lua",
   "tableview_spec.lua",
   "tableview_alignment_spec.lua",
   "browser_session_spec.lua",

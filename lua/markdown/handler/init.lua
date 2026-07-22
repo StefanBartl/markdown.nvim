@@ -30,6 +30,15 @@ local function should_open_externally(path)
   return false
 end
 
+--- A `.pdf` target gets its own opener (system app vs. pdfport.nvim), rather
+--- than the plain system-app path every other external extension takes.
+---@param path string
+---@return boolean
+local function is_pdf(path)
+  local ext = path:match("%.([%w]+)$")
+  return ext ~= nil and ext:lower() == "pdf"
+end
+
 local function slugify(s)
   if not s then return "" end
   local t = s:lower()
@@ -151,8 +160,10 @@ local function open_file_in_current_window(path)
     notify.warn("External anchor: target file not found: " .. tostring(path))
     return false
   end
-  -- Media/binary -> system app; text-like -> open in the current window.
+  -- Media/binary -> system app (pdf -> system-app/pdfport choice);
+  -- text-like -> open in the current window.
   if should_open_externally(path) then
+    if is_pdf(path) then return file.open_pdf(path) end
     return file.system_open(path)
   end
   vim.cmd("edit " .. vim.fn.fnameescape(path))
