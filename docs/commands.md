@@ -10,6 +10,7 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
 :Markdown links show [%|cwd|<file>]      " collect links, pick one, open it
 :Markdown links create [-r] [--noignore] [--root <path>] <path>
 :Markdown links check                    " flag dead links / duplicate anchors
+:Markdown links sanitize [%|cwd|<file>]  " normalize link-target paths
 ```
 
 - **show** — scan the current buffer (`%`, the default), the cwd, or a given
@@ -34,6 +35,13 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
   reusing `core.link_scan` + `core.slug`. Cross-file `path#anchor` links only
   check that the file exists. `links.diagnostics.mode = "save"` reruns this
   automatically on `BufWritePost`; default is manual-only (`"off"`).
+- **sanitize** — normalize inline-link targets in the current buffer (`%`, the
+  default), every `*.md` file under the cwd, or a given file: backslashes
+  become forward slashes and a bare relative path gets a `./` prefix, e.g.
+  `[t](doc.md)` → `[t](./doc.md)` and `[t](.\doc\file.md)` → `[t](./doc/file.md)`.
+  URLs, `mailto:`/scheme targets, `#anchor` links, absolute paths, and
+  `~`-relative paths are left untouched. Runs automatically before every save
+  unless `links.sanitize_on_save` is set to `false`.
 
 ## `:Markdown toc`
 

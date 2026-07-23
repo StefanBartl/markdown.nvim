@@ -19,6 +19,7 @@
 ---@class Mkdn.LinksConfig
 ---@field picker Mkdn.LinkPicker # `:Markdown links show` picker backend.
 ---@field diagnostics Mkdn.LinkDiagnosticsConfig # Dead-link / duplicate-anchor checking (see `core.link_diagnostics`).
+---@field sanitize_on_save boolean # Run `:Markdown links sanitize` on the buffer before every write. Default true.
 
 ---@class Mkdn.ListConfig
 ---@field picker Mkdn.LinkPicker # `:Markdown list` picker backend (same vocabulary as `links.picker`).

@@ -106,6 +106,13 @@ local DEFAULTS = {
   -- vim.ui.select with a warning.
   links = {
     picker = "hover_select",
+    -- Normalize inline-link targets before every write: backslashes become
+    -- forward slashes and a bare relative path gains a `./` prefix, so
+    -- `[t](doc.md)` and a Windows-style `[t](.\doc\file.md)` both end up
+    -- `[t](./doc.md)` / `[t](./doc/file.md)`. URLs, anchors, scheme targets,
+    -- absolute and ~-relative paths are left alone. `:Markdown links
+    -- sanitize` runs the same pass on demand.
+    sanitize_on_save = true,
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). ":Markdown links check" always works
     -- manually; mode = "save" also reruns it on BufWritePost.

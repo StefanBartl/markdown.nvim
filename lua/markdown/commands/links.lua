@@ -1,7 +1,8 @@
 ---@module 'markdown.commands.links'
 --- `:Markdown links <sub>` router.
----   show   [%|cwd|<file>]   Collect links in the scope and open the chosen one.
----   create [-r] [...] <p>   Generate markdown links from filesystem paths.
+---   show     [%|cwd|<file>]   Collect links in the scope and open the chosen one.
+---   create   [-r] [...] <p>   Generate markdown links from filesystem paths.
+---   sanitize [%|cwd|<file>]   Normalize link-target paths (./, forward slashes).
 --- A bare path (no known subcommand) defaults to `create` for backwards compat.
 local notify = require("markdown.util.notify").create("[markdown.commands.links]")
 
@@ -233,6 +234,55 @@ local function do_check(_argv)
 end
 
 -- ---------------------------------------------------------------------------
+-- sanitize
+-- ---------------------------------------------------------------------------
+
+local function do_sanitize(argv)
+  local sanitize = require("markdown.core.link_sanitize")
+  local scope = argv[1] or "%"
+
+  if scope == "" or scope == "%" then
+    local n = sanitize.buffer(0)
+    notify.info(
+      n > 0 and string.format("links sanitize: normalized %d link target(s)", n)
+        or "links sanitize: nothing to normalize"
+    )
+    return
+  end
+
+  if scope == "cwd" then
+    local files = vim.fn.globpath(vim.fn.getcwd(), "**/*.md", false, true)
+    local total, touched = 0, 0
+    for _, path in ipairs(files) do
+      local n = sanitize.path(path)
+      if n > 0 then
+        total = total + n
+        touched = touched + 1
+      end
+    end
+    notify.info(
+      string.format(
+        "links sanitize: normalized %d link target(s) across %d file(s)",
+        total,
+        touched
+      )
+    )
+    return
+  end
+
+  local path = vim.fn.expand(scope)
+  if not uv.fs_stat(path) then
+    notify.warn("links sanitize: scope not found: " .. tostring(scope))
+    return
+  end
+  local n = sanitize.path(path)
+  notify.info(
+    n > 0 and string.format("links sanitize: normalized %d link target(s)", n)
+      or "links sanitize: nothing to normalize"
+  )
+end
+
+-- ---------------------------------------------------------------------------
 -- dispatch
 -- ---------------------------------------------------------------------------
 
@@ -240,6 +290,7 @@ local subcommands = {
   show = do_show,
   create = do_create,
   check = do_check,
+  sanitize = do_sanitize,
 }
 
 --- Runs `:Markdown links <sub>` (defaults to `create` for a bare path).

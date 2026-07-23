@@ -88,6 +88,11 @@ require("markdown").setup({
     -- (telescope/fzf are soft deps; a missing plugin falls back to
     -- vim.ui.select with a warning)
     picker = "hover_select",
+    -- Normalize inline-link targets before every write: backslashes become
+    -- forward slashes, bare relative paths get a "./" prefix. URLs, anchors,
+    -- absolute and ~-relative targets are left alone. :Markdown links
+    -- sanitize runs the same pass on demand.
+    sanitize_on_save = true,
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). :Markdown links check always works
     -- manually; mode = "save" also reruns it on BufWritePost.

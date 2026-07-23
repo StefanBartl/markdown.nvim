@@ -177,6 +177,22 @@ function M.setup(cfg)
     end
   end
 
+  -- Link-target sanitize on save (independent opt-out via
+  -- config.links.sanitize_on_save, default on).
+  local links_cfg = cfg.links or {}
+  if feat("links") and links_cfg.sanitize_on_save ~= false then
+    local aug_links = api.nvim_create_augroup("MarkdownNvimLinksSanitize", { clear = true })
+    autocmd.create(
+      "BufWritePre",
+      function(ev) require("markdown.core.link_sanitize").buffer(ev.buf) end,
+      {
+        group = aug_links,
+        pattern = { "*.md", "*.markdown", "*.mdx" },
+        desc = "[markdown.nvim] links: sanitize link targets on save",
+      }
+    )
+  end
+
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
     local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })

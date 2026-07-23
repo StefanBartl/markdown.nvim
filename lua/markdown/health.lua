@@ -48,6 +48,7 @@ function M.check()
   else
     warn(('links.picker is %q — expected "hover_select" or "select"'):format(tostring(picker)))
   end
+  info("links sanitize_on_save: " .. tostring(not cfg.links or cfg.links.sanitize_on_save ~= false))
 
   info(
     ("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s"):format(

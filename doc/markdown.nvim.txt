@@ -221,10 +221,12 @@ GitHub-only, not duplicated into this helpfile.
   |:MarkdownNvimUnderlineHeadings|).
 
 `links`
-  Options for `:Markdown links show`/`check` (see |:Markdown-links|). >
+  Options for `:Markdown links show`/`check`/`sanitize` (see
+  |:Markdown-links|). >
     links = {
       picker      = "hover_select", -- "hover_select"|"select"|"telescope"|"fzf"
       diagnostics = { mode = "off" }, -- "off" | "save"
+      sanitize_on_save = true,       -- normalize link targets before a write
     }
 <
   `picker`: `"hover_select"` uses lib.nvim's floating hover_select;
@@ -237,6 +239,10 @@ GitHub-only, not duplicated into this helpfile.
   are surfaced via |vim.diagnostic| (namespace "markdown_links"). The manual
   `:Markdown links check` command always works; `mode = "save"` also reruns
   it automatically on |BufWritePost|.
+
+  `sanitize_on_save` (default `true`) runs `:Markdown links sanitize` on the
+  current buffer before every write. Set to `false` to only ever sanitize
+  manually.
 
 `open`
   Controls how followed file targets open (see |markdown.nvim-keymaps-handler|
@@ -879,6 +885,24 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   scope. See `links.diagnostics` (|markdown.nvim-config-general|) to also run
   this automatically on save.
 
+:Markdown links sanitize [%|cwd|<file>]
+
+  Normalize inline-link targets in the current buffer (`%`, the default),
+  every `*.md` file under the working directory (`cwd`), or a given file:
+    * Backslashes become forward slashes.
+    * A bare relative path gets a `./` prefix.
+  Examples: `[t](doc.md)` -> `[t](./doc.md)`; `[t](.\doc\file.md)` ->
+  `[t](./doc/file.md)`.
+
+  Left untouched: URLs (`https://...`), scheme targets (`mailto:...`, a
+  Windows drive letter `C:\...`), `#anchor`-only links, absolute paths
+  (`/...`), and `~`-relative paths. Already-`./`- or `../`-prefixed targets
+  are kept (backslashes are still normalized).
+
+  Runs automatically on the current buffer before every write, governed by
+  the `links.sanitize_on_save` option (default `true`; see
+  |markdown.nvim-config-general|).
+
 ------------------------------------------------------------------------------
 7.3 :Markdown toc                                          *:Markdown-toc*
 
@@ -1419,6 +1443,7 @@ Sub-modules can be imported individually, e.g.: >
       link_scan.lua          collect links from a line/buffer
       heading_scan.lua       collect ATX headings from lines/buffer/file
       link_diagnostics.lua   dead links / duplicate anchors (vim.diagnostic)
+      link_sanitize.lua      normalize link-target paths (./, forward slashes)
       slug.lua               anchor slug algorithm (gfm/keep-case) + anchor map
       table_fmt.lua          GFM table formatter + HTML->GFM import (self-contained)
       headline_spacing/
@@ -1453,7 +1478,7 @@ Sub-modules can be imported individually, e.g.: >
         table_selector.lua   pick-a-table floating UI
     commands/
       init.lua               :Markdown dispatcher + nested completion
-      links.lua              :Markdown links show|create
+      links.lua              :Markdown links show|create|sanitize
       markdown_links.lua     directory-to-link generator (links create)
       toc.lua                :Markdown toc (TOC + separators)
       table.lua              :Markdown table view|format|new
