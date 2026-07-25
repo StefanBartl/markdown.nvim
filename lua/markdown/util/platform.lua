@@ -80,9 +80,13 @@ function M.open(target)
   local os = M.os()
   local argv
   if os == "windows" then
-    -- Empty "" is the (required) window title for `start` when the target may
-    -- contain spaces; cmd.exe is invoked directly, not via the user's shell.
-    argv = { "cmd.exe", "/c", "start", "", target }
+    -- explorer.exe hands the target straight to the registered protocol/file
+    -- handler with no cmd.exe re-tokenizing in between. `cmd.exe /c start`
+    -- silently truncates a URL/path containing an unescaped `&` (any link
+    -- with 2+ query params) because cmd.exe's own tokenizer treats a bare
+    -- `&` outside quotes as a command separator, and libuv/vim.system only
+    -- quote an argv entry that contains whitespace.
+    argv = { "explorer.exe", target }
   elseif os == "macos" then
     argv = { "open", target }
   else

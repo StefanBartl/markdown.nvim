@@ -421,9 +421,9 @@ return function(H)
     if captured then
       eq(captured.detach, true, "platform.open: launches detached")
       if platform.os() == "windows" then
-        eq(#captured.argv, 5, "platform.open (windows): argv has exactly 5 elements")
-        eq(captured.argv[1], "cmd.exe", "platform.open (windows): argv[1] is cmd.exe")
-        eq(captured.argv[5], target, "platform.open (windows): the raw target is the last argv element (no shellescape quoting)")
+        eq(#captured.argv, 2, "platform.open (windows): argv has exactly 2 elements")
+        eq(captured.argv[1], "explorer.exe", "platform.open (windows): argv[1] is explorer.exe")
+        eq(captured.argv[2], target, "platform.open (windows): the raw target is the last argv element (no shellescape quoting)")
       end
     end
 
