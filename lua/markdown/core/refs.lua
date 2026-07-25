@@ -176,7 +176,7 @@ function M.reconcile(bufnr, opts)
 
   -- 4) Refresh the TOC in place (only if one already exists; never force-create).
   if conf.update_toc ~= false then
-    local header = conf.toc_header or "## Table of content"
+    local header = conf.toc_header or (require("markdown.config").get().toc or {}).header or "## Table of content"
     local total = api.nvim_buf_line_count(bufnr)
     local re = "^%s*" .. vim.pesc(header) .. "%s*$"
     local has_toc = false

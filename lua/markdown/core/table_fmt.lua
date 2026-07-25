@@ -8,6 +8,8 @@
 ---   M.format_tables_in_scope(opts)          – scope: "cursor"|"buffer"|"cwd"|<path>
 ---   M.parse_args(args)                      – parse :Markdown table format ARGS
 ---   M.complete(arg_lead)                    – completion for the format args
+---   M.parse_html_table(html)                – parse an HTML <table> into rows of plain-text cells
+---   M.rows_to_gfm(rows, opts)               – render parsed rows as GFM table lines (:Markdown table import)
 
 local notify = require("markdown.util.notify").create("[markdown.core.table_fmt]")
 
@@ -17,7 +19,18 @@ local M = {}
 -- Module-level defaults
 -- ─────────────────────────────────────────────────────────────────────────────
 
-local _cfg = { header_align = "center", entry_align = "center" }
+--- `config.table` (header_align/entry_align/col_overrides), read lazily so a
+--- call before `markdown.config` is set up still gets sane hard-coded defaults.
+---@return { header_align: string, entry_align: string, col_overrides: table[]|nil }
+local function get_cfg()
+  local ok, config = pcall(require, "markdown.config")
+  local t = (ok and config.get().table) or {}
+  return {
+    header_align  = t.header_align or "center",
+    entry_align   = t.entry_align or "center",
+    col_overrides = t.col_overrides,
+  }
+end
 
 local VALID_ALIGN = { left = true, center = true, right = true }
 
@@ -221,6 +234,79 @@ local function render_table(parsed, header_align, entry_align, override_map)
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- HTML import (round-trip with the TableView browser export)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+local HTML_ENTITIES = {
+  { "&quot;", "\"" },
+  { "&apos;", "'" },
+  { "&#39;",  "'" },
+  { "&lt;",   "<" },
+  { "&gt;",   ">" },
+  { "&nbsp;", " " },
+  { "&amp;",  "&" }, -- last: avoids re-decoding entities produced by earlier passes
+}
+
+local function unescape_html(s)
+  for _, pair in ipairs(HTML_ENTITIES) do
+    s = s:gsub(pair[1], pair[2])
+  end
+  return s
+end
+
+local function strip_tags(s)
+  return trim((s:gsub("<[^>]*>", "")))
+end
+
+--- Parse the first `<table>...</table>` in `html` into rows of plain-text
+--- cells: HTML tags inside a cell are stripped and entities unescaped. The
+--- first row (whether `<th>` or `<td>`) becomes the GFM header row.
+---@param html string
+---@return string[][]|nil rows
+---@return string|nil err
+function M.parse_html_table(html)
+  if type(html) ~= "string" or html == "" then return nil, "No HTML given" end
+
+  local body = html:match("<[Tt][Aa][Bb][Ll][Ee][^>]*>(.-)</[Tt][Aa][Bb][Ll][Ee]>")
+  if not body then return nil, "No <table> element found" end
+
+  local rows = {}
+  for tr in body:gmatch("<[Tt][Rr][^>]*>(.-)</[Tt][Rr]>") do
+    local cells = {}
+    for content in tr:gmatch("<[Tt][HhDd][^>]*>(.-)</[Tt][HhDd]>") do
+      cells[#cells + 1] = unescape_html(strip_tags(content))
+    end
+    if #cells > 0 then rows[#rows + 1] = cells end
+  end
+
+  if #rows == 0 then return nil, "No rows found in <table>" end
+  return rows, nil
+end
+
+--- Render already-parsed HTML rows (`M.parse_html_table`'s result) as GFM
+--- table lines, using the same alignment/width machinery as `format_*`. The
+--- first row is treated as the header.
+---@param rows string[][]
+---@param opts? { header_align?: string, entry_align?: string, col_overrides?: Mkdn.TableColOverride[] }
+---@return string[]
+function M.rows_to_gfm(rows, opts)
+  opts = opts or {}
+  local dcfg = get_cfg()
+  local header_align = opts.header_align or dcfg.header_align
+  local entry_align  = opts.entry_align or dcfg.entry_align
+
+  local col_count = 0
+  for _, r in ipairs(rows) do col_count = math.max(col_count, #r) end
+  for _, r in ipairs(rows) do
+    while #r < col_count do r[#r + 1] = "" end
+  end
+
+  local override_map = resolve_overrides(opts.col_overrides or dcfg.col_overrides, rows[1], col_count)
+  local parsed = { rows = rows, col_count = col_count, separator_style = "compact" }
+  return render_table(parsed, header_align, entry_align, override_map)
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- Buffer helpers
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -247,7 +333,7 @@ local function apply_tables_to_buf(bufnr, tables)
   return true, nil
 end
 
-local function format_file(path, header_align, entry_align)
+local function format_file(path, header_align, entry_align, col_overrides)
   local fh, err = io.open(path, "r")
   if not fh then return false, string.format("Cannot open %q: %s", path, err or "?") end
   local lines = {}
@@ -259,7 +345,7 @@ local function format_file(path, header_align, entry_align)
 
   table.sort(tables, function(a, b) return a.start_line > b.start_line end)
   for _, parsed in ipairs(tables) do
-    local om       = resolve_overrides(nil, parsed.rows[1], parsed.col_count)
+    local om       = resolve_overrides(col_overrides, parsed.rows[1], parsed.col_count)
     local rendered = render_table(parsed, header_align, entry_align, om)
     for ri, rl in ipairs(rendered) do
       lines[parsed.start_line - 1 + ri] = rl
@@ -284,8 +370,9 @@ function M.format_table_at_cursor(bufnr, opts)
   opts  = opts  or {}
   if not vim.api.nvim_buf_is_valid(bufnr) then return false, "Invalid buffer" end
 
-  local header_align = opts.header_align or _cfg.header_align
-  local entry_align  = opts.entry_align  or _cfg.entry_align
+  local dcfg = get_cfg()
+  local header_align = opts.header_align or dcfg.header_align
+  local entry_align  = opts.entry_align  or dcfg.entry_align
   local ok_c, cursor = safe_call(vim.api.nvim_win_get_cursor, 0)
   if not ok_c then return false, "Failed to get cursor position" end
 
@@ -296,7 +383,7 @@ function M.format_table_at_cursor(bufnr, opts)
   local parsed, fe = find_table_at_cursor(tables, cursor[1])
   if not parsed then return false, fe end
 
-  local override_map = resolve_overrides(opts.col_overrides, parsed.rows[1], parsed.col_count)
+  local override_map = resolve_overrides(opts.col_overrides or dcfg.col_overrides, parsed.rows[1], parsed.col_count)
   local rendered     = render_table(parsed, header_align, entry_align, override_map)
   local ok_s = safe_call(vim.api.nvim_buf_set_lines, bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
   return ok_s and true or false, ok_s and nil or "Failed to update buffer"
@@ -307,8 +394,9 @@ function M.format_tables_in_buffer(bufnr, opts)
   opts  = opts  or {}
   if not vim.api.nvim_buf_is_valid(bufnr) then return false, "Invalid buffer", 0 end
 
-  local header_align = opts.header_align or _cfg.header_align
-  local entry_align  = opts.entry_align  or _cfg.entry_align
+  local dcfg = get_cfg()
+  local header_align = opts.header_align or dcfg.header_align
+  local entry_align  = opts.entry_align  or dcfg.entry_align
   local lines, re = buf_get_lines(bufnr)
   if not lines then return false, re, 0 end
 
@@ -317,7 +405,7 @@ function M.format_tables_in_buffer(bufnr, opts)
 
   local pending = {}
   for _, parsed in ipairs(tables) do
-    local override_map = resolve_overrides(opts.col_overrides, parsed.rows[1], parsed.col_count)
+    local override_map = resolve_overrides(opts.col_overrides or dcfg.col_overrides, parsed.rows[1], parsed.col_count)
     local rendered     = render_table(parsed, header_align, entry_align, override_map)
     pending[#pending + 1] = { parsed = parsed, rendered = rendered }
   end
@@ -329,6 +417,10 @@ end
 function M.format_tables_in_scope(opts)
   opts = opts or {}
   local scope = opts.scope or "cursor"
+  local dcfg  = get_cfg()
+  local header_align  = opts.header_align or dcfg.header_align
+  local entry_align   = opts.entry_align or dcfg.entry_align
+  local col_overrides = opts.col_overrides or dcfg.col_overrides
 
   if scope == "cursor" then
     return M.format_table_at_cursor(nil, opts)
@@ -342,7 +434,7 @@ function M.format_tables_in_scope(opts)
     if #files == 0 then notify.info("No *.md files found under " .. cwd); return true, nil end
     local errors, cnt = {}, 0
     for _, path in ipairs(files) do
-      local ok, err = format_file(path, opts.header_align or _cfg.header_align, opts.entry_align or _cfg.entry_align)
+      local ok, err = format_file(path, header_align, entry_align, col_overrides)
       if ok then cnt = cnt + 1 else errors[#errors + 1] = err end
     end
     if #errors > 0 then
@@ -354,7 +446,7 @@ function M.format_tables_in_scope(opts)
   else
     local path = vim.fn.expand(scope)
     if vim.fn.filereadable(path) == 0 then return false, string.format("File not readable: %q", path) end
-    local ok, err = format_file(path, opts.header_align or _cfg.header_align, opts.entry_align or _cfg.entry_align)
+    local ok, err = format_file(path, header_align, entry_align, col_overrides)
     if ok then notify.info(string.format("Formatted tables in %q", path)) end
     return ok, err
   end

@@ -30,7 +30,7 @@ end
 local FENCE_LINE = "^%s*[`~][`~][`~]+%S*%s*$"
 
 -- Shared with core.refs so generated anchors and repaired links never drift.
-local slugify_gfm = require("markdown.core.slug").gfm
+local slug_mod = require("markdown.core.slug")
 
 local function is_empty_line(line)
   return not line or line:match("^%s*$") ~= nil
@@ -120,6 +120,8 @@ function M.update_markdown_toc(header_line, opts)
 
   local min_level = opts.min_level or DEFAULT_MIN_LEVEL
   local max_level = opts.max_level or DEFAULT_MAX_LEVEL
+  local marker    = opts.marker or "-"
+  local slug_opts = { style = opts.anchor_style, separator = opts.anchor_separator }
   if min_level < 1 then min_level = 1 end
   if max_level > 6 then max_level = 6 end
   if min_level > max_level then min_level, max_level = max_level, min_level end
@@ -205,13 +207,13 @@ function M.update_markdown_toc(header_line, opts)
       if hashes and title then
         local level = (#hashes:gsub("%s", "")) - 0
         if level >= min_level and level <= max_level then
-          local base = slugify_gfm(title)
+          local base = slug_mod.slugify(title, slug_opts)
           if base == "" then base = "section-" .. tostring(i) end
           local count = seen_count[base] or 0
           local anchor = count == 0 and base or (base .. "-" .. tostring(count))
           seen_count[base] = count + 1
           local indent = string.rep("  ", math.max(0, level - 1))
-          table.insert(toc_lines, indent .. string.format("- [%s](#%s)", title, anchor))
+          table.insert(toc_lines, indent .. string.format("%s [%s](#%s)", marker, title, anchor))
         end
       end
     end

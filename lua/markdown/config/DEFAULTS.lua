@@ -43,6 +43,18 @@ local DEFAULTS = {
   -- Empty by default (every binding uses its documented default key).
   keymaps = {},
 
+  -- Defaults for `:Markdown table format` / the GFM table formatter
+  -- (core.table_fmt). Explicit command args (`header=`, `cell=`, `skip=`)
+  -- always override these per call.
+  table = {
+    header_align = "center", -- "left" | "center" | "right"
+    entry_align  = "center",
+    -- Per-column alignment overrides applied on every format. Unset by
+    -- default; example:
+    --   col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } }
+    -- `col` may be a 1-based index or a header-cell name (case-insensitive).
+  },
+
   -- Default style for the floating TableView (`:Markdown table view toggle` /
   -- <leader>tvt). "markdown" = aligned GFM table; "box" = Unicode box-drawing
   -- "spreadsheet" grid. The explicit `view markdown` / `view box` actions (and
@@ -51,10 +63,21 @@ local DEFAULTS = {
     style = "markdown", -- "markdown" | "box"
   },
 
-  -- `:Markdown links show` picker backend: "hover_select" | "select"
-  -- ("select" uses vim.ui.select; telescope/fzf can be added later).
+  -- `:Markdown links show` picker backend:
+  --   "hover_select" — lib.nvim's float chooser (default)
+  --   "select"       — vim.ui.select
+  --   "telescope"    — nvim-telescope/telescope.nvim (soft dep)
+  --   "fzf"          — ibhagwan/fzf-lua (soft dep)
+  -- A requested backend whose plugin isn't installed falls back to
+  -- vim.ui.select with a warning.
   links = {
     picker = "hover_select",
+    -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
+    -- (namespace "markdown_links"). ":Markdown links check" always works
+    -- manually; mode = "save" also reruns it on BufWritePost.
+    diagnostics = {
+      mode = "off", -- "off" | "save"
+    },
   },
 
   -- How followed file targets open. Media/binary extensions launch the system
@@ -72,10 +95,12 @@ local DEFAULTS = {
     },
   },
 
+  -- marker_fg/text_fg are unset by default: colors are derived from the
+  -- active colorscheme (a markdown-specific highlight group first, then
+  -- Comment/String, then a hard-coded hex as a last resort) and re-derived on
+  -- every ColorScheme event. Set either one explicitly to override.
   blockquote_hl = {
-    marker_fg  = "#6A9955",
-    text_fg    = "#7EE787",
-    text_bold  = true,
+    text_bold   = true,
     text_italic = false,
   },
 
@@ -84,6 +109,23 @@ local DEFAULTS = {
   -- line. Default off. Set underline = true to restore the built-in behaviour.
   link_hl = {
     underline = false,
+  },
+
+  -- Table of Contents: header text, bullet marker, and default heading-level
+  -- range for `<leader>toc` / `:Markdown toc`. `:Markdown toc [level]` still
+  -- overrides max_level per call; these are just the defaults.
+  toc = {
+    header    = "## Table of content",
+    marker    = "-",  -- bullet prefix for each entry, e.g. "-" or "*"
+    min_level = 2,
+    max_level = 4,
+    -- Anchor slug style (shared with core.refs so links stay in sync):
+    --   "gfm"       — GitHub-style: lowercase, non-word chars stripped (default)
+    --   "keep-case" — same shape, original case preserved (some renderers keep it)
+    anchor_style     = "gfm",
+    -- Separator between words in a generated anchor. Change only for renderers
+    -- that don't use "-" (e.g. some static-site generators use "_").
+    anchor_separator = "-",
   },
 
   -- Reference sync: keep `[text](#anchor)` links and the TOC consistent when
@@ -102,8 +144,10 @@ local DEFAULTS = {
     update_toc  = true,
     -- "report" surfaces links whose #anchor matches no heading; "ignore" skips.
     orphans     = "report",
-    -- TOC header line to detect/refresh (matches the toc command default).
-    toc_header  = "## Table of content",
+    -- TOC header line to detect/refresh. Unset by default: falls back to
+    -- `toc.header` above; only set this if refs should look for a DIFFERENT
+    -- header than the one `:Markdown toc` itself generates.
+    -- toc_header = "## Table of content",
   },
 
   fenced_fix = {

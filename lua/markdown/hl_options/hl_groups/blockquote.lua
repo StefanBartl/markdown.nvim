@@ -19,8 +19,34 @@ local function dim_bg(fg)
     math.floor(r * 0.20), math.floor(g * 0.20), math.floor(b * 0.20))
 end
 
+--- First resolved (non-nil) `fg` among `groups`, as "#rrggbb"; `fallback` when
+--- none of them resolve (e.g. no colorscheme loaded yet).
+---@param groups string[]
+---@param fallback string
+---@return string
+local function pick_group_fg(groups, fallback)
+  for _, g in ipairs(groups) do
+    local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = g, link = false })
+    if ok and hl and hl.fg then
+      return string.format("#%06x", hl.fg)
+    end
+  end
+  return fallback
+end
+
+-- Theme-derived defaults, used only when config.blockquote_hl doesn't set an
+-- explicit hex value: a markdown-specific highlight first, broadly-available
+-- generic groups next, and the historical hard-coded hex as the last resort.
+local function theme_marker_fg()
+  return pick_group_fg({ "@markup.quote.markdown", "@text.quote", "Comment" }, "#6A9955")
+end
+
+local function theme_text_fg()
+  return pick_group_fg({ "@markup.quote.markdown", "@text.quote", "String" }, "#7EE787")
+end
+
 local function set_hl(hl)
-  local marker_fg = hl.marker_fg or hl.fg or "#6A9955"
+  local marker_fg = hl.marker_fg or hl.fg or theme_marker_fg()
 
   local text_bg = nil
   if hl.text_bg == "dimm" then
@@ -42,7 +68,7 @@ local function set_hl(hl)
   })
 
   vim.api.nvim_set_hl(0, GROUP_TEXT, {
-    fg     = hl.text_fg   or nil,
+    fg     = hl.text_fg or theme_text_fg(),
     bg     = text_bg,
     italic = hl.text_italic or false,
     bold   = hl.text_bold   or false,

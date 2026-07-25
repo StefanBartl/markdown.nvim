@@ -9,17 +9,23 @@
 -- #####################################################################
 -- config/DEFAULTS.lua
 
----@alias Mkdn.LinkPicker "hover_select"|"select"
+---@alias Mkdn.LinkPicker "hover_select"|"select"|"telescope"|"fzf"
+
+---@alias Mkdn.LinkDiagnosticsMode "off"|"save"
+
+---@class Mkdn.LinkDiagnosticsConfig
+---@field mode Mkdn.LinkDiagnosticsMode # "off" (manual `:Markdown links check` only) | "save" (also rerun on BufWritePost). Default "off".
 
 ---@class Mkdn.LinksConfig
 ---@field picker Mkdn.LinkPicker # `:Markdown links show` picker backend.
+---@field diagnostics Mkdn.LinkDiagnosticsConfig # Dead-link / duplicate-anchor checking (see `core.link_diagnostics`).
 
 ---@class Mkdn.OpenConfig
 ---@field external_extensions string[] # Extensions launched with the system app; others open via `:edit`.
 
 ---@class Mkdn.BlockquoteHL
----@field marker_fg string # Color for the `>` marker token.
----@field text_fg string # Color for the text after `>`.
+---@field marker_fg? string # Color for the `>` marker token. Unset: derived from the active colorscheme.
+---@field text_fg? string # Color for the text after `>`. Unset: derived from the active colorscheme.
 ---@field text_bold boolean
 ---@field text_italic boolean
 
@@ -54,6 +60,17 @@
 ---   * `{ lhs?: string, mode?: string|string[] }`  remap lhs and/or mode
 ---@alias Mkdn.KeymapOverride boolean|string|{ lhs?: string, mode?: string|string[] }
 
+---@alias Mkdn.TableAlign "left"|"center"|"right"
+
+---@class Mkdn.TableColOverride
+---@field col integer|string # 1-based column index, or a header-cell name (case-insensitive).
+---@field align Mkdn.TableAlign
+
+---@class Mkdn.TableConfig
+---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
+---@field entry_align Mkdn.TableAlign # Default body-row alignment.
+---@field col_overrides? Mkdn.TableColOverride[] # Per-column alignment overrides applied on every format.
+
 ---@class Mkdn.TableViewConfig
 ---@field style "markdown"|"box" # Default float style for `view toggle` / <leader>tvt.
 
@@ -74,7 +91,17 @@
 ---@field debounce_ms integer # Live-mode debounce in ms (generous; 1500–3000 sane).
 ---@field update_toc boolean # Refresh an existing TOC block on sync (never force-creates).
 ---@field orphans Mkdn.RefsOrphans # Whether to report links whose #anchor matches no heading.
----@field toc_header string # TOC header line to detect/refresh.
+---@field toc_header? string # TOC header line to detect/refresh. Unset falls back to `toc.header`.
+
+---@alias Mkdn.AnchorStyle "gfm"|"keep-case"
+
+---@class Mkdn.TocConfig
+---@field header string # TOC header line, e.g. "## Table of content".
+---@field marker string # Bullet marker prefix for each TOC entry (e.g. "-" or "*").
+---@field min_level integer # Default lowest heading level included.
+---@field max_level integer # Default highest heading level included.
+---@field anchor_style Mkdn.AnchorStyle # Slug style; shared with core.refs so anchors stay in sync. Default "gfm".
+---@field anchor_separator string # Word separator in generated anchors. Default "-".
 
 ---@class Mkdn.FeaturesConfig
 ---@field disable? "all"|string[] # Turn off every gateable feature ("all") or the listed ones.
@@ -102,6 +129,8 @@
 ---@field menu Mkdn.MenuConfig # nvzone/menu integration entries (opt-out).
 ---@field link_hl Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
 ---@field refs Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
+---@field toc Mkdn.TocConfig # TOC header/marker/level defaults for `<leader>toc` / `:Markdown toc`.
+---@field table Mkdn.TableConfig # Default alignment/overrides for `:Markdown table format`.
 
 -- #####################################################################
 -- core/link_scan.lua
@@ -115,6 +144,15 @@
 ---@field col integer # 0-based byte column of the match start.
 ---@field col_end integer # 0-based byte column of the match end (inclusive).
 ---@field file? string # Source file path (set for cross-file scans).
+
+--- One `vim.diagnostic`-shaped entry from `core.link_diagnostics.collect()`.
+---@class Mkdn.LinkDiagnostic
+---@field lnum integer # 0-based line.
+---@field col integer # 0-based start column.
+---@field end_col integer # 0-based end column.
+---@field severity integer # `vim.diagnostic.severity.*`.
+---@field message string
+---@field source "markdown_links"
 
 -- #####################################################################
 -- util/picker.lua

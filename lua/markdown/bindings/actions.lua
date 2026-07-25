@@ -49,7 +49,7 @@ function M.fold_h2plus()       fold_lvl().fold_h2_plus() end
 function M.toc()
   local count = vim.v.count
   require("markdown.commands.toc").update(
-    "## Table of content",
+    nil,
     count > 0 and { max_level = count } or nil
   )
 end

@@ -104,6 +104,22 @@ function M.setup(cfg)
     })
   end
 
+  -- Link diagnostics automatic trigger (independent opt-in via
+  -- config.links.diagnostics.mode). "off" leaves the manual :Markdown links
+  -- check command as the only way to run it.
+  local links_diag_mode = (cfg.links and cfg.links.diagnostics and cfg.links.diagnostics.mode) or "off"
+  if feat("links") and links_diag_mode == "save" then
+    local aug_links = api.nvim_create_augroup("MarkdownNvimLinkDiagnostics", { clear = true })
+    autocmd.create("BufWritePost", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      require("markdown.core.link_diagnostics").check(ev.buf)
+    end, {
+      group = aug_links,
+      pattern = { "*.md", "*.markdown", "*.mdx" },
+      desc = "[markdown.nvim] link diagnostics: check on save",
+    })
+  end
+
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
     local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })

@@ -25,7 +25,10 @@ return function(H)
   config.setup({ blockquote_hl = { text_bold = false } })
   local n = config.get()
   eq(n.blockquote_hl.text_bold, false, "nested override applied")
-  eq(n.blockquote_hl.marker_fg, "#6A9955", "nested sibling kept from defaults")
+  eq(n.blockquote_hl.text_italic, false, "nested sibling kept from defaults")
+  -- marker_fg/text_fg are unset by default (theme-derived at render time, see
+  -- hl_groups/blockquote.lua), not a hard-coded hex in config.
+  eq(n.blockquote_hl.marker_fg, nil, "marker_fg unset by default")
 
   -- reset
   config.setup({})

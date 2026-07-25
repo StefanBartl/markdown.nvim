@@ -10,9 +10,20 @@ local DEFAULT_HEADER = "## Table of content"
 --- Update/insert the TOC and, unless disabled, ensure every section is closed
 --- with a `---` separator.
 ---@param header? string                       TOC header line
----@param opts? { min_level?: integer, max_level?: integer, separators?: boolean }
+---@param opts? { min_level?: integer, max_level?: integer, marker?: string, separators?: boolean, anchor_style?: string, anchor_separator?: string }
 function M.update(header, opts)
   opts = opts or {}
+
+  -- config.toc supplies defaults for anything the caller didn't set explicitly.
+  -- anchor_style/anchor_separator are config-only (no per-call override): the
+  -- reference-sync engine reads the same config to keep anchors in agreement.
+  local toc_cfg = cfg().toc or {}
+  header = header or toc_cfg.header or DEFAULT_HEADER
+  if opts.min_level == nil then opts.min_level = toc_cfg.min_level end
+  if opts.max_level == nil then opts.max_level = toc_cfg.max_level end
+  if opts.marker    == nil then opts.marker    = toc_cfg.marker end
+  opts.anchor_style     = toc_cfg.anchor_style
+  opts.anchor_separator = toc_cfg.anchor_separator
 
   -- When the cursor sits inside a markdown-family fenced block, scope the TOC to
   -- that block's interior (scan + insert stay inside the block).
@@ -51,15 +62,23 @@ function M.update(header, opts)
   end
 end
 
---- `:Markdown toc [level] [--sep|--no-sep]` entry point.
+--- `:Markdown toc [level] [--sep|--no-sep] [min=N] [max=N] [marker=X]` entry point.
+--- A bare numeric arg is shorthand for `max=N` (kept for backwards compat).
 ---@param argv string[]
 function M.run(argv)
   argv = argv or {}
   local opts = {}
 
   for _, a in ipairs(argv) do
+    local key, val = a:match("^([%w_]+)=(.+)$")
     local n = tonumber(a)
-    if n then
+    if key == "min" then
+      opts.min_level = tonumber(val)
+    elseif key == "max" then
+      opts.max_level = tonumber(val)
+    elseif key == "marker" then
+      opts.marker = val
+    elseif n then
       opts.max_level = n
     elseif a == "--no-sep" then
       opts.separators = false
@@ -68,7 +87,7 @@ function M.run(argv)
     end
   end
 
-  M.update(DEFAULT_HEADER, opts)
+  M.update(nil, opts)
 end
 
 return M

@@ -104,12 +104,28 @@ local function do_show(argv)
 end
 
 -- ---------------------------------------------------------------------------
+-- check (dead relative-file links / duplicate heading anchors)
+-- ---------------------------------------------------------------------------
+
+local function do_check(_argv)
+  local diag = require("markdown.core.link_diagnostics")
+  local bufnr = vim.api.nvim_get_current_buf()
+  local count = diag.check(bufnr)
+  if count == 0 then
+    notify.info("Link check: no issues found")
+  else
+    notify.warn(string.format("Link check: %d issue(s) — see vim.diagnostic.open_float() / :lopen", count))
+  end
+end
+
+-- ---------------------------------------------------------------------------
 -- dispatch
 -- ---------------------------------------------------------------------------
 
 local subcommands = {
   show   = do_show,
   create = do_create,
+  check  = do_check,
 }
 
 ---@param argv string[]
