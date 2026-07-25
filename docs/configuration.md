@@ -61,12 +61,43 @@ require("markdown").setup({
     debounce_ms = 2000,    -- live-mode debounce; 1500–3000 is a sane range
     update_toc  = true,    -- refresh an existing TOC block on sync (never force-creates)
     orphans     = "report",-- "report" surfaces #anchor links with no heading; "ignore" skips
-    toc_header  = "## Table of content",
+    -- toc_header unset by default: falls back to toc.header below.
+    -- toc_header = "## Table of content",
   },
 
-  -- :Markdown links show — picker backend: "hover_select" | "select"
+  -- Table of Contents defaults for <leader>toc / :Markdown toc.
+  -- `:Markdown toc [level|min=N|max=N|marker=X]` overrides per call, except
+  -- anchor_style/anchor_separator (config-only, so core.refs always agrees
+  -- with the TOC just generated).
+  toc = {
+    header    = "## Table of content",
+    marker    = "-",           -- bullet prefix, e.g. "-" or "*"
+    min_level = 2,
+    max_level = 4,
+    anchor_style     = "gfm",  -- "gfm" (default) | "keep-case"
+    anchor_separator = "-",
+  },
+
+  -- :Markdown links show/check
   links = {
+    -- picker backend: "hover_select" | "select" | "telescope" | "fzf"
+    -- (telescope/fzf are soft deps; a missing plugin falls back to
+    -- vim.ui.select with a warning)
     picker = "hover_select",
+    -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
+    -- (namespace "markdown_links"). :Markdown links check always works
+    -- manually; mode = "save" also reruns it on BufWritePost.
+    diagnostics = {
+      mode = "off", -- "off" | "save"
+    },
+  },
+
+  -- Defaults for :Markdown table format; explicit command args (header=,
+  -- cell=, skip=) always override these per call.
+  table = {
+    header_align = "center", -- "left" | "center" | "right"
+    entry_align  = "center",
+    -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
   },
 
   -- How followed file targets open. Extensions in this list launch the system
@@ -88,10 +119,14 @@ require("markdown").setup({
     },
   },
 
-  -- Blockquote highlight colors
+  -- Blockquote highlight colors. marker_fg/text_fg are unset by default: the
+  -- color is derived from the active colorscheme (a markdown-specific
+  -- highlight group first, then Comment/String, then a hard-coded hex as a
+  -- last resort) and re-derived on every ColorScheme event. Set either field
+  -- to override with a fixed hex color.
   blockquote_hl = {
-    marker_fg   = "#6A9955",   -- color for the > token
-    text_fg     = "#7EE787",   -- text after >
+    -- marker_fg = "#6A9955",  -- color for the > token
+    -- text_fg   = "#7EE787",  -- text after >
     text_bold   = true,
     text_italic = false,
   },

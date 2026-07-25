@@ -9,25 +9,36 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
 ```vim
 :Markdown links show [%|cwd|<file>]      " collect links, pick one, open it
 :Markdown links create [-r] [--noignore] [--root <path>] <path>
+:Markdown links check                    " flag dead links / duplicate anchors
 ```
 
 - **show** — scan the current buffer (`%`, the default), the cwd, or a given
   file for links, list them in a picker, and open the chosen one (URL → browser,
-  `#anchor` → in-buffer jump, file → system app or `:edit`).
+  `#anchor` → in-buffer jump, file → system app or `:edit`). Picker backend is
+  `links.picker`: `hover_select` (default) | `select` | `telescope` | `fzf`
+  (the latter two are soft deps; a missing plugin falls back to
+  `vim.ui.select` with a warning).
 - **create** — generate Markdown links from a directory tree and copy them to
   the clipboard. Options: `-r`/`--recursive`, `--noignore`,
   `--root <path>` (prefix, supports `$ENV_VAR`).
   A bare path without a subcommand is treated as `create <path>`.
+- **check** — flag dead relative-file links and duplicate heading titles in
+  the current buffer via `vim.diagnostic` (namespace `markdown_links`),
+  reusing `core.link_scan` + `core.slug`. Cross-file `path#anchor` links only
+  check that the file exists. `links.diagnostics.mode = "save"` reruns this
+  automatically on `BufWritePost`; default is manual-only (`"off"`).
 
 ## `:Markdown toc`
 
 ```vim
-:Markdown toc [level] [--sep | --no-sep]
+:Markdown toc [level] [min=N] [max=N] [marker=X] [--sep | --no-sep]
 ```
 
-Insert/refresh the TOC. `level` caps the max heading depth. By default the
-headline separators are applied too (per `ensure_headline_spacing`); override
-per-call with `--sep` / `--no-sep`.
+Insert/refresh the TOC, using `config.toc` (header/marker/min_level/max_level/
+anchor_style/anchor_separator) for anything not given here. A bare `level` is
+shorthand for `max=N` (legacy). By default the headline separators are
+applied too (per `ensure_headline_spacing`); override per-call with `--sep` /
+`--no-sep`.
 
 ## `:Markdown refs`
 
@@ -59,6 +70,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table tableize [format]       " turn delimited text into a GFM table
+:Markdown table import [clipboard|PATH] " parse an HTML <table> into a GFM table
 ```
 
 - **view** renders a table (or every table) in a nicely formatted preview.
@@ -91,7 +103,8 @@ dependency-free reimplementation of the vim-table-mode essentials.
   closed that tab by hand and want a fresh one: `:Markdown table view browser
   reopen`, `:TableViewOpenBrowserNice reopen`.
 - **format** runs the self-contained GFM formatter on the table at the cursor /
-  in scope.
+  in scope. Defaults come from `config.table` (`header_align`, `entry_align`,
+  `col_overrides`) when the command args don't set them.
 - **mode** turns on per-buffer *table mode*: after each edit inside a table it is
   re-aligned automatically (debounced, on `InsertLeave` / `TextChanged`), reusing
   the same alignment as `format`.
@@ -120,6 +133,13 @@ dependency-free reimplementation of the vim-table-mode essentials.
   Neovim splits the command line on unquoted spaces. Note that with a single
   space `header header2 header 3` becomes **four** columns; quote a value that
   should stay whole: `header header2 "header 3"`.
+- **import** parses an HTML `<table>` into a GFM table — round-trips with the
+  TableView "open in browser" export. The first row (`<th>` or `<td>`)
+  becomes the header; tags inside cells are stripped and entities (`&amp;`,
+  `&lt;`, `&gt;`, `&quot;`, `&apos;`/`&#39;`, `&nbsp;`) unescaped. Source:
+  `clipboard` (the `+` register), a file `PATH`, or — with no argument — the
+  command's range if any (`:'<,'>Markdown table import` replaces the selected
+  HTML in place), otherwise the whole buffer (inserted below the cursor).
 
 Cell motions `[|` / `]|` jump to the previous / next cell on the current row.
 Everything lives under the `table` feature, and stays available when only the

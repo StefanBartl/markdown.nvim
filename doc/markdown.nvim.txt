@@ -12,7 +12,9 @@ CONTENTS                                           *markdown.nvim-contents*
      5.2 blockquote_hl ......... |markdown.nvim-config-blockquote|
      5.3 fenced_fix ............ |markdown.nvim-config-fenced-fix|
      5.4 fenced_scope .......... |markdown.nvim-config-fenced-scope|
-     5.5 features (gating) ..... |markdown.nvim-config-features|
+     5.5 toc ................... |markdown.nvim-config-toc|
+     5.6 table .................. |markdown.nvim-config-table|
+     5.7 features (gating) ..... |markdown.nvim-config-features|
   6. Keymaps ................... |markdown.nvim-keymaps|
      6.1 Navigation ............ |markdown.nvim-keymaps-nav|
      6.2 Heading shift ......... |markdown.nvim-keymaps-shift|
@@ -57,8 +59,10 @@ Included subsystems:
   * Fenced-code and inline-code highlight override
   * Blockquote coloring via matchadd
   * Anchor / URL / image / file handler on double-click or `ma`
-  * Floating Markdown table browser with HTML export
+  * Floating Markdown table browser with HTML export/import (round-trip)
   * GFM table stack: formatter, auto-format table mode, tableize, cell motions
+  * Link diagnostics: dead relative-file links + duplicate heading anchors
+    via vim.diagnostic
   * Unified `:Markdown` command: links, toc, table, render, preview, mdview,
     create, headline_spacing
 
@@ -141,9 +145,18 @@ All keys are optional. Unset keys use the defaults shown below.
       debounce_ms = 2000,
       update_toc  = true,
       orphans     = "report", -- "report" | "ignore"
-      toc_header  = "## Table of content",
+      -- toc_header = "## Table of content", -- unset: falls back to toc.header
     },
-    links = { picker = "hover_select" },
+    toc   = {
+      header = "## Table of content", marker = "-",
+      min_level = 2, max_level = 4,
+      anchor_style = "gfm", anchor_separator = "-",
+    },
+    table = { header_align = "center", entry_align = "center" }, -- + col_overrides
+    links = {
+      picker = "hover_select", -- "hover_select"|"select"|"telescope"|"fzf"
+      diagnostics = { mode = "off" }, -- "off" | "save"
+    },
     open  = { external_extensions = { "png", "pdf", "mp4", ... } },
   })
 <
@@ -190,11 +203,22 @@ All keys are optional. Unset keys use the defaults shown below.
   |:Markdown-headline-spacing|).
 
 `links`
-  Options for `:Markdown links show` (see |:Markdown-links|). >
-    links = { picker = "hover_select" }  -- "hover_select" | "select"
+  Options for `:Markdown links show`/`check` (see |:Markdown-links|). >
+    links = {
+      picker      = "hover_select", -- "hover_select"|"select"|"telescope"|"fzf"
+      diagnostics = { mode = "off" }, -- "off" | "save"
+    }
 <
-  `picker = "hover_select"` uses lib.nvim's floating hover_select; `"select"`
-  falls back to |vim.ui.select()|.
+  `picker`: `"hover_select"` uses lib.nvim's floating hover_select;
+  `"select"` falls back to |vim.ui.select()|; `"telescope"` /`"fzf"` use
+  nvim-telescope/telescope.nvim / ibhagwan/fzf-lua (soft dependencies — a
+  requested backend whose plugin isn't installed falls back to
+  `vim.ui.select()` with a warning).
+
+  `diagnostics.mode`: dead relative-file links and duplicate heading titles
+  are surfaced via |vim.diagnostic| (namespace "markdown_links"). The manual
+  `:Markdown links check` command always works; `mode = "save"` also reruns
+  it automatically on |BufWritePost|.
 
 `open`
   Controls how followed file targets open (see |markdown.nvim-keymaps-handler|
@@ -244,7 +268,7 @@ All keys are optional. Unset keys use the defaults shown below.
       debounce_ms = 2000,
       update_toc  = true,
       orphans     = "report", -- "report" | "ignore"
-      toc_header  = "## Table of content",
+      -- toc_header = "## Table of content", -- unset: falls back to toc.header
     }
 <
   `mode` governs only AUTOMATIC syncs; the manual `:Markdown refs` commands
@@ -257,14 +281,17 @@ All keys are optional. Unset keys use the defaults shown below.
   `update_toc` refreshes an existing TOC block during a sync (it never
   force-creates one). `orphans = "report"` surfaces links whose `#anchor`
   matches no heading; `"ignore"` skips that report. `toc_header` is the TOC
-  header line used to detect/refresh the block.
+  header line used to detect/refresh the block; unset by default, in which
+  case it falls back to `toc.header` (see |markdown.nvim-config-toc|) so the
+  two never drift apart unless you deliberately want refs to look for a
+  DIFFERENT header than the one `:Markdown toc` itself generates.
 
 ------------------------------------------------------------------------------
 5.2 blockquote_hl                          *markdown.nvim-config-blockquote*
 >
   blockquote_hl = {
-    marker_fg   = "#6A9955",
-    text_fg     = "#7EE787",
+    -- marker_fg = nil  -- unset: derived from the active colorscheme
+    -- text_fg   = nil  -- unset: derived from the active colorscheme
     text_bold   = true,
     text_italic = false,
     -- text_bg  = nil  or a hex color or "dimm" (auto-darken marker_fg)
@@ -277,6 +304,12 @@ Two separate highlight groups are created:
 
 Both are applied with `matchadd()` at priority 110, which wins over
 Tree-sitter's `@punctuation.special.markdown` (priority 100).
+
+`marker_fg` / `text_fg` are unset by default: the color is derived from the
+active colorscheme (a markdown-specific highlight group first, then
+`Comment` / `String`, falling back to a hard-coded hex only if nothing
+resolves) and re-derived on every |ColorScheme| event. Set either field
+explicitly to override theme derivation with a fixed hex color.
 
 `text_bg = "dimm"` derives a background from `marker_fg` by mixing 20%
 of its color toward black.
@@ -345,7 +378,55 @@ Nesting: to nest a fenced block inside a ```markdown block, the outer fence
 must be longer (CommonMark), e.g. open the outer block with ````markdown.
 
 ------------------------------------------------------------------------------
-5.5 features (gating)                       *markdown.nvim-config-features*
+5.5 toc                                          *markdown.nvim-config-toc*
+>
+  toc = {
+    header    = "## Table of content",
+    marker    = "-",             -- bullet prefix, e.g. "-" or "*"
+    min_level = 2,
+    max_level = 4,
+    anchor_style     = "gfm",    -- "gfm" | "keep-case"
+    anchor_separator = "-",
+  },
+<
+Defaults for `<leader>toc` / `:Markdown toc` (see |markdown.nvim-keymaps-toc|
+and |:Markdown-toc|).
+
+`header`     TOC header line to insert/detect. Shared with `refs.toc_header`
+             when the latter is left unset (see |markdown.nvim-config-refs|).
+`marker`     Bullet prefix for every TOC entry.
+`min_level` / `max_level`
+             Default heading-level range included. `:Markdown toc [level]`
+             (or `max=N`) still overrides `max_level` per call.
+`anchor_style`
+             `"gfm"` (default): lowercase, GitHub-style de-dup source slug.
+             `"keep-case"`: same shape, original case preserved.
+`anchor_separator`
+             Word separator in generated anchors (default "-"). Shared by
+             `core.toc` and `core.slug.heading_anchors()`, so `core.refs` and
+             `core.link_diagnostics` produce anchors that agree with the TOC.
+             `slug.gfm()` itself always stays byte-for-byte the historical
+             algorithm, regardless of this config.
+
+`:Markdown toc` also accepts `min=N`, `max=N`, and `marker=X` as per-call
+overrides (in addition to the legacy bare-number shorthand for `max=N`).
+
+------------------------------------------------------------------------------
+5.6 table                                      *markdown.nvim-config-table*
+>
+  table = {
+    header_align = "center",   -- "left" | "center" | "right"
+    entry_align  = "center",
+    -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
+  },
+<
+Defaults for `:Markdown table format` (see |:Markdown-table|); explicit
+command args (`header=`, `cell=`, `skip=`) always override these per call.
+`col_overrides[].col` may be a 1-based column index or a header-cell name
+(case-insensitive).
+
+------------------------------------------------------------------------------
+5.7 features (gating)                       *markdown.nvim-config-features*
 
 Reduce the plugin to a subset without unsetting each option. >
 
@@ -455,9 +536,11 @@ See also |markdown.nvim-foldexpr|.
   Key              Mode  Action~
   {N}<leader>toc   n     Insert or refresh TOC; count N sets max heading level
 
-The TOC header line is `## Table of content`. Anchors use GFM-compatible
-slugs. Duplicate headings receive numeric suffixes (GitHub convention:
-`slug`, `slug-1`, `slug-2`, ...).
+The TOC header line and bullet marker come from `config.toc` (default
+`"## Table of content"` / `"-"`, see |markdown.nvim-config-toc|). Anchors use
+GFM-compatible slugs by default (`toc.anchor_style`/`anchor_separator` opt
+into other renderers' conventions). Duplicate headings receive numeric
+suffixes (GitHub convention: `slug`, `slug-1`, `slug-2`, ...).
 
 Placement rules:
   1. If a `## Table of content` block already exists, it is replaced in-place.
@@ -551,7 +634,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     links              Show or generate Markdown links  |:Markdown-links|
     toc                Insert/refresh the TOC           |:Markdown-toc|
     refs               Sync #anchor links + TOC          |:Markdown-refs|
-    table              view/format/new/mode/tableize    |:Markdown-table|
+    table              view/format/new/mode/tableize/import |:Markdown-table|
     render             Toggle render-markdown.nvim       |:Markdown-render|
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
     mdview             Open file via mdview.nvim         |:Markdown-render|
@@ -592,13 +675,26 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   A bare path with no subcommand (`:Markdown links ./docs`) is treated as
   `create ./docs` for backwards compatibility.
 
+:Markdown links check
+
+  Flag dead relative-file links and duplicate heading titles in the current
+  buffer via |vim.diagnostic| (namespace "markdown_links"; reuses
+  `core.link_scan` + `core.slug`). Cross-file `path#anchor` links only check
+  that the file exists — validating an anchor inside another file is out of
+  scope. See `links.diagnostics` (|markdown.nvim-config-general|) to also run
+  this automatically on save.
+
 ------------------------------------------------------------------------------
 7.3 :Markdown toc                                          *:Markdown-toc*
 
-:Markdown toc [level] [--sep | --no-sep]
+:Markdown toc [level] [min=N] [max=N] [marker=X] [--sep | --no-sep]
 
   Insert or refresh the Table of Contents (see |markdown.nvim-keymaps-toc|
-  for placement and slug rules). `level` caps the maximum heading depth.
+  for placement and slug rules), using `config.toc` for anything not given
+  here (see |markdown.nvim-config-toc|). A bare `level` is shorthand for
+  `max=N` (legacy). `min=`/`max=`/`marker=` override `config.toc` for this
+  call only; the anchor style/separator are config-only (no per-call
+  override, so `core.refs` always agrees with the TOC just generated).
 
   By default the headline separators are applied afterwards, following the
   `ensure_headline_spacing` option. Force the behaviour per call:
@@ -669,6 +765,8 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
 
   Run the self-contained GFM formatter on the table at the cursor (or in the
   given scope): pad columns to equal width and normalize separator rows.
+  Defaults for alignment/column-overrides come from `config.table` (see
+  |markdown.nvim-config-table|) when the command args don't set them.
 
 :Markdown table new [cols] [rows]
 
@@ -708,6 +806,21 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   Cell motions `]|` / `[|` jump to the next / previous cell on the current row.
   The whole table surface lives under the `table` feature and stays available
   when only `tableview` is enabled (see |markdown.nvim-config-features|).
+
+:Markdown table import [clipboard|PATH]
+
+  Parse an HTML `<table>` into a GFM table — round-trips with the TableView
+  "open in browser" export (|markdown.nvim-tableview|). The first row (`<th>`
+  or `<td>`) becomes the header; tags inside cells are stripped and HTML
+  entities (`&amp;`, `&lt;`, `&gt;`, `&quot;`, `&apos;`/`&#39;`, `&nbsp;`)
+  unescaped.
+
+  Source of the HTML:
+    clipboard   the `"+"` register
+    PATH        a file on disk
+    (none)      the command's range if any (`:'<,'>Markdown table import`
+                replaces the selected HTML in place), otherwise the whole
+                current buffer (inserted below the cursor).
 
 ------------------------------------------------------------------------------
 7.6 :Markdown render / preview / mdview                   *:Markdown-render*
@@ -923,6 +1036,13 @@ Sub-modules can be imported individually, e.g.: >
 
   local renderer = require("markdown.tableview.renderer")
   local ok, err = renderer.validate_alignment(rendered_lines)
+
+  local diag = require("markdown.core.link_diagnostics")
+  diag.check(0)   -- populate vim.diagnostic for buffer 0 (namespace "markdown_links")
+
+  local tf = require("markdown.core.table_fmt")
+  local rows = tf.parse_html_table(html_string)
+  local gfm_lines = tf.rows_to_gfm(rows, {})
 <
 ==============================================================================
 11. ARCHITECTURE                              *markdown.nvim-architecture*
@@ -935,7 +1055,7 @@ Sub-modules can be imported individually, e.g.: >
       notify.lua             vim.notify wrapper
       clipboard.lua          setreg("+") helper
       ignore.lua             default directory ignore list
-      picker.lua             hover_select / vim.ui.select abstraction
+      picker.lua             hover_select / vim.ui.select / telescope / fzf abstraction
     core/
       headings.lua           navigation + level shifting
       fold.lua               foldexpr, toggle, unfold
@@ -945,7 +1065,9 @@ Sub-modules can be imported individually, e.g.: >
       wrap.lua               visual bold toggle
       wrap_link.lua          <leader>[ wrap word/selection in a link
       link_scan.lua          collect links from a line/buffer
-      table_fmt.lua          GFM table formatter (self-contained)
+      link_diagnostics.lua   dead links / duplicate anchors (vim.diagnostic)
+      slug.lua               anchor slug algorithm (gfm/keep-case) + anchor map
+      table_fmt.lua          GFM table formatter + HTML->GFM import (self-contained)
       headline_spacing/
         init.lua             blank-dash-blank enforcer (+ final closer)
     anchor/

@@ -29,19 +29,17 @@ IDs match the checklist docs.
 7. **A5 — handler `ctx` helper.** Deferred (low value): the per-call re-query in
    `handler/*` is cheap; not worth the churn now.
 
-## Phase 1 — high-value features (ROADMAP.md)
+## Phase 1 — high-value features (ROADMAP.md) — ✅ DONE
 
-6. **Telescope / fzf-lua picker backends.** `util/picker.lua` already abstracts
-   the backend (`hover_select`/`select`); add `"telescope"` and `"fzf"` branches
-   behind `links.picker`. Guarded soft deps. *First step: a `backends/` table
-   keyed by picker name.*
-7. **Configurable TOC header/markers.** The TOC header (`## Table of content`)
-   and bullet style are hard-coded in `core/toc.lua` + the `<Plug>(markdown-toc)`
-   closure. Expose `toc = { header, marker, max_level }` in config. *Touches
-   `config/DEFAULTS.lua`, `core/toc.lua`, `bindings/plugs.lua`.*
-8. **Table format options.** Surface `table_fmt`'s alignment/padding
-   (`header_align`, `entry_align`, `col_overrides`) as config defaults, not just
-   `:Markdown table format` args.
+6. ~~**Telescope / fzf-lua picker backends.**~~ ✅ `util/picker.lua` gained
+   `"telescope"` and `"fzf"` branches behind `links.picker` (soft deps,
+   fall back to `vim.ui.select` with a warning when the plugin is missing).
+7. ~~**Configurable TOC header/markers.**~~ ✅ `config.toc = { header, marker,
+   min_level, max_level, anchor_style, anchor_separator }`; `core/toc.lua` and
+   `commands/toc.lua` read it, with `min=`/`max=`/`marker=` per-call overrides.
+8. ~~**Table format options.**~~ ✅ `config.table = { header_align,
+   entry_align, col_overrides }` supplies defaults for `table_fmt` /
+   `:Markdown table format`, explicit command args still win per call.
 
 ## Phase 2 — nice-to-have
 
@@ -51,22 +49,29 @@ IDs match the checklist docs.
     installed (soft dep, `pcall(require, ...)`, mirroring the pdfport.nvim
     choice added to `handler/file.lua`'s PDF path), offer a popup preview
     inside nvim as an alternative to the system app; without one installed,
-    keep today's system-app behavior with no prompt.
-9. **Link diagnostics** — flag dead relative-file links / duplicate anchors
-   (reuse `core/link_scan` + the anchor slug logic). Optionally a `vim.diagnostic`
-   source.
-10. **Anchor style options** — opt-in slug variants (keep-case, custom separators)
-    for non-GFM renderers.
-11. **Theme-derived blockquote/fenced colors** — derive `blockquote_hl` defaults
-    from the active colorscheme (explicit config still overrides).
-12. **Per-key override table** — on top of the `<Plug>` surface, an optional
-    `keys = { … }` config to remap/disable individual defaults declaratively.
-13. **HTML→GFM table import** (round-trip with the existing HTML export).
+    keep today's system-app behavior with no prompt. *(Not in docs/ROADMAP.md;
+    still open.)*
+9. ~~**Link diagnostics**~~ — ✅ `core/link_diagnostics.lua` (dead relative-file
+   links + duplicate heading titles) via `vim.diagnostic`
+   (`:Markdown links check`; `links.diagnostics.mode = "save"` for automatic
+   runs), reusing `core/link_scan` + the anchor slug logic.
+10. ~~**Anchor style options**~~ — ✅ `core/slug.lua`'s `M.slugify` /
+    `config.toc.anchor_style` (`"gfm"` default, opt-in `"keep-case"`) +
+    `anchor_separator`.
+11. ~~**Theme-derived blockquote/fenced colors**~~ — ✅ `blockquote_hl.marker_fg`/
+    `text_fg` unset by default, derived from the active colorscheme
+    (explicit config still overrides).
+12. ~~**Per-key override table**~~ — ✅ done: `config.keymaps[id]` in
+    `bindings/keymaps.lua`.
+13. ~~**HTML→GFM table import**~~ — ✅ `table_fmt.parse_html_table` /
+    `rows_to_gfm`, exposed via `:Markdown table import [clipboard|PATH]`.
 
 ## Phase 3 — testing
 
-14. **Grow `docs/TESTS/`** toward handler/anchor logic (currently: config,
-    table_fmt, link_scan, headings). Pairs with A7's CI.
+14. **Grow `TESTS/`** toward handler/anchor logic (currently: config,
+    table_fmt (+ config-driven defaults, HTML import), link_scan,
+    link_diagnostics, toc (+ config), picker, blockquote theme, headings).
+    Pairs with A7's CI. Ongoing — extend further as new logic lands.
 
 ## Notes
 - The four filetree-related gaps found during the Neo-tree audit
