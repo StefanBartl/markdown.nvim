@@ -95,6 +95,17 @@
 
 ---@alias Mkdn.AnchorStyle "gfm"|"keep-case"
 
+--- What `mi` does with an image when an in-Neovim preview provider
+--- (snacks.nvim or image.nvim) is installed. With neither installed, every
+--- value behaves like "system".
+---@alias Mkdn.ImagePreviewMode "ask"|"preview"|"system"
+
+--- Which in-Neovim image preview provider was detected, if any.
+---@alias Mkdn.ImageProvider "snacks"|"image.nvim"
+
+---@class Mkdn.ImageConfig
+---@field preview Mkdn.ImagePreviewMode # System viewer vs. in-Neovim float. Default "ask".
+
 ---@class Mkdn.TocConfig
 ---@field header string # TOC header line, e.g. "## Table of content".
 ---@field marker string # Bullet marker prefix for each TOC entry (e.g. "-" or "*").
@@ -121,6 +132,7 @@
 ---@field ensure_headline_spacing boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
 ---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
+---@field image Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.
 ---@field open Mkdn.OpenConfig
 ---@field blockquote_hl Mkdn.BlockquoteHL
 ---@field fenced_fix Mkdn.FencedFix

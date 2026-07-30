@@ -231,6 +231,14 @@ All keys are optional. Unset keys use the defaults shown below.
   covers common image, video, audio, office, archive and binary formats;
   extend or replace it to taste.
 
+`image`                                            *markdown.nvim-config-image*
+  What `mi` does with an image target when an in-Neovim preview provider
+  (snacks.nvim or image.nvim, both optional) is installed. >
+    image = { preview = "ask" }  -- "ask" | "preview" | "system"
+<
+  With neither provider installed every value behaves like "system". See
+  |markdown.nvim-image-preview| for the full behaviour.
+
 `link_hl`                                        *markdown.nvim-config-link-hl*
   Inline-link highlight tweaks. >
     link_hl = { underline = false }
@@ -577,6 +585,40 @@ Opening rules:
     PDFs, media, …) open with the system application; all other (text-like)
     files open in the current window via `:edit`. See
     |markdown.nvim-config-general| for the extension list.
+  * PDFs additionally offer rendering into a Neovim buffer when
+    pdfport.nvim is installed.
+  * Images additionally offer an in-Neovim preview when snacks.nvim
+    (`Snacks.image`) or image.nvim is installed — see
+    |markdown.nvim-image-preview|. With neither installed the system
+    application is used directly, with no prompt.
+
+                                            *markdown.nvim-image-preview*
+Image preview (`mi`)~
+
+  Both providers are soft dependencies: nothing is required, and nothing
+  changes for a setup that has neither installed.
+
+  `image.preview` selects the behaviour when one IS installed: >lua
+    require("markdown").setup({
+      image = {
+        preview = "ask",  -- "ask" | "preview" | "system"
+      },
+    })
+<
+  "ask"      Prompt for "System app" vs. "Preview in Neovim". Default.
+  "preview"  Always render in a floating window, no prompt.
+  "system"   Always hand off to the system viewer, no prompt. This is the
+             behaviour from before the option existed.
+
+  The float closes with `q` or `<Esc>`. A remote image (an `http(s)://`
+  target) always goes to the system handler regardless of this setting —
+  there is no local file for a provider to read. If a preview fails (a
+  terminal with no image protocol, an unreadable file), the system viewer
+  is used instead, so `mi` always shows the image somewhere.
+
+  When both providers are installed, snacks.nvim is preferred: it renders
+  through its own buffer hook, so it needs no explicit placement or
+  teardown.
 
 ------------------------------------------------------------------------------
 6.6 Bold / link wrap                        *markdown.nvim-keymaps-bold*

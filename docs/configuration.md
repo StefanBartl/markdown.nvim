@@ -100,6 +100,20 @@ require("markdown").setup({
     -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
   },
 
+  -- Following an image target with `mi`. When an in-Neovim preview provider is
+  -- installed — snacks.nvim (Snacks.image) or image.nvim, both soft deps —
+  -- the image can be rendered in a floating window instead of being handed to
+  -- the system viewer:
+  --   "ask"     → prompt "System app" vs. "Preview in Neovim" (default)
+  --   "preview" → always preview in Neovim, no prompt
+  --   "system"  → always use the system viewer, no prompt (pre-option behaviour)
+  -- With neither provider installed, every value behaves like "system".
+  -- A remote (http/https) image always goes to the system handler, and a
+  -- failed preview falls back to it too, so `mi` always shows the image.
+  image = {
+    preview = "ask",
+  },
+
   -- How followed file targets open. Extensions in this list launch the system
   -- application (image viewer, PDF reader, …); everything else opens via :edit.
   -- Exception: "pdf" gets its own opener (markdown.handler.file.open_pdf) —

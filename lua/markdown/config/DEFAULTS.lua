@@ -80,6 +80,18 @@ local DEFAULTS = {
     },
   },
 
+  -- Following an image target (`mi`). When an in-Neovim preview provider is
+  -- installed — snacks.nvim (`Snacks.image`) or image.nvim, both soft deps —
+  -- `mi` can render the image in a floating window instead of handing it to
+  -- the system viewer. With neither installed every value behaves like
+  -- "system", since there is no alternative to choose between.
+  --
+  -- Mirrors how `handler/file.lua` treats PDFs when pdfport.nvim is present.
+  image = {
+    ---@type Mkdn.ImagePreviewMode
+    preview = "ask", -- "ask" | "preview" | "system"
+  },
+
   -- How followed file targets open. Media/binary extensions launch the system
   -- application; everything else (text-like) opens in the current window via
   -- :edit. Extend this list to taste.

@@ -7,6 +7,14 @@ local M = {}
 M.config = {
   resolve_relative_to_buffer = true,
   notify_on_error = true,
+  -- What `mi` does when an in-Neovim preview provider (snacks.nvim or
+  -- image.nvim) is installed. With none installed every value behaves like
+  -- "system", since there is nothing else to offer.
+  --   "ask"     → prompt for system app vs. in-Neovim preview (default)
+  --   "preview" → always preview in Neovim, no prompt
+  --   "system"  → always use the system viewer, no prompt (pre-9a behaviour)
+  ---@type "ask"|"preview"|"system"
+  preview = "ask",
 }
 
 local api = vim.api
@@ -85,12 +93,67 @@ local function resolve_target_to_path(target)
   return path.resolve(target)
 end
 
-local function open_with_system_viewer(path)
-  local ok, err = platform.open(path)
+local function open_with_system_viewer(file_path)
+  local ok, err = platform.open(file_path)
   if not ok and M.config.notify_on_error then
-    notify.error("Failed to spawn viewer for: " .. tostring(err or path))
+    notify.error("Failed to spawn viewer for: " .. tostring(err or file_path))
   end
   return ok
+end
+
+--- Render `path` inside Neovim, falling back to the system viewer if the
+--- provider refuses (an unsupported terminal, a corrupt file). Falling back
+--- rather than reporting an error keeps `mi` doing something useful either
+--- way — the user asked to see the image, not to use a specific renderer.
+---@param file_path string
+---@return boolean ok
+local function open_with_preview(file_path)
+  local ok, err = require("markdown.util.image_preview").preview(file_path)
+  if ok then return true end
+  if M.config.notify_on_error then
+    notify.warn("In-Neovim preview failed (" .. tostring(err) .. "), using system viewer")
+  end
+  return open_with_system_viewer(file_path)
+end
+
+--- Open a resolved image. Mirrors `handler/file.lua`'s PDF path: if an
+--- in-Neovim preview provider is installed, offer both; if not, go straight
+--- to the system application with no prompt, since there is no alternative
+--- to choose between.
+---@param file_path string
+---@return boolean ok
+function M.open_image(file_path)
+  -- A URL has no local file for a provider to read, so it always goes to the
+  -- system handler (the browser), regardless of `preview`.
+  if is_url(file_path) then
+    return open_with_system_viewer(file_path)
+  end
+
+  local mode = M.config.preview or "ask"
+  if mode == "system" then
+    return open_with_system_viewer(file_path)
+  end
+
+  if not require("markdown.util.image_preview").available() then
+    return open_with_system_viewer(file_path)
+  end
+
+  if mode == "preview" then
+    return open_with_preview(file_path)
+  end
+
+  require("markdown.util.picker").select(
+    { "System app", "Preview in Neovim" },
+    { prompt = "Open image with:" },
+    function(choice)
+      if choice == "Preview in Neovim" then
+        open_with_preview(file_path)
+      else
+        open_with_system_viewer(file_path)
+      end
+    end
+  )
+  return true
 end
 
 function M.is_image_line(line)
@@ -127,7 +190,7 @@ function M.open(line)
     end
   end
 
-  return open_with_system_viewer(resolved)
+  return M.open_image(resolved)
 end
 
 return M

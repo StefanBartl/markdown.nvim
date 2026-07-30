@@ -32,6 +32,13 @@ value/effort, not binding.
   string or `{ lhs, mode }` remaps) in `bindings/keymaps.lua`; see
   `docs/keymaps.md`.
 
+- ~~**In-Neovim image preview**~~ — `mi` renders images in a floating window
+  when snacks.nvim (`Snacks.image`) or image.nvim is installed, instead of
+  always shelling out to the system viewer. Both are soft deps;
+  `image.preview` (`"ask"`/`"preview"`/`"system"`) picks the behaviour, and
+  with neither installed nothing changes. `markdown/util/image_preview.lua`
+  + `handler/image.lua`, mirroring the pdfport.nvim prompt on the PDF path.
+
 ## Cross-cutting
 
 - **Test suite growth** — ongoing; extend `TESTS/` further toward

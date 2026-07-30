@@ -28,6 +28,14 @@ function M.setup(opts)
     require("markdown.fenced_fix").setup(ff_opts)
   end
 
+  -- Handler-local settings that are user-configurable. The handlers keep
+  -- their own `M.config` defaults so they stay usable standalone (and so a
+  -- direct `require(...).config.x = y` still works); this only overrides the
+  -- keys the central config actually surfaces.
+  if type(cfg.image) == "table" and cfg.image.preview ~= nil then
+    require("markdown.handler.image").config.preview = cfg.image.preview
+  end
+
   -- All keymaps, user commands and autocmds (see markdown.bindings).
   require("markdown.bindings").setup(cfg)
 end

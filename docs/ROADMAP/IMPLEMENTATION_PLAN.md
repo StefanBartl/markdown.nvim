@@ -43,14 +43,25 @@ IDs match the checklist docs.
 
 ## Phase 2 — nice-to-have
 
-9a. **In-nvim image preview via snacks.nvim (`snacks.image`) or image.nvim** —
-    `mi` (`handler.image.open`) currently always shells out to the system
-    viewer (`util/platform.open`). If a supported image-preview plugin is
-    installed (soft dep, `pcall(require, ...)`, mirroring the pdfport.nvim
-    choice added to `handler/file.lua`'s PDF path), offer a popup preview
-    inside nvim as an alternative to the system app; without one installed,
-    keep today's system-app behavior with no prompt. *(Not in docs/ROADMAP.md;
-    still open.)*
+9a. ~~**In-nvim image preview via snacks.nvim (`snacks.image`) or image.nvim**~~
+    — ✅ done, built exactly as specified: `markdown/util/image_preview.lua`
+    detects either provider via `pcall(require, ...)` and renders into a
+    float; `handler/image.lua` mirrors `handler/file.lua`'s PDF prompt. With
+    no provider installed the system viewer is used directly, no prompt.
+    Three points the entry did not specify, decided while implementing:
+    - Configurable rather than always-prompt: `image.preview` is
+      `"ask"`(default)`|"preview"|"system"`, so the prompt can be skipped in
+      either direction. `"system"` reproduces the pre-9a behaviour exactly.
+    - snacks wins when both are installed — it renders through its own
+      buffer hook, so the float only has to `:edit` the path, with no
+      placement or teardown to manage. image.nvim needs an explicit
+      `from_file`/`render` and a `clear()` on `WinClosed`.
+    - A failed preview (terminal without an image protocol, unreadable
+      file) falls back to the system viewer instead of erroring — the user
+      asked to see the image, not to use a particular renderer. A remote
+      `http(s)://` target always goes to the system handler, since no
+      provider has a local file to read.
+    Covered by `TESTS/handler_image_spec.lua` (7 cases).
 9. ~~**Link diagnostics**~~ — ✅ `core/link_diagnostics.lua` (dead relative-file
    links + duplicate heading titles) via `vim.diagnostic`
    (`:Markdown links check`; `links.diagnostics.mode = "save"` for automatic

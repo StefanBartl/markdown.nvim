@@ -40,6 +40,17 @@ effects on non-Markdown buffers. Requires Neovim >= 0.9 and
 
 See [docs/installation.md](docs/installation.md) for packer.nvim and vim-plug.
 
+### Optional integrations
+
+All soft dependencies — nothing below is required, and each is detected at
+runtime:
+
+| Plugin | What it adds |
+| --- | --- |
+| [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | Following a `.pdf` link can render it into a Neovim buffer instead of opening the system reader. |
+| [snacks.nvim](https://github.com/folke/snacks.nvim) / [image.nvim](https://github.com/3rd/image.nvim) | `mi` can preview an image in a floating window instead of the system viewer (`image.preview`). |
+| telescope.nvim / fzf-lua | Extra picker backends for link selection (`links.picker`). |
+
 ---
 
 ## Documentation
