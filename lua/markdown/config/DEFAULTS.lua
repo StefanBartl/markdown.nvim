@@ -100,6 +100,7 @@ local DEFAULTS = {
   -- Comment/String, then a hard-coded hex as a last resort) and re-derived on
   -- every ColorScheme event. Set either one explicitly to override.
   blockquote_hl = {
+    text_bg     = "dimm", -- VS Code-style: whole line gets a dimmed bg derived from marker_fg
     text_bold   = true,
     text_italic = false,
   },

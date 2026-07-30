@@ -292,9 +292,9 @@ All keys are optional. Unset keys use the defaults shown below.
   blockquote_hl = {
     -- marker_fg = nil  -- unset: derived from the active colorscheme
     -- text_fg   = nil  -- unset: derived from the active colorscheme
+    text_bg     = "dimm",  -- or a hex color or nil to disable
     text_bold   = true,
     text_italic = false,
-    -- text_bg  = nil  or a hex color or "dimm" (auto-darken marker_fg)
     -- link     = nil  or a highlight group name (overrides all other fields)
   },
 <
