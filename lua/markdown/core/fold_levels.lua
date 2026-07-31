@@ -35,19 +35,24 @@ function M.fold_levels(levels_to_fold)
   apply_foldlevel(compute_foldlevel(levels_to_fold))
 end
 
---- Toggle an "outline" view: keep H1 and H2 visible and fold everything below
---- (H3+). Running it again unfolds all. `foldlevel = 2` closes folds whose level
---- is > 2 (i.e. H3, H4, …) while H1/H2 folds stay open.
+--- Toggle an "outline" view: keep H1..`level` visible and fold everything below.
+--- Running it again unfolds all. `foldlevel = level` closes folds whose level
+--- is > `level` while H1..`level` folds stay open. `level` defaults to 2 (H2+);
+--- a count (e.g. `3zk`) sets it instead, mirroring `M.toc()`'s "count = max
+--- heading level" convention (see `bindings/actions.lua`).
 function M.fold_h2_plus()
   if vim.bo.filetype ~= "markdown" then return end
   local buf = api.nvim_get_current_buf()
   if not (buf and api.nvim_buf_is_valid(buf)) then return end
 
+  local count = vim.v.count
+  local level = count > 0 and math.max(1, math.min(6, count)) or 2
+
   local cur = vim.wo.foldlevel or 99
-  if cur <= 2 then
-    apply_foldlevel(99) -- currently folded to the outline (or deeper) → unfold all
+  if cur <= level then
+    apply_foldlevel(99)   -- currently folded to the outline (or deeper) → unfold all
   else
-    apply_foldlevel(2)  -- fold below H2 (keep H1/H2 open)
+    apply_foldlevel(level) -- fold below `level` (keep H1..level open)
   end
 end
 

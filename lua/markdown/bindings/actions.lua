@@ -92,10 +92,25 @@ end
 function M.heading_inc_all() shift_all(vim.v.count1) end
 function M.heading_dec_all() shift_all(-vim.v.count1) end
 
--- Table (mode / cell motions) -----------------------------------------------
+-- Table (mode / cell motions, count = number of cells to move) --------------
 
-function M.table_next_cell()   require("markdown.core.table_mode").next_cell() end
-function M.table_prev_cell()   require("markdown.core.table_mode").prev_cell() end
+-- table_mode's next_cell()/prev_cell() move at most one cell and report
+-- success only via cursor movement (no return value), so a failed/no-op hop
+-- is detected by comparing the cursor before and after each iteration —
+-- matching the "don't error past the edge" behavior used elsewhere (e.g.
+-- headings.goto_prev_heading's search-based loop just breaks on failure).
+local function repeat_cell_move(move)
+  local win = vim.api.nvim_get_current_win()
+  for _ = 1, vim.v.count1 do
+    local before = vim.api.nvim_win_get_cursor(win)
+    move()
+    local after = vim.api.nvim_win_get_cursor(win)
+    if before[1] == after[1] and before[2] == after[2] then break end
+  end
+end
+
+function M.table_next_cell()   repeat_cell_move(require("markdown.core.table_mode").next_cell) end
+function M.table_prev_cell()   repeat_cell_move(require("markdown.core.table_mode").prev_cell) end
 function M.table_mode_toggle() require("markdown.core.table_mode").toggle() end
 
 return M

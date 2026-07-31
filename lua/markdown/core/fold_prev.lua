@@ -18,13 +18,22 @@ local function goto_prev_heading_any()
   return false
 end
 
+-- NOTE: unlike `headings.goto_prev_heading()`, this does NOT delegate to it —
+-- it has its own single-hop `goto_prev_heading_any()` search (which also
+-- covers Setext-style `===`/`---` headings that the ANY_HEADING regex there
+-- doesn't match). So it isn't count-aware by delegation; loop it here the
+-- same way `goto_prev_heading` loops `vim.v.count1`.
 function M.fold_prev_heading_then_center()
   if vim.bo.filetype ~= "markdown" then return end
   local buf = api.nvim_get_current_buf()
   if not (buf and api.nvim_buf_is_valid(buf)) then return end
 
   local view = fn.winsaveview()
-  local moved = goto_prev_heading_any()
+  local moved = false
+  for _ = 1, vim.v.count1 do
+    if not goto_prev_heading_any() then break end
+    moved = true
+  end
   if not moved then
     fn.winrestview(view)
     return
