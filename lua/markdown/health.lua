@@ -124,6 +124,8 @@ function M.check()
       info("color_my_ascii not found — fenced_scope uses the built-in fallback scanner")
     end
   end
+
+  require("lib.nvim.usercmd.composer").checkhealth("Markdown")
 end
 
 return M
