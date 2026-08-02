@@ -26,9 +26,11 @@ return function(H)
   local n = config.get()
   eq(n.blockquote_hl.text_bold, false, "nested override applied")
   eq(n.blockquote_hl.text_italic, false, "nested sibling kept from defaults")
-  -- marker_fg/text_fg are unset by default (theme-derived at render time, see
-  -- hl_groups/blockquote.lua), not a hard-coded hex in config.
-  eq(n.blockquote_hl.marker_fg, nil, "marker_fg unset by default")
+  -- marker_fg/text_fg default to a fixed VS Code-style green, independent of
+  -- the active colorscheme (see hl_groups/blockquote.lua); `false` opts back
+  -- into colorscheme-derived colors at render time.
+  eq(n.blockquote_hl.marker_fg, "#6A9955", "marker_fg defaults to the VS Code-style green")
+  eq(n.blockquote_hl.text_fg, "#7EE787", "text_fg defaults to the VS Code-style green")
 
   -- reset
   config.setup({})

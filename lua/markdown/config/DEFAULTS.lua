@@ -107,12 +107,18 @@ local DEFAULTS = {
     },
   },
 
-  -- marker_fg/text_fg are unset by default: colors are derived from the
-  -- active colorscheme (a markdown-specific highlight group first, then
-  -- Comment/String, then a hard-coded hex as a last resort) and re-derived on
-  -- every ColorScheme event. Set either one explicitly to override.
+  -- Fixed VS Code-style green by default, independent of the active
+  -- colorscheme — some themes' Comment/String groups (the colorscheme-derived
+  -- fallback) are muted greys/blues rather than green, which doesn't read as
+  -- "quoted" the way VS Code's markdown coloring does. Override with your own
+  -- hex to taste, or set marker_fg/text_fg to `false` to opt back into
+  -- colorscheme-derived colors (markdown-specific highlight group first, then
+  -- Comment/String, then this same hex as the last-resort fallback;
+  -- re-derived on every ColorScheme event).
   blockquote_hl = {
-    text_bg     = "dimm", -- VS Code-style: whole line gets a dimmed bg derived from marker_fg
+    marker_fg   = "#6A9955", -- the `>` token
+    text_fg     = "#7EE787", -- text after `>`
+    text_bg     = "dimm",    -- whole line gets a dimmed bg derived from marker_fg
     text_bold   = true,
     text_italic = false,
   },

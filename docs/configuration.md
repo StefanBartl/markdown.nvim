@@ -133,17 +133,20 @@ require("markdown").setup({
     },
   },
 
-  -- Blockquote highlight colors. marker_fg/text_fg are unset by default: the
-  -- color is derived from the active colorscheme (a markdown-specific
-  -- highlight group first, then Comment/String, then a hard-coded hex as a
-  -- last resort) and re-derived on every ColorScheme event. Set either field
-  -- to override with a fixed hex color. text_bg = "dimm" (the default) gives
-  -- the whole quoted line a VS Code-style background — 20% of marker_fg mixed
-  -- toward black, filled all the way to the window edge (not just behind the
-  -- text characters) — set to a hex color or nil to override/disable.
+  -- Blockquote highlight colors. marker_fg/text_fg default to a fixed VS
+  -- Code-style green, independent of the active colorscheme (some themes'
+  -- Comment/String — the colorscheme-derived fallback — are muted greys/blues
+  -- that don't read as "quoted"). Set either field to a hex color to override,
+  -- or to `false` to opt back into colorscheme derivation (markdown-specific
+  -- highlight group first, then Comment/String, then this same hex as the
+  -- last-resort fallback; re-derived on every ColorScheme event). text_bg =
+  -- "dimm" (the default) gives the whole quoted line a VS Code-style
+  -- background — 20% of marker_fg mixed toward black, filled all the way to
+  -- the window edge (not just behind the text characters) — set to a hex
+  -- color or nil to override/disable.
   blockquote_hl = {
-    -- marker_fg = "#6A9955",  -- color for the > token
-    -- text_fg   = "#7EE787",  -- text after >
+    marker_fg   = "#6A9955", -- color for the > token; false = colorscheme-derived
+    text_fg     = "#7EE787", -- text after >; false = colorscheme-derived
     text_bg     = "dimm",
     text_bold   = true,
     text_italic = false,

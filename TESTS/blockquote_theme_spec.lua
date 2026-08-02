@@ -1,33 +1,54 @@
--- TESTS/blockquote_theme_spec.lua — blockquote_hl colors derive from the
--- active colorscheme when marker_fg/text_fg aren't set explicitly; an
--- explicit config value still wins.
+-- TESTS/blockquote_theme_spec.lua — blockquote_hl:
+--   * marker_fg/text_fg default to a fixed VS Code-style green via
+--     config.DEFAULTS (independent of the active colorscheme).
+--   * `blockquote.apply()` called directly (bypassing config.setup, as here)
+--     with no marker_fg/text_fg falls back to colorscheme-derived colors —
+--     also what `false` opts back into when going through config.setup().
+--   * An explicit hex always wins over both.
 ---@diagnostic disable: missing-fields
 
 return function(H)
   local eq, ok = H.eq, H.ok
-  local bq = require("markdown.hl_options.hl_groups.blockquote")
+  local bq     = require("markdown.hl_options.hl_groups.blockquote")
+  local config = require("markdown.config")
 
   local MARKER = "MarkdownBlockquoteMarker"
   local TEXT   = "MarkdownBlockquoteText"
 
-  -- No explicit colors: both groups still get SOME resolved foreground
-  -- (theme-derived, falling back to the historical hex if nothing resolves —
-  -- never left unset).
-  bq.apply({ blockquote_hl = {} })
+  -- Through config.setup(): default is the fixed VS Code-style green,
+  -- regardless of what the active colorscheme's Comment/String resolve to.
+  config.setup({})
+  bq.apply(config.get())
+  local marker_default = vim.api.nvim_get_hl(0, { name = MARKER })
+  local text_default   = vim.api.nvim_get_hl(0, { name = TEXT })
+  eq(marker_default.fg, tonumber("6A9955", 16), "marker_fg defaults to the fixed VS Code-style green")
+  eq(text_default.fg, tonumber("7EE787", 16), "text_fg defaults to the fixed VS Code-style green")
+
+  -- `false` opts back into colorscheme-derived colors: both groups still get
+  -- SOME resolved foreground (theme-derived, falling back to the historical
+  -- hex if nothing resolves — never left unset).
+  bq.apply({ blockquote_hl = { marker_fg = false, text_fg = false } })
   local marker_hl = vim.api.nvim_get_hl(0, { name = MARKER })
   local text_hl   = vim.api.nvim_get_hl(0, { name = TEXT })
-  ok(type(marker_hl.fg) == "number", "marker fg resolved without explicit config")
-  ok(type(text_hl.fg) == "number", "text fg resolved without explicit config")
+  ok(type(marker_hl.fg) == "number", "marker_fg = false: fg still resolved (theme-derived)")
+  ok(type(text_hl.fg) == "number", "text_fg = false: fg still resolved (theme-derived)")
 
-  -- Explicit config still overrides theme derivation.
+  -- Calling apply() directly (bypassing config.setup/DEFAULTS) with no
+  -- marker_fg/text_fg at all behaves the same way.
+  bq.apply({ blockquote_hl = {} })
+  ok(type(vim.api.nvim_get_hl(0, { name = MARKER }).fg) == "number", "marker fg resolved without explicit config")
+  ok(type(vim.api.nvim_get_hl(0, { name = TEXT }).fg) == "number", "text fg resolved without explicit config")
+
+  -- Explicit config still overrides both the fixed default and theme derivation.
   bq.apply({ blockquote_hl = { marker_fg = "#123456", text_fg = "#654321" } })
   local marker_hl2 = vim.api.nvim_get_hl(0, { name = MARKER })
   local text_hl2   = vim.api.nvim_get_hl(0, { name = TEXT })
-  eq(marker_hl2.fg, tonumber("123456", 16), "explicit marker_fg overrides theme derivation")
-  eq(text_hl2.fg, tonumber("654321", 16), "explicit text_fg overrides theme derivation")
+  eq(marker_hl2.fg, tonumber("123456", 16), "explicit marker_fg overrides the default")
+  eq(text_hl2.fg, tonumber("654321", 16), "explicit text_fg overrides the default")
 
-  -- Reset to no explicit config for any following spec/state.
-  bq.apply({ blockquote_hl = {} })
+  -- Reset to defaults for any following spec/state.
+  config.setup({})
+  bq.apply(config.get())
 
   -- highlight_line: per-line extmark placement (what the decoration provider
   -- calls on every redraw). The text extmark must use hl_eol so the

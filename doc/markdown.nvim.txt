@@ -298,9 +298,9 @@ All keys are optional. Unset keys use the defaults shown below.
 5.2 blockquote_hl                          *markdown.nvim-config-blockquote*
 >
   blockquote_hl = {
-    -- marker_fg = nil  -- unset: derived from the active colorscheme
-    -- text_fg   = nil  -- unset: derived from the active colorscheme
-    text_bg     = "dimm",  -- or a hex color or nil to disable
+    marker_fg   = "#6A9955",  -- the > token; false = colorscheme-derived
+    text_fg     = "#7EE787",  -- text after >; false = colorscheme-derived
+    text_bg     = "dimm",     -- or a hex color or nil to disable
     text_bold   = true,
     text_italic = false,
     -- link     = nil  or a highlight group name (overrides all other fields)
@@ -317,11 +317,13 @@ wins over Tree-sitter's `@punctuation.special.markdown` (priority 100). Being
 extmark-based (not `matchadd()`), the text region's background can extend
 past the last character to the window edge.
 
-`marker_fg` / `text_fg` are unset by default: the color is derived from the
-active colorscheme (a markdown-specific highlight group first, then
-`Comment` / `String`, falling back to a hard-coded hex only if nothing
-resolves) and re-derived on every |ColorScheme| event. Set either field
-explicitly to override theme derivation with a fixed hex color.
+`marker_fg` / `text_fg` default to a fixed VS Code-style green, independent
+of the active colorscheme — some themes' `Comment` / `String` groups (the
+colorscheme-derived fallback below) are muted greys/blues that don't read as
+"quoted". Set either field to a hex color to override, or to `false` to opt
+back into colorscheme derivation: a markdown-specific highlight group first,
+then `Comment` / `String`, then this same hex as the last-resort fallback —
+re-derived on every |ColorScheme| event.
 
 `text_bg = "dimm"` (the default) derives a background from `marker_fg` by
 mixing 20% of its color toward black, filled to the window edge.
