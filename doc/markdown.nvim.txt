@@ -123,6 +123,10 @@ keymaps and commands to every loaded buffer whose `filetype` matches.
 
 All keys are optional. Unset keys use the defaults shown below.
 
+For copy-paste-ready `setup()` snippets covering common customizations
+(rather than the full reference below), see `docs/templates/` in the repo —
+GitHub-only, not duplicated into this helpfile.
+
 ------------------------------------------------------------------------------
 5.1 General options                          *markdown.nvim-config-general*
 >
@@ -327,6 +331,17 @@ re-derived on every |ColorScheme| event.
 
 `text_bg = "dimm"` (the default) derives a background from `marker_fg` by
 mixing 20% of its color toward black, filled to the window edge.
+
+DON'T WANT THIS?                          *markdown.nvim-config-blockquote-off*
+This VS Code-style coloring (green marker/text + dimmed whole-line
+background) is ON by default. You must say so explicitly if you don't want
+it — nothing about the plugin auto-detects "matches your colorscheme
+already" or similar. The three ways to back out, from least to most drastic:
+  1. `text_bg = nil`                        — keep the colors, drop the bg fill
+  2. `marker_fg = false, text_fg = false`    — colorscheme-derived colors instead
+  3. `blockquote_hl = { link = "Normal" }`   — fully flat, no special styling
+Ready-to-paste snippets for all three (plus custom-color and link-group
+examples) are in the repo under `docs/templates/blockquote-hl.md`.
 
 ------------------------------------------------------------------------------
 5.3 fenced_fix                            *markdown.nvim-config-fenced-fix*

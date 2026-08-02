@@ -40,6 +40,13 @@ effects on non-Markdown buffers. Requires Neovim >= 0.9 and
 
 See [docs/installation.md](docs/installation.md) for packer.nvim and vim-plug.
 
+> 💡 A `> quoted` line gets VS Code-style coloring by default (green marker +
+> text, dimmed background across the whole line) regardless of your
+> colorscheme. Don't want that? See
+> [docs/templates/blockquote-hl.md](docs/templates/blockquote-hl.md) for
+> ready-to-paste `setup()` snippets to turn it off, use your colorscheme's
+> own colors instead, or pick different colors.
+
 ### Optional integrations
 
 All soft dependencies — nothing below is required, and each is detected at
@@ -58,6 +65,7 @@ runtime:
 - [Features](docs/features.md) — full overview of every module (headings, fold, TOC, tables, links, and more).
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug.
 - [Configuration](docs/configuration.md) — full `setup()` reference with defaults, and feature gating.
+- [Config templates](docs/templates/README.md) — copy-paste `setup()` snippets for common customizations (blockquote colors, feature subsets, picker backends, image preview).
 - [Keymaps](docs/keymaps.md) — every default keymap, remapping/disabling, and the actions API.
 - [Commands](docs/commands.md) — the `:Markdown` command and all its subcommands.
 - [Fenced-block scope](docs/fenced-scope.md) — treating a fenced Markdown block as its own sub-document.

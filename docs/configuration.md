@@ -1,5 +1,9 @@
 # Configuration
 
+Just want a ready-to-paste snippet for one specific thing (e.g. "turn off
+the green blockquote coloring")? See [docs/templates/](templates/README.md)
+instead — this page is the full reference.
+
 Full reference with defaults:
 
 ```lua
