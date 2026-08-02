@@ -28,4 +28,40 @@ return function(H)
 
   -- Reset to no explicit config for any following spec/state.
   bq.apply({ blockquote_hl = {} })
+
+  -- highlight_line: per-line extmark placement (what the decoration provider
+  -- calls on every redraw). The text extmark must use hl_eol so the
+  -- background fills past the last character to the window edge, VS
+  -- Code-style, instead of stopping behind the actual text glyphs.
+  local api = vim.api
+  local ns = api.nvim_create_namespace("MarkdownNvimBlockquote")
+  local buf = api.nvim_create_buf(false, true)
+  api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "> quoted",       -- row 0: ordinary blockquote line
+    "not a quote",    -- row 1: must get no marks at all
+    ">",              -- row 2: bare marker, empty text
+  })
+
+  bq.highlight_line(buf, 0)
+  bq.highlight_line(buf, 1)
+  bq.highlight_line(buf, 2)
+
+  local marks0 = api.nvim_buf_get_extmarks(buf, ns, { 0, 0 }, { 0, -1 }, { details = true })
+  eq(#marks0, 2, "highlight_line: quoted line gets a marker + text extmark")
+  local marker0, text0
+  for _, m in ipairs(marks0) do
+    if m[4].hl_group == MARKER then marker0 = m end
+    if m[4].hl_group == TEXT   then text0   = m end
+  end
+  ok(marker0 ~= nil and text0 ~= nil, "highlight_line: both marker and text extmarks present")
+  eq(marker0[3], 0, "highlight_line: marker extmark starts at column 0")
+  ok(not marker0[4].hl_eol, "highlight_line: marker extmark does not fill to end of line")
+  ok(text0[4].hl_eol == true, "highlight_line: text extmark fills to end of line (hl_eol)")
+  eq(text0[3], marker0[4].end_col, "highlight_line: text extmark starts where the marker extmark ends")
+
+  local marks1 = api.nvim_buf_get_extmarks(buf, ns, { 1, 0 }, { 1, -1 }, { details = true })
+  eq(#marks1, 0, "highlight_line: a non-blockquote line gets no extmarks")
+
+  local marks2 = api.nvim_buf_get_extmarks(buf, ns, { 2, 0 }, { 2, -1 }, { details = true })
+  eq(#marks2, 2, "highlight_line: a bare '>' still gets marker + (empty, eol-filled) text extmarks")
 end

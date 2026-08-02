@@ -308,10 +308,14 @@ All keys are optional. Unset keys use the defaults shown below.
 <
 Two separate highlight groups are created:
   `MarkdownBlockquoteMarker`   the `>` token
-  `MarkdownBlockquoteText`     everything after `> `
+  `MarkdownBlockquoteText`     everything after `> `, plus the rest of the
+                               screen line (`hl_eol`) — a VS Code-style
+                               whole-line background, not just the glyphs
 
-Both are applied with `matchadd()` at priority 110, which wins over
-Tree-sitter's `@punctuation.special.markdown` (priority 100).
+Both are applied via a decoration provider (extmarks) at priority 110, which
+wins over Tree-sitter's `@punctuation.special.markdown` (priority 100). Being
+extmark-based (not `matchadd()`), the text region's background can extend
+past the last character to the window edge.
 
 `marker_fg` / `text_fg` are unset by default: the color is derived from the
 active colorscheme (a markdown-specific highlight group first, then
@@ -319,8 +323,8 @@ active colorscheme (a markdown-specific highlight group first, then
 resolves) and re-derived on every |ColorScheme| event. Set either field
 explicitly to override theme derivation with a fixed hex color.
 
-`text_bg = "dimm"` derives a background from `marker_fg` by mixing 20%
-of its color toward black.
+`text_bg = "dimm"` (the default) derives a background from `marker_fg` by
+mixing 20% of its color toward black, filled to the window edge.
 
 ------------------------------------------------------------------------------
 5.3 fenced_fix                            *markdown.nvim-config-fenced-fix*
@@ -1128,7 +1132,7 @@ Sub-modules can be imported individually, e.g.: >
     hl_options/
       init.lua               orchestrator (ColorScheme re-apply)
       hl_groups/
-        blockquote.lua       matchadd-based blockquote coloring
+        blockquote.lua       decoration-provider blockquote coloring
     tableview/
       init.lua               setup (autocmds)
       autocmds.lua           FileType autocmd

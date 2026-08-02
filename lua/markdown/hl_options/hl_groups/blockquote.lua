@@ -1,15 +1,16 @@
 ---@module 'markdown.hl_options.hl_groups.blockquote'
-local autocmd = require("lib.nvim.autocmd")
-
 local M = {}
 
 local GROUP_MARKER = "MarkdownBlockquoteMarker"
 local GROUP_TEXT   = "MarkdownBlockquoteText"
 local PRIORITY     = 110
-local PAT_MARKER   = [[\v^\s*\>\s*]]
-local PAT_TEXT     = [[\v^\s*\>\s*\zs.*$]]
-local BUF_VAR_MARKER = "markdown_bq_match_marker"
-local BUF_VAR_TEXT   = "markdown_bq_match_text"
+local NS           = vim.api.nvim_create_namespace("MarkdownNvimBlockquote")
+
+-- Matches a single leading blockquote marker: optional indent, `>`, optional
+-- following spaces. Deliberately not repeated (`(>%s*)+`), so nested markers
+-- (`> > text`) colorize like the vim-regex predecessor: only the first `>` is
+-- "marker", the rest (including a second `>`) is "text".
+local PAT_MARKER = "^%s*>%s*"
 
 local function dim_bg(fg)
   local r = tonumber(fg:sub(2, 3), 16) or 0x6A
@@ -75,46 +76,72 @@ local function set_hl(hl)
   })
 end
 
-local function add_match(bufnr)
-  local prev_marker = vim.b[bufnr][BUF_VAR_MARKER]
-  local prev_text   = vim.b[bufnr][BUF_VAR_TEXT]
-  if prev_marker then pcall(vim.fn.matchdelete, prev_marker) end
-  if prev_text   then pcall(vim.fn.matchdelete, prev_text)   end
+---@param bufnr integer
+---@return boolean
+local function is_blockquote_ft(bufnr)
+  local ft = vim.bo[bufnr].filetype
+  return ft == "markdown" or ft == "markdown.mdx" or ft == "mdx"
+end
 
-  vim.b[bufnr][BUF_VAR_MARKER] = vim.fn.matchadd(GROUP_MARKER, PAT_MARKER, PRIORITY)
-  vim.b[bufnr][BUF_VAR_TEXT]   = vim.fn.matchadd(GROUP_TEXT,   PAT_TEXT,   PRIORITY)
+--- Place the marker/text extmarks for buffer line `row` (0-indexed), if it is
+--- a blockquote line. The text extmark uses `hl_eol = true`, so its background
+--- fills the rest of the screen line past the last character — a VS Code-style
+--- whole-line background, not just a highlight behind the actual text glyphs.
+---@param bufnr integer
+---@param row integer 0-indexed
+function M.highlight_line(bufnr, row)
+  local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+  if not line then return end
+
+  local _, marker_end = line:find(PAT_MARKER)
+  if not marker_end then return end -- not a blockquote line
+
+  vim.api.nvim_buf_set_extmark(bufnr, NS, row, 0, {
+    end_col  = marker_end,
+    hl_group = GROUP_MARKER,
+    priority = PRIORITY,
+    strict   = false,
+  })
+  vim.api.nvim_buf_set_extmark(bufnr, NS, row, marker_end, {
+    end_row  = row + 1,
+    end_col  = 0,
+    hl_group = GROUP_TEXT,
+    hl_eol   = true, -- extend the background past the text to the window edge
+    priority = PRIORITY,
+    strict   = false,
+  })
+end
+
+-- Registered once: highlighting itself is driven by a decoration provider
+-- (below), which re-evaluates every visible line on each redraw. That makes
+-- it "live" the same way the old `matchadd`-based version was — no manual
+-- re-scan needed on text change — while also supporting `hl_eol`, which
+-- `matchadd` cannot do.
+local _registered = false
+local function ensure_decoration_provider()
+  if _registered then return end
+  _registered = true
+  vim.api.nvim_set_decoration_provider(NS, {
+    on_win = function(_, _, bufnr, _, _)
+      return is_blockquote_ft(bufnr)
+    end,
+    on_line = function(_, _, bufnr, row)
+      M.highlight_line(bufnr, row)
+    end,
+  })
 end
 
 function M.apply(opts)
   opts = opts or {}
-  local hl = opts.blockquote_hl or {}
-  set_hl(hl)
-
-  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(bufnr) then
-      local ft = vim.bo[bufnr].filetype
-      if ft == "markdown" or ft == "markdown.mdx" or ft == "mdx" then
-        local wins = vim.fn.win_findbuf(bufnr)
-        if #wins > 0 then
-          vim.api.nvim_win_call(wins[1], function()
-            add_match(bufnr)
-          end)
-        end
-      end
-    end
-  end
+  set_hl(opts.blockquote_hl or {})
+  ensure_decoration_provider()
 end
 
-function M.setup_autocmds(augroup)
-  autocmd.create({ "FileType", "BufEnter" }, function(ev)
-    local bufnr = ev.buf
-    local ft = vim.bo[bufnr].filetype
-    if ft ~= "markdown" and ft ~= "markdown.mdx" and ft ~= "mdx" then return end
-    add_match(bufnr)
-  end, {
-    group   = augroup,
-    pattern = { "markdown", "markdown.mdx", "mdx" },
-  })
-end
+--- No-op: highlighting no longer needs per-buffer FileType/BufEnter tracking
+--- (see `ensure_decoration_provider`). Kept so `hl_options/init.lua` doesn't
+--- need to change its call sequence (it still passes the augroup id).
+---@param _augroup integer
+---@diagnostic disable-next-line: unused-local
+function M.setup_autocmds(_augroup) end
 
 return M

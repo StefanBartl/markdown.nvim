@@ -137,9 +137,10 @@ require("markdown").setup({
   -- color is derived from the active colorscheme (a markdown-specific
   -- highlight group first, then Comment/String, then a hard-coded hex as a
   -- last resort) and re-derived on every ColorScheme event. Set either field
-  -- to override with a fixed hex color. text_bg = "dimm" gives the whole
-  -- quoted line a VS Code-style background, 20% of marker_fg mixed toward
-  -- black; set to a hex color or nil to override/disable.
+  -- to override with a fixed hex color. text_bg = "dimm" (the default) gives
+  -- the whole quoted line a VS Code-style background — 20% of marker_fg mixed
+  -- toward black, filled all the way to the window edge (not just behind the
+  -- text characters) — set to a hex color or nil to override/disable.
   blockquote_hl = {
     -- marker_fg = "#6A9955",  -- color for the > token
     -- text_fg   = "#7EE787",  -- text after >

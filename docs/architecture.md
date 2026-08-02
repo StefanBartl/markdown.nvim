@@ -42,7 +42,7 @@ lua/markdown/
   hl_options/
     init.lua               orchestrator; re-applies on ColorScheme
     hl_groups/
-      blockquote.lua       matchadd-based blockquote coloring
+      blockquote.lua       decoration-provider blockquote coloring (hl_eol)
   tableview/
     parser.lua             pipe-table parser
     renderer.lua           floating window renderer (Markdown + box style);
