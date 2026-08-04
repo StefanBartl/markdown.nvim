@@ -1,6 +1,10 @@
 ---@module 'markdown.core.fold'
+--- Heading-based `foldexpr` plus the fold-toggle actions bound to keymaps.
 local M = {}
 
+---Computes the fold level for line `lnum` (used as `foldexpr`).
+---@param lnum integer
+---@return string|integer
 function M.foldexpr(lnum)
   local line = vim.fn.getline(lnum)
 
@@ -74,17 +78,22 @@ end
 -- these run from a menu callback (nvzone/menu) rather than a keymap, 'foldenable'
 -- may be off / the method reset, which makes `za`/`zR` silent no-ops. Mirrors
 -- core.fold_levels.fold_levels(), which works from the menu for this reason.
+---@internal
 local function ensure_folding()
   vim.opt_local.foldmethod = "expr"
   vim.opt_local.foldenable = true
 end
 
+---Toggles the fold under the cursor and centers the view.
+---@return nil
 function M.toggle_under_cursor()
   ensure_folding()
   vim.cmd("silent! normal! za")
   vim.cmd("silent! normal! zz")
 end
 
+---Unfolds everything and centers the view.
+---@return nil
 function M.unfold_all_center()
   ensure_folding()
   vim.cmd("silent! normal! zR")

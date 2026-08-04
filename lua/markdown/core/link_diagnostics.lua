@@ -13,6 +13,9 @@ M.namespace = vim.api.nvim_create_namespace("markdown_links")
 
 local uv = vim.uv or vim.loop
 
+---@internal
+---@param target string
+---@return boolean
 local function is_external(target)
   return target:match("^%a[%w+.-]*://") ~= nil
     or target:match("^mailto:") ~= nil
@@ -22,6 +25,7 @@ end
 --- Split "path#anchor" into path, anchor. A leading "#..." (no path) yields a
 --- nil path so callers can distinguish "same-file anchor" from "file link".
 ---@param target string
+---@internal
 ---@return string|nil path
 ---@return string|nil anchor
 local function split_target(target)
@@ -34,6 +38,7 @@ local function split_target(target)
 end
 
 --- Resolve a relative file target against the buffer's own directory.
+---@internal
 ---@param bufnr integer
 ---@param path string
 ---@return string

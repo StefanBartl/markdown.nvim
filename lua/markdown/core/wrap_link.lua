@@ -34,6 +34,7 @@ local function build(text)
 end
 
 --- Normal mode: wrap the word under the cursor.
+---@return nil
 function M.wrap_normal()
   local bufnr = api.nvim_get_current_buf()
   local pos = api.nvim_win_get_cursor(0)
@@ -63,6 +64,7 @@ end
 
 --- Visual mode: wrap the current selection. Reads the live selection bounds via
 --- `getpos('v')` + cursor, then leaves visual mode.
+---@return nil
 function M.wrap_visual()
   local bufnr = api.nvim_get_current_buf()
   local mode = vim.fn.mode()

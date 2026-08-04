@@ -1,4 +1,5 @@
 ---@module 'markdown.commands.markdown_links'
+--- Generates markdown links from filesystem paths for `:Markdown links create`.
 local M = {}
 
 local uv = vim.uv
@@ -6,30 +7,52 @@ local notify = require("markdown.util.notify").create("[markdown.commands.links]
 local clipboard = require("markdown.util.clipboard")
 local default_ignore = require("markdown.util.ignore").as_set()
 
+---@internal
+---@param name string
+---@param opts { noignore?: boolean }
+---@return boolean
 local function is_ignored(name, opts)
   if opts.noignore then return false end
   return default_ignore[name] == true
 end
 
+---@internal
+---@param a string
+---@param b string
+---@return string
 local function join_path(a, b)
   if vim.endswith(a, "/") then return a .. b end
   return a .. "/" .. b
 end
 
+---@internal
+---@param root string?
+---@return string?
 local function resolve_root(root)
   if not root or root == "" then return nil end
   return vim.fn.expand(root)
 end
 
+---@internal
+---@param title string
+---@param path string
+---@return string
 local function make_link(title, path)
   return string.format("[%s](%s)", title, path)
 end
 
+---@internal
+---@param path string
+---@return string
 local function file_to_link(path)
   local title = vim.fn.fnamemodify(path, ":t")
   return make_link(title, path)
 end
 
+---@internal
+---@param dir string
+---@param opts { recursive?: boolean, noignore?: boolean }
+---@param out string[]
 local function scan(dir, opts, out)
   local handle = uv.fs_scandir(dir)
   if not handle then return end
@@ -48,6 +71,10 @@ local function scan(dir, opts, out)
   end
 end
 
+---@internal
+---@param directory string
+---@param opts { recursive?: boolean, noignore?: boolean }
+---@return string[]
 local function collect_files(directory, opts)
   local result = {}
   scan(directory, opts, result)
@@ -55,6 +82,10 @@ local function collect_files(directory, opts)
   return result
 end
 
+---@internal
+---@param args string[]
+---@return { recursive: boolean, noignore: boolean, root: string? } opts
+---@return string path
 local function parse_args(args)
   local opts = { recursive = false, noignore = false, root = nil }
   local path
@@ -111,6 +142,9 @@ function M.for_paths(paths, opts)
   return table.concat(lines, "\n")
 end
 
+--- Runs `:Markdown links <path>`: generates links and copies them to the clipboard.
+---@param args string[]
+---@return nil
 function M.run(args)
   local opts, path = parse_args(args)
 

@@ -1,11 +1,18 @@
 ---@module 'markdown.anchor.is_html_extern_anchor_line'
+--- Detects markdown/HTML links that point at an external file (not a `#anchor`).
 local api = vim.api
 
+---@internal
+---@param s string?
+---@return string?
 local function trim(s)
   if not s then return nil end
   return s:match("^%s*(.-)%s*$")
 end
 
+---@internal
+---@param uri string?
+---@return boolean?
 local function looks_like_file_uri(uri)
   if not uri or uri == "" then return false end
   uri = trim(uri)
@@ -20,6 +27,9 @@ local function looks_like_file_uri(uri)
   return false
 end
 
+---@internal
+---@param line string?
+---@return string?
 local function extract_md_paren_target(line)
   if not line then return nil end
   local inner = line:match("%b()")
@@ -30,6 +40,9 @@ local function extract_md_paren_target(line)
   return inner
 end
 
+---@internal
+---@param line string?
+---@return string?
 local function extract_html_attr(line)
   if not line then return nil end
   local href = line:match('<a[^>]-href%s*=%s*"(.-)"') or line:match("<a[^>]-href%s*=%s*'(.-)'")
@@ -41,6 +54,9 @@ local function extract_html_attr(line)
   return nil
 end
 
+---@internal
+---@param radius integer? Line radius to scan around the cursor (default 8).
+---@return string?
 local function find_attr_near_cursor(radius)
   radius = radius or 8
   local ok, bufnr = pcall(api.nvim_get_current_buf)
@@ -60,6 +76,10 @@ local function find_attr_near_cursor(radius)
   return nil
 end
 
+---@internal
+---@param s string?
+---@return string? target
+---@return string? fragment
 local function split_target_and_fragment(s)
   if not s or s == "" then return nil end
   if s:match("^<.+>$") then s = s:sub(2, -2) end
@@ -71,6 +91,8 @@ local function split_target_and_fragment(s)
   return token, nil
 end
 
+---@param line string? Current line under the cursor, if any.
+---@return { target: string, fragment: string? }?
 return function(line)
   if not line or line == "" then
     local near = find_attr_near_cursor(8)

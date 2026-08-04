@@ -8,10 +8,14 @@ local M = {}
 
 local is_enabled = false
 
+---@internal
+---@return boolean
 local function available()
   return vim.fn.exists(":RenderMarkdown") == 2
 end
 
+---@internal
+---@param state boolean
 local function set(state)
   if not available() then
     notify.warn("render: render-markdown.nvim not available")
@@ -22,7 +26,9 @@ local function set(state)
   notify.info("Markdown rendering " .. (state and "enabled" or "disabled"))
 end
 
+--- Runs `:Markdown render [on|off|toggle]`.
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   local arg = (argv[1] or "toggle"):lower()
   if arg == "on" then

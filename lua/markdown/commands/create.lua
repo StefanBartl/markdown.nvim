@@ -56,6 +56,7 @@ local function is_local_path(target)
   return true
 end
 
+---@internal
 ---@param lines string[]
 ---@param base_dir string
 local function do_fs(lines, base_dir)
@@ -101,8 +102,10 @@ local subcommands = {
   fs = do_fs,
 }
 
+--- Runs `:Markdown create <sub>` (default sub: `fs`).
 --- @param argv string[]
 --- @param ctx? { range?: integer, line1?: integer, line2?: integer }
+--- @return nil
 function M.run(argv, ctx)
   argv = argv or {}
   local sub = argv[1] or "fs"

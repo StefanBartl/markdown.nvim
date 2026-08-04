@@ -1,4 +1,5 @@
 ---@module 'markdown.anchor.is_inside_toc_block'
+--- Checks whether the cursor is currently inside a generated TOC block.
 local api = vim.api
 
 ---@return boolean

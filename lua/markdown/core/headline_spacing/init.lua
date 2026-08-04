@@ -1,13 +1,21 @@
 ---@module 'markdown.core.headline_spacing'
+--- Ensures every H2+ section is closed with a blank/`---`/blank separator.
 local notify = require("markdown.util.notify").create("[markdown.core.headline_spacing]")
 
 local api = vim.api
 local M = {}
 
+---@internal
+---@param line string
+---@return boolean
 local function is_h2_or_more(line)
   return line:match("^##+%s") ~= nil
 end
 
+---@internal
+---@param lines string[]
+---@param start_idx integer
+---@return integer?
 local function find_next_h2_heading(lines, start_idx)
   local n = #lines
   local in_fence = false
@@ -23,6 +31,11 @@ local function find_next_h2_heading(lines, start_idx)
   return nil
 end
 
+---@internal
+---@param lines string[]
+---@param heading_idx integer
+---@param next_heading_idx integer?
+---@return integer
 local function find_section_end(lines, heading_idx, next_heading_idx)
   local search_end = next_heading_idx and (next_heading_idx - 1) or #lines
   for i = search_end, heading_idx + 1, -1 do
@@ -34,6 +47,11 @@ local function find_section_end(lines, heading_idx, next_heading_idx)
   return heading_idx
 end
 
+---@internal
+---@param lines string[]
+---@param section_end_idx integer
+---@param next_heading_idx integer
+---@return boolean
 local function has_separator_after(lines, section_end_idx, next_heading_idx)
   local gap = next_heading_idx - section_end_idx
   if gap ~= 4 then return false end
@@ -43,6 +61,9 @@ local function has_separator_after(lines, section_end_idx, next_heading_idx)
   return line1 == "" and line2 == "---" and line3 == ""
 end
 
+---Finds every H2+ section missing its trailing separator block.
+---@param lines string[]
+---@return { heading_idx: integer, section_end_idx: integer, next_heading_idx: integer }[]
 function M.find_sections_needing_separator(lines)
   local n = #lines
   local result = {}
@@ -115,6 +136,10 @@ local function ensure_final_closer(bufnr)
   return true
 end
 
+---Inserts missing section separators (between-section and final-section).
+---@param bufnr integer
+---@param opts? { notify?: boolean, dry_run?: boolean }
+---@return integer fixed
 function M.apply_headl_separators(bufnr, opts)
   opts = opts or {}
   local notify_enabled = opts.notify ~= false

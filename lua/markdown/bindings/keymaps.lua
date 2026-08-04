@@ -17,6 +17,12 @@ local M = {}
 local cfg = require("markdown.config").get
 local actions = require("markdown.bindings.actions")
 
+---@internal
+---@param bufnr integer
+---@param mode string|string[]
+---@param lhs string
+---@param rhs string|fun()
+---@param desc string
 local function map(bufnr, mode, lhs, rhs, desc)
   local ok, err = pcall(libmap, mode, lhs, rhs, {
     buffer  = bufnr,

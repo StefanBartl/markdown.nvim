@@ -37,8 +37,10 @@ local commands = {
   end,
 }
 
+--- Dispatches a `:Markdown <subcommand> ...` invocation.
 ---@param argv string[]
 ---@param ctx? table  Optional context (e.g. range info) forwarded to the subcommand
+---@return nil
 function M.execute(argv, ctx)
   local command = argv[1]
   if not command then
@@ -78,6 +80,12 @@ local sub_complete = {
   scope   = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
 }
 
+--- Completion for `:Markdown`: subcommand names, then delegates to the
+--- matched subcommand's own completion.
+---@param arglead string
+---@param cmdline string
+---@param _cursorpos integer?
+---@return string[]
 function M.complete(arglead, cmdline, _cursorpos)
   -- Tokens already typed after ":Markdown".
   local tokens = vim.split(vim.trim(cmdline), "%s+")

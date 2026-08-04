@@ -1,4 +1,5 @@
 ---@module 'markdown.anchor.is_html_anchor_line'
+--- Checks whether a line (or nearby lines) contains an HTML anchor reference.
 local api = vim.api
 
 ---@param line string

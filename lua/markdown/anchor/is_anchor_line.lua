@@ -1,4 +1,5 @@
 ---@module 'markdown.anchor.is_anchor_line'
+--- Checks whether a line contains a markdown `(#anchor)` style link target.
 ---@param line string
 ---@return boolean
 return function(line)

@@ -24,6 +24,8 @@ local VIEW_ACTIONS = {
   browsernice = "TableViewOpenBrowserNice",
 }
 
+---@internal
+---@param argv string[]
 local function do_view(argv)
   local action = (argv[1] or "toggle"):lower()
   local cmd = VIEW_ACTIONS[action]
@@ -50,6 +52,8 @@ end
 -- format  (table_fmt)
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param argv string[]
 local function do_format(argv)
   local fmt = require("markdown.core.table_fmt")
   local opts, err = fmt.parse_args(argv)
@@ -80,6 +84,8 @@ end
 -- mode  (per-buffer auto-format, vim-table-mode style)
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param argv string[]
 local function do_mode(argv)
   local tm = require("markdown.core.table_mode")
   local action = (argv[1] or "toggle"):lower()
@@ -106,6 +112,7 @@ end
 ---@param argv string[]
 ---@param ctx? table
 ---@return string|nil
+---@internal
 local function tableize_sep(argv, ctx)
   local raw = ctx and ctx.args
   if type(raw) == "string" then
@@ -118,6 +125,9 @@ local function tableize_sep(argv, ctx)
   return argv[1]
 end
 
+---@internal
+---@param argv string[]
+---@param ctx? table
 local function do_tableize(argv, ctx)
   local tm = require("markdown.core.table_mode")
   local bufnr = vim.api.nvim_get_current_buf()
@@ -151,6 +161,7 @@ end
 ---@param source? string
 ---@param ctx? table
 ---@return string|nil html, string|nil err
+---@internal
 local function read_html_source(source, ctx)
   if source == "clipboard" then
     return table.concat(vim.fn.getreg("+", 1, true), "\n"), nil
@@ -167,6 +178,9 @@ local function read_html_source(source, ctx)
   end
 end
 
+---@internal
+---@param argv string[]
+---@param ctx? table
 local function do_import(argv, ctx)
   local tf = require("markdown.core.table_fmt")
   local source = argv[1]
@@ -198,6 +212,8 @@ local function do_import(argv, ctx)
   notify.info(string.format("Imported HTML table: %d row(s), %d column(s)", #rows - 1, #rows[1]))
 end
 
+---@internal
+---@param argv string[]
 local function do_new(argv)
   local cols = math.max(1, tonumber(argv[1] or 2) or 2)
   local rows = math.max(1, tonumber(argv[2] or 2) or 2)
@@ -234,8 +250,10 @@ local subcommands = {
   import   = do_import,
 }
 
+--- Runs `:Markdown table <view|format|new|mode|tableize|import> ...`.
 ---@param argv string[]
 ---@param ctx? table  forwarded command context (range/line1/line2)
+---@return nil
 function M.run(argv, ctx)
   argv = argv or {}
   local sub = argv[1]

@@ -10,7 +10,8 @@ local DEFAULT_HEADER = "## Table of content"
 --- Update/insert the TOC and, unless disabled, ensure every section is closed
 --- with a `---` separator.
 ---@param header? string                       TOC header line
----@param opts? { min_level?: integer, max_level?: integer, marker?: string, separators?: boolean, anchor_style?: string, anchor_separator?: string }
+---@param opts? { min_level?: integer, max_level?: integer, marker?: string, separators?: boolean, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }
+---@return nil
 function M.update(header, opts)
   opts = opts or {}
 
@@ -43,7 +44,8 @@ function M.update(header, opts)
     opts = vim.tbl_extend("force", opts, { exclude = sc.exclude })
   end
 
-  require("markdown.core.toc").update_markdown_toc(header or DEFAULT_HEADER, opts)
+  local toc_opts = opts --[[@as { min_level?: integer, max_level?: integer, marker?: string, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }]]
+  require("markdown.core.toc").update_markdown_toc(header or DEFAULT_HEADER, toc_opts)
 
   -- Section separators are a whole-document concern; skip them when the TOC was
   -- generated for a fenced sub-document.
@@ -65,6 +67,7 @@ end
 --- `:Markdown toc [level] [--sep|--no-sep] [min=N] [max=N] [marker=X]` entry point.
 --- A bare numeric arg is shorthand for `max=N` (kept for backwards compat).
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   argv = argv or {}
   local opts = {}

@@ -1,9 +1,13 @@
 ---@module 'markdown.anchor.jump'
+--- Jumps the cursor to the heading matched by the anchor under it.
 local notify = require("markdown.util.notify").create("[markdown.anchor.jump]")
 
 local M = {}
 local api = vim.api
 
+---@internal
+---@param title string
+---@return string
 local function slugify_gfm(title)
   local s = title:lower()
   s = s:gsub("%s+", "-")
@@ -13,6 +17,9 @@ local function slugify_gfm(title)
   return s
 end
 
+---@internal
+---@param line string?
+---@return string? anchor
 local function extract_anchor(line)
   if not line or line == "" then return nil end
 
@@ -53,6 +60,9 @@ local function resolve_range(bufnr)
   return 1, total, nil
 end
 
+---@internal
+---@param anchor string?
+---@return boolean
 local function jump_to_anchor(anchor)
   if not anchor or anchor == "" then return false end
 
@@ -97,6 +107,7 @@ local function jump_to_anchor(anchor)
   return false
 end
 
+---Jumps to the heading referenced by the anchor under the cursor's current line.
 function M.jump()
   local ok, line = pcall(api.nvim_get_current_line)
   if not ok or not line then

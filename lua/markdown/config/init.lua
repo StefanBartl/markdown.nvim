@@ -35,6 +35,8 @@ local _resolved = {}
 --- Resolve `cfg.features` into `_resolved[name] = bool`. Precedence:
 ---   just_enable  → hard allowlist (only the listed features on; wins over all)
 ---   otherwise    → start all-on, apply `disable`, then re-apply `enable`
+---@internal
+---@param cfg Mkdn.Config
 local function resolve_features(cfg)
   _resolved = {}
   for _, f in ipairs(FEATURES) do _resolved[f] = true end
@@ -62,8 +64,9 @@ local function resolve_features(cfg)
   if F.disable == "all" then
     for _, f in ipairs(FEATURES) do _resolved[f] = false end
   elseif type(F.disable) == "table" then
-    warn_unknown(F.disable, "disable")
-    for _, name in ipairs(F.disable) do
+    local disable_list = F.disable --[[@as string[] ]]
+    warn_unknown(disable_list, "disable")
+    for _, name in ipairs(disable_list) do
       if FEATURE_SET[name] then _resolved[name] = false end
     end
   elseif F.disable ~= nil then
@@ -78,7 +81,9 @@ local function resolve_features(cfg)
   end
 end
 
+--- Deep-merges `opts` over DEFAULTS and re-resolves feature gating.
 ---@param opts Mkdn.Config|nil
+---@return nil
 function M.setup(opts)
   _cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), opts or {})
   resolve_features(_cfg)

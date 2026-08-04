@@ -1,8 +1,12 @@
 ---@module 'markdown.core.fold_levels'
+--- "Outline" fold-level toggling: fold everything below a given heading level.
 local M = {}
 
 local api, fn, cmd = vim.api, vim.fn, vim.cmd
 
+---@internal
+---@param levels_to_fold integer[]
+---@return integer
 local function compute_foldlevel(levels_to_fold)
   if type(levels_to_fold) ~= "table" or #levels_to_fold == 0 then return 0 end
   local min_fold = 7
@@ -28,6 +32,9 @@ local function apply_foldlevel(n)
   fn.winrestview(view)
 end
 
+---Sets the fold level so only the given heading levels stay folded.
+---@param levels_to_fold integer[]
+---@return nil
 function M.fold_levels(levels_to_fold)
   if vim.bo.filetype ~= "markdown" then return end
   local buf = api.nvim_get_current_buf()
@@ -40,6 +47,7 @@ end
 --- is > `level` while H1..`level` folds stay open. `level` defaults to 2 (H2+);
 --- a count (e.g. `3zk`) sets it instead, mirroring `M.toc()`'s "count = max
 --- heading level" convention (see `bindings/actions.lua`).
+---@return nil
 function M.fold_h2_plus()
   if vim.bo.filetype ~= "markdown" then return end
   local buf = api.nvim_get_current_buf()

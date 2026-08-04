@@ -15,16 +15,25 @@ local URL_PATTERN = "https?://[%w%-%_%.%/%?%%=&~#@:+,;]+"
 
 local ok_lib_trim, lib_strings_core = pcall(require, "lib.lua.strings.core")
 
+---@internal
+---@param s string
+---@return string
 local function trim(s)
   if ok_lib_trim then return lib_strings_core.trim(s) end
   return (s:gsub("^%s*(.-)%s*$", "%1"))
 end
 
+---@internal
+---@param s string
+---@return string
 local function strip_angle_brackets(s)
   if s:match("^<.+>$") then return s:sub(2, -2) end
   return s
 end
 
+---@internal
+---@param s string
+---@return string
 local function strip_trailing_punct(s)
   return (s:gsub("[%.,;:%)%]%}>]+$", ""))
 end

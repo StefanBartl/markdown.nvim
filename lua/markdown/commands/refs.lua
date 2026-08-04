@@ -12,23 +12,31 @@ local M = {}
 -- Per-buffer live autocmd id, so `live off` can remove exactly what `live on` set.
 local live_au = {}
 
+---@internal
 local function do_sync()
   require("markdown.core.refs").reconcile(vim.api.nvim_get_current_buf())
 end
 
+---@internal
 local function do_check()
   require("markdown.core.refs").check(vim.api.nvim_get_current_buf())
 end
 
+---@internal
 local function do_baseline()
   require("markdown.core.refs").baseline(vim.api.nvim_get_current_buf())
   notify.info("refs: baseline reset")
 end
 
+---@internal
+---@param bufnr integer
+---@return boolean
 local function live_is_on(bufnr)
   return live_au[bufnr] ~= nil
 end
 
+---@internal
+---@param bufnr integer
 local function live_on(bufnr)
   local refs = require("markdown.core.refs")
   refs.attach(bufnr)
@@ -46,6 +54,8 @@ local function live_on(bufnr)
   notify.info("refs live: on")
 end
 
+---@internal
+---@param bufnr integer
 local function live_off(bufnr)
   if live_au[bufnr] then
     pcall(vim.api.nvim_del_autocmd, live_au[bufnr])
@@ -54,6 +64,8 @@ local function live_off(bufnr)
   notify.info("refs live: off")
 end
 
+---@internal
+---@param argv string[]
 local function do_live(argv)
   local bufnr = vim.api.nvim_get_current_buf()
   local action = (argv[1] or "toggle"):lower()
@@ -75,7 +87,9 @@ local subcommands = {
   live     = do_live,
 }
 
+--- Runs `:Markdown refs <sync|check|live|baseline>` (default: `sync`).
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   argv = argv or {}
   -- Bare `:Markdown refs` == `sync`.

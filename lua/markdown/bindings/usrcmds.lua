@@ -23,6 +23,8 @@ local M = {}
 
 local api = vim.api
 
+---@internal
+---@param bufnr integer
 local function create_open_command(bufnr)
   local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
   if not ok then cmds = {} end
@@ -53,6 +55,7 @@ composer.register_type("MARKDOWN_SUBARG", {
   end,
 })
 
+---@internal
 local function create_markdown_command()
   if vim.fn.exists(":Markdown") == 2 then return end
 
@@ -128,6 +131,8 @@ function M.apply_tableview(ev)
 
   -- The table spanning the cursor row, or nil (no notification here — the
   -- caller decides whether a miss falls back to "all tables" or is an error).
+  ---@internal
+  ---@return table? tbl
   local function table_at_cursor()
     local line = api.nvim_win_get_cursor(0)[1]
     for _, t in ipairs(parser.get_tables(bufnr)) do
@@ -138,6 +143,8 @@ function M.apply_tableview(ev)
     return nil
   end
 
+  ---@internal
+  ---@return table[]?
   local function all_tables()
     local list = parser.get_tables(bufnr)
     if #list == 0 then
@@ -194,6 +201,10 @@ function M.apply_tableview(ev)
   --   scope == "" / nil       -> the table at the cursor; if there is none,
   --                             fall back to every table in the buffer
   -- Returns ("one", table) | ("all", table[]) | (nil, nil).
+  ---@internal
+  ---@param scope string?
+  ---@return "one"|"all"|nil kind
+  ---@return table|table[]|nil target
   local function resolve_target(scope)
     if scope == "%" then
       return "all", all_tables()
@@ -213,6 +224,8 @@ function M.apply_tableview(ev)
   end
 
   -- Resolved default float style ("markdown" | "box"), from config.tableview.
+  ---@internal
+  ---@return "markdown"|"box"
   local function default_style()
     local cfg = require("markdown.config").get()
     return (cfg.tableview and cfg.tableview.style) or "markdown"
@@ -228,8 +241,10 @@ function M.apply_tableview(ev)
       if not kind then return end
       local resolved_style = style == "config" and default_style() or style
       if kind == "one" then
+        ---@cast target table
         ui.toggle_table(target, { floating = true, style = resolved_style })
       else
+        ---@cast target table[]
         ui.toggle_tables(target, { floating = true, style = resolved_style })
       end
     end

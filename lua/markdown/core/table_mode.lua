@@ -33,11 +33,15 @@ local S = {}
 -- Detection / reformat
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param line any
+---@return boolean
 local function is_table_line(line)
   return type(line) == "string" and line:match("^%s*|.*|%s*$") ~= nil
 end
 
 --- True when the cursor row is a GFM table line.
+---@internal
 ---@param bufnr integer
 ---@return boolean
 local function cursor_in_table(bufnr)
@@ -50,6 +54,7 @@ end
 --- Re-align the table under the cursor, preserving the cursor position as well
 --- as possible across width changes. No-op when the cursor is not in a table.
 ---@param bufnr integer
+---@return nil
 function M.reformat(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   if not api.nvim_buf_is_valid(bufnr) then return end
@@ -90,6 +95,7 @@ end
 --- Enable auto-format for `bufnr`: a debounced reformat runs after leaving
 --- insert mode or changing text while the cursor is inside a table.
 ---@param bufnr? integer
+---@return nil
 function M.enable(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   if S[bufnr] then return end
@@ -117,6 +123,7 @@ function M.enable(bufnr)
 end
 
 ---@param bufnr? integer
+---@return nil
 function M.disable(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   local st = S[bufnr]
@@ -169,6 +176,7 @@ local FORMATS = {
 
 --- Strip a `sep=` / `separator=` prefix and one matching pair of surrounding
 --- quotes from a raw separator argument. `sep="\t"` -> `\t`, `" "` -> ` `.
+---@internal
 ---@param spec string
 ---@return string
 local function clean_spec(spec)
@@ -187,6 +195,7 @@ end
 ---@param lines string[]
 ---@param spec? string  format name, literal delimiter, or nil/"" for auto
 ---@return "char"|"ws" mode, string val, string label
+---@internal
 local function resolve_delim(lines, spec)
   if spec ~= nil then spec = clean_spec(spec) end
 
@@ -219,6 +228,7 @@ end
 ---@param line string
 ---@param sep string  single character
 ---@return string[]
+---@internal
 local function split_char(line, sep)
   local out, buf = {}, {}
   local in_q, ws_only = false, true -- ws_only: field so far is empty/whitespace
@@ -251,6 +261,7 @@ end
 --- Split `line` into trimmed fields on the (Lua-pattern) delimiter. Runs of the
 --- pattern are single delimiters, so no empty fields are produced between them.
 ---@param line string
+---@internal
 ---@param pat string
 ---@return string[]
 local function split_pattern(line, pat)
@@ -321,6 +332,7 @@ end
 --- (position just after each `|`, skipping leading spaces; the trailing `|` at
 --- end-of-line yields no cell and is dropped).
 ---@param line string
+---@internal
 ---@return integer[]
 local function cell_starts(line)
   local starts = {}
@@ -337,6 +349,7 @@ local function cell_starts(line)
 end
 
 --- Move to the first non-space of the next cell on the current row.
+---@return nil
 function M.next_cell()
   local win = api.nvim_get_current_win()
   local cur = api.nvim_win_get_cursor(win)
@@ -351,6 +364,7 @@ function M.next_cell()
 end
 
 --- Move to the first non-space of the previous cell on the current row.
+---@return nil
 function M.prev_cell()
   local win = api.nvim_get_current_win()
   local cur = api.nvim_win_get_cursor(win)

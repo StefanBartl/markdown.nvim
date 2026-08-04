@@ -50,6 +50,7 @@ end
 --- `config.toc.anchor_style` / `anchor_separator`, read lazily so a module
 --- required before `markdown.config` exists still gets sane (gfm) defaults.
 ---@return { style?: string, separator?: string }
+---@internal
 local function configured_style()
   local ok, config = pcall(require, "markdown.config")
   if not ok then return {} end
@@ -57,6 +58,9 @@ local function configured_style()
   return { style = toc.anchor_style, separator = toc.anchor_separator }
 end
 
+---@internal
+---@param line string?
+---@return boolean?
 local function is_frontmatter_fence(line)
   return line and line:match("^%s*%-%-%-%s*$") ~= nil
 end
@@ -65,6 +69,7 @@ end
 --- YAML frontmatter block. Returns 1 when there is no frontmatter.
 ---@param lines string[]
 ---@return integer
+---@internal
 local function body_start(lines)
   if not is_frontmatter_fence(lines[1]) then return 1 end
   for i = 2, #lines do

@@ -10,6 +10,8 @@ local M = {}
 local active = false
 local aug = nil
 
+---@internal
+---@return boolean
 local function available()
   return vim.fn.exists(":MarkdownPreview") == 2
 end
@@ -21,6 +23,7 @@ local busy = false
 
 --- Install the BufEnter auto-refresh autocmd once. Only refreshes an already
 --- running preview; never starts one on its own beyond the active session.
+---@internal
 local function ensure_autorefresh()
   if aug then return end
   -- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
@@ -41,6 +44,7 @@ end
 
 --- Start the preview (idempotent). Drives markdown-preview explicitly instead
 --- of using its toggle, so our `active` flag stays the single source of truth.
+---@internal
 local function start_preview()
   busy = true
   active = true
@@ -50,6 +54,7 @@ end
 
 --- Stop the preview (idempotent). `active` is cleared first so the BufEnter
 --- auto-refresh cannot re-open the browser tab during teardown.
+---@internal
 local function stop_preview()
   active = false
   busy = true
@@ -57,7 +62,9 @@ local function stop_preview()
   busy = false
 end
 
+--- Runs `:Markdown preview [start|stop|toggle]`.
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   local arg = (argv[1] or "toggle"):lower()
   if not available() then

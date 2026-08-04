@@ -1,8 +1,11 @@
 ---@module 'markdown.core.fold_prev'
+--- "Fold previous heading, then center" action bound to `zi`.
 local M = {}
 
 local api, fn, cmd = vim.api, vim.fn, vim.cmd
 
+---@internal
+---@return boolean moved
 local function goto_prev_heading_any()
   local found = fn.search("^#\\+\\s\\+\\S", "bWs")
   if found > 0 then return true end
@@ -23,6 +26,7 @@ end
 -- covers Setext-style `===`/`---` headings that the ANY_HEADING regex there
 -- doesn't match). So it isn't count-aware by delegation; loop it here the
 -- same way `goto_prev_heading` loops `vim.v.count1`.
+---@return nil
 function M.fold_prev_heading_then_center()
   if vim.bo.filetype ~= "markdown" then return end
   local buf = api.nvim_get_current_buf()

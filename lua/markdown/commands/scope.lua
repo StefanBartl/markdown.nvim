@@ -5,6 +5,8 @@ local M = {}
 
 local notify = require("markdown.util.notify").create("[markdown.scope]")
 
+---@internal
+---@param enabled boolean
 local function report(enabled)
   notify.info("fenced-block scope " .. (enabled and "enabled" or "disabled"))
 end
@@ -12,6 +14,7 @@ end
 --- `:Markdown scope [on|off|toggle|status]` entry point.
 ---@param argv string[]
 ---@param _ctx? table Unused; matches the dispatcher's (argv, ctx) calling convention.
+---@return nil
 function M.run(argv, _ctx)
   local scope = require("markdown.scope")
   local action = (argv and argv[1] or "toggle"):lower()

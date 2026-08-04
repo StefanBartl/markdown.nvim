@@ -8,10 +8,16 @@ local M = {}
 local DEFAULT_MIN_LEVEL = 2
 local DEFAULT_MAX_LEVEL = 4
 
+---@internal
+---@param line string?
+---@return boolean?
 local function is_frontmatter_fence(line)
   return line and line:match("^%s*%-%-%-%s*$") ~= nil
 end
 
+---@internal
+---@param bufnr integer
+---@return integer
 local function frontmatter_end(bufnr)
   local first = vim.api.nvim_buf_get_lines(bufnr, 0, 1, false)[1]
   if not is_frontmatter_fence(first) then return 0 end
@@ -32,10 +38,17 @@ local FENCE_LINE = "^%s*[`~][`~][`~]+%S*%s*$"
 -- Shared with core.refs so generated anchors and repaired links never drift.
 local slug_mod = require("markdown.core.slug")
 
+---@internal
+---@param line string?
+---@return boolean
 local function is_empty_line(line)
   return not line or line:match("^%s*$") ~= nil
 end
 
+---@internal
+---@param bufnr integer
+---@param toc_header_line integer
+---@param separator_line integer
 local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
   local total = vim.api.nvim_buf_line_count(bufnr)
 
@@ -114,6 +127,10 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
   end
 end
 
+---Inserts or refreshes the TOC block for `header_line`.
+---@param header_line string?
+---@param opts? { min_level?: integer, max_level?: integer, marker?: string, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }
+---@return nil
 function M.update_markdown_toc(header_line, opts)
   header_line = header_line or "## Table of content"
   opts = opts or {}

@@ -14,14 +14,21 @@ local M = {}
 
 local api = vim.api
 
+---@internal
+---@param ft string? Buffer filetype.
+---@return boolean
 local function is_md(ft)
   if not ft then return false end
   return ft == "md" or ft == "mdx" or ft == "markdown" or ft:match("^markdown%.") ~= nil
 end
 
+---@internal
 local function keymaps() return require("markdown.bindings.keymaps") end
+---@internal
 local function usrcmds() return require("markdown.bindings.usrcmds") end
 
+---@internal
+---@param cfg Mkdn.Config
 local function apply_to_already_loaded(cfg)
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if api.nvim_buf_is_loaded(bufnr) and is_md(vim.bo[bufnr].filetype) then

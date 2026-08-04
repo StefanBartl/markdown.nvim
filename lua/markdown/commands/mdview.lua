@@ -9,11 +9,15 @@ local notify = require("markdown.util.notify").create("[markdown.commands.mdview
 
 local M = {}
 
+---@internal
+---@return boolean
 local function available()
   return vim.fn.exists(":MDViewStart") == 2
 end
 
+--- Runs `:Markdown mdview [path]`.
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   if not available() then
     notify.warn("mdview: mdview.nvim not available")

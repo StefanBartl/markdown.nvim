@@ -29,6 +29,9 @@ local NS = api.nvim_create_namespace("markdown_refs")
 ---@type table<integer, { marks: table<integer,string>, last_list: string[], timer: any }>
 local S = {}
 
+---@internal
+---@param bufnr integer
+---@return { marks: table<integer,string>, last_list: string[], timer: any }
 local function state(bufnr)
   S[bufnr] = S[bufnr] or { marks = {}, timer = nil }
   return S[bufnr]
@@ -67,6 +70,7 @@ end
 ---@param old string[]|nil  baseline ordered anchors
 ---@param new string[]      current ordered anchors
 ---@param into table<string,string>  rename map to fill (old -> new)
+---@internal
 local function positional_renames(old, new, into)
   if not old or #old ~= #new then return end
   local n = #new
@@ -90,6 +94,7 @@ end
 ---@param bufnr integer
 ---@param renames table<string,string>  old anchor -> new anchor
 ---@return integer replaced  number of individual `](#anchor)` links rewritten
+---@internal
 local function apply_renames(bufnr, renames)
   if next(renames) == nil then return 0 end
   local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
@@ -115,6 +120,7 @@ end
 ---@param bufnr integer
 ---@param set table<string,true>  valid anchors
 ---@return { lnum: integer, target: string, display: string }[]
+---@internal
 local function collect_orphans(bufnr, set)
   local scan = require("markdown.core.link_scan")
   local out = {}

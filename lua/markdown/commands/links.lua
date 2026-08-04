@@ -13,6 +13,8 @@ local uv = vim.uv or vim.loop
 -- create (delegates to the existing filesystem-link generator)
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param argv string[]
 local function do_create(argv)
   require("markdown.commands.markdown_links").run(argv)
 end
@@ -78,11 +80,16 @@ local function collect(scope)
   return {}
 end
 
+---@internal
+---@param lk Mkdn.Link
+---@return string
 local function format_item(lk)
   local where = lk.file and (" — " .. vim.fn.fnamemodify(lk.file, ":t")) or ""
   return lk.display .. where
 end
 
+---@internal
+---@param argv string[]
 local function do_show(argv)
   local cfg = require("markdown.config").get()
   local scope = argv[1] or "%"
@@ -107,6 +114,8 @@ end
 -- check (dead relative-file links / duplicate heading anchors)
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param _argv string[]
 local function do_check(_argv)
   local diag = require("markdown.core.link_diagnostics")
   local bufnr = vim.api.nvim_get_current_buf()
@@ -128,7 +137,9 @@ local subcommands = {
   check  = do_check,
 }
 
+--- Runs `:Markdown links <sub>` (defaults to `create` for a bare path).
 ---@param argv string[]
+---@return nil
 function M.run(argv)
   argv = argv or {}
   local sub = argv[1]

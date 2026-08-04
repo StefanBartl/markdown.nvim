@@ -1,4 +1,5 @@
 ---@module 'markdown.core.wrap'
+--- Toggle bold (`**`) around a normal-selection word or a visual selection.
 local notify = require("markdown.util.notify").create("[markdown.core.wrap]")
 
 local M = {}
@@ -7,6 +8,10 @@ local api = vim.api
 local fn = vim.fn
 local cfg = require("markdown.config").get
 
+---@internal
+---@return integer? row
+---@return integer? scol
+---@return integer? ecol
 local function get_visual_selection()
   local mode = fn.mode()
   local is_visual = mode:match('[vV\22]') ~= nil
@@ -40,6 +45,10 @@ local function get_visual_selection()
   end
 end
 
+---@internal
+---@param row integer
+---@param scol integer
+---@param ecol integer
 local function reselect_visual(row, scol, ecol)
   fn.setpos("'<", {0, row + 1, scol + 1, 0})
   fn.setpos("'>", {0, row + 1, ecol + 1, 0})
@@ -47,6 +56,8 @@ local function reselect_visual(row, scol, ecol)
   api.nvim_feedkeys(reselect, "nx", false)
 end
 
+---@internal
+---@param count integer
 local function wrap_with_asterisks(count)
   local bufnr = api.nvim_get_current_buf()
   local row, scol, ecol = get_visual_selection()
@@ -69,6 +80,8 @@ local function wrap_with_asterisks(count)
   end
 end
 
+---Toggles `**bold**` around the current visual selection.
+---@return nil
 function M.toggle_visual_bold()
   local bufnr = api.nvim_get_current_buf()
   local row, scol, ecol = get_visual_selection()
