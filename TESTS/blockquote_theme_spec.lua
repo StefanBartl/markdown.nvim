@@ -85,4 +85,12 @@ return function(H)
 
   local marks2 = api.nvim_buf_get_extmarks(buf, ns, { 2, 0 }, { 2, -1 }, { details = true })
   eq(#marks2, 2, "highlight_line: a bare '>' still gets marker + (empty, eol-filled) text extmarks")
+
+  -- Regression: editing a line to remove its leading `>` and re-running
+  -- highlight_line (as the decoration provider does on every redraw) must
+  -- drop the stale marks, not leave last redraw's extmarks in place.
+  api.nvim_buf_set_lines(buf, 0, 1, false, { "quoted" })
+  bq.highlight_line(buf, 0)
+  local marks0_after = api.nvim_buf_get_extmarks(buf, ns, { 0, 0 }, { 0, -1 }, { details = true })
+  eq(#marks0_after, 0, "highlight_line: removing the leading '>' clears the stale marker/text extmarks")
 end

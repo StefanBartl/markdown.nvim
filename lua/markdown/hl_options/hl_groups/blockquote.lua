@@ -90,6 +90,22 @@ end
 ---@param bufnr integer
 ---@param row integer 0-indexed
 function M.highlight_line(bufnr, row)
+  -- Clear this row's previous extmarks first: nvim_buf_set_extmark below
+  -- always creates a new mark rather than reusing one, so without this a
+  -- line that stops being a blockquote (e.g. the leading `>` is deleted)
+  -- would keep its stale highlight forever instead of losing it on redraw.
+  --
+  -- nvim_buf_clear_namespace(bufnr, NS, row, row + 1) is NOT safe here: the
+  -- text extmark below spans to (row + 1, 0) so that hl_eol can fill past
+  -- the last character, which makes it also start at `row`. Clearing the
+  -- *next* row's range then deletes THIS row's still-valid text extmark
+  -- (verified: it clears marks that merely overlap the range, not just
+  -- ones starting in it). Deleting by id, scoped to marks that actually
+  -- start at this row, avoids clobbering a neighboring row's marks.
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(bufnr, NS, { row, 0 }, { row, -1 }, {})) do
+    vim.api.nvim_buf_del_extmark(bufnr, NS, m[1])
+  end
+
   local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
   if not line then return end
 
