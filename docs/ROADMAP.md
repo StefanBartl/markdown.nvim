@@ -33,11 +33,25 @@ value/effort, not binding.
   `docs/keymaps.md`.
 
 - ~~**In-Neovim image preview**~~ — `mi` renders images in a floating window
-  when snacks.nvim (`Snacks.image`) or image.nvim is installed, instead of
-  always shelling out to the system viewer. Both are soft deps;
-  `image.preview` (`"ask"`/`"preview"`/`"system"`) picks the behaviour, and
-  with neither installed nothing changes. `markdown/util/image_preview.lua`
-  + `handler/image.lua`, mirroring the pdfport.nvim prompt on the PDF path.
+  when images.nvim, snacks.nvim (`Snacks.image`) or image.nvim is installed,
+  instead of always shelling out to the system viewer. All three are soft
+  deps; `image.preview` (`"ask"`/`"preview"`/`"system"`) picks the
+  behaviour, and with none installed nothing changes.
+  `markdown/util/image_preview.lua` + `handler/image.lua`, mirroring the
+  pdfport.nvim prompt on the PDF path. images.nvim is preferred when
+  several are installed: it's the only one of the three that draws on
+  native Windows Neovim in WezTerm — snacks.nvim/image.nvim both speak only
+  Kitty APC, which Neovim's own output layer never gets drawn there.
+- ~~**Live image preview in `:Markdown links show`, `:Markdown image`**~~ —
+  images.nvim CROSS-PLUGIN.md item. When the scanned links include an image
+  and both `snacks.picker` + images.nvim are installed, `links show` routes
+  through a dedicated snacks picker with a live per-item preview
+  (`images.browse.draw_in_window()`); `links.picker`'s four generic backends
+  have no cross-backend preview hook, same constraint CROSS-PLUGIN.md
+  documents for `pickers.nvim`. Falls back to the unchanged picker otherwise.
+  `:Markdown image paste|screenshot` is a thin discoverability delegator to
+  `:Image paste`/`:Image screenshot` — no new logic, images.nvim does the
+  actual work. `commands/links.lua`, `commands/image.lua`.
 
 ## Cross-cutting
 

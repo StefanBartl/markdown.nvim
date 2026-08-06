@@ -37,13 +37,13 @@ local function create_open_command(bufnr)
   })
 end
 
--- :Markdown's 10 subcommands, feature-gated at registration time (matches
+-- :Markdown's 11 subcommands, feature-gated at registration time (matches
 -- create_markdown_command()'s own idempotency: :Markdown is only ever
 -- registered once per session, on the first buffer that triggers it, so a
 -- feature flag flipped after that point was never live-checked either).
 local SUBCOMMAND_NAMES = {
   "links", "toc", "refs", "table", "render", "preview",
-  "mdview", "create", "scope", "headline_spacing",
+  "mdview", "create", "scope", "headline_spacing", "image",
 }
 
 composer.register_type("MARKDOWN_SUBARG", {

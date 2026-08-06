@@ -33,7 +33,8 @@ CONTENTS                                           *markdown.nvim-contents*
      7.7 create ................ |:Markdown-create|
      7.8 headline_spacing ...... |:Markdown-headline-spacing|
      7.9 scope ................. |:Markdown-scope|
-     7.10 Buffer commands ...... |markdown.nvim-buf-commands|
+     7.10 image ................. |:Markdown-image|
+     7.11 Buffer commands ...... |markdown.nvim-buf-commands|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -237,10 +238,10 @@ GitHub-only, not duplicated into this helpfile.
 
 `image`                                            *markdown.nvim-config-image*
   What `mi` does with an image target when an in-Neovim preview provider
-  (snacks.nvim or image.nvim, both optional) is installed. >
+  (images.nvim, snacks.nvim or image.nvim, all optional) is installed. >
     image = { preview = "ask" }  -- "ask" | "preview" | "system"
 <
-  With neither provider installed every value behaves like "system". See
+  With no provider installed every value behaves like "system". See
   |markdown.nvim-image-preview| for the full behaviour.
 
 `link_hl`                                        *markdown.nvim-config-link-hl*
@@ -608,16 +609,16 @@ Opening rules:
     |markdown.nvim-config-general| for the extension list.
   * PDFs additionally offer rendering into a Neovim buffer when
     pdfport.nvim is installed.
-  * Images additionally offer an in-Neovim preview when snacks.nvim
-    (`Snacks.image`) or image.nvim is installed — see
-    |markdown.nvim-image-preview|. With neither installed the system
+  * Images additionally offer an in-Neovim preview when images.nvim,
+    snacks.nvim (`Snacks.image`) or image.nvim is installed — see
+    |markdown.nvim-image-preview|. With none installed the system
     application is used directly, with no prompt.
 
                                             *markdown.nvim-image-preview*
 Image preview (`mi`)~
 
-  Both providers are soft dependencies: nothing is required, and nothing
-  changes for a setup that has neither installed.
+  All three providers are soft dependencies: nothing is required, and
+  nothing changes for a setup that has none installed.
 
   `image.preview` selects the behaviour when one IS installed: >lua
     require("markdown").setup({
@@ -637,9 +638,15 @@ Image preview (`mi`)~
   terminal with no image protocol, an unreadable file), the system viewer
   is used instead, so `mi` always shows the image somewhere.
 
-  When both providers are installed, snacks.nvim is preferred: it renders
-  through its own buffer hook, so it needs no explicit placement or
-  teardown.
+  When several providers are installed, images.nvim is preferred: it is the
+  only one of the three that draws on native Windows Neovim in WezTerm
+  (snacks.nvim and image.nvim both speak only the Kitty graphics protocol,
+  which Neovim's own output layer never gets drawn there — see images.nvim's
+  README, "Why not snacks.image or image.nvim"). It renders via
+  `images.browse.draw_in_window()`, the same primitive images.nvim's own
+  `:Image pickers` preview uses. Without images.nvim, snacks.nvim is
+  preferred over image.nvim: it renders through its own buffer hook, so it
+  needs no explicit placement or teardown.
 
 ------------------------------------------------------------------------------
 6.6 Bold / link wrap                        *markdown.nvim-keymaps-bold*
@@ -704,6 +711,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     create             Create files for link targets     |:Markdown-create|
     headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
     scope              Toggle fenced-block scope         |:Markdown-scope|
+    image              Delegate to images.nvim paste/screenshot |:Markdown-image|
 
 ------------------------------------------------------------------------------
 7.2 :Markdown links                                       *:Markdown-links*
@@ -718,6 +726,15 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     * file     -> system application or `:edit` (see
                   |markdown.nvim-config-general|, `open`).
   The picker backend is set by the `links.picker` option.
+
+  When the scanned links include at least one image and both
+  `snacks.picker` and images.nvim are installed, `show` routes through a
+  `snacks.picker` picker instead, with a live image preview per image link
+  (`images.browse.draw_in_window()`) — `links.picker` is ignored in that
+  case, since none of its backends support a per-item live preview (same
+  constraint documented for pickers.nvim in images.nvim's
+  docs/ROADMAP/CROSS-PLUGIN.md). Without both deps, or with no image link in
+  the results, `show` behaves exactly as above.
 
 :Markdown links create [-r] [--noignore] [--root <path>] <path>
 
@@ -941,7 +958,25 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   With no argument, toggles. `status` reports the current state.
 
 ------------------------------------------------------------------------------
-7.10 Buffer-local commands                       *markdown.nvim-buf-commands*
+7.10 :Markdown image                                      *:Markdown-image*
+
+:Markdown image [paste|screenshot]
+
+  Thin delegators to images.nvim (https://github.com/StefanBartl/images.nvim),
+  an optional host, soft dependency — not a reimplementation. Default sub is
+  `paste`.
+    paste       Same as |:Image| paste: clipboard image -> file next to the
+                document + inserted link.
+    screenshot  Same as |:Image| screenshot: interactive screenshot, skipping
+                the clipboard step.
+  Without images.nvim installed, both report a warning instead of an error.
+  Exists purely for discoverability from `:Markdown <Tab>` — markdown.nvim
+  and images.nvim are scoped to the same buffers by default (markdown,
+  vimwiki, norg, text), so the coupling is natural even though the actual
+  logic lives entirely in images.nvim.
+
+------------------------------------------------------------------------------
+7.11 Buffer-local commands                       *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):
@@ -1171,6 +1206,7 @@ Sub-modules can be imported individually, e.g.: >
       preview.lua            :Markdown preview (markdown-preview.nvim)
       mdview.lua             :Markdown mdview (mdview.nvim)
       create.lua             :Markdown create fs
+      image.lua              :Markdown image paste|screenshot (images.nvim)
     setup/
       keymaps.lua            buffer-local keymap installer
       autocmds.lua           FileType autocmd driver

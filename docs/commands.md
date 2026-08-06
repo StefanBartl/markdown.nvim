@@ -17,7 +17,14 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
   `#anchor` → in-buffer jump, file → system app or `:edit`). Picker backend is
   `links.picker`: `hover_select` (default) | `select` | `telescope` | `fzf`
   (the latter two are soft deps; a missing plugin falls back to
-  `vim.ui.select` with a warning).
+  `vim.ui.select` with a warning). When the scanned links include at least
+  one image and both `snacks.picker` and `images.nvim` are installed, `show`
+  routes through a `snacks.picker` instead, with a live image preview per
+  image link (drawn via `images.browse.draw_in_window`, `images.nvim`'s own
+  primitive for previewing into an arbitrary already-open window) —
+  `links.picker` is ignored in that case, since none of its four backends
+  support a per-item live preview. Without both deps, or with no image link
+  in the results, `show` is unchanged.
 - **create** — generate Markdown links from a directory tree and copy them to
   the clipboard. Options: `-r`/`--recursive`, `--noignore`,
   `--root <path>` (prefix, supports `$ENV_VAR`).
@@ -186,6 +193,21 @@ URLs, `mailto:` and `#anchors` are skipped; existing paths are left untouched.
 :Markdown scope off                      " force off
 :Markdown scope status                   " report current state
 ```
+
+## `:Markdown image`
+
+```vim
+:Markdown image paste                    " same as :Image paste
+:Markdown image screenshot               " same as :Image screenshot
+```
+
+Thin delegators to [images.nvim](https://github.com/StefanBartl/images.nvim)
+(optional host, soft dependency) — not a reimplementation. `paste` is the
+default sub when none is given. Both markdown.nvim and images.nvim are
+scoped to the same buffers (markdown/vimwiki/norg/text by default), so this
+exists purely for discoverability from `:Markdown <Tab>` — the actual
+clipboard→file→link logic lives entirely in images.nvim's `:Image paste`.
+Without images.nvim installed, both report a warning instead of erroring.
 
 ## Buffer-local commands (Markdown buffers only)
 

@@ -1,13 +1,25 @@
 ---@module 'markdown.util.image_preview'
----@brief In-Neovim image preview via snacks.nvim or image.nvim (soft deps).
+---@brief In-Neovim image preview via images.nvim, snacks.nvim or image.nvim (soft deps).
 ---@description
---- Both are optional. `detect()` reports which one is installed, and
+--- All three are optional. `detect()` reports which one is installed, and
 --- `preview()` renders a file into a floating window using it. Neither is
 --- required: with no provider installed the image handler keeps its previous
 --- behaviour of shelling out to the system viewer, with no prompt.
 ---
---- The two providers need different treatment:
+--- images.nvim is checked first and preferred when several are installed:
+--- snacks.nvim and image.nvim both speak only the Kitty graphics protocol,
+--- which native Windows Neovim in WezTerm never draws when it comes from
+--- Neovim itself (see images.nvim's README, "Why not snacks.image or
+--- image.nvim") — so on that setup both are silently non-functional here.
+--- images.nvim draws via OSC 1337 instead, which does work there.
 ---
+--- The three providers need different treatment:
+---
+---   images.nvim  — no buffer hook either; `images.browse.draw_in_window`
+---                  (public, already used by images.nvim's own `:Image
+---                  pickers` for exactly the same "draw into an arbitrary
+---                  already-open window" need) targets the float's geometry
+---                  directly. Cleared via `images.terminal.clear()` on close.
 ---   snacks.nvim  — `Snacks.image` hooks buffer loading for image files, so
 ---                  the float only has to `:edit` the path and snacks renders
 ---                  it. Nothing to place or clean up by hand.
@@ -17,15 +29,21 @@
 
 local M = {}
 
----@alias Markdown.ImageProvider "snacks"|"image.nvim"
+---@alias Markdown.ImageProvider "images.nvim"|"snacks"|"image.nvim"
 
 ---Which in-Neovim preview provider is available, if any.
 ---
----snacks is preferred when both are installed: it renders through its own
----buffer hook, so it needs no explicit placement or teardown and degrades
----more gracefully on terminals without an image protocol.
+---images.nvim is preferred when several are installed: it is the only one of
+---the three that draws anything on native Windows Neovim in WezTerm (see
+---module doc above) — snacks/image.nvim are kept as the fallback for setups
+---where they do work (Kitty-capable terminals).
 ---@return Markdown.ImageProvider|nil
 function M.detect()
+  local ok_images, images = pcall(require, "images")
+  if ok_images and type(images) == "table" and images.show then
+    return "images.nvim"
+  end
+
   local ok_snacks, snacks = pcall(require, "snacks")
   if ok_snacks and type(snacks) == "table" and snacks.image then
     return "snacks"
@@ -103,7 +121,32 @@ end
 function M.preview(path)
   local provider = M.detect()
   if not provider then
-    return false, "no image preview provider installed (snacks.nvim or image.nvim)"
+    return false, "no image preview provider installed (images.nvim, snacks.nvim or image.nvim)"
+  end
+
+  if provider == "images.nvim" then
+    local ok_guard, guard = pcall(require, "images.guard")
+    if ok_guard then pcall(guard.check) end
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    local win = vim.api.nvim_open_win(buf, true, float_opts())
+
+    local ok, browse = pcall(require, "images.browse")
+    local drawn = ok and browse.draw_in_window(path, win)
+    if not drawn then
+      if vim.api.nvim_win_is_valid(win) then
+        vim.api.nvim_win_close(win, true)
+      end
+      if vim.api.nvim_buf_is_valid(buf) then
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      end
+      return false, "images.nvim could not draw " .. path
+    end
+
+    wire_close(buf, win, function()
+      pcall(function() require("images.terminal").clear() end)
+    end)
+    return true
   end
 
   if provider == "snacks" then

@@ -88,6 +88,90 @@ local function format_item(lk)
   return lk.display .. where
 end
 
+local IMAGE_EXTS = { png = 1, jpg = 1, jpeg = 1, gif = 1, webp = 1, bmp = 1, svg = 1 }
+
+---@internal
+--- Extension-only check, deliberately not a call into images.nvim's own
+--- config (`extensions`): classifying a link as "image-shaped" for preview
+--- purposes should not need images.nvim installed at all, only its presence
+--- as a preview *provider* is optional (see `images_browse` below).
+---@param target string|nil
+---@return boolean
+local function is_image_target(target)
+  if not target then return false end
+  local ext = target:match("%.([%w]+)%s*$") or target:match("%.([%w]+)[?#]")
+  return ext ~= nil and IMAGE_EXTS[ext:lower()] == 1
+end
+
+---@internal
+--- snacks.picker module, if installed.
+---@return table|nil
+local function snacks_picker()
+  local ok, picker = pcall(require, "snacks.picker")
+  return (ok and type(picker) == "table") and picker or nil
+end
+
+---@internal
+--- images.nvim's browse module, soft dep — only its already-public
+--- `draw_in_window(file, winid)` helper is used here (drawing an image into
+--- an arbitrary already-open window's geometry), the same primitive
+--- images.nvim's own `:Image pickers` preview uses. No new API needed there.
+---@return table|nil
+local function images_browse()
+  local ok, browse = pcall(require, "images.browse")
+  return (ok and type(browse) == "table" and browse.draw_in_window) and browse or nil
+end
+
+---@internal
+--- `:Markdown links show` with a live image preview, via snacks.picker +
+--- images.nvim (both soft deps, same "checked and only works with snacks"
+--- reasoning as `pickers.nvim` in docs/ROADMAP/CROSS-PLUGIN.md — the generic
+--- `markdown.util.picker` abstraction has no cross-backend preview hook).
+---@param links Mkdn.Link[]
+---@param Picker table
+---@param browse table
+local function do_show_snacks(links, Picker, browse)
+  local items = {}
+  for i, lk in ipairs(links) do
+    items[i] = { text = format_item(lk), link = lk }
+  end
+
+  Picker.pick({
+    source = "markdown_links",
+    title = string.format("Markdown links (%d)", #links),
+    items = items,
+    format = "text",
+    preview = function(ctx)
+      ctx.preview:reset()
+      local lk = ctx.item.link
+      if not (lk and is_image_target(lk.target)) then
+        ctx.preview:notify("No preview for this link type", "info")
+        return
+      end
+      local resolved = require("markdown.util.path").resolve(lk.target)
+      if not resolved then
+        ctx.preview:notify("Could not resolve: " .. lk.target, "warn")
+        return
+      end
+      local ok_guard, guard = pcall(require, "images.guard")
+      if ok_guard then pcall(guard.check) end
+      if not browse.draw_in_window(resolved, ctx.win) then
+        ctx.preview:notify("Image can't be drawn here", "warn")
+      end
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if item and item.link then require("markdown.handler").open_target(item.link.target) end
+    end,
+    -- The overlay is attached to the terminal, not the picker window — left
+    -- hanging until the next full repaint otherwise, same reasoning as
+    -- images.browse's own on_close.
+    on_close = function()
+      pcall(function() require("images.terminal").clear() end)
+    end,
+  })
+end
+
 ---@internal
 ---@param argv string[]
 local function do_show(argv)
@@ -98,6 +182,26 @@ local function do_show(argv)
   if #links == 0 then
     notify.info("No links found in scope: " .. scope)
     return
+  end
+
+  -- Live preview only pays for itself with snacks.picker + images.nvim both
+  -- present, and only when there is actually an image link to preview —
+  -- otherwise the plain cross-backend picker below is exactly as good.
+  local has_image = false
+  for _, lk in ipairs(links) do
+    if is_image_target(lk.target) then
+      has_image = true
+      break
+    end
+  end
+
+  if has_image then
+    local Picker = snacks_picker()
+    local browse = images_browse()
+    if Picker and browse then
+      do_show_snacks(links, Picker, browse)
+      return
+    end
   end
 
   local picker = require("markdown.util.picker")

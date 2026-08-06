@@ -103,6 +103,7 @@ return {
       { name = "Markdown create fs",                                  desc = "Create files/dirs for local link targets" },
       { name = "Markdown headline_spacing",                           desc = "Enforce blank-dash-blank between H2+ sections" },
       { name = "Markdown scope [on|off|toggle|status]",               desc = "Toggle fenced-block scope (TOC/nav/jump/shift/fold act on the block the cursor is in)" },
+      { name = "Markdown image [paste|screenshot]",                   desc = "Delegates to images.nvim's :Image paste/screenshot (optional host); default sub is paste" },
     },
 
     buffer_local = {
