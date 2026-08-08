@@ -1,12 +1,14 @@
 -- TESTS/tableview_resize_spec.lua — interactive TableView column resize
--- (<M-Left>/<M-Right>) and row insert/remove (<M-Up>/<M-Down>): buffer-local
--- to the floating preview, Normal mode only.
+-- (<M-Left>/<M-Right>, <M-h>/<M-l>), row reordering (<M-Up>/<M-Down>,
+-- <M-k>/<M-j>), and write-back (`:w`): all buffer-local to the floating
+-- preview, Normal mode only.
 ---@diagnostic disable: missing-fields
 
 return function(H)
   local eq, ok = H.eq, H.ok
   local api = vim.api
   local renderer = require("markdown.tableview.renderer")
+  local parser = require("markdown.tableview.parser")
 
   local function mt2col()
     return {
@@ -23,7 +25,8 @@ return function(H)
   do
     renderer.render_markdowntable(mt2col(), { floating = true })
 
-    for _, lhs in ipairs({ "<M-Left>", "<M-Right>", "<M-Up>", "<M-Down>" }) do
+    local lhss = { "<M-Left>", "<M-Right>", "<M-h>", "<M-l>", "<M-Up>", "<M-Down>", "<M-k>", "<M-j>" }
+    for _, lhs in ipairs(lhss) do
       local m = vim.fn.maparg(lhs, "n", false, true)
       ok(m and m.buffer == 1, ("%s is bound buffer-locally in Normal mode on the preview buffer"):format(lhs))
     end
@@ -62,43 +65,68 @@ return function(H)
     renderer.close_view()
   end
 
-  -- ── add / remove a row under the cursor ───────────────────────────────────
+  -- ── move the row under the cursor up/down (swap with the neighbor) ───────
   do
-    renderer.render_markdowntable(mt2col(), { floating = true, style = "markdown" })
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "| Name  | Age |",
+      "| ----- | --- |",
+      "| Alice | 30  |",
+      "| Bob   | 5   |",
+      "| Carol | 40  |",
+    })
+    local mt = parser.get_tables(buf)[1]
+    renderer.render_markdowntable(mt, { floating = true, style = "markdown" })
     local win = api.nvim_get_current_win()
     local function lines() return api.nvim_buf_get_lines(api.nvim_win_get_buf(win), 0, -1, false) end
 
-    eq(#lines(), 4, "initial: header + separator + 2 data rows")
+    eq(#lines(), 5, "initial: header + separator + 3 data rows (row count unaffected by moving)")
 
-    -- Cursor on "Alice" (row_idx=1): insert a row directly after it.
+    -- Move "Bob" (row 2) up: swaps with Alice.
+    for i, l in ipairs(lines()) do
+      if l:find("Bob") then api.nvim_win_set_cursor(win, { i, 2 }) end
+    end
+    renderer.move_current_row(-1)
+    local after_up = lines()
+    eq(#after_up, 5, "move_current_row never changes the row count")
+    ok(after_up[3]:find("Bob") ~= nil, "Bob moved into row 1's slot")
+    ok(after_up[4]:find("Alice") ~= nil, "Alice swapped down into Bob's old slot")
+    ok(after_up[5]:find("Carol") ~= nil, "Carol (untouched row) stays put")
+
+    -- Move Bob (now row 1) back down: undoes the swap.
+    for i, l in ipairs(lines()) do
+      if l:find("Bob") then api.nvim_win_set_cursor(win, { i, 2 }) end
+    end
+    renderer.move_current_row(1)
+    local after_down = lines()
+    ok(after_down[3]:find("Alice") ~= nil, "swap undone: Alice back in row 1")
+    ok(after_down[4]:find("Bob") ~= nil, "swap undone: Bob back in row 2")
+
+    -- Header row: nothing to swap it against.
+    api.nvim_win_set_cursor(win, { 1, 2 })
+    renderer.move_current_row(-1)
+    renderer.move_current_row(1)
+    ok(lines()[1]:find("Name") ~= nil, "move_current_row on the header row is a no-op")
+
+    -- Edges: first data row can't move up past the header; last can't move
+    -- down past the end.
+    local before_edge = table.concat(lines(), "\n")
     for i, l in ipairs(lines()) do
       if l:find("Alice") then api.nvim_win_set_cursor(win, { i, 2 }) end
     end
-    renderer.resize_current_row(1)
-    local after_add = lines()
-    eq(#after_add, 5, "resize_current_row(1) inserts one blank row")
-    ok(after_add[4]:match("^|%s*|%s*|$"), "the inserted row is blank")
-    ok(after_add[3]:find("Alice") ~= nil, "inserted row goes AFTER the cursor row, not before")
-    ok(after_add[5]:find("Bob") ~= nil, "rows after the insertion point are preserved")
-
-    -- Remove that same blank row.
+    renderer.move_current_row(-1)
     for i, l in ipairs(lines()) do
-      if l:match("^|%s*|%s*|$") then api.nvim_win_set_cursor(win, { i, 2 }) end
+      if l:find("Carol") then api.nvim_win_set_cursor(win, { i, 2 }) end
     end
-    renderer.resize_current_row(-1)
-    eq(#lines(), 4, "resize_current_row(-1) removes the row under the cursor")
+    renderer.move_current_row(1)
+    eq(table.concat(lines(), "\n"), before_edge, "moving past either edge is a no-op")
 
-    -- Header row cannot be removed via <M-Down>.
-    api.nvim_win_set_cursor(win, { 1, 2 })
-    renderer.resize_current_row(-1)
-    eq(#lines(), 4, "resize_current_row(-1) on the header row is a no-op")
-
-    -- Cursor on the separator line: both ops are no-ops (no cell there).
+    -- Cursor on the separator line: no-op (no cell there).
     local before_sep = table.concat(lines(), "\n")
     api.nvim_win_set_cursor(win, { 2, 2 })
     renderer.resize_current_column(1)
-    renderer.resize_current_row(1)
-    eq(table.concat(lines(), "\n"), before_sep, "resize ops on the separator line are no-ops")
+    renderer.move_current_row(1)
+    eq(table.concat(lines(), "\n"), before_sep, "resize/move ops on the separator line are no-ops")
 
     renderer.close_view()
   end
@@ -118,9 +146,10 @@ return function(H)
     for i, l in ipairs(lines()) do
       if l:find("Bob") then api.nvim_win_set_cursor(win, { i, 2 }) end
     end
-    renderer.resize_current_row(-1)
-    eq(#lines(), 5, "box style: removing the last data row also drops its trailing rule")
-    ok(not lines()[#lines()]:find("Bob"), "Bob's row is gone")
+    renderer.move_current_row(-1)
+    eq(#lines(), 7, "box style: moving a row keeps the same grid line count")
+    ok(lines()[4]:find("Bob") ~= nil, "box style: Bob swapped into Alice's row slot")
+    ok(lines()[6]:find("Alice") ~= nil, "box style: Alice swapped into Bob's row slot")
 
     renderer.close_view()
   end
@@ -159,9 +188,95 @@ return function(H)
     -- Cursor on a multi-table label line: no-op, doesn't error.
     api.nvim_win_set_cursor(win, { 1, 2 })
     renderer.resize_current_column(1)
-    renderer.resize_current_row(1)
-    ok(true, "resize ops on a stacked-view label line are a safe no-op")
+    renderer.move_current_row(1)
+    ok(true, "resize/move ops on a stacked-view label line are a safe no-op")
 
     renderer.close_view()
+  end
+
+  -- ── write-back: `:w` in the popup persists row reorders to the source ────
+  do
+    -- Source buffer case: mt.bufnr is tagged by parser.get_tables.
+    local src = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_name(src, "tableview_writeback_src.md")
+    api.nvim_buf_set_lines(src, 0, -1, false, {
+      "before",
+      "| Name  | Age |",
+      "| ----- | --- |",
+      "| Alice | 30  |",
+      "| Bob   | 5   |",
+      "after",
+    })
+    local mt = parser.get_tables(src)[1]
+    eq(mt.bufnr, src, "parser.get_tables tags each table with its source bufnr")
+
+    renderer.render_markdowntable(mt, { floating = true, style = "markdown" })
+    local win = api.nvim_get_current_win()
+    local function lines() return api.nvim_buf_get_lines(api.nvim_win_get_buf(win), 0, -1, false) end
+
+    -- Swap Alice/Bob, then widen a column (widening must NOT be written back).
+    for i, l in ipairs(lines()) do
+      if l:find("Bob") then api.nvim_win_set_cursor(win, { i, 2 }) end
+    end
+    renderer.move_current_row(-1)
+    api.nvim_win_set_cursor(win, { 1, 2 })
+    renderer.resize_current_column(1)
+
+    vim.cmd("write")
+
+    local src_lines = api.nvim_buf_get_lines(src, 0, -1, false)
+    eq(src_lines[1], "before", "write_back: line before the table is untouched")
+    eq(src_lines[#src_lines], "after", "write_back: line after the table is untouched")
+    ok(table.concat(src_lines, "\n"):find("Bob") ~= nil
+      and table.concat(src_lines, "\n"):find("Alice") ~= nil, "write_back: both rows present in the source")
+    local bob_line, alice_line
+    for i, l in ipairs(src_lines) do
+      if l:find("Bob") then bob_line = i end
+      if l:find("Alice") then alice_line = i end
+    end
+    ok(bob_line < alice_line, "write_back: reordered rows (Bob before Alice) persisted to the source buffer")
+    eq(src_lines[2], "| Name  | Age |", "write_back: writes NATURAL widths, ignoring the popup's column-widen override")
+    ok(not vim.bo[api.nvim_win_get_buf(win)].modified, "write_back: popup buffer's 'modified' flag is cleared after :w")
+
+    renderer.close_view()
+
+    -- File-on-disk case: mt.source, no live buffer for that path.
+    local path = vim.fn.tempname() .. ".md"
+    vim.fn.writefile({
+      "intro",
+      "| X   | Y   |",
+      "| --- | --- |",
+      "| foo | bar |",
+      "| baz | qux |",
+      "outro",
+    }, path)
+
+    local file_tables = parser.get_tables_from_file(path)
+    local fmt = file_tables[1]
+    eq(fmt.source, path, "parser.get_tables_from_file tags .source (no .bufnr)")
+    ok(fmt.bufnr == nil, "a file-sourced table has no bufnr")
+
+    renderer.render_markdowntable(fmt, { floating = true, style = "markdown" })
+    local fwin = api.nvim_get_current_win()
+    local function flines() return api.nvim_buf_get_lines(api.nvim_win_get_buf(fwin), 0, -1, false) end
+    for i, l in ipairs(flines()) do
+      if l:find("baz") then api.nvim_win_set_cursor(fwin, { i, 2 }) end
+    end
+    renderer.move_current_row(-1) -- swap baz/foo
+
+    vim.cmd("write")
+
+    local written = vim.fn.readfile(path)
+    eq(written[1], "intro", "write_back (file): line before the table is untouched")
+    eq(written[#written], "outro", "write_back (file): line after the table is untouched")
+    local baz_line, foo_line
+    for i, l in ipairs(written) do
+      if l:find("baz") then baz_line = i end
+      if l:find("foo") then foo_line = i end
+    end
+    ok(baz_line < foo_line, "write_back (file): reordered rows persisted directly to disk")
+
+    renderer.close_view()
+    os.remove(path)
   end
 end

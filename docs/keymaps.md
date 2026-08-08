@@ -113,15 +113,18 @@ only — not active anywhere else):
 
 | Key | Action |
 |-----|--------|
-| `<M-Right>` | Widen the column under the cursor |
-| `<M-Left>` | Narrow the column under the cursor (floors at its natural content width) |
-| `<M-Up>` | Insert a blank row after the row under the cursor |
-| `<M-Down>` | Remove the row under the cursor (no-op on the header row) |
+| `<M-Right>` / `<M-l>` | Widen the column under the cursor |
+| `<M-Left>` / `<M-h>` | Narrow the column under the cursor (floors at its natural content width) |
+| `<M-Up>` / `<M-k>` | Move the row under the cursor up (swap with the row above) |
+| `<M-Down>` / `<M-j>` | Move the row under the cursor down (swap with the row below) |
+| `:w` | Write the current row order back to the source buffer/file |
 
-Display-only: these edit the preview in memory, not the source buffer/file.
-See [Commands](commands.md#markdown-table) for the full behavior (no-ops on
-border/separator/label lines, independent per-table widths in a stacked
-multi-table view).
+h/j/k/l are a fallback for terminals that intercept `<M-Up>`/`<M-Down>`.
+Column widening is a reading aid only, never written back (`:w` always
+writes natural, unpadded widths). See [Commands](commands.md#markdown-table)
+for the full behavior (no-ops on border/separator/label lines, independent
+per-table state in a stacked multi-table view, buffer-vs-file write-back
+semantics).
 
 Column widths are computed from screen-display width (`vim.fn.strdisplaywidth`),
 not byte length, so cells containing multi-byte UTF-8 (umlauts, em dashes,

@@ -100,11 +100,21 @@ function M.get_tables_from_lines(lines)
   return tables
 end
 
+--- Every table in `bufnr`'s current lines. Each returned table additionally
+--- carries `.bufnr` (resolved from the `0` "current buffer" sentinel to a
+--- concrete number), mirroring how get_tables_from_file tags `.source` — lets
+--- a caller that renders these into TableView write row edits back to the
+--- buffer they actually came from.
+---@param bufnr? integer
+---@return table[]
 function M.get_tables(bufnr)
   bufnr = bufnr or 0
   local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, 0, -1, false)
   if not ok or not lines then return {} end
-  return M.get_tables_from_lines(lines)
+  local resolved_bufnr = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
+  local tables = M.get_tables_from_lines(lines)
+  for _, t in ipairs(tables) do t.bufnr = resolved_bufnr end
+  return tables
 end
 
 --- Parse every GFM table in a file on disk (no buffer needed — used for the

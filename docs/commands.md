@@ -91,17 +91,29 @@ dependency-free reimplementation of the vim-table-mode essentials.
 
   | Key | Action |
   |---|---|
-  | `<M-Right>` | Widen the column under the cursor by one |
-  | `<M-Left>` | Narrow the column under the cursor by one (floors at its natural content width — never truncates) |
-  | `<M-Up>` | Insert a blank row directly after the row under the cursor |
-  | `<M-Down>` | Remove the row under the cursor (no-op on the header row) |
+  | `<M-Right>` / `<M-l>` | Widen the column under the cursor by one |
+  | `<M-Left>` / `<M-h>` | Narrow the column under the cursor by one (floors at its natural content width — never truncates) |
+  | `<M-Up>` / `<M-k>` | Move the row under the cursor up (swap with the row above) |
+  | `<M-Down>` / `<M-j>` | Move the row under the cursor down (swap with the row below) |
+  | `:w` | Write row-order edits back to the source (see below) |
 
-  These edit the in-memory preview only — nothing is written back to the
-  source buffer or file; closing and reopening the preview starts fresh from
-  the actual table again. A cursor on a border, separator, or (in a stacked
-  multi-table view) a `── Table i/N ──` label line is a no-op for all four.
-  In a stacked view (`scope = %`/`cwd`/`<path>`), each table's column widths
-  are tracked independently.
+  The h/j/k/l forms exist because some terminals/multiplexers intercept
+  `<M-Up>`/`<M-Down>` (commonly for scrollback or pane navigation) before
+  Neovim ever sees them; if the arrow keys don't seem to do anything, try the
+  letters. Row-move and column-resize are independent — moving never changes
+  the row count, and resizing never changes row order. A cursor on a border,
+  separator, or (in a stacked multi-table view) a `── Table i/N ──` label
+  line is a no-op for all of them. In a stacked view (`scope = %`/`cwd`/
+  `<path>`), each table's column widths and edits are tracked independently.
+
+  `:w` in the popup writes the current row order back to wherever each shown
+  table actually came from: the source buffer (if the table was rendered
+  from a live buffer — this only marks that buffer modified, it does not
+  save it) or the file directly (for the `%`/`cwd`/`<path>` scopes reading
+  files that aren't open as buffers — this DOES write to disk immediately).
+  Column widening is a reading aid only and is never written back — the
+  written table always uses natural, unpadded column widths. A table with no
+  known source (e.g. hand-built, not from `parser.get_tables*`) is skipped.
 
   `toggle` / `markdown` / `box` accept an optional `scope`:
   | scope | Shows |

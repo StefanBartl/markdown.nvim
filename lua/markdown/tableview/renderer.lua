@@ -4,6 +4,7 @@ local M = {}
 local hl = vim.highlight
 local api = vim.api
 local window = require("lib.nvim.window")
+local notify = require("markdown.util.notify").create("[markdown.tableview.renderer]")
 
 local state = {
   buf = nil,
@@ -11,10 +12,10 @@ local state = {
   namespace = api.nvim_create_namespace("markdown_tableview"),
 
   -- Interactive resize/row-edit state (see M.resize_current_column /
-  -- M.resize_current_row): the currently-shown table(s), how they're laid out,
-  -- and per-column width overrides. Reset on every fresh render_markdowntable /
-  -- render_tables call; carried across an internal `rerender()` call so the
-  -- overrides survive repeated Alt-key presses.
+  -- M.move_current_row / M.write_back): the currently-shown table(s), how
+  -- they're laid out, and per-column width overrides. Reset on every fresh
+  -- render_markdowntable / render_tables call; carried across an internal
+  -- `rerender()` call so the overrides survive repeated Alt-key presses.
   tables        = nil, ---@type table[]|nil
   style         = nil, ---@type "markdown"|"box"|nil
   single        = nil, ---@type boolean|nil  true = render_markdowntable's own (unlabeled) layout
@@ -366,7 +367,13 @@ local function ensure_view(opts)
   set_buf_opt(state.buf, "bufhidden", "wipe")
   set_buf_opt(state.buf, "filetype", "markdown-tableview")
   set_buf_opt(state.buf, "modifiable", false)
-  set_buf_opt(state.buf, "buftype", "nofile")
+  -- "acwrite" (not "nofile"): `:write` on a nofile buffer always errors with
+  -- E382 ("Cannot write, 'buftype' option is set"), even with a BufWriteCmd
+  -- autocommand registered — Neovim only dispatches to BufWriteCmd for
+  -- acwrite, and only once the buffer has a name (E32 otherwise). This is
+  -- what M.write_back()'s `:w` support (see the BufWriteCmd below) requires.
+  set_buf_opt(state.buf, "buftype", "acwrite")
+  pcall(api.nvim_buf_set_name, state.buf, string.format("markdown-tableview://%d", state.buf))
 
   local max_w = math.floor(vim.o.columns * (opts.max_width_frac or default_opts.max_width_frac))
   local max_h = math.floor(vim.o.lines * (opts.max_height_frac or default_opts.max_height_frac))
@@ -394,19 +401,36 @@ local function ensure_view(opts)
 
   window.nice_quit(state.win, { force = true })
 
-  -- Interactive resize/row-edit: buffer-local, Normal mode only, scoped to
+  -- Interactive resize/row-move: buffer-local, Normal mode only, scoped to
   -- this TableView popup — never active outside it. Dispatched through `M.*`
   -- (not raw locals) so these can be bound here regardless of where
-  -- resize_current_column/row end up defined in the file.
+  -- resize_current_column/move_current_row end up defined in the file.
+  --
+  -- Both the arrow-key and h/j/k/l forms are bound to the same action: some
+  -- terminals/multiplexers intercept Alt+Arrow (commonly Up/Down, for
+  -- scrollback or pane navigation) before Neovim ever sees it, so the
+  -- Vim-motion letters are a reliable fallback rather than the only way in.
   local map_opts = { buffer = state.buf, nowait = true, silent = true }
-  vim.keymap.set("n", "<M-Right>", function() M.resize_current_column(1) end,
-    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: widen current column" }))
-  vim.keymap.set("n", "<M-Left>", function() M.resize_current_column(-1) end,
-    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: narrow current column" }))
-  vim.keymap.set("n", "<M-Up>", function() M.resize_current_row(1) end,
-    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: add a row below the cursor" }))
-  vim.keymap.set("n", "<M-Down>", function() M.resize_current_row(-1) end,
-    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: remove the row under the cursor" }))
+  local function bind(lhs, fn, desc)
+    vim.keymap.set("n", lhs, fn, vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: " .. desc }))
+  end
+  bind("<M-Right>", function() M.resize_current_column(1) end, "widen current column")
+  bind("<M-l>",     function() M.resize_current_column(1) end, "widen current column")
+  bind("<M-Left>",  function() M.resize_current_column(-1) end, "narrow current column")
+  bind("<M-h>",     function() M.resize_current_column(-1) end, "narrow current column")
+  bind("<M-Up>",    function() M.move_current_row(-1) end, "move current row up")
+  bind("<M-k>",     function() M.move_current_row(-1) end, "move current row up")
+  bind("<M-Down>",  function() M.move_current_row(1) end, "move current row down")
+  bind("<M-j>",     function() M.move_current_row(1) end, "move current row down")
+
+  -- `:w` in the popup writes row-order/content edits back to wherever the
+  -- table(s) actually came from (source buffer or file — see M.write_back).
+  -- BufWriteCmd is the standard way to give a `nofile` buffer a working `:w`.
+  api.nvim_create_autocmd("BufWriteCmd", {
+    buffer = state.buf,
+    callback = function() M.write_back() end,
+    desc = "[markdown.nvim] TableView: write row edits back to source",
+  })
 
   return state.buf, state.win
 end
@@ -706,32 +730,84 @@ function M.resize_current_column(delta)
   rerender_preserving_cursor(ctx)
 end
 
---- Insert (delta > 0) a blank row directly after the row under the cursor, or
---- remove (delta < 0) the row under the cursor, in the floating TableView.
---- Edits `state.tables[i].rows` in place — this is a DISPLAY-only mutation of
---- the in-memory preview, not written back to the source buffer/file. Removing
---- the header row is a no-op (headers aren't rows). No-op when the cursor
---- isn't on a table row or the view isn't open.
----@param delta integer +1 to insert, -1 to remove
-function M.resize_current_row(delta)
+--- Swap the row under the cursor with the row above (delta < 0) or below
+--- (delta > 0) it, reordering `state.tables[i].rows` in place. This is a
+--- DISPLAY-only mutation of the in-memory preview until `M.write_back` (`:w`
+--- in the popup) persists it. No-op on the header row (nothing to swap it
+--- against), at either edge (no row above the first / below the last), or
+--- when the cursor isn't on a table row or the view isn't open.
+---@param delta integer -1 to move up, +1 to move down
+function M.move_current_row(delta)
   local ctx = resolve_cursor_target()
   if not ctx then return end
+  if ctx.row_idx == 0 then return end -- header row: nothing to reorder it against
 
   local mt = state.tables and state.tables[ctx.table_idx]
   if not mt then return end
 
-  if delta > 0 then
-    local ncols = #mt.header.cells
-    local new_row = { cells = {} }
-    for i = 1, ncols do new_row.cells[i] = { content = "" } end
-    table.insert(mt.rows, ctx.row_idx + 1, new_row)
-  else
-    if ctx.row_idx == 0 then return end -- header row: nothing to remove
-    if ctx.row_idx < 1 or ctx.row_idx > #mt.rows then return end
-    table.remove(mt.rows, ctx.row_idx)
+  local target_idx = ctx.row_idx + delta
+  if target_idx < 1 or target_idx > #mt.rows then return end
+
+  mt.rows[ctx.row_idx], mt.rows[target_idx] = mt.rows[target_idx], mt.rows[ctx.row_idx]
+
+  rerender_preserving_cursor({ table_idx = ctx.table_idx, row_idx = target_idx, col_idx = ctx.col_idx })
+end
+
+--- Write every currently-shown table's content — including any row reorders
+--- from `M.move_current_row` — back to wherever it came from: the live
+--- source buffer (`mt.bufnr`, set by parser.get_tables) if it's still valid,
+--- otherwise the file directly (`mt.source`, set by parser.get_tables_from_file
+--- for the %/cwd/path scopes). Bound to `:w` in the popup (see ensure_view's
+--- BufWriteCmd). A table with neither (e.g. a hand-built `mt` with no parser
+--- origin) is silently skipped — nowhere to write it back to.
+---
+--- Deliberately writes NATURAL column widths (no col_overrides): widening a
+--- column in the popup is a reading aid, not something that should pad out
+--- the saved file with extra spaces the row content doesn't need.
+function M.write_back()
+  if not state.tables then return end
+
+  local wrote_buf, wrote_file, skipped = 0, 0, 0
+
+  for _, mt in ipairs(state.tables) do
+    local lines = build_lines_from_markdowntable(mt) -- natural widths, ignores col_overrides
+
+    if mt.bufnr and api.nvim_buf_is_valid(mt.bufnr) then
+      api.nvim_buf_set_lines(mt.bufnr, mt.start_line - 1, mt.end_line, false, lines)
+      wrote_buf = wrote_buf + 1
+    elseif mt.source then
+      local ok, file_lines = pcall(vim.fn.readfile, mt.source)
+      if ok and file_lines then
+        local new_content = {}
+        for i = 1, mt.start_line - 1 do new_content[#new_content + 1] = file_lines[i] end
+        vim.list_extend(new_content, lines)
+        for i = mt.end_line + 1, #file_lines do new_content[#new_content + 1] = file_lines[i] end
+        vim.fn.writefile(new_content, mt.source)
+        wrote_file = wrote_file + 1
+      else
+        skipped = skipped + 1
+      end
+    else
+      skipped = skipped + 1
+    end
   end
 
-  rerender_preserving_cursor(ctx)
+  if state.buf and api.nvim_buf_is_valid(state.buf) then
+    vim.bo[state.buf].modified = false
+  end
+
+  if wrote_buf == 0 and wrote_file == 0 then
+    notify.warn("TableView: nothing to write back (no source buffer/file for the shown table(s))")
+    return
+  end
+
+  local parts = {}
+  if wrote_buf > 0 then parts[#parts + 1] = string.format("%d buffer(s)", wrote_buf) end
+  if wrote_file > 0 then parts[#parts + 1] = string.format("%d file(s) on disk", wrote_file) end
+  local msg = "TableView: wrote back to " .. table.concat(parts, ", ")
+  if skipped > 0 then msg = msg .. string.format(" (%d table(s) skipped: no known source)", skipped) end
+  if wrote_file > 0 then msg = msg .. " — buffer edits are NOT auto-saved, files on disk were" end
+  notify.info(msg)
 end
 
 M.render_table = M.render_markdowntable

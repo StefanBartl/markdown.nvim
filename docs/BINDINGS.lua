@@ -94,11 +94,18 @@ return {
     -- Buffer-local to the TableView popup itself (tableview/renderer.lua),
     -- Normal mode only — NOT active on markdown buffers, and not gated by
     -- enable_keymaps (this popup has no "editing" surface to opt out of).
+    -- h/j/k/l duplicate the arrow-key actions: some terminals/multiplexers
+    -- intercept <M-Up>/<M-Down> before Neovim sees them.
     tableview_popup = {
       { lhs = "<M-Right>", mode = "n", fn = "resize_current_column(1)",  desc = "Widen the column under the cursor" },
+      { lhs = "<M-l>",     mode = "n", fn = "resize_current_column(1)",  desc = "Same (letter-key alternate)" },
       { lhs = "<M-Left>",  mode = "n", fn = "resize_current_column(-1)", desc = "Narrow the column under the cursor (floors at natural content width)" },
-      { lhs = "<M-Up>",    mode = "n", fn = "resize_current_row(1)",     desc = "Insert a blank row after the row under the cursor" },
-      { lhs = "<M-Down>",  mode = "n", fn = "resize_current_row(-1)",    desc = "Remove the row under the cursor (no-op on the header row)" },
+      { lhs = "<M-h>",     mode = "n", fn = "resize_current_column(-1)", desc = "Same (letter-key alternate)" },
+      { lhs = "<M-Up>",    mode = "n", fn = "move_current_row(-1)",      desc = "Move the row under the cursor up (swap with the row above)" },
+      { lhs = "<M-k>",     mode = "n", fn = "move_current_row(-1)",      desc = "Same (letter-key alternate)" },
+      { lhs = "<M-Down>",  mode = "n", fn = "move_current_row(1)",       desc = "Move the row under the cursor down (swap with the row below)" },
+      { lhs = "<M-j>",     mode = "n", fn = "move_current_row(1)",       desc = "Same (letter-key alternate)" },
+      { lhs = ":w",        mode = "n", fn = "write_back()",              desc = "Write the current row order back to the source buffer/file (BufWriteCmd); column widening is never written back" },
     },
   },
 
