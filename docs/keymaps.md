@@ -108,6 +108,21 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvm` | n | Toggle table mode (auto-format) |
 | `]\|` / `[\|` | n | Next / previous table cell |
 
+Inside the floating preview itself (buffer-local to the popup, Normal mode
+only — not active anywhere else):
+
+| Key | Action |
+|-----|--------|
+| `<M-Right>` | Widen the column under the cursor |
+| `<M-Left>` | Narrow the column under the cursor (floors at its natural content width) |
+| `<M-Up>` | Insert a blank row after the row under the cursor |
+| `<M-Down>` | Remove the row under the cursor (no-op on the header row) |
+
+Display-only: these edit the preview in memory, not the source buffer/file.
+See [Commands](commands.md#markdown-table) for the full behavior (no-ops on
+border/separator/label lines, independent per-table widths in a stacked
+multi-table view).
+
 Column widths are computed from screen-display width (`vim.fn.strdisplaywidth`),
 not byte length, so cells containing multi-byte UTF-8 (umlauts, em dashes,
 curly quotes, arrows, …) still line up — see `renderer.validate_alignment()`

@@ -9,6 +9,19 @@ local state = {
   buf = nil,
   win = nil,
   namespace = api.nvim_create_namespace("markdown_tableview"),
+
+  -- Interactive resize/row-edit state (see M.resize_current_column /
+  -- M.resize_current_row): the currently-shown table(s), how they're laid out,
+  -- and per-column width overrides. Reset on every fresh render_markdowntable /
+  -- render_tables call; carried across an internal `rerender()` call so the
+  -- overrides survive repeated Alt-key presses.
+  tables        = nil, ---@type table[]|nil
+  style         = nil, ---@type "markdown"|"box"|nil
+  single        = nil, ---@type boolean|nil  true = render_markdowntable's own (unlabeled) layout
+  opts          = nil,
+  col_overrides = {},  ---@type table<integer, table<integer, integer>>  [table_idx][col_idx] = extra width
+  -- [line_idx(0-indexed)] = { table_idx = integer, row_idx = integer }  (row_idx 0 = header)
+  row_map       = nil, ---@type table<integer, { table_idx: integer, row_idx: integer }>|nil
 }
 
 local default_opts = {
@@ -42,6 +55,71 @@ local function display_width(str)
   return ok and w or #str
 end
 
+--- Every DISPLAY column (not byte column) at which a `|` or box-drawing `│`
+--- cell divider occurs on `line`. Iterates by character (via strcharpart), not
+--- byte, so a preceding multi-byte character (ü, —, …, „", →, …) advances the
+--- running column by its actual screen width rather than its byte count.
+---@param line string
+---@return integer[]
+local function divider_columns(line)
+  local cols = {}
+  local col = 0
+  local nchars = vim.fn.strchars(line)
+  for i = 0, nchars - 1 do
+    local ch = vim.fn.strcharpart(line, i, 1)
+    if ch == "|" or ch == "│" then
+      cols[#cols + 1] = col
+    end
+    col = col + display_width(ch)
+  end
+  return cols
+end
+
+--- 1-based index of the cell `dispcol` (a 0-indexed DISPLAY column) falls
+--- inside on `line`, or nil when `line` has fewer than two dividers or
+--- `dispcol` is outside every cell (e.g. past the last divider).
+---@param line string
+---@param dispcol integer
+---@return integer|nil
+local function cell_index_at(line, dispcol)
+  local cols = divider_columns(line)
+  if #cols < 2 then return nil end
+  for i = 1, #cols - 1 do
+    if dispcol >= cols[i] and dispcol < cols[i + 1] then
+      return i
+    end
+  end
+  return nil
+end
+
+--- Convert a 0-indexed BYTE column (as `nvim_win_get_cursor` reports) to a
+--- 0-indexed DISPLAY column on `line`.
+---@param line string
+---@param bytecol integer
+---@return integer
+local function byte_to_display_col(line, bytecol)
+  return display_width(line:sub(1, bytecol))
+end
+
+--- Convert a 0-indexed DISPLAY column back to a 0-indexed BYTE column on
+--- `line` (the inverse of byte_to_display_col), for restoring the cursor
+--- after a rerender changes byte offsets (multi-byte content, width changes).
+---@param line string
+---@param dispcol integer
+---@return integer
+local function display_col_to_byte(line, dispcol)
+  local col = 0
+  local nchars = vim.fn.strchars(line)
+  local bytepos = 0
+  for i = 0, nchars - 1 do
+    if col >= dispcol then return bytepos end
+    local ch = vim.fn.strcharpart(line, i, 1)
+    bytepos = bytepos + #ch
+    col = col + display_width(ch)
+  end
+  return bytepos
+end
+
 local function table_to_matrix(mt)
   local matrix = {}
   local header_cells = {}
@@ -57,12 +135,27 @@ local function table_to_matrix(mt)
   return matrix
 end
 
-local function compute_col_widths(matrix)
+--- Natural per-column content width, plus `overrides[col_idx]` extra padding
+--- (from an interactive widen — see M.resize_current_column). Overrides only
+--- ever ADD to the natural width: narrowing below it would leave the column's
+--- widest cell overflowing past the padded width of shorter cells in the same
+--- column, breaking `|` divider alignment down the column.
+---@param matrix string[][]
+---@param overrides? table<integer, integer>
+---@return integer[]
+local function compute_col_widths(matrix, overrides)
   local widths = {}
   for _, row in ipairs(matrix) do
     for col_idx, cell in ipairs(row) do
       local len = display_width(cell)
       if not widths[col_idx] or len > widths[col_idx] then widths[col_idx] = len end
+    end
+  end
+  if overrides then
+    for col_idx, extra in pairs(overrides) do
+      if widths[col_idx] and extra and extra > 0 then
+        widths[col_idx] = widths[col_idx] + extra
+      end
     end
   end
   return widths
@@ -91,13 +184,24 @@ local function format_row_with_alignment(row, widths, alignments)
   return "| " .. table.concat(parts, " | ") .. " |"
 end
 
-local function build_lines_from_markdowntable(mt)
+--- Build the aligned-Markdown rendering of the table. Alongside the lines, a
+--- `row_map` is returned: `row_map[i]` (0-indexed, matching `lines`) is `0`
+--- for the header row, a 1-based index into `mt.rows` for a data row, or nil
+--- for the separator (no cell content on that line) — used to resolve which
+--- table row the cursor is on for the interactive resize/row-edit keymaps.
+---@param mt table
+---@param overrides? table<integer, integer>
+---@return string[] lines
+---@return table<integer, integer> row_map
+local function build_lines_from_markdowntable(mt, overrides)
   local matrix = table_to_matrix(mt)
-  if #matrix == 0 then return {} end
-  local widths = compute_col_widths(matrix)
+  if #matrix == 0 then return {}, {} end
+  local widths = compute_col_widths(matrix, overrides)
   local lines = {}
+  local row_map = {}
 
   table.insert(lines, format_row_with_alignment(matrix[1], widths, mt.alignments))
+  row_map[#lines - 1] = 0
 
   local sep_parts = {}
   for i, w in ipairs(widths) do
@@ -114,21 +218,26 @@ local function build_lines_from_markdowntable(mt)
 
   for ridx = 2, #matrix do
     table.insert(lines, format_row_with_alignment(matrix[ridx], widths, mt.alignments))
+    row_map[#lines - 1] = ridx - 1
   end
 
-  return lines
+  return lines, row_map
 end
 
 --- Build a Unicode box-drawing ("spreadsheet") rendering of the table, with a
 --- full grid: top border, header row, a double-rule header separator, each data
 --- row separated by a rule, and a bottom border. Column widths reuse the same
---- content-width calc as the markdown renderer.
+--- content-width calc as the markdown renderer. Returns a row_map like
+--- build_lines_from_markdowntable (0 = header row, 1-based = data row, nil =
+--- a border/rule line with no cell content).
 ---@param mt table
----@return string[]
-local function build_box_lines(mt)
+---@param overrides? table<integer, integer>
+---@return string[] lines
+---@return table<integer, integer> row_map
+local function build_box_lines(mt, overrides)
   local matrix = table_to_matrix(mt)
-  if #matrix == 0 then return {} end
-  local widths = compute_col_widths(matrix)
+  if #matrix == 0 then return {}, {} end
+  local widths = compute_col_widths(matrix, overrides)
 
   local function border(left, mid, right, fill)
     local parts = {}
@@ -144,15 +253,18 @@ local function build_box_lines(mt)
   end
 
   local lines = {}
+  local row_map = {}
   lines[#lines + 1] = border("┌", "┬", "┐", "─")
   lines[#lines + 1] = row(matrix[1])
+  row_map[#lines - 1] = 0
   lines[#lines + 1] = border("╞", "╪", "╡", "═")
   for r = 2, #matrix do
     lines[#lines + 1] = row(matrix[r])
+    row_map[#lines - 1] = r - 1
     if r < #matrix then lines[#lines + 1] = border("├", "┼", "┤", "─") end
   end
   lines[#lines + 1] = border("└", "┴", "┘", "─")
-  return lines
+  return lines, row_map
 end
 
 local function set_buf_opt(buf, name, value)
@@ -161,6 +273,81 @@ end
 
 local function set_win_opt(win, name, value)
   pcall(api.nvim_set_option_value, name, value, { scope = "local", win = win })
+end
+
+--- The header_line/sep_lines "block" for a single, unlabeled table's own
+--- lines — i.e. exactly what render_markdowntable's (pre-refactor) inline
+--- highlight computation used to derive, extracted so `rerender()` can reuse
+--- it after a resize/row-edit.
+---@param lines string[]
+---@param box boolean
+---@return { header_line: integer, sep_lines: integer[], label_line: nil }
+local function compute_single_highlight_block(lines, box)
+  local header_line = box and 1 or 0
+  local sep_lines = {}
+  if box then
+    for i = 0, #lines - 1 do
+      if i ~= header_line and not (lines[i + 1] or ""):match("^│") then
+        sep_lines[#sep_lines + 1] = i
+      end
+    end
+  elseif #lines >= 2 then
+    sep_lines[1] = 1
+  end
+  return { header_line = header_line, sep_lines = sep_lines, label_line = nil }
+end
+
+--- Apply header/separator/label highlights for one or more rendered blocks
+--- (see build_stacked_lines / compute_single_highlight_block) to `buf`.
+---@param buf integer
+---@param lines string[]
+---@param blocks { header_line: integer, sep_lines: integer[], label_line: integer|nil }[]
+---@param opts table
+local function apply_blocks_highlight(buf, lines, blocks, opts)
+  pcall(function()
+    local ns = state.namespace
+    local header_hl = opts.highlight and opts.highlight.header or "Title"
+    local sep_hl = opts.highlight and opts.highlight.separator or "Comment"
+    if not (hl and hl.range) then return end
+    for _, block in ipairs(blocks) do
+      if block.label_line then
+        hl.range(buf, ns, sep_hl, { block.label_line, 0 }, { block.label_line, -1 }, { inclusive = false })
+      end
+      if #lines > block.header_line then
+        hl.range(buf, ns, header_hl, { block.header_line, 0 }, { block.header_line, -1 }, { inclusive = false })
+      end
+      for _, sl in ipairs(block.sep_lines) do
+        hl.range(buf, ns, sep_hl, { sl, 0 }, { sl, -1 }, { inclusive = false })
+      end
+    end
+  end)
+end
+
+--- Resolve the buffer cell (table index / row index / column index) under
+--- the cursor in the floating TableView, using `state.row_map` (built by the
+--- last render/rerender). Returns nil when the view isn't open, the cursor is
+--- on a line with no cell content (border, separator, multi-table label), or
+--- past the last divider.
+---@return { table_idx: integer, row_idx: integer, col_idx: integer }|nil
+local function resolve_cursor_target()
+  if not (state.win and api.nvim_win_is_valid(state.win) and state.buf and api.nvim_buf_is_valid(state.buf)) then
+    return nil
+  end
+  if not state.row_map then return nil end
+
+  local cur = api.nvim_win_get_cursor(state.win)
+  local line_idx0 = cur[1] - 1
+  local entry = state.row_map[line_idx0]
+  if not entry then return nil end
+
+  local line = api.nvim_buf_get_lines(state.buf, line_idx0, line_idx0 + 1, false)[1]
+  if not line then return nil end
+
+  local dispcol = byte_to_display_col(line, cur[2])
+  local col_idx = cell_index_at(line, dispcol)
+  if not col_idx then return nil end
+
+  return { table_idx = entry.table_idx, row_idx = entry.row_idx, col_idx = col_idx }
 end
 
 local function ensure_view(opts)
@@ -207,6 +394,20 @@ local function ensure_view(opts)
 
   window.nice_quit(state.win, { force = true })
 
+  -- Interactive resize/row-edit: buffer-local, Normal mode only, scoped to
+  -- this TableView popup — never active outside it. Dispatched through `M.*`
+  -- (not raw locals) so these can be bound here regardless of where
+  -- resize_current_column/row end up defined in the file.
+  local map_opts = { buffer = state.buf, nowait = true, silent = true }
+  vim.keymap.set("n", "<M-Right>", function() M.resize_current_column(1) end,
+    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: widen current column" }))
+  vim.keymap.set("n", "<M-Left>", function() M.resize_current_column(-1) end,
+    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: narrow current column" }))
+  vim.keymap.set("n", "<M-Up>", function() M.resize_current_row(1) end,
+    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: add a row below the cursor" }))
+  vim.keymap.set("n", "<M-Down>", function() M.resize_current_row(-1) end,
+    vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: remove the row under the cursor" }))
+
   return state.buf, state.win
 end
 
@@ -217,19 +418,24 @@ end
 --- Build the stacked lines for every table in `tables` (rendered one after
 --- another, separated by a blank line), plus per-table highlight metadata so
 --- the caller can re-derive header/separator/label rows in the combined
---- buffer. A short "── Table i/N (line L) ──" label precedes each table when
---- there is more than one; a table with `.source` set (read from a file on
---- disk — the %/path/cwd scopes) is always labelled with its file path, even
---- when it is the only table, so it stays clear which table came from where
---- while scrolling a long, possibly multi-file stack.
+--- buffer, and a combined row_map (see build_lines_from_markdowntable) tagging
+--- each line with which table/row it belongs to. A short "── Table i/N (line
+--- L) ──" label precedes each table when there is more than one; a table with
+--- `.source` set (read from a file on disk — the %/path/cwd scopes) is always
+--- labelled with its file path, even when it is the only table, so it stays
+--- clear which table came from where while scrolling a long, possibly
+--- multi-file stack.
 ---@param tables table[]  markdown.tableview.parser table objects (optionally with `.source`)
 ---@param style "markdown"|"box"
+---@param overrides_by_table? table<integer, table<integer, integer>>
 ---@return string[] lines
 ---@return { header_line: integer, sep_lines: integer[], label_line: integer|nil }[] blocks
-local function build_stacked_lines(tables, style)
+---@return table<integer, { table_idx: integer, row_idx: integer }> row_map
+local function build_stacked_lines(tables, style, overrides_by_table)
   local box = style == "box"
   local lines = {}
   local blocks = {}
+  local row_map = {}
 
   for idx, mt in ipairs(tables) do
     if idx > 1 then lines[#lines + 1] = "" end
@@ -248,7 +454,15 @@ local function build_stacked_lines(tables, style)
     end
 
     local block_start = #lines -- 0-indexed row of this table's first line
-    local table_lines = box and build_box_lines(mt) or build_lines_from_markdowntable(mt)
+    local overrides = overrides_by_table and overrides_by_table[idx]
+    -- NOT `box and f() or g()`: that ternary idiom truncates multi-return to a
+    -- single value, silently dropping table_row_map.
+    local table_lines, table_row_map
+    if box then
+      table_lines, table_row_map = build_box_lines(mt, overrides)
+    else
+      table_lines, table_row_map = build_lines_from_markdowntable(mt, overrides)
+    end
 
     -- Header/separator rows, computed relative to table_lines first (0-indexed)
     -- so the box-vs-markdown logic below matches render_markdowntable exactly,
@@ -267,6 +481,10 @@ local function build_stacked_lines(tables, style)
 
     for _, l in ipairs(table_lines) do lines[#lines + 1] = l end
 
+    for i, r in pairs(table_row_map) do
+      row_map[block_start + i] = { table_idx = idx, row_idx = r }
+    end
+
     local sep_abs = {}
     for _, i in ipairs(sep_local) do sep_abs[#sep_abs + 1] = block_start + i end
 
@@ -277,47 +495,113 @@ local function build_stacked_lines(tables, style)
     }
   end
 
-  return lines, blocks
+  return lines, blocks, row_map
+end
+
+--- Rebuild and redraw the floating TableView from `state.tables` /
+--- `state.style` / `state.col_overrides`, WITHOUT resetting them — used by
+--- the interactive resize/row-edit keymaps after mutating `state.tables[i]`
+--- or `state.col_overrides[i]`. No-op (returns nil) when the view isn't open.
+---@return string[]|nil lines the newly-rendered lines, or nil if not open
+local function rerender()
+  if not (state.buf and api.nvim_buf_is_valid(state.buf) and state.tables and state.style) then
+    return nil
+  end
+
+  local box = state.style == "box"
+  local lines, blocks, row_map
+
+  if state.single then
+    local mt = state.tables[1]
+    local overrides = state.col_overrides[1]
+    local raw_row_map
+    if box then
+      lines, raw_row_map = build_box_lines(mt, overrides)
+    else
+      lines, raw_row_map = build_lines_from_markdowntable(mt, overrides)
+    end
+    row_map = {}
+    for i, r in pairs(raw_row_map) do row_map[i] = { table_idx = 1, row_idx = r } end
+    blocks = { compute_single_highlight_block(lines, box) }
+  else
+    lines, blocks, row_map = build_stacked_lines(state.tables, state.style, state.col_overrides)
+  end
+
+  state.row_map = row_map
+
+  set_buf_opt(state.buf, "modifiable", true)
+  api.nvim_buf_set_lines(state.buf, 0, -1, false, lines)
+  set_buf_opt(state.buf, "modifiable", false)
+
+  clear_highlights(state.buf)
+  apply_blocks_highlight(state.buf, lines, blocks, state.opts or default_opts)
+
+  return lines
+end
+
+--- rerender() plus best-effort cursor restore: land back on the same
+--- (table_idx, row_idx, col_idx) cell `ctx` pointed at before the mutation —
+--- clamped into range if a row removal shifted things — so repeated Alt-key
+--- presses keep acting on the same cell instead of the cursor jumping.
+---@param ctx { table_idx: integer, row_idx: integer, col_idx: integer }
+local function rerender_preserving_cursor(ctx)
+  local lines = rerender()
+  if not lines or not state.row_map then return end
+  if not (state.win and api.nvim_win_is_valid(state.win)) then return end
+
+  local target_row = ctx.row_idx
+  local mt = state.tables and state.tables[ctx.table_idx]
+  if mt then
+    target_row = math.max(0, math.min(target_row, #mt.rows))
+  end
+
+  local target_line = nil
+  for i = 0, #lines - 1 do
+    local e = state.row_map[i]
+    if e and e.table_idx == ctx.table_idx and e.row_idx == target_row then
+      target_line = i
+      break
+    end
+  end
+  if not target_line then return end
+
+  local new_line = lines[target_line + 1] or ""
+  local cols = divider_columns(new_line)
+  local dispcol = cols[ctx.col_idx] or 0
+  local target_disp = math.min(dispcol + 2, display_width(new_line)) -- +2: past "| "
+  local bytecol = display_col_to_byte(new_line, target_disp)
+
+  pcall(api.nvim_win_set_cursor, state.win, { target_line + 1, bytecol })
 end
 
 function M.render_markdowntable(mt, opts)
   opts = merge(default_opts, opts or {})
   local box = opts.style == "box"
-  local lines = box and build_box_lines(mt) or build_lines_from_markdowntable(mt)
+  local lines, row_map
+  if box then
+    lines, row_map = build_box_lines(mt)
+  else
+    lines, row_map = build_lines_from_markdowntable(mt)
+  end
 
   if opts.floating then
     local buf, _ = ensure_view(opts)
     if not (buf and api.nvim_buf_is_valid(buf)) then return end
+
+    state.tables = { mt }
+    state.style = box and "box" or "markdown"
+    state.single = true
+    state.opts = opts
+    state.col_overrides = {}
+    state.row_map = {}
+    for i, r in pairs(row_map) do state.row_map[i] = { table_idx = 1, row_idx = r } end
 
     set_buf_opt(state.buf, "modifiable", true)
     api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     set_buf_opt(state.buf, "modifiable", false)
 
     clear_highlights(buf)
-
-    pcall(function()
-      local ns = state.namespace
-      local header_hl = opts.highlight and opts.highlight.header or "Title"
-      local sep_hl = opts.highlight and opts.highlight.separator or "Comment"
-      -- Box: line 0 = top border, line 1 = header row, line 2 = header rule.
-      -- Markdown: line 0 = header row, line 1 = separator.
-      local header_line = box and 1 or 0
-      if hl and hl.range then
-        if #lines > header_line then
-          hl.range(buf, ns, header_hl, { header_line, 0 }, { header_line, -1 }, { inclusive = false })
-        end
-        if box then
-          -- Dim every border/rule line (they don't start with the │ cell edge).
-          for i = 0, #lines - 1 do
-            if i ~= header_line and not (lines[i + 1] or ""):match("^│") then
-              hl.range(buf, ns, sep_hl, { i, 0 }, { i, -1 }, { inclusive = false })
-            end
-          end
-        elseif #lines >= 2 then
-          hl.range(buf, ns, sep_hl, { 1, 0 }, { 1, -1 }, { inclusive = false })
-        end
-      end
-    end)
+    apply_blocks_highlight(buf, lines, { compute_single_highlight_block(lines, box) }, opts)
   else
     local buf = api.nvim_create_buf(true, false)
     api.nvim_buf_set_name(buf, opts.bufname or "[Markdown Table]")
@@ -336,6 +620,12 @@ function M.close_view()
   end
   state.win = nil
   state.buf = nil
+  state.tables = nil
+  state.style = nil
+  state.single = nil
+  state.opts = nil
+  state.col_overrides = {}
+  state.row_map = nil
 end
 
 function M.toggle_markdowntable(mt, opts)
@@ -354,7 +644,7 @@ end
 function M.render_tables(tables, opts)
   opts = merge(default_opts, opts or {})
   local style = opts.style == "box" and "box" or "markdown"
-  local lines, blocks = build_stacked_lines(tables, style)
+  local lines, blocks, row_map = build_stacked_lines(tables, style)
 
   if not opts.floating then
     local buf = api.nvim_create_buf(true, false)
@@ -368,29 +658,19 @@ function M.render_tables(tables, opts)
   local buf, _ = ensure_view(opts)
   if not (buf and api.nvim_buf_is_valid(buf)) then return end
 
+  state.tables = tables
+  state.style = style
+  state.single = false
+  state.opts = opts
+  state.col_overrides = {}
+  state.row_map = row_map
+
   set_buf_opt(state.buf, "modifiable", true)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   set_buf_opt(state.buf, "modifiable", false)
 
   clear_highlights(buf)
-  pcall(function()
-    local ns = state.namespace
-    local header_hl = opts.highlight and opts.highlight.header or "Title"
-    local sep_hl = opts.highlight and opts.highlight.separator or "Comment"
-    if hl and hl.range then
-      for _, block in ipairs(blocks) do
-        if block.label_line then
-          hl.range(buf, ns, sep_hl, { block.label_line, 0 }, { block.label_line, -1 }, { inclusive = false })
-        end
-        if #lines > block.header_line then
-          hl.range(buf, ns, header_hl, { block.header_line, 0 }, { block.header_line, -1 }, { inclusive = false })
-        end
-        for _, sl in ipairs(block.sep_lines) do
-          hl.range(buf, ns, sep_hl, { sl, 0 }, { sl, -1 }, { inclusive = false })
-        end
-      end
-    end
-  end)
+  apply_blocks_highlight(buf, lines, blocks, opts)
 end
 
 --- Toggle the stacked all-tables preview (see render_tables).
@@ -404,29 +684,59 @@ function M.toggle_tables(tables, opts)
   M.render_tables(tables, opts)
 end
 
+--- Widen (delta > 0) or narrow (delta < 0) the column under the cursor in the
+--- floating TableView, by one column of extra padding. Never narrows below
+--- the column's natural content width — that would leave the widest cell in
+--- the column overflowing past the (now too-narrow) padded width used for
+--- shorter cells in the same column on other rows, breaking `|` divider
+--- alignment down the column. No-op when the cursor isn't on a table cell
+--- (e.g. a border/label/separator line) or the view isn't open.
+---@param delta integer +1 to widen, -1 to narrow
+function M.resize_current_column(delta)
+  local ctx = resolve_cursor_target()
+  if not ctx then return end
+
+  state.col_overrides[ctx.table_idx] = state.col_overrides[ctx.table_idx] or {}
+  local overrides = state.col_overrides[ctx.table_idx]
+  local current = overrides[ctx.col_idx] or 0
+  local new_value = math.max(0, current + delta)
+  if new_value == current then return end
+
+  overrides[ctx.col_idx] = new_value
+  rerender_preserving_cursor(ctx)
+end
+
+--- Insert (delta > 0) a blank row directly after the row under the cursor, or
+--- remove (delta < 0) the row under the cursor, in the floating TableView.
+--- Edits `state.tables[i].rows` in place — this is a DISPLAY-only mutation of
+--- the in-memory preview, not written back to the source buffer/file. Removing
+--- the header row is a no-op (headers aren't rows). No-op when the cursor
+--- isn't on a table row or the view isn't open.
+---@param delta integer +1 to insert, -1 to remove
+function M.resize_current_row(delta)
+  local ctx = resolve_cursor_target()
+  if not ctx then return end
+
+  local mt = state.tables and state.tables[ctx.table_idx]
+  if not mt then return end
+
+  if delta > 0 then
+    local ncols = #mt.header.cells
+    local new_row = { cells = {} }
+    for i = 1, ncols do new_row.cells[i] = { content = "" } end
+    table.insert(mt.rows, ctx.row_idx + 1, new_row)
+  else
+    if ctx.row_idx == 0 then return end -- header row: nothing to remove
+    if ctx.row_idx < 1 or ctx.row_idx > #mt.rows then return end
+    table.remove(mt.rows, ctx.row_idx)
+  end
+
+  rerender_preserving_cursor(ctx)
+end
+
 M.render_table = M.render_markdowntable
 M.toggle_table = M.toggle_markdowntable
 M.close        = M.close_view
-
---- Every DISPLAY column (not byte column) at which a `|` or box-drawing `│`
---- cell divider occurs on `line`. Iterates by character (via strcharpart), not
---- byte, so a preceding multi-byte character (ü, —, …, „", →, …) advances the
---- running column by its actual screen width rather than its byte count.
----@param line string
----@return integer[]
-local function divider_columns(line)
-  local cols = {}
-  local col = 0
-  local nchars = vim.fn.strchars(line)
-  for i = 0, nchars - 1 do
-    local ch = vim.fn.strcharpart(line, i, 1)
-    if ch == "|" or ch == "│" then
-      cols[#cols + 1] = col
-    end
-    col = col + display_width(ch)
-  end
-  return cols
-end
 
 --- Verify that a rendered table block (as returned by build_lines_from_
 --- markdowntable / build_box_lines / render_tables' stacked output) has every

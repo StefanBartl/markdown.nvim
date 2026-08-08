@@ -87,6 +87,22 @@ dependency-free reimplementation of the vim-table-mode essentials.
   GitHub-styled HTML in the system browser. `select` picks a table from a list;
   `close` closes the float (also `q` / `<Esc>` inside it).
 
+  Inside the floating preview (Normal mode, buffer-local to the popup only):
+
+  | Key | Action |
+  |---|---|
+  | `<M-Right>` | Widen the column under the cursor by one |
+  | `<M-Left>` | Narrow the column under the cursor by one (floors at its natural content width — never truncates) |
+  | `<M-Up>` | Insert a blank row directly after the row under the cursor |
+  | `<M-Down>` | Remove the row under the cursor (no-op on the header row) |
+
+  These edit the in-memory preview only — nothing is written back to the
+  source buffer or file; closing and reopening the preview starts fresh from
+  the actual table again. A cursor on a border, separator, or (in a stacked
+  multi-table view) a `── Table i/N ──` label line is a no-op for all four.
+  In a stacked view (`scope = %`/`cwd`/`<path>`), each table's column widths
+  are tracked independently.
+
   `toggle` / `markdown` / `box` accept an optional `scope`:
   | scope | Shows |
   |---|---|

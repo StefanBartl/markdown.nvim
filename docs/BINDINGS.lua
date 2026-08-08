@@ -9,9 +9,15 @@
 --   actions       — named functions on require("markdown").actions
 --                   (the implementation surface; bind your own keys to these).
 --   default_keys  — buffer-local defaults, installed on markdown filetypes.
---                     .editing   — bindings/keymaps.lua (gated by enable_keymaps
---                                  + the map_* / use_zf_override flags).
---                     .tableview — bindings/keymaps.lua (apply_tableview).
+--                     .editing         — bindings/keymaps.lua (gated by
+--                                        enable_keymaps + the map_* /
+--                                        use_zf_override flags).
+--                     .tableview       — bindings/keymaps.lua (apply_tableview);
+--                                        these trigger/close the TableView popup
+--                                        from a markdown buffer.
+--                     .tableview_popup — tableview/renderer.lua (ensure_view);
+--                                        active ONLY inside the popup buffer
+--                                        itself, not on markdown buffers.
 --   commands      — user commands.
 --                     .markdown      — the global :Markdown dispatcher.
 --                     .buffer_local  — commands created per markdown buffer.
@@ -83,6 +89,16 @@ return {
       { lhs = "<leader>tvb", mode = "n", cmd = "TableViewOpenBrowser", desc = "Open table in browser (basic HTML)" },
       { lhs = "<leader>tvc", mode = "n", cmd = "TableViewClose",      desc = "Close TableView" },
       { lhs = "<leader>tvm", mode = "n", cmd = "Markdown table mode toggle", desc = "Toggle table mode (auto-format)" },
+    },
+
+    -- Buffer-local to the TableView popup itself (tableview/renderer.lua),
+    -- Normal mode only — NOT active on markdown buffers, and not gated by
+    -- enable_keymaps (this popup has no "editing" surface to opt out of).
+    tableview_popup = {
+      { lhs = "<M-Right>", mode = "n", fn = "resize_current_column(1)",  desc = "Widen the column under the cursor" },
+      { lhs = "<M-Left>",  mode = "n", fn = "resize_current_column(-1)", desc = "Narrow the column under the cursor (floors at natural content width)" },
+      { lhs = "<M-Up>",    mode = "n", fn = "resize_current_row(1)",     desc = "Insert a blank row after the row under the cursor" },
+      { lhs = "<M-Down>",  mode = "n", fn = "resize_current_row(-1)",    desc = "Remove the row under the cursor (no-op on the header row)" },
     },
   },
 

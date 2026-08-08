@@ -685,6 +685,22 @@ Link (`<leader>[`):
   ]|            n     Jump to the next cell on the current table row
   [|            n     Jump to the previous cell on the current table row
 
+Inside the floating preview itself (buffer-local to the popup, Normal mode
+only — not active anywhere else):
+
+  Key           Action~
+  <M-Right>     Widen the column under the cursor
+  <M-Left>      Narrow the column under the cursor (floors at its natural
+                content width — never truncates)
+  <M-Up>        Insert a blank row after the row under the cursor
+  <M-Down>      Remove the row under the cursor (no-op on the header row)
+
+Display-only: these edit the preview in memory, not the source buffer/file;
+closing and reopening the preview starts fresh. A cursor on a border,
+separator, or (in a stacked multi-table view) a "── Table i/N ──" label line
+is a no-op for all four keys. In a stacked view, each table's column widths
+are tracked independently.
+
 See |markdown.nvim-tableview| and |:Markdown-table| for details.
 
 ==============================================================================
@@ -840,6 +856,15 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   `cwd`, and path completion. Same via the buffer-local commands directly:
   `:TableViewToggle`, `:TableViewToggle %`, `:TableViewBox cwd`,
   `:TableViewToggle ./docs`, …
+
+  Inside the floating preview (Normal mode, buffer-local to the popup):
+    <M-Right>  widen the column under the cursor
+    <M-Left>   narrow it (floors at its natural content width, never truncates)
+    <M-Up>     insert a blank row after the row under the cursor
+    <M-Down>   remove the row under the cursor (no-op on the header row)
+  Display-only — nothing is written back to the source buffer/file. A cursor
+  on a border, separator, or multi-table label line is a no-op. See
+  |markdown.nvim-keymaps-tableview|.
 
 :Markdown table format [options]
 
