@@ -11,9 +11,7 @@ local DEFAULT_MAX_LEVEL = 4
 ---@internal
 ---@param line string?
 ---@return boolean?
-local function is_frontmatter_fence(line)
-  return line and line:match("^%s*%-%-%-%s*$") ~= nil
-end
+local function is_frontmatter_fence(line) return line and line:match("^%s*%-%-%-%s*$") ~= nil end
 
 ---@internal
 ---@param bufnr integer
@@ -23,9 +21,7 @@ local function frontmatter_end(bufnr)
   if not is_frontmatter_fence(first) then return 0 end
   local lines = vim.api.nvim_buf_get_lines(bufnr, 1, -1, false)
   for i = 1, #lines do
-    if is_frontmatter_fence(lines[i]) then
-      return i + 1
-    end
+    if is_frontmatter_fence(lines[i]) then return i + 1 end
   end
   return 0
 end
@@ -41,9 +37,7 @@ local slug_mod = require("markdown.core.slug")
 ---@internal
 ---@param line string?
 ---@return boolean
-local function is_empty_line(line)
-  return not line or line:match("^%s*$") ~= nil
-end
+local function is_empty_line(line) return not line or line:match("^%s*$") ~= nil end
 
 ---@internal
 ---@param bufnr integer
@@ -68,12 +62,10 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
       local delete_start = toc_header_line - empty_before
       local delete_end = toc_header_line - 2
       vim.api.nvim_buf_set_lines(bufnr, delete_start, delete_end + 1, false, {})
-      toc_header_line = toc_header_line - remove_count
       separator_line = separator_line - remove_count
       total = vim.api.nvim_buf_line_count(bufnr)
     elseif empty_before == 0 and toc_header_line > 1 then
       vim.api.nvim_buf_set_lines(bufnr, toc_header_line - 1, toc_header_line - 1, false, { "" })
-      toc_header_line = toc_header_line + 1
       separator_line = separator_line + 1
       total = vim.api.nvim_buf_line_count(bufnr)
     end
@@ -81,9 +73,9 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
 
   if separator_line > 1 then
     local before_sep = separator_line - 1
-    local empty_before_sep = is_empty_line(vim.api.nvim_buf_get_lines(bufnr, before_sep - 1, before_sep, false)[1])
-        and 1
-      or 0
+    local empty_before_sep = is_empty_line(
+      vim.api.nvim_buf_get_lines(bufnr, before_sep - 1, before_sep, false)[1]
+    ) and 1 or 0
 
     local extra = 0
     for i = before_sep - 1, 1, -1 do
@@ -137,11 +129,13 @@ function M.update_markdown_toc(header_line, opts)
 
   local min_level = opts.min_level or DEFAULT_MIN_LEVEL
   local max_level = opts.max_level or DEFAULT_MAX_LEVEL
-  local marker    = opts.marker or "-"
+  local marker = opts.marker or "-"
   local slug_opts = { style = opts.anchor_style, separator = opts.anchor_separator }
   if min_level < 1 then min_level = 1 end
   if max_level > 6 then max_level = 6 end
-  if min_level > max_level then min_level, max_level = max_level, min_level end
+  if min_level > max_level then
+    min_level, max_level = max_level, min_level
+  end
 
   local bufnr = vim.api.nvim_get_current_buf()
   local total = vim.api.nvim_buf_line_count(bufnr)
@@ -152,7 +146,8 @@ function M.update_markdown_toc(header_line, opts)
   -- inside the block. Unset → whole buffer (frontmatter-aware), i.e. unchanged.
   local no_fm = opts.no_frontmatter == true
   local start_after_fm = no_fm and 0 or frontmatter_end(bufnr)
-  local scan_lower = opts.scan_first or math.max(1, start_after_fm > 0 and (start_after_fm + 1) or 1)
+  local scan_lower = opts.scan_first
+    or math.max(1, start_after_fm > 0 and (start_after_fm + 1) or 1)
   local scan_upper = opts.scan_last or total
 
   -- Optional excluded ranges (1-indexed inclusive). Buffer-scope callers pass the
@@ -245,7 +240,6 @@ function M.update_markdown_toc(header_line, opts)
   if existing_start then
     insert_at = existing_start
     vim.api.nvim_buf_set_lines(bufnr, existing_start - 1, existing_end, false, {})
-    total = vim.api.nvim_buf_line_count(bufnr)
   else
     local first_level1_idx = nil
     for i = scan_start, scan_upper do

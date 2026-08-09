@@ -13,9 +13,7 @@ M.config = {
 local api = vim.api
 local uv = vim.loop
 
-local function trim(s)
-  return s:match("^%s*(.-)%s*$") or ""
-end
+local function trim(s) return s:match("^%s*(.-)%s*$") or "" end
 
 local function find_href_or_imgsrc_in_buffer_near_cursor(bufnr, curline, radius)
   radius = radius or M.config.html_scan_radius
@@ -40,7 +38,8 @@ local function find_href_or_imgsrc_in_buffer_near_cursor(bufnr, curline, radius)
   local img = joined:match('<img.-src%s*=%s*"(.-)"') or joined:match("<img.-src%s*=%s*'(.-)'")
   if img and img ~= "" then return trim(img) end
 
-  local source_src = joined:match('<source.-src%s*=%s*"(.-)"') or joined:match("<source.-src%s*=%s*'(.-)'")
+  local source_src = joined:match('<source.-src%s*=%s*"(.-)"')
+    or joined:match("<source.-src%s*=%s*'(.-)'")
   if source_src and source_src ~= "" then return trim(source_src) end
 
   return nil
@@ -74,9 +73,7 @@ local function extract_file_target_from_line(line)
   return nil
 end
 
-local function is_url(target)
-  return target and target:match("^https?://") ~= nil
-end
+local function is_url(target) return target and target:match("^https?://") ~= nil end
 
 local path = require("markdown.util.path")
 
@@ -86,41 +83,37 @@ local function resolve_target_to_path(target)
   return path.resolve(target)
 end
 
-local function open_with_system_viewer(path)
-  local ok, err = platform.open(path)
+local function open_with_system_viewer(p)
+  local ok, err = platform.open(p)
   if not ok and M.config.notify_on_error then
-    notify.error("Failed to open: " .. tostring(err or path))
+    notify.error("Failed to open: " .. tostring(err or p))
   end
   return ok
 end
 
 --- Open an already-resolved path with the system application.
----@param path string
+---@param p string
 ---@return boolean ok
-function M.system_open(path)
-  return open_with_system_viewer(path)
-end
+function M.system_open(p) return open_with_system_viewer(p) end
 
 --- Open a resolved `.pdf` path. If pdfport.nvim is installed, ask whether to
 --- open with the system application or render it into a new buffer via
 --- pdfport's own backend fallback chain; otherwise open with the system
 --- application directly (no prompt, since there is no in-nvim alternative).
----@param path string
+---@param p string
 ---@return boolean ok
-function M.open_pdf(path)
+function M.open_pdf(p)
   local ok_pdfport = pcall(require, "pdfport")
-  if not ok_pdfport then
-    return open_with_system_viewer(path)
-  end
+  if not ok_pdfport then return open_with_system_viewer(p) end
 
   require("markdown.util.picker").select(
     { "System app", "pdfport (new buffer)" },
     { prompt = "Open PDF with:" },
     function(choice)
       if choice == "pdfport (new buffer)" then
-        require("pdfport").open({ path = path, mode = "buffer" })
+        require("pdfport").open({ path = p, mode = "buffer" })
       else
-        open_with_system_viewer(path)
+        open_with_system_viewer(p)
       end
     end
   )
@@ -133,13 +126,9 @@ function M.is_file_line(line)
   return not is_url(target)
 end
 
-function M.extract(line)
-  return extract_file_target_from_line(line)
-end
+function M.extract(line) return extract_file_target_from_line(line) end
 
-function M.resolve(target)
-  return resolve_target_to_path(target)
-end
+function M.resolve(target) return resolve_target_to_path(target) end
 
 function M.open(line)
   line = line or api.nvim_get_current_line()
@@ -151,7 +140,9 @@ function M.open(line)
 
   local resolved = resolve_target_to_path(target)
   if not resolved or resolved == "" then
-    if M.config.notify_on_error then notify.error("Could not resolve path: " .. tostring(target)) end
+    if M.config.notify_on_error then
+      notify.error("Could not resolve path: " .. tostring(target))
+    end
     return false
   end
 

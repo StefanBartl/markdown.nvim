@@ -8,9 +8,7 @@ local M = {}
 ---@internal
 ---@param line string
 ---@return boolean
-local function is_h2_or_more(line)
-  return line:match("^##+%s") ~= nil
-end
+local function is_h2_or_more(line) return line:match("^##+%s") ~= nil end
 
 ---@internal
 ---@param lines string[]
@@ -21,12 +19,8 @@ local function find_next_h2_heading(lines, start_idx)
   local in_fence = false
   for i = start_idx + 1, n do
     local line = lines[i] or ""
-    if line:match("^%s*```") or line:match("^%s*~~~") then
-      in_fence = not in_fence
-    end
-    if not in_fence and is_h2_or_more(line) then
-      return i
-    end
+    if line:match("^%s*```") or line:match("^%s*~~~") then in_fence = not in_fence end
+    if not in_fence and is_h2_or_more(line) then return i end
   end
   return nil
 end
@@ -40,9 +34,7 @@ local function find_section_end(lines, heading_idx, next_heading_idx)
   local search_end = next_heading_idx and (next_heading_idx - 1) or #lines
   for i = search_end, heading_idx + 1, -1 do
     local line = lines[i] or ""
-    if line ~= "---" and line:match("%S") then
-      return i
-    end
+    if line ~= "---" and line:match("%S") then return i end
   end
   return heading_idx
 end
@@ -71,9 +63,7 @@ function M.find_sections_needing_separator(lines)
 
   for i = 1, n do
     local line = lines[i] or ""
-    if line:match("^%s*```") or line:match("^%s*~~~") then
-      in_fence = not in_fence
-    end
+    if line:match("^%s*```") or line:match("^%s*~~~") then in_fence = not in_fence end
 
     if not in_fence and is_h2_or_more(line) then
       local next_heading = find_next_h2_heading(lines, i)
@@ -107,12 +97,8 @@ local function ensure_final_closer(bufnr)
   local last_heading = nil
   for i = 1, n do
     local line = lines[i] or ""
-    if line:match("^%s*```") or line:match("^%s*~~~") then
-      in_fence = not in_fence
-    end
-    if not in_fence and is_h2_or_more(line) then
-      last_heading = i
-    end
+    if line:match("^%s*```") or line:match("^%s*~~~") then in_fence = not in_fence end
+    if not in_fence and is_h2_or_more(line) then last_heading = i end
   end
   if not last_heading then return false end
 
@@ -149,9 +135,7 @@ function M.apply_headl_separators(bufnr, opts)
   local sections = M.find_sections_needing_separator(lines)
 
   if dry_run then
-    if notify_enabled then
-      notify.info(string.format("would fix %d sections", #sections))
-    end
+    if notify_enabled then notify.info(string.format("would fix %d sections", #sections)) end
     return #sections
   end
 
@@ -166,7 +150,6 @@ function M.apply_headl_separators(bufnr, opts)
     if lines_between > 0 then
       api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end + lines_between, false, {})
       offset = offset - lines_between
-      adjusted_next = section.next_heading_idx + offset
     end
 
     api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end, false, separator)

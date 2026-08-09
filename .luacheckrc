@@ -10,6 +10,7 @@ max_line_length = false
 
 ignore = {
   "212/_.*", -- unused argument whose name starts with underscore
+  "211/_.*", -- unused local variable whose name starts with underscore
   "212/self", -- unused self
   "122", -- setting a read-only field of a global (e.g. vim.*): common in Neovim
 }

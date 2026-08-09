@@ -51,9 +51,7 @@ local function slugify(s)
   return t
 end
 
-local function escape_lua_pattern(s)
-  return (s:gsub("([^%w])", "%%%1"))
-end
+local function escape_lua_pattern(s) return (s:gsub("([^%w])", "%%%1")) end
 
 local function strip_leading_hash(s)
   if not s then return s end
@@ -74,9 +72,7 @@ local function search_and_jump_to_fragment(fragment)
   for i = 1, total do
     local line = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
 
-    if line:match(fence_pattern) then
-      in_fence = not in_fence
-    end
+    if line:match(fence_pattern) then in_fence = not in_fence end
     if not in_fence then
       local id_pattern = "id%s*=%s*['\"]?#?" .. frag_esc .. "['\"]?"
       if line:match(id_pattern) then
@@ -114,13 +110,19 @@ local function search_and_jump_to_fragment(fragment)
     local ok, chunk_lines = pcall(api.nvim_buf_get_lines, bufnr, start_line - 1, end_line, false)
     if ok and chunk_lines then
       local chunk = table.concat(chunk_lines, " ")
-      if chunk:match("id%s*=%s*['\"]?#?" .. frag_esc .. "['\"]?") or chunk:match("{#*" .. frag_esc .. "}") then
+      if
+        chunk:match("id%s*=%s*['\"]?#?" .. frag_esc .. "['\"]?")
+        or chunk:match("{#*" .. frag_esc .. "}")
+      then
         api.nvim_win_set_cursor(0, { i, 0 })
         return true
       end
       if
-        (chunk:lower():match("<figure") or chunk:lower():match("<img") or chunk:lower():match("<figcaption"))
-        and chunk:match(frag_esc)
+        (
+          chunk:lower():match("<figure")
+          or chunk:lower():match("<img")
+          or chunk:lower():match("<figcaption")
+        ) and chunk:match(frag_esc)
       then
         api.nvim_win_set_cursor(0, { i, 0 })
         return true
@@ -131,9 +133,14 @@ local function search_and_jump_to_fragment(fragment)
   for i = 1, total do
     local line = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
     if line:match(frag_esc) then
-      if line:match("id") or line:match("style") or line:match("figure")
-        or line:match("img") or line:match("figcaption")
-        or line:match("src") or line:match("alt")
+      if
+        line:match("id")
+        or line:match("style")
+        or line:match("figure")
+        or line:match("img")
+        or line:match("figcaption")
+        or line:match("src")
+        or line:match("alt")
       then
         api.nvim_win_set_cursor(0, { i, 0 })
         return true
@@ -152,21 +159,21 @@ local function resolve_target_path(target)
   return path.resolve(target)
 end
 
-local function open_file_in_current_window(path)
-  if not path or path == "" then return false end
-  if path:match("^https?://") then return url.open(path) end
-  local stat = uv.fs_stat(path)
+local function open_file_in_current_window(p)
+  if not p or p == "" then return false end
+  if p:match("^https?://") then return url.open(p) end
+  local stat = uv.fs_stat(p)
   if not stat then
-    notify.warn("External anchor: target file not found: " .. tostring(path))
+    notify.warn("External anchor: target file not found: " .. tostring(p))
     return false
   end
   -- Media/binary -> system app (pdf -> system-app/pdfport choice);
   -- text-like -> open in the current window.
-  if should_open_externally(path) then
-    if is_pdf(path) then return file.open_pdf(path) end
-    return file.system_open(path)
+  if should_open_externally(p) then
+    if is_pdf(p) then return file.open_pdf(p) end
+    return file.system_open(p)
   end
-  vim.cmd("edit " .. vim.fn.fnameescape(path))
+  vim.cmd("edit " .. vim.fn.fnameescape(p))
   return true
 end
 
@@ -180,13 +187,9 @@ end
 function M.open_target(target)
   if not target or target == "" then return false end
 
-  if target:match("^https?://") then
-    return url.open(target)
-  end
+  if target:match("^https?://") then return url.open(target) end
 
-  if target:match("^#") then
-    return search_and_jump_to_fragment(target)
-  end
+  if target:match("^#") then return search_and_jump_to_fragment(target) end
 
   local resolved = resolve_target_path(target)
   if not resolved then
@@ -286,12 +289,10 @@ function M.handle_cursor_action(opts)
 
     local conf = cfg()
     require("markdown.util.picker").select(links, {
-      prompt  = string.format("Links on line (%d)", #links),
-      format  = function(lk) return lk.display end,
+      prompt = string.format("Links on line (%d)", #links),
+      format = function(lk) return lk.display end,
       backend = (conf.links and conf.links.picker) or "hover_select",
-    }, function(lk)
-      M.open_target(lk.target)
-    end)
+    }, function(lk) M.open_target(lk.target) end)
     return
   end
 
@@ -302,9 +303,7 @@ function M.handle_cursor_action(opts)
     return
   end
 
-  if not silent then
-    notify.info("Handler: No recognized target under cursor")
-  end
+  if not silent then notify.info("Handler: No recognized target under cursor") end
 end
 
 return M

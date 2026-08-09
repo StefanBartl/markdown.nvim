@@ -14,9 +14,7 @@ local uv = vim.uv or vim.loop
 ---@return function|nil
 local function try_lib_detector(name)
   local ok, fn = pcall(require, "lib.nvim.cross.platform." .. name)
-  if ok and type(fn) == "function" then
-    return fn
-  end
+  if ok and type(fn) == "function" then return fn end
   return nil
 end
 
@@ -48,17 +46,13 @@ end
 ---@param target string
 ---@return boolean ok, string|nil err
 function M.open(target)
-  if type(target) ~= "string" or target == "" then
-    return false, "empty target"
-  end
+  if type(target) ~= "string" or target == "" then return false, "empty target" end
 
   -- Preferred (Neovim 0.10+): does not route through 'shell', so it works
   -- regardless of shell=pwsh/cmd. Fall through to the launcher on failure.
   if vim.ui and type(vim.ui.open) == "function" then
     local ok, _obj, err = pcall(vim.ui.open, target)
-    if ok and err == nil then
-      return true
-    end
+    if ok and err == nil then return true end
   end
 
   -- lib.nvim.cross.open_default (soft dependency, matching this repo's
@@ -67,10 +61,8 @@ function M.open(target)
   -- which the manual fallback does not have.
   local ok_lib, open_default = pcall(require, "lib.nvim.cross.open_default")
   if ok_lib then
-    local ok_open, err = open_default(target)
-    if ok_open then
-      return true
-    end
+    local ok_open, _err = open_default(target)
+    if ok_open then return true end
   end
 
   -- Fallback: launch with a LIST argv so the call bypasses 'shell' entirely.
