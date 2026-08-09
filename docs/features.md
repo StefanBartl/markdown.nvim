@@ -1,5 +1,24 @@
 # Features
 
+For a fuller write-up per feature — including which keymap/command/autocmd
+it's wired to — see the thematic docs in [FEATURES/](FEATURES/):
+
+- [Headings](FEATURES/headings.md) — navigation, level shift, fold, TOC,
+  headline spacing, underline decoration
+- [Tables](FEATURES/tables.md) — formatter, auto-format mode, floating
+  browser/export, width-limited wrapping (`:MDTable*`)
+- [Links and references](FEATURES/links-and-references.md) — link wrap,
+  scan, diagnostics, anchor sync, filesystem creation
+- [Editing and handlers](FEATURES/editing-and-handlers.md) — bold wrap,
+  cursor-action dispatcher, image paste/screenshot
+- [Highlighting and UI](FEATURES/highlighting-and-ui.md) — fenced/inline
+  code, blockquotes, link underline, fenced-block scope
+- [Integrations](FEATURES/integrations.md) — render-markdown.nvim,
+  markdown-preview.nvim, mdview.nvim, images.nvim, nvzone/menu, pickers,
+  which-key
+
+This page stays as the quick module-by-module index below.
+
 | Module | What it does |
 |--------|-------------|
 | **headings** | Navigate (prev/next, by level), shift levels (normal/visual/whole-buffer, count-aware) |

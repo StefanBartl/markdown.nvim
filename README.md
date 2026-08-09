@@ -62,7 +62,7 @@ runtime:
 
 ## Documentation
 
-- [Features](docs/features.md) — full overview of every module (headings, fold, TOC, tables, links, and more).
+- [Features](docs/features.md) — module index, linking into [docs/FEATURES/](docs/FEATURES/) for a per-theme write-up (headings, tables, links, editing/handlers, highlighting/UI, integrations) noting each feature's keymap/command/autocmd.
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug.
 - [Configuration](docs/configuration.md) — full `setup()` reference with defaults, and feature gating.
 - [Config templates](docs/templates/README.md) — copy-paste `setup()` snippets for common customizations (blockquote colors, feature subsets, picker backends, image preview).
