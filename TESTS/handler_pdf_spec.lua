@@ -23,7 +23,10 @@ return function(H)
     reset()
     local system_opened = nil
     local orig_ui_open = vim.ui.open
-    vim.ui.open = function(p) system_opened = p; return true, nil end
+    vim.ui.open = function(p)
+      system_opened = p
+      return true, nil
+    end
 
     local ok_run, err_run = pcall(function()
       local file = require("markdown.handler.file")
@@ -33,7 +36,11 @@ return function(H)
 
     vim.ui.open = orig_ui_open
     if not ok_run then error(err_run, 0) end
-    eq(system_opened, "C:/docs/report.pdf", "no pdfport.nvim -> opened via the system app, no prompt")
+    eq(
+      system_opened,
+      "C:/docs/report.pdf",
+      "no pdfport.nvim -> opened via the system app, no prompt"
+    )
   end
 
   -- Case 2: pdfport.nvim installed, user picks "pdfport (new buffer)".
@@ -70,7 +77,10 @@ return function(H)
 
     local system_opened = nil
     local orig_ui_open = vim.ui.open
-    vim.ui.open = function(p) system_opened = p; return true, nil end
+    vim.ui.open = function(p)
+      system_opened = p
+      return true, nil
+    end
 
     local ok_run, err_run = pcall(function()
       local file = require("markdown.handler.file")

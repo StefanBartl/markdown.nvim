@@ -34,11 +34,11 @@ function M.list_blocks(bufnr)
         open = { row = i - 1, len = #fence, lang = vim.trim(lang or "") }
       elseif #fence >= open.len then
         blocks[#blocks + 1] = {
-          open_row      = open.row,
-          close_row     = i - 1,
+          open_row = open.row,
+          close_row = i - 1,
           content_start = open.row + 1,
-          content_end   = i - 1,
-          lang          = open.lang,
+          content_end = i - 1,
+          lang = open.lang,
         }
         open = nil
       end
@@ -60,13 +60,9 @@ function M.block_at(bufnr, row, opts)
   local best = nil
   for _, b in ipairs(M.list_blocks(bufnr)) do
     local ok = true
-    if lang_set and not lang_set[(b.lang or ""):lower()] then
-      ok = false
-    end
+    if lang_set and not lang_set[(b.lang or ""):lower()] then ok = false end
     if ok and row >= b.content_start and row <= (b.content_end - 1) then
-      if not best or (b.close_row - b.open_row) < (best.close_row - best.open_row) then
-        best = b
-      end
+      if not best or (b.close_row - b.open_row) < (best.close_row - best.open_row) then best = b end
     end
   end
   return best

@@ -19,12 +19,10 @@ return function(H)
   -- Stub the system opener so no real browser launches; count invocations.
   local orig_ui_open = vim.ui and vim.ui.open
   local opens = 0
-  if vim.ui then
-    vim.ui.open = function(_target)
-      opens = opens + 1
-      return true
-    end
-  end
+  if vim.ui then vim.ui.open = function(_target)
+    opens = opens + 1
+    return true
+  end end
 
   local restored = false
   local function restore()
@@ -36,14 +34,20 @@ return function(H)
   local run_ok, run_err = pcall(function()
     -- 1) First call for a style opens the system browser exactly once.
     local okShow1, err1 = session.show("<html><body><p>v1</p></body></html>", "spec_style_a")
-    ok(okShow1, "show: first call for a style succeeds" .. (err1 and (" (" .. tostring(err1) .. ")") or ""))
+    ok(
+      okShow1,
+      "show: first call for a style succeeds" .. (err1 and (" (" .. tostring(err1) .. ")") or "")
+    )
     eq(opens, 1, "show: first call opens the system browser")
 
     local path = session._fixed_path("spec_style_a")
     local content1 = read_file(path)
     ok(content1 ~= nil, "show: writes the fixed file")
     ok(content1 and content1:find("v1", 1, true) ~= nil, "show: file contains the rendered content")
-    ok(content1 and content1:find("setInterval", 1, true) ~= nil, "show: file has the auto-refresh script injected")
+    ok(
+      content1 and content1:find("setInterval", 1, true) ~= nil,
+      "show: file has the auto-refresh script injected"
+    )
 
     -- 2) A second call for the SAME style updates the file but does not open
     --    a second tab — this is the actual "reuse" behavior under test.
@@ -52,7 +56,10 @@ return function(H)
     eq(opens, 1, "show: second call does NOT open a new tab (reuse)")
 
     local content2 = read_file(path)
-    ok(content2 and content2:find("v2", 1, true) ~= nil, "show: second call overwrites the same file with new content")
+    ok(
+      content2 and content2:find("v2", 1, true) ~= nil,
+      "show: second call overwrites the same file with new content"
+    )
     ok(content2 and content2:find("v1", 1, true) == nil, "show: old content is gone, not appended")
 
     -- 3) A different style key gets its own independent "opened" tracking.

@@ -29,12 +29,8 @@ return function(H)
   local function stub_preview(available, result)
     local state = { previewed = nil }
     package.loaded["markdown.util.image_preview"] = {
-      available = function()
-        return available
-      end,
-      detect = function()
-        return available and "snacks" or nil
-      end,
+      available = function() return available end,
+      detect = function() return available and "snacks" or nil end,
       preview = function(p)
         state.previewed = p
         return result, result and nil or "stubbed failure"
@@ -55,9 +51,7 @@ return function(H)
     end
     local ok, err = pcall(fn)
     vim.ui.open = orig
-    if not ok then
-      error(err, 0)
-    end
+    if not ok then error(err, 0) end
     return opened
   end
 
@@ -66,14 +60,12 @@ return function(H)
     reset()
     local state = stub_preview(false, false)
     package.loaded["markdown.util.picker"] = {
-      select = function()
-        error("must not prompt when no preview provider is installed")
-      end,
+      select = function() error("must not prompt when no preview provider is installed") end,
     }
 
-    local opened = with_system_opener(function()
-      require("markdown.handler.image").open_image("C:/img/pic.png")
-    end)
+    local opened = with_system_opener(
+      function() require("markdown.handler.image").open_image("C:/img/pic.png") end
+    )
 
     eq(opened, "C:/img/pic.png", "no provider -> opened via the system app")
     eq(state.previewed, nil, "no provider -> preview never attempted")
@@ -123,9 +115,7 @@ return function(H)
     reset()
     local state = stub_preview(true, true)
     package.loaded["markdown.util.picker"] = {
-      select = function()
-        error("preview='system' must not prompt")
-      end,
+      select = function() error("preview='system' must not prompt") end,
     }
 
     local opened = with_system_opener(function()
@@ -143,9 +133,7 @@ return function(H)
     reset()
     local state = stub_preview(true, true)
     package.loaded["markdown.util.picker"] = {
-      select = function()
-        error("preview='preview' must not prompt")
-      end,
+      select = function() error("preview='preview' must not prompt") end,
     }
 
     local image = require("markdown.handler.image")
@@ -178,9 +166,7 @@ return function(H)
     reset()
     local state = stub_preview(true, true)
     package.loaded["markdown.util.picker"] = {
-      select = function()
-        error("a URL target must not prompt")
-      end,
+      select = function() error("a URL target must not prompt") end,
     }
 
     local opened = with_system_opener(function()

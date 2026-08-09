@@ -14,11 +14,11 @@
 --- `:Markdown refs check` is always a non-destructive dry run.
 
 local notify = require("markdown.util.notify").create("[markdown.core.refs]")
-local slug   = require("markdown.core.slug")
-local cfg    = require("markdown.config").get
+local slug = require("markdown.core.slug")
+local cfg = require("markdown.config").get
 
 local api = vim.api
-local uv  = vim.uv or vim.loop
+local uv = vim.uv or vim.loop
 
 local M = {}
 
@@ -76,11 +76,9 @@ local function positional_renames(old, new, into)
   local n = #new
   for i = 1, n do
     if old[i] ~= new[i] then
-      local left_ok  = (i == 1) or (old[i - 1] == new[i - 1])
+      local left_ok = (i == 1) or (old[i - 1] == new[i - 1])
       local right_ok = (i == n) or (old[i + 1] == new[i + 1])
-      if left_ok and right_ok and not into[old[i]] then
-        into[old[i]] = new[i]
-      end
+      if left_ok and right_ok and not into[old[i]] then into[old[i]] = new[i] end
     end
   end
 end
@@ -108,9 +106,7 @@ local function apply_renames(bufnr, renames)
         new_line, n = new_line:gsub("%]%(#" .. vim.pesc(old) .. "%)", "](#" .. new .. ")")
         replaced = replaced + n
       end
-      if new_line ~= line then
-        api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line })
-      end
+      if new_line ~= line then api.nvim_buf_set_lines(bufnr, i - 1, i, false, { new_line }) end
     end
   end
   return replaced
@@ -162,45 +158,48 @@ function M.reconcile(bufnr, opts)
     local pos = api.nvim_buf_get_extmark_by_id(bufnr, NS, id, {})
     if pos and pos[1] ~= nil then
       local cur = by_row[pos[1] + 1] -- extmark row is 0-indexed
-      if cur and cur ~= old and not renames[old] then
-        renames[old] = cur
-      end
+      if cur and cur ~= old and not renames[old] then renames[old] = cur end
     end
   end
 
   -- 1b) Fallback: positional diff catches renames where the extmark was dropped
   --     by a whole-line replacement (relevant mostly for save-mode).
   local current_list = {}
-  for _, h in ipairs(anchors.list) do current_list[#current_list + 1] = h.anchor end
+  for _, h in ipairs(anchors.list) do
+    current_list[#current_list + 1] = h.anchor
+  end
   positional_renames(st.last_list, current_list, renames)
 
   local renamed = 0
-  for _ in pairs(renames) do renamed = renamed + 1 end
+  for _ in pairs(renames) do
+    renamed = renamed + 1
+  end
 
   -- 2) Propagate renames into inline links.
   local links_changed = apply_renames(bufnr, renames)
 
   -- 4) Refresh the TOC in place (only if one already exists; never force-create).
   if conf.update_toc ~= false then
-    local header = conf.toc_header or (require("markdown.config").get().toc or {}).header or "## Table of content"
+    local header = conf.toc_header
+      or (require("markdown.config").get().toc or {}).header
+      or "## Table of content"
     local total = api.nvim_buf_line_count(bufnr)
     local re = "^%s*" .. vim.pesc(header) .. "%s*$"
     local has_toc = false
     for i = 1, total do
       local l = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1]
-      if l and l:match(re) then has_toc = true break end
+      if l and l:match(re) then
+        has_toc = true
+        break
+      end
     end
-    if has_toc then
-      pcall(function() require("markdown.commands.toc").update(header, {}) end)
-    end
+    if has_toc then pcall(function() require("markdown.commands.toc").update(header, {}) end) end
   end
 
   -- 5) Report orphans (recompute anchors post-rewrite for accuracy).
   local final = slug.heading_anchors(bufnr)
   local orphans = {}
-  if (conf.orphans or "report") ~= "ignore" then
-    orphans = collect_orphans(bufnr, final.set)
-  end
+  if (conf.orphans or "report") ~= "ignore" then orphans = collect_orphans(bufnr, final.set) end
 
   -- 6) Reset the baseline to the post-rewrite state: re-places every extmark and
   --    re-snapshots the ordered anchor list, so the next reconcile detects the
@@ -210,7 +209,8 @@ function M.reconcile(bufnr, opts)
   if not opts.silent then
     local parts = {}
     if renamed > 0 then
-      parts[#parts + 1] = string.format("%d heading(s) renamed, %d link(s) updated", renamed, links_changed)
+      parts[#parts + 1] =
+        string.format("%d heading(s) renamed, %d link(s) updated", renamed, links_changed)
     end
     if #orphans > 0 then
       parts[#parts + 1] = string.format("%d orphaned anchor link(s)", #orphans)
@@ -247,9 +247,9 @@ function M.check(bufnr)
   for _, o in ipairs(orphans) do
     items[#items + 1] = {
       bufnr = bufnr,
-      lnum  = o.lnum,
-      col   = 1,
-      text  = "broken anchor: " .. o.target,
+      lnum = o.lnum,
+      col = 1,
+      text = "broken anchor: " .. o.target,
     }
   end
   vim.fn.setqflist({}, " ", { title = "markdown.nvim: broken anchors", items = items })
@@ -281,9 +281,7 @@ function M.on_change(bufnr)
     pcall(function() timer:close() end)
     if st.timer == timer then st.timer = nil end
     vim.schedule(function()
-      if api.nvim_buf_is_valid(bufnr) then
-        pcall(M.reconcile, bufnr, { silent = true })
-      end
+      if api.nvim_buf_is_valid(bufnr) then pcall(M.reconcile, bufnr, { silent = true }) end
     end)
   end)
 end

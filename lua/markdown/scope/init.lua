@@ -39,9 +39,7 @@ local backend = nil
 ---@return boolean
 function M.enabled()
   -- Hard gate: the "fenced_scope" feature can be turned off entirely.
-  if not require("markdown.config").feature_enabled("fenced_scope") then
-    return false
-  end
+  if not require("markdown.config").feature_enabled("fenced_scope") then return false end
   if runtime_enable ~= nil then return runtime_enable end
   local c = cfg().fenced_scope
   return not (c and c.enable == false)
@@ -60,9 +58,7 @@ end
 --- Force the feature on/off at runtime (overrides config).
 ---@param value boolean
 ---@return nil
-function M.set_enabled(value)
-  runtime_enable = value and true or false
-end
+function M.set_enabled(value) runtime_enable = value and true or false end
 
 --- Toggle the feature at runtime.
 ---@return boolean now Enabled state after toggling.
@@ -73,9 +69,7 @@ end
 
 --- Clear the memoized backend (test/reload helper).
 ---@return nil
-function M._reset_backend()
-  backend = nil
-end
+function M._reset_backend() backend = nil end
 
 --- Configured markdown-family language tags.
 ---@return string[]
@@ -122,9 +116,7 @@ end
 ---@return table|nil block A block with open_row/close_row/content_start/content_end/lang
 local function md_block_at(bufnr, row0)
   local be = get_backend()
-  if be.kind == "cma" then
-    return be.fences.block_at(bufnr, row0, { lang = langs() })
-  end
+  if be.kind == "cma" then return be.fences.block_at(bufnr, row0, { lang = langs() }) end
   return be.mod.block_at(bufnr, row0, { lang = langs_set() })
 end
 
@@ -133,9 +125,7 @@ end
 ---@return table[]
 local function all_blocks(bufnr)
   local be = get_backend()
-  if be.kind == "cma" then
-    return be.fences.list_blocks(bufnr)
-  end
+  if be.kind == "cma" then return be.fences.list_blocks(bufnr) end
   return be.mod.list_blocks(bufnr)
 end
 
@@ -154,16 +144,14 @@ end
 function M.detect(bufnr, row0)
   if not M.enabled() then return nil end
   bufnr = bufnr or api.nvim_get_current_buf()
-  if row0 == nil then
-    row0 = api.nvim_win_get_cursor(0)[1] - 1
-  end
+  if row0 == nil then row0 = api.nvim_win_get_cursor(0)[1] - 1 end
 
   local block = md_block_at(bufnr, row0)
   if block then
     return {
-      kind  = "block",
+      kind = "block",
       first = block.content_start + 1, -- 1-indexed first interior line
-      last  = block.content_end,       -- 1-indexed last interior line
+      last = block.content_end, -- 1-indexed last interior line
       block = block,
     }
   end
@@ -176,9 +164,9 @@ function M.detect(bufnr, row0)
   end
 
   return {
-    kind    = "buffer",
-    first   = 1,
-    last    = api.nvim_buf_line_count(bufnr),
+    kind = "buffer",
+    first = 1,
+    last = api.nvim_buf_line_count(bufnr),
     exclude = exclude,
   }
 end
@@ -218,8 +206,8 @@ local function fold_blocks(bufnr)
   for _, b in ipairs(all_blocks(bufnr)) do
     out[#out + 1] = {
       content_start = b.content_start,
-      content_end   = b.content_end,
-      is_md         = set[(b.lang or ""):lower()] == true,
+      content_end = b.content_end,
+      is_md = set[(b.lang or ""):lower()] == true,
     }
   end
   fold_cache[bufnr] = { tick = tick, blocks = out }

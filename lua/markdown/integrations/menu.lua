@@ -16,9 +16,7 @@ local M = {}
 
 --- Whether the cursor is currently on an ATX heading line (`#`, `##`, …).
 ---@return boolean
-local function on_heading()
-  return vim.api.nvim_get_current_line():match("^%s*#+%s") ~= nil
-end
+local function on_heading() return vim.api.nvim_get_current_line():match("^%s*#+%s") ~= nil end
 
 --- Build the markdown menu entries for the current context.
 --- Returns an empty list when the integration (or every sub-entry) is disabled,
@@ -36,9 +34,9 @@ function M.items(opts)
 
   -- Fold controls — only meaningful on a heading (or when forced).
   if mcfg.fold ~= false and (opts.force_fold or on_heading()) then
-    items[#items + 1] = { name = "Fold / Unfold Heading",   cmd = actions.fold_toggle,  rtxt = "za" }
-    items[#items + 1] = { name = "Fold below H2 (toggle)",  cmd = actions.fold_h2plus,  rtxt = "zk" }
-    items[#items + 1] = { name = "Unfold All",              cmd = actions.unfold_all,   rtxt = "zu" }
+    items[#items + 1] = { name = "Fold / Unfold Heading", cmd = actions.fold_toggle, rtxt = "za" }
+    items[#items + 1] = { name = "Fold below H2 (toggle)", cmd = actions.fold_h2plus, rtxt = "zk" }
+    items[#items + 1] = { name = "Unfold All", cmd = actions.unfold_all, rtxt = "zu" }
   end
 
   -- Document-level actions (always available in a markdown buffer).
@@ -53,9 +51,7 @@ function M.items(opts)
     }
   end
 
-  if #items > 0 and #doc > 0 then
-    items[#items + 1] = { name = "separator" }
-  end
+  if #items > 0 and #doc > 0 then items[#items + 1] = { name = "separator" } end
   vim.list_extend(items, doc)
 
   return items

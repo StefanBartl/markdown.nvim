@@ -33,7 +33,9 @@ local function create_open_command(bufnr)
   composer.verb("OpenWithSystemApplication", {
     buffer = bufnr,
     desc = "[markdown.nvim] Open image/url/file under cursor",
-    routes = { { path = {}, run = function() require("markdown.handler").handle_cursor_action() end } },
+    routes = {
+      { path = {}, run = function() require("markdown.handler").handle_cursor_action() end },
+    },
   })
 end
 
@@ -42,8 +44,17 @@ end
 -- registered once per session, on the first buffer that triggers it, so a
 -- feature flag flipped after that point was never live-checked either).
 local SUBCOMMAND_NAMES = {
-  "links", "toc", "refs", "table", "render", "preview",
-  "mdview", "create", "scope", "headline_spacing", "image",
+  "links",
+  "toc",
+  "refs",
+  "table",
+  "render",
+  "preview",
+  "mdview",
+  "create",
+  "scope",
+  "headline_spacing",
+  "image",
 }
 
 composer.register_type("MARKDOWN_SUBARG", {
@@ -86,7 +97,7 @@ local function create_markdown_command()
             -- Full unsplit argument text (quotes preserved). fargs mangles
             -- quoted tokens, so subcommands that take a literal separator
             -- (e.g. `:Markdown table tableize " "`) recover it from here.
-            args  = ctx.raw.args,
+            args = ctx.raw.args,
           })
         end,
       }
@@ -123,11 +134,11 @@ function M.apply_tableview(ev)
   local ok, existing = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
   if ok and existing and existing["TableViewToggle"] then return end
 
-  local ui                   = require("markdown.tableview.renderer")
-  local parser               = require("markdown.tableview.parser")
-  local browser_view_basic   = require("markdown.tableview.views.browser_basic")
-  local browser_view_nice    = require("markdown.tableview.views.browser_niceified")
-  local table_selector       = require("markdown.tableview.views.table_selector")
+  local ui = require("markdown.tableview.renderer")
+  local parser = require("markdown.tableview.parser")
+  local browser_view_basic = require("markdown.tableview.views.browser_basic")
+  local browser_view_nice = require("markdown.tableview.views.browser_niceified")
+  local table_selector = require("markdown.tableview.views.table_selector")
 
   -- The table spanning the cursor row, or nil (no notification here — the
   -- caller decides whether a miss falls back to "all tables" or is an error).
@@ -136,9 +147,7 @@ function M.apply_tableview(ev)
   local function table_at_cursor()
     local line = api.nvim_win_get_cursor(0)[1]
     for _, t in ipairs(parser.get_tables(bufnr)) do
-      if t.start_line <= line and line <= (t.end_line or t.start_line) then
-        return t
-      end
+      if t.start_line <= line and line <= (t.end_line or t.start_line) then return t end
     end
     return nil
   end
@@ -292,18 +301,23 @@ function M.apply_tableview(ev)
   composer.verb("TableViewSelect", {
     buffer = bufnr,
     desc = "[markdown.nvim] Select and preview table",
-    routes = { { path = {}, run = function()
-      local tables = parser.get_tables(bufnr)
-      if #tables == 0 then
-        notify.info("No tables found in buffer")
-        return
-      end
-      if #tables == 1 then
-        ui.render_table(tables[1], { floating = true })
-        return
-      end
-      table_selector(tables)
-    end } },
+    routes = {
+      {
+        path = {},
+        run = function()
+          local tables = parser.get_tables(bufnr)
+          if #tables == 0 then
+            notify.info("No tables found in buffer")
+            return
+          end
+          if #tables == 1 then
+            ui.render_table(tables[1], { floating = true })
+            return
+          end
+          table_selector(tables)
+        end,
+      },
+    },
   })
 
   composer.verb("TableViewClose", {
@@ -312,24 +326,37 @@ function M.apply_tableview(ev)
     routes = { { path = {}, run = function() ui.close() end } },
   })
 
-  local reopen_arg = { { name = "reopen", type = "STRING", optional = true, values = { "reopen" } } }
+  local reopen_arg =
+    { { name = "reopen", type = "STRING", optional = true, values = { "reopen" } } }
 
   composer.verb("TableViewOpenBrowser", {
     buffer = bufnr,
     desc = "[markdown.nvim] Open table in browser (basic HTML); reuses the tab across calls, 'reopen' forces a new one",
-    routes = { { path = {}, args = reopen_arg, run = function(ctx)
-      local force_new = (ctx.args.reopen or ""):lower() == "reopen"
-      browser_view_basic(bufnr, force_new)
-    end } },
+    routes = {
+      {
+        path = {},
+        args = reopen_arg,
+        run = function(ctx)
+          local force_new = (ctx.args.reopen or ""):lower() == "reopen"
+          browser_view_basic(bufnr, force_new)
+        end,
+      },
+    },
   })
 
   composer.verb("TableViewOpenBrowserNice", {
     buffer = bufnr,
     desc = "[markdown.nvim] Open table in browser (nice HTML); reuses the tab across calls, 'reopen' forces a new one",
-    routes = { { path = {}, args = reopen_arg, run = function(ctx)
-      local force_new = (ctx.args.reopen or ""):lower() == "reopen"
-      browser_view_nice(bufnr, force_new)
-    end } },
+    routes = {
+      {
+        path = {},
+        args = reopen_arg,
+        run = function(ctx)
+          local force_new = (ctx.args.reopen or ""):lower() == "reopen"
+          browser_view_nice(bufnr, force_new)
+        end,
+      },
+    },
   })
 end
 

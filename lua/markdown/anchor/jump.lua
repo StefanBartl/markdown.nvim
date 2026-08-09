@@ -122,9 +122,7 @@ function M.jump()
   end
 
   local success = pcall(jump_to_anchor, anchor)
-  if not success then
-    notify.warn("Could not jump to anchor: " .. anchor)
-  end
+  if not success then notify.warn("Could not jump to anchor: " .. anchor) end
 end
 
 return M

@@ -13,14 +13,10 @@ local M = {}
 local live_au = {}
 
 ---@internal
-local function do_sync()
-  require("markdown.core.refs").reconcile(vim.api.nvim_get_current_buf())
-end
+local function do_sync() require("markdown.core.refs").reconcile(vim.api.nvim_get_current_buf()) end
 
 ---@internal
-local function do_check()
-  require("markdown.core.refs").check(vim.api.nvim_get_current_buf())
-end
+local function do_check() require("markdown.core.refs").check(vim.api.nvim_get_current_buf()) end
 
 ---@internal
 local function do_baseline()
@@ -31,9 +27,7 @@ end
 ---@internal
 ---@param bufnr integer
 ---@return boolean
-local function live_is_on(bufnr)
-  return live_au[bufnr] ~= nil
-end
+local function live_is_on(bufnr) return live_au[bufnr] ~= nil end
 
 ---@internal
 ---@param bufnr integer
@@ -74,17 +68,21 @@ local function do_live(argv)
   elseif action == "off" then
     live_off(bufnr)
   elseif action == "toggle" then
-    if live_is_on(bufnr) then live_off(bufnr) else live_on(bufnr) end
+    if live_is_on(bufnr) then
+      live_off(bufnr)
+    else
+      live_on(bufnr)
+    end
   else
     notify.warn("refs live: expected on|off|toggle")
   end
 end
 
 local subcommands = {
-  sync     = do_sync,
-  check    = do_check,
+  sync = do_sync,
+  check = do_check,
   baseline = do_baseline,
-  live     = do_live,
+  live = do_live,
 }
 
 --- Runs `:Markdown refs <sync|check|live|baseline>` (default: `sync`).

@@ -10,9 +10,7 @@ local is_enabled = false
 
 ---@internal
 ---@return boolean
-local function available()
-  return vim.fn.exists(":RenderMarkdown") == 2
-end
+local function available() return vim.fn.exists(":RenderMarkdown") == 2 end
 
 ---@internal
 ---@param state boolean

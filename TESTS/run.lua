@@ -22,9 +22,7 @@ local function add_lib_nvim()
   -- Built by appending, not as a literal: an unset $LIB_NVIM_PATH would put a
   -- nil at index 1 and `ipairs` would stop before checking anything.
   local candidates = {}
-  if vim.env.LIB_NVIM_PATH then
-    candidates[#candidates + 1] = vim.env.LIB_NVIM_PATH
-  end
+  if vim.env.LIB_NVIM_PATH then candidates[#candidates + 1] = vim.env.LIB_NVIM_PATH end
   candidates[#candidates + 1] = vim.fn.getcwd() .. "/../lib.nvim"
   candidates[#candidates + 1] = vim.fn.stdpath("data") .. "/lazy/lib.nvim"
 

@@ -23,7 +23,7 @@ return function(H)
     "| Config-Modul | Überschneidet sich mit | Empfehlung |",
     "|---|---|---|",
     "| `config/harpoon/utils/normkey.lua` (Slash-Normalisierung, Drive-Upper, UNC, realpath) | `lib.nvim.cross.fs.separators.normalize`, `lib.nvim.fs.path` | In lib zusammenführen; Harpoon konsumiert lib |",
-    "| `config/harpoon/utils/path_label.lua` (Kürzung `<root>/…/<parent>/<file>`) | `lib.nvim.fs.path_shorten` | „....\"-Elision als Option in `path_shorten` |",
+    '| `config/harpoon/utils/path_label.lua` (Kürzung `<root>/…/<parent>/<file>`) | `lib.nvim.fs.path_shorten` | „...."-Elision als Option in `path_shorten` |',
     "| `config/harpoon/utils/fs_project_key.lua` (Git-Root → cwd-Fallback, normalisiert) | `lib.nvim.fs.find_root` + `lib.nvim.git` | `lib.nvim.fs.project_key()` bauen, überall nutzen |",
   }
 
@@ -35,14 +35,20 @@ return function(H)
   renderer.render_markdowntable(mt, { floating = true, style = "markdown" })
   local out_md = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
   local ok_md, err_md = renderer.validate_alignment(out_md)
-  ok(ok_md, "markdown style: every | divider aligns on the same display column — " .. tostring(err_md))
+  ok(
+    ok_md,
+    "markdown style: every | divider aligns on the same display column — " .. tostring(err_md)
+  )
   renderer.close_view()
 
   -- Box-drawing style.
   renderer.render_markdowntable(mt, { floating = true, style = "box" })
   local out_box = vim.api.nvim_buf_get_lines(vim.api.nvim_get_current_buf(), 0, -1, false)
   local ok_box, err_box = renderer.validate_alignment(out_box)
-  ok(ok_box, "box style: every │ divider aligns on the same display column — " .. tostring(err_box))
+  ok(
+    ok_box,
+    "box style: every │ divider aligns on the same display column — " .. tostring(err_box)
+  )
   renderer.close_view()
 
   -- validate_alignment itself: must actually CATCH a drifted table, not just
@@ -53,7 +59,10 @@ return function(H)
   }
   local drift_ok, drift_err = renderer.validate_alignment(drifted)
   eq(drift_ok, false, "validate_alignment: detects a genuinely misaligned divider")
-  ok(drift_err and drift_err:match("display column"), "validate_alignment: error message names the mismatch")
+  ok(
+    drift_err and drift_err:match("display column"),
+    "validate_alignment: error message names the mismatch"
+  )
 
   -- And a well-formed, hand-aligned table must pass (sanity: not overly strict).
   local aligned = {
@@ -77,7 +86,12 @@ return function(H)
   -- column counts, so a single global check across both would itself flag a
   -- (correct) count difference between blocks — that's expected, not a bug.
   local blank_idx = nil
-  for i, l in ipairs(out_stacked) do if l == "" then blank_idx = i break end end
+  for i, l in ipairs(out_stacked) do
+    if l == "" then
+      blank_idx = i
+      break
+    end
+  end
   ok(blank_idx ~= nil, "stacked render: tables are separated by a blank line")
   local first_block = { unpack(out_stacked, 1, blank_idx - 1) }
   local ok_first = renderer.validate_alignment(first_block)

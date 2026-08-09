@@ -15,12 +15,12 @@ local M = {}
 -- ---------------------------------------------------------------------------
 
 local VIEW_ACTIONS = {
-  toggle      = "TableViewToggle",
-  markdown    = "TableViewMarkdown",
-  box         = "TableViewBox",
-  select      = "TableViewSelect",
-  close       = "TableViewClose",
-  browser     = "TableViewOpenBrowser",
+  toggle = "TableViewToggle",
+  markdown = "TableViewMarkdown",
+  box = "TableViewBox",
+  select = "TableViewSelect",
+  close = "TableViewClose",
+  browser = "TableViewOpenBrowser",
   browsernice = "TableViewOpenBrowserNice",
 }
 
@@ -40,7 +40,9 @@ local function do_view(argv)
   -- Forward any remaining argument (e.g. the `%` scope for toggle/markdown/box)
   -- to the buffer-local command: `:Markdown table view toggle %` -> `:TableViewToggle %`.
   local rest = {}
-  for i = 2, #argv do rest[#rest + 1] = argv[i] end
+  for i = 2, #argv do
+    rest[#rest + 1] = argv[i]
+  end
   if #rest > 0 then
     vim.cmd(cmd .. " " .. table.concat(rest, " "))
   else
@@ -71,9 +73,7 @@ local function do_format(argv)
     ok, ferr = fmt.format_tables_in_scope(opts)
   end
 
-  if not ok then
-    notify.warn("table format: " .. (ferr or "unknown error"))
-  end
+  if not ok then notify.warn("table format: " .. (ferr or "unknown error")) end
 end
 
 -- ---------------------------------------------------------------------------
@@ -91,9 +91,11 @@ local function do_mode(argv)
   local action = (argv[1] or "toggle"):lower()
   local bufnr = vim.api.nvim_get_current_buf()
   if action == "on" then
-    tm.enable(bufnr); notify.info("Table mode: on")
+    tm.enable(bufnr)
+    notify.info("Table mode: on")
   elseif action == "off" then
-    tm.disable(bufnr); notify.info("Table mode: off")
+    tm.disable(bufnr)
+    notify.info("Table mode: off")
   elseif action == "toggle" then
     notify.info("Table mode: " .. (tm.toggle(bufnr) and "on" or "off"))
   else
@@ -145,8 +147,11 @@ local function do_tableize(argv, ctx)
   -- punctuation char, or a quoted literal such as `" "`. nil = auto-detect.
   local delim = tableize_sep(argv, ctx)
   local ok, err = tm.tableize(bufnr, line1, line2, delim)
-  if ok then notify.info("Tableized " .. (line2 - line1 + 1) .. " line(s)")
-  else notify.warn(err or "tableize failed") end
+  if ok then
+    notify.info("Tableized " .. (line2 - line1 + 1) .. " line(s)")
+  else
+    notify.warn(err or "tableize failed")
+  end
 end
 
 -- ---------------------------------------------------------------------------
@@ -220,7 +225,9 @@ local function do_new(argv)
 
   local function row(fill)
     local cells = {}
-    for c = 1, cols do cells[c] = fill(c) end
+    for c = 1, cols do
+      cells[c] = fill(c)
+    end
     return "| " .. table.concat(cells, " | ") .. " |"
   end
 
@@ -242,12 +249,12 @@ end
 -- ---------------------------------------------------------------------------
 
 local subcommands = {
-  view     = do_view,
-  format   = do_format,
-  new      = do_new,
-  mode     = do_mode,
+  view = do_view,
+  format = do_format,
+  new = do_new,
+  mode = do_mode,
   tableize = do_tableize,
-  import   = do_import,
+  import = do_import,
 }
 
 --- Runs `:Markdown table <view|format|new|mode|tableize|import> ...`.
@@ -320,8 +327,21 @@ function M.complete(arglead, cmdline)
     -- Offer the named separator formats; a literal/quoted delimiter is typed
     -- freehand. `auto` is the default (omit the argument entirely).
     local out = {}
-    local names = { "auto", "csv", "tsv", "psv", "scsv", "space", "spaces",
-      "comma", "tab", "semicolon", "colon", "pipe", "whitespace" }
+    local names = {
+      "auto",
+      "csv",
+      "tsv",
+      "psv",
+      "scsv",
+      "space",
+      "spaces",
+      "comma",
+      "tab",
+      "semicolon",
+      "colon",
+      "pipe",
+      "whitespace",
+    }
     for _, name in ipairs(names) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end

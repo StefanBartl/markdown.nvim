@@ -38,10 +38,16 @@ return function(H)
   -- externally instead of via :edit).
   do
     local image = require("markdown.handler.image")
-    eq(image.is_image_line("[Review answer](C:/repos/foo/bar.md)"), false,
-      "plain link is not an image")
-    eq(image.is_image_line("![alt](C:/repos/foo/pic.png)"), true,
-      "real image syntax still recognized")
+    eq(
+      image.is_image_line("[Review answer](C:/repos/foo/bar.md)"),
+      false,
+      "plain link is not an image"
+    )
+    eq(
+      image.is_image_line("![alt](C:/repos/foo/pic.png)"),
+      true,
+      "real image syntax still recognized"
+    )
   end
 
   -- A Windows drive-letter absolute path (`C:/…`) is a file target, not a
@@ -64,16 +70,22 @@ return function(H)
     local h2 = require("markdown.handler")
 
     local target = vim.fn.tempname() .. "_mdnvim_target.md"
-    local fh = io.open(target, "w"); if fh then fh:write("# target"); fh:close() end
+    local fh = io.open(target, "w")
+    if fh then
+      fh:write("# target")
+      fh:close()
+    end
     local target_slash = (target:gsub("\\", "/"))
     -- Force a drive-letter-style prefix regardless of host OS so the
     -- regression (Windows-only) is exercised everywhere the suite runs.
-    local drive_target = target_slash:match("^%a:/") and target_slash
-      or ("C:" .. target_slash)
+    local drive_target = target_slash:match("^%a:/") and target_slash or ("C:" .. target_slash)
 
     local system_opened = nil
     local orig_ui_open = vim.ui.open
-    vim.ui.open = function(p) system_opened = p; return true, nil end
+    vim.ui.open = function(p)
+      system_opened = p
+      return true, nil
+    end
 
     local run_ok, run_err = pcall(function()
       local buf = H.scratch("markdown")

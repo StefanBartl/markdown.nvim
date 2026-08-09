@@ -13,9 +13,7 @@ local M = {}
 ---@return boolean registered
 function M.setup()
   local ok, wk = pcall(require, "which-key")
-  if not ok or type(wk) ~= "table" then
-    return false
-  end
+  if not ok or type(wk) ~= "table" then return false end
   if type(wk.add) == "function" then
     -- which-key v3
     wk.add({

@@ -42,7 +42,8 @@ local function find_img_src_in_buffer_near_cursor(bufnr, curline, radius)
   local src = joined:match('<img.-src%s*=%s*"(.-)"') or joined:match("<img.-src%s*=%s*'(.-)'")
   if src and src ~= "" then return trim(src) end
 
-  local source_src = joined:match('<source.-src%s*=%s*"(.-)"') or joined:match("<source.-src%s*=%s*'(.-)'")
+  local source_src = joined:match('<source.-src%s*=%s*"(.-)"')
+    or joined:match("<source.-src%s*=%s*'(.-)'")
   if source_src and source_src ~= "" then return trim(source_src) end
 
   return nil
@@ -81,9 +82,7 @@ local function extract_image_target_from_line(line)
   return nil
 end
 
-local function is_url(target)
-  return target and target:match("^https?://") ~= nil
-end
+local function is_url(target) return target and target:match("^https?://") ~= nil end
 
 local path = require("markdown.util.path")
 
@@ -125,22 +124,16 @@ end
 function M.open_image(file_path)
   -- A URL has no local file for a provider to read, so it always goes to the
   -- system handler (the browser), regardless of `preview`.
-  if is_url(file_path) then
-    return open_with_system_viewer(file_path)
-  end
+  if is_url(file_path) then return open_with_system_viewer(file_path) end
 
   local mode = M.config.preview or "ask"
-  if mode == "system" then
-    return open_with_system_viewer(file_path)
-  end
+  if mode == "system" then return open_with_system_viewer(file_path) end
 
   if not require("markdown.util.image_preview").available() then
     return open_with_system_viewer(file_path)
   end
 
-  if mode == "preview" then
-    return open_with_preview(file_path)
-  end
+  if mode == "preview" then return open_with_preview(file_path) end
 
   require("markdown.util.picker").select(
     { "System app", "Preview in Neovim" },
@@ -156,17 +149,11 @@ function M.open_image(file_path)
   return true
 end
 
-function M.is_image_line(line)
-  return extract_image_target_from_line(line) ~= nil
-end
+function M.is_image_line(line) return extract_image_target_from_line(line) ~= nil end
 
-function M.extract(line)
-  return extract_image_target_from_line(line)
-end
+function M.extract(line) return extract_image_target_from_line(line) end
 
-function M.resolve(target)
-  return resolve_target_to_path(target)
-end
+function M.resolve(target) return resolve_target_to_path(target) end
 
 function M.open(line)
   line = line or api.nvim_get_current_line()
@@ -178,7 +165,9 @@ function M.open(line)
 
   local resolved = resolve_target_to_path(target)
   if not resolved or resolved == "" then
-    if M.config.notify_on_error then notify.error("Could not resolve path: " .. tostring(target)) end
+    if M.config.notify_on_error then
+      notify.error("Could not resolve path: " .. tostring(target))
+    end
     return false
   end
 

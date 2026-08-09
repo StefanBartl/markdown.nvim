@@ -12,9 +12,7 @@ local aug = nil
 
 ---@internal
 ---@return boolean
-local function available()
-  return vim.fn.exists(":MarkdownPreview") == 2
-end
+local function available() return vim.fn.exists(":MarkdownPreview") == 2 end
 
 -- Re-entrancy guard: while we drive markdown-preview ourselves, suppress the
 -- BufEnter auto-refresh so focus changes triggered by opening/closing the
@@ -32,11 +30,9 @@ local function ensure_autorefresh()
   -- leaving the previous instance's autocmd registered alongside the new one.
   aug = vim.api.nvim_create_augroup("MarkdownNvimPreviewRefresh", { clear = true })
   autocmd.create("BufEnter", function()
-    if active and not busy and available() then
-      vim.cmd("silent! MarkdownPreview")
-    end
+    if active and not busy and available() then vim.cmd("silent! MarkdownPreview") end
   end, {
-    group   = aug,
+    group = aug,
     pattern = "*.md",
     desc = "[markdown.nvim] Refresh preview on buffer switch while active",
   })

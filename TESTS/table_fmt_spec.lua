@@ -27,7 +27,9 @@ return function(H)
   -- complete: prefix filtering
   local c = tf.complete("scope=")
   local has_cursor = false
-  for _, v in ipairs(c) do if v == "scope=cursor" then has_cursor = true end end
+  for _, v in ipairs(c) do
+    if v == "scope=cursor" then has_cursor = true end
+  end
   ok(has_cursor, "complete offers scope=cursor")
 
   -- format_tables_in_buffer: aligns to equal-width rows and is idempotent.

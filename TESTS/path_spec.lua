@@ -33,7 +33,11 @@ return function(H)
   local run_ok, err = pcall(function()
     vim.fn.mkdir(root .. "/sub/deep", "p")
     local target_file = root .. "/sub/deep/file.md"
-    local fh = io.open(target_file, "w"); if fh then fh:write("x"); fh:close() end
+    local fh = io.open(target_file, "w")
+    if fh then
+      fh:write("x")
+      fh:close()
+    end
 
     -- Buffer lives in root/sub; cwd is root. A link written relative to cwd
     -- ("./sub/deep/file.md") would double "sub" under the buffer base and only
@@ -43,16 +47,28 @@ return function(H)
     vim.cmd("cd " .. vim.fn.fnameescape(root))
 
     local resolved = path.resolve("./sub/deep/file.md")
-    eq(resolved, os_native(root .. "/sub/deep/file.md"), "resolve: falls back to cwd base when buffer base misses")
+    eq(
+      resolved,
+      os_native(root .. "/sub/deep/file.md"),
+      "resolve: falls back to cwd base when buffer base misses"
+    )
     ok(vim.uv.fs_stat(resolved), "resolve: returned path exists on disk")
 
     -- Backslash-authored relative link resolves identically.
     local resolved_bs = path.resolve(".\\sub\\deep\\file.md")
-    eq(resolved_bs, os_native(root .. "/sub/deep/file.md"), "resolve: backslash link resolves like slash link")
+    eq(
+      resolved_bs,
+      os_native(root .. "/sub/deep/file.md"),
+      "resolve: backslash link resolves like slash link"
+    )
 
     -- A genuine miss returns the buffer-relative candidate (clean, normalized).
     local miss = path.resolve("./does/not/exist.md")
-    eq(miss, os_native(root .. "/sub/does/not/exist.md"), "resolve: miss -> normalized buffer-relative candidate")
+    eq(
+      miss,
+      os_native(root .. "/sub/does/not/exist.md"),
+      "resolve: miss -> normalized buffer-relative candidate"
+    )
   end)
 
   -- Teardown (always).

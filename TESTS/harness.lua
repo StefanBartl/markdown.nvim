@@ -17,9 +17,7 @@ end
 ---@param v any
 ---@param msg string|nil
 function H.ok(v, msg)
-  if not v then
-    error(("FAIL %s: expected truthy, got %q"):format(msg or "", tostring(v)), 2)
-  end
+  if not v then error(("FAIL %s: expected truthy, got %q"):format(msg or "", tostring(v)), 2) end
 end
 
 --- Fresh scratch buffer, made current, with an optional filetype.
@@ -28,9 +26,7 @@ end
 function H.scratch(ft)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_set_current_buf(buf)
-  if ft then
-    vim.bo[buf].filetype = ft
-  end
+  if ft then vim.bo[buf].filetype = ft end
   return buf
 end
 

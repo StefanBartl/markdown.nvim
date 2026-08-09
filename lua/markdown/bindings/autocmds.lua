@@ -83,13 +83,15 @@ function M.setup(cfg)
     })
 
     if refs_mode == "save" then
-      autocmd.create("BufWritePre", function(ev)
-        require("markdown.core.refs").reconcile(ev.buf, { silent = true })
-      end, {
-        group = aug_refs,
-        pattern = { "*.md", "*.markdown", "*.mdx" },
-        desc = "[markdown.nvim] refs: sync on save",
-      })
+      autocmd.create(
+        "BufWritePre",
+        function(ev) require("markdown.core.refs").reconcile(ev.buf, { silent = true }) end,
+        {
+          group = aug_refs,
+          pattern = { "*.md", "*.markdown", "*.mdx" },
+          desc = "[markdown.nvim] refs: sync on save",
+        }
+      )
     else -- "live"
       autocmd.create({ "TextChanged", "TextChangedI" }, function(ev)
         if not is_md(vim.bo[ev.buf].filetype) then return end
@@ -102,9 +104,7 @@ function M.setup(cfg)
     end
 
     -- Clean up timers/extmarks when a tracked buffer is wiped.
-    autocmd.create("BufWipeout", function(ev)
-      require("markdown.core.refs").detach(ev.buf)
-    end, {
+    autocmd.create("BufWipeout", function(ev) require("markdown.core.refs").detach(ev.buf) end, {
       group = aug_refs,
       pattern = { "*.md", "*.markdown", "*.mdx" },
       desc = "[markdown.nvim] refs: teardown",
@@ -114,7 +114,8 @@ function M.setup(cfg)
   -- Link diagnostics automatic trigger (independent opt-in via
   -- config.links.diagnostics.mode). "off" leaves the manual :Markdown links
   -- check command as the only way to run it.
-  local links_diag_mode = (cfg.links and cfg.links.diagnostics and cfg.links.diagnostics.mode) or "off"
+  local links_diag_mode = (cfg.links and cfg.links.diagnostics and cfg.links.diagnostics.mode)
+    or "off"
   if feat("links") and links_diag_mode == "save" then
     local aug_links = api.nvim_create_augroup("MarkdownNvimLinkDiagnostics", { clear = true })
     autocmd.create("BufWritePost", function(ev)
@@ -153,10 +154,10 @@ function M.setup(cfg)
     autocmd.create("FileType", function(ev)
       if not is_md(vim.bo[ev.buf].filetype) then return end
       if not feat("fold") then return end
-      vim.opt_local.foldmethod     = "expr"
-      vim.opt_local.foldexpr       = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
-      vim.opt_local.foldenable     = true
-      vim.opt_local.foldlevel      = 99
+      vim.opt_local.foldmethod = "expr"
+      vim.opt_local.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
+      vim.opt_local.foldenable = true
+      vim.opt_local.foldlevel = 99
       vim.opt_local.foldlevelstart = 99
     end, {
       group = aug_fold,

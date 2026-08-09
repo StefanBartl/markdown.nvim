@@ -15,39 +15,39 @@
 local M = {}
 
 ---@internal
-local function head()      return require("markdown.core.headings") end
+local function head() return require("markdown.core.headings") end
 ---@internal
-local function fold()      return require("markdown.core.fold") end
+local function fold() return require("markdown.core.fold") end
 ---@internal
 local function fold_prev() return require("markdown.core.fold_prev") end
 ---@internal
-local function fold_lvl()  return require("markdown.core.fold_levels") end
+local function fold_lvl() return require("markdown.core.fold_levels") end
 ---@internal
-local function wrap()      return require("markdown.core.wrap") end
+local function wrap() return require("markdown.core.wrap") end
 ---@internal
 local function wrap_link() return require("markdown.core.wrap_link") end
 ---@internal
-local function handler()   return require("markdown.handler") end
+local function handler() return require("markdown.handler") end
 ---@internal
-local function image()     return require("markdown.handler.image") end
+local function image() return require("markdown.handler.image") end
 ---@internal
-local function anchor()    return require("markdown.anchor.jump") end
+local function anchor() return require("markdown.anchor.jump") end
 
 -- Bold / link wrap ----------------------------------------------------------
 
 ---Toggles bold (`**`) on the current visual selection.
 function M.toggle_bold_visual() wrap().toggle_visual_bold() end
 ---Wraps the word under the cursor in a markdown link (normal mode).
-function M.wrap_link_normal()   wrap_link().wrap_normal() end
+function M.wrap_link_normal() wrap_link().wrap_normal() end
 ---Wraps the current visual selection in a markdown link.
-function M.wrap_link_visual()   wrap_link().wrap_visual() end
+function M.wrap_link_visual() wrap_link().wrap_visual() end
 
 -- Heading navigation --------------------------------------------------------
 
 ---Moves the cursor to the previous heading.
-function M.prev_heading()       head().goto_prev_heading() end
+function M.prev_heading() head().goto_prev_heading() end
 ---Moves the cursor to the next heading.
-function M.next_heading()       head().goto_next_heading() end
+function M.next_heading() head().goto_next_heading() end
 ---Moves the cursor to the previous heading at the current level.
 function M.prev_heading_level() head().goto_prev_heading_level() end
 ---Moves the cursor to the next heading at the current level.
@@ -56,38 +56,35 @@ function M.next_heading_level() head().goto_next_heading_level() end
 -- Folding -------------------------------------------------------------------
 
 ---Toggles the fold under the cursor.
-function M.fold_toggle()       fold().toggle_under_cursor() end
+function M.fold_toggle() fold().toggle_under_cursor() end
 ---Unfolds everything and centers the view.
-function M.unfold_all()        fold().unfold_all_center() end
+function M.unfold_all() fold().unfold_all_center() end
 ---Folds the previous heading's section, then centers the view.
 function M.fold_prev_heading() fold_prev().fold_prev_heading_then_center() end
 ---Folds every H2-and-deeper heading.
-function M.fold_h2plus()       fold_lvl().fold_h2_plus() end
+function M.fold_h2plus() fold_lvl().fold_h2_plus() end
 
 -- TOC (count = max heading level) -------------------------------------------
 
 ---Inserts/refreshes the TOC. `vim.v.count` (if > 0) sets `max_level`.
 function M.toc()
   local count = vim.v.count
-  require("markdown.commands.toc").update(
-    nil,
-    count > 0 and { max_level = count } or nil
-  )
+  require("markdown.commands.toc").update(nil, count > 0 and { max_level = count } or nil)
 end
 
 -- Cursor action / image / anchor --------------------------------------------
 
 ---Runs the cursor action under the cursor (link/image/anchor/heading, etc).
-function M.cursor_action()       handler().handle_cursor_action() end
+function M.cursor_action() handler().handle_cursor_action() end
 -- Mouse-triggered variant: a miss is a normal/frequent outcome (moving the
 -- mouse over prose), so suppress the "nothing found" notification. `mouse`
 -- also routes a double-click on a heading to a fold toggle (see the handler).
 ---Mouse-triggered variant of `cursor_action`: silent misses, double-click-to-fold.
 function M.cursor_action_mouse() handler().handle_cursor_action({ silent = true, mouse = true }) end
 ---Opens the image under the cursor.
-function M.open_image()          image().open() end
+function M.open_image() image().open() end
 ---Jumps to the anchor under the cursor.
-function M.jump_anchor()         anchor().jump() end
+function M.jump_anchor() anchor().jump() end
 
 -- Heading level shift (count = number of levels) ----------------------------
 
@@ -145,9 +142,9 @@ local function repeat_cell_move(move)
 end
 
 ---Moves to the next table cell, repeated `vim.v.count1` times.
-function M.table_next_cell()   repeat_cell_move(require("markdown.core.table_mode").next_cell) end
+function M.table_next_cell() repeat_cell_move(require("markdown.core.table_mode").next_cell) end
 ---Moves to the previous table cell, repeated `vim.v.count1` times.
-function M.table_prev_cell()   repeat_cell_move(require("markdown.core.table_mode").prev_cell) end
+function M.table_prev_cell() repeat_cell_move(require("markdown.core.table_mode").prev_cell) end
 ---Toggles table mode for the current buffer.
 function M.table_mode_toggle() require("markdown.core.table_mode").toggle() end
 

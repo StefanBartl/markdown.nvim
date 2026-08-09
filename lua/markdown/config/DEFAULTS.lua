@@ -15,14 +15,14 @@ local DEFAULTS = {
   -- just_enable wins over disable/enable. See config.features() for the names.
   features = {},
 
-  map_double_asterisk    = true,
-  map_wrap_link          = true,
-  keep_inner_selection   = true,
-  protect_h1             = false,
-  use_zf_override        = true,
-  enable_autocmds        = true,
-  enable_keymaps         = true,
-  ft_only                = true,
+  map_double_asterisk = true,
+  map_wrap_link = true,
+  keep_inner_selection = true,
+  protect_h1 = false,
+  use_zf_override = true,
+  enable_autocmds = true,
+  enable_keymaps = true,
+  ft_only = true,
   ensure_headline_spacing = true,
 
   -- nvzone/menu integration (opt-in on the host side; entries provided by
@@ -30,9 +30,9 @@ local DEFAULTS = {
   -- provide no entries at all. See :help markdown.nvim (menu) if documented.
   menu = {
     enable = true,
-    fold   = true, -- fold/unfold entries (only shown on a heading)
-    toc    = true, -- Insert/Refresh TOC
-    refs   = true, -- Sync References
+    fold = true, -- fold/unfold entries (only shown on a heading)
+    toc = true, -- Insert/Refresh TOC
+    refs = true, -- Sync References
   },
 
   -- Per-binding keymap control, keyed by the stable ids in
@@ -48,7 +48,7 @@ local DEFAULTS = {
   -- always override these per call.
   table = {
     header_align = "center", -- "left" | "center" | "right"
-    entry_align  = "center",
+    entry_align = "center",
     -- Per-column alignment overrides applied on every format. Unset by
     -- default; example:
     --   col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } }
@@ -97,13 +97,48 @@ local DEFAULTS = {
   -- :edit. Extend this list to taste.
   open = {
     external_extensions = {
-      "png", "jpg", "jpeg", "gif", "bmp", "svg", "webp", "ico", "tif", "tiff",
+      "png",
+      "jpg",
+      "jpeg",
+      "gif",
+      "bmp",
+      "svg",
+      "webp",
+      "ico",
+      "tif",
+      "tiff",
       "pdf",
-      "mp4", "mkv", "mov", "avi", "webm", "wmv", "flv",
-      "mp3", "wav", "flac", "ogg", "m4a",
-      "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp",
-      "zip", "tar", "gz", "tgz", "7z", "rar",
-      "exe", "msi", "dmg", "app",
+      "mp4",
+      "mkv",
+      "mov",
+      "avi",
+      "webm",
+      "wmv",
+      "flv",
+      "mp3",
+      "wav",
+      "flac",
+      "ogg",
+      "m4a",
+      "doc",
+      "docx",
+      "xls",
+      "xlsx",
+      "ppt",
+      "pptx",
+      "odt",
+      "ods",
+      "odp",
+      "zip",
+      "tar",
+      "gz",
+      "tgz",
+      "7z",
+      "rar",
+      "exe",
+      "msi",
+      "dmg",
+      "app",
     },
   },
 
@@ -116,10 +151,10 @@ local DEFAULTS = {
   -- Comment/String, then this same hex as the last-resort fallback;
   -- re-derived on every ColorScheme event).
   blockquote_hl = {
-    marker_fg   = "#6A9955", -- the `>` token
-    text_fg     = "#7EE787", -- text after `>`
-    text_bg     = "dimm",    -- whole line gets a dimmed bg derived from marker_fg
-    text_bold   = true,
+    marker_fg = "#6A9955", -- the `>` token
+    text_fg = "#7EE787", -- text after `>`
+    text_bg = "dimm", -- whole line gets a dimmed bg derived from marker_fg
+    text_bold = true,
     text_italic = false,
   },
 
@@ -134,14 +169,14 @@ local DEFAULTS = {
   -- range for `<leader>toc` / `:Markdown toc`. `:Markdown toc [level]` still
   -- overrides max_level per call; these are just the defaults.
   toc = {
-    header    = "## Table of content",
-    marker    = "-",  -- bullet prefix for each entry, e.g. "-" or "*"
+    header = "## Table of content",
+    marker = "-", -- bullet prefix for each entry, e.g. "-" or "*"
     min_level = 2,
     max_level = 4,
     -- Anchor slug style (shared with core.refs so links stay in sync):
     --   "gfm"       — GitHub-style: lowercase, non-word chars stripped (default)
     --   "keep-case" — same shape, original case preserved (some renderers keep it)
-    anchor_style     = "gfm",
+    anchor_style = "gfm",
     -- Separator between words in a generated anchor. Change only for renderers
     -- that don't use "-" (e.g. some static-site generators use "_").
     anchor_separator = "-",
@@ -154,15 +189,15 @@ local DEFAULTS = {
     -- "off"  — no automatic sync (manual commands only)
     -- "save" — reconcile on BufWritePre (default)
     -- "live" — reconcile debounced after edits (see debounce_ms)
-    mode        = "save",
+    mode = "save",
     -- Live-mode debounce (ms). Deliberately generous: a rename is rare and a
     -- full buffer scan is cheap, but we never want to run it on every keystroke.
     -- 1500–3000 is a sane range.
     debounce_ms = 2000,
     -- Refresh an existing TOC block during a sync (never force-creates one).
-    update_toc  = true,
+    update_toc = true,
     -- "report" surfaces links whose #anchor matches no heading; "ignore" skips.
-    orphans     = "report",
+    orphans = "report",
     -- TOC header line to detect/refresh. Unset by default: falls back to
     -- `toc.header` above; only set this if refs should look for a DIFFERENT
     -- header than the one `:Markdown toc` itself generates.
@@ -171,8 +206,8 @@ local DEFAULTS = {
 
   fenced_fix = {
     inline_base_hl = { "DiagnosticWarn", "Special", "Constant", "String" },
-    inline_style   = { italic = false, bold = false },
-    delimiter_hl   = "Comment",
+    inline_style = { italic = false, bold = false },
+    delimiter_hl = "Comment",
   },
 
   -- Treat a markdown-family fenced block (```markdown / md / mdx / ascii-markdown
@@ -185,15 +220,15 @@ local DEFAULTS = {
   -- shared source of truth); a small built-in scanner is used as a fallback when
   -- color_my_ascii isn't installed, so this stays usable standalone.
   fenced_scope = {
-    enable   = true,
-    langs    = { "markdown", "md", "mdx", "ascii-markdown", "ascii-md" },
+    enable = true,
+    langs = { "markdown", "md", "mdx", "ascii-markdown", "ascii-md" },
     provider = "auto", -- "auto" | "color_my_ascii" | "builtin"
     operations = {
-      toc   = true,
-      nav   = true,
-      jump  = true,
+      toc = true,
+      nav = true,
+      jump = true,
       shift = true,
-      fold  = true, -- scope-aware foldexpr (a `#` inside a non-markdown fence won't fold)
+      fold = true, -- scope-aware foldexpr (a `#` inside a non-markdown fence won't fold)
     },
   },
 }

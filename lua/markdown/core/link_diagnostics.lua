@@ -75,24 +75,24 @@ function M.collect(bufnr)
       if path == nil and anchor then
         if not anchors.set[anchor] then
           out[#out + 1] = {
-            lnum     = lk.lnum - 1,
-            col      = lk.col,
-            end_col  = lk.col_end + 1,
+            lnum = lk.lnum - 1,
+            col = lk.col,
+            end_col = lk.col_end + 1,
             severity = vim.diagnostic.severity.WARN,
-            message  = string.format("No heading produces anchor #%s", anchor),
-            source   = "markdown_links",
+            message = string.format("No heading produces anchor #%s", anchor),
+            source = "markdown_links",
           }
         end
       elseif path and path ~= "" and not is_external(path) then
         local full = resolve_path(bufnr, path)
         if uv.fs_stat(full) == nil then
           out[#out + 1] = {
-            lnum     = lk.lnum - 1,
-            col      = lk.col,
-            end_col  = lk.col_end + 1,
+            lnum = lk.lnum - 1,
+            col = lk.col,
+            end_col = lk.col_end + 1,
             severity = vim.diagnostic.severity.ERROR,
-            message  = string.format("Dead link: %q not found", path),
-            source   = "markdown_links",
+            message = string.format("Dead link: %q not found", path),
+            source = "markdown_links",
           }
         end
       end
@@ -108,12 +108,16 @@ function M.collect(bufnr)
     local base = slug.gfm(h.title)
     if seen_base[base] > 1 and h.anchor ~= base then
       out[#out + 1] = {
-        lnum     = h.row - 1,
-        col      = 0,
-        end_col  = 0,
+        lnum = h.row - 1,
+        col = 0,
+        end_col = 0,
         severity = vim.diagnostic.severity.HINT,
-        message  = string.format("Duplicate heading title %q (anchor auto-suffixed to #%s)", h.title, h.anchor),
-        source   = "markdown_links",
+        message = string.format(
+          "Duplicate heading title %q (anchor auto-suffixed to #%s)",
+          h.title,
+          h.anchor
+        ),
+        source = "markdown_links",
       }
     end
   end

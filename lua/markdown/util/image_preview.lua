@@ -40,28 +40,20 @@ local M = {}
 ---@return Markdown.ImageProvider|nil
 function M.detect()
   local ok_images, images = pcall(require, "images")
-  if ok_images and type(images) == "table" and images.show then
-    return "images.nvim"
-  end
+  if ok_images and type(images) == "table" and images.show then return "images.nvim" end
 
   local ok_snacks, snacks = pcall(require, "snacks")
-  if ok_snacks and type(snacks) == "table" and snacks.image then
-    return "snacks"
-  end
+  if ok_snacks and type(snacks) == "table" and snacks.image then return "snacks" end
 
   local ok_image = pcall(require, "image")
-  if ok_image then
-    return "image.nvim"
-  end
+  if ok_image then return "image.nvim" end
 
   return nil
 end
 
 ---Whether an in-Neovim preview is possible at all.
 ---@return boolean
-function M.available()
-  return M.detect() ~= nil
-end
+function M.available() return M.detect() ~= nil end
 
 ---Float geometry: a centred window at 80% of the editor, clamped so a very
 ---large or very small editor still yields something usable.
@@ -86,15 +78,9 @@ end
 ---@param on_close fun()|nil
 local function wire_close(buf, win, on_close)
   local function close()
-    if on_close then
-      pcall(on_close)
-    end
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
-    if vim.api.nvim_buf_is_valid(buf) then
-      pcall(vim.api.nvim_buf_delete, buf, { force = true })
-    end
+    if on_close then pcall(on_close) end
+    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    if vim.api.nvim_buf_is_valid(buf) then pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
   end
 
   for _, lhs in ipairs({ "q", "<Esc>" }) do
@@ -107,9 +93,7 @@ local function wire_close(buf, win, on_close)
     pattern = tostring(win),
     once = true,
     callback = function()
-      if on_close then
-        pcall(on_close)
-      end
+      if on_close then pcall(on_close) end
     end,
   })
 end
@@ -134,9 +118,7 @@ function M.preview(path)
     local ok, browse = pcall(require, "images.browse")
     local drawn = ok and browse.draw_in_window(path, win)
     if not drawn then
-      if vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_close(win, true)
-      end
+      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
       if vim.api.nvim_buf_is_valid(buf) then
         pcall(vim.api.nvim_buf_delete, buf, { force = true })
       end
@@ -156,9 +138,7 @@ function M.preview(path)
     local win = vim.api.nvim_open_win(buf, true, float_opts())
     local ok, err = pcall(vim.cmd.edit, vim.fn.fnameescape(path))
     if not ok then
-      if vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_win_close(win, true)
-      end
+      if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
       return false, tostring(err)
     end
     -- :edit replaced the scratch buffer with the file's own.
@@ -178,31 +158,19 @@ function M.preview(path)
   })
 
   if not ok or not img then
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
-    if vim.api.nvim_buf_is_valid(buf) then
-      pcall(vim.api.nvim_buf_delete, buf, { force = true })
-    end
+    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+    if vim.api.nvim_buf_is_valid(buf) then pcall(vim.api.nvim_buf_delete, buf, { force = true }) end
     return false, ("image.nvim could not load %s: %s"):format(path, tostring(img))
   end
 
-  local ok_render, render_err = pcall(function()
-    img:render()
-  end)
+  local ok_render, render_err = pcall(function() img:render() end)
   if not ok_render then
-    pcall(function()
-      img:clear()
-    end)
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
+    pcall(function() img:clear() end)
+    if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
     return false, tostring(render_err)
   end
 
-  wire_close(buf, win, function()
-    img:clear()
-  end)
+  wire_close(buf, win, function() img:clear() end)
   return true
 end
 

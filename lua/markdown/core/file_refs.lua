@@ -17,8 +17,8 @@
 --- candidate → scan pipeline.
 
 local link_scan = require("markdown.core.link_scan")
-local path      = require("markdown.util.path")
-local ignore    = require("markdown.util.ignore")
+local path = require("markdown.util.path")
+local ignore = require("markdown.util.ignore")
 
 local M = {}
 
@@ -58,9 +58,19 @@ end
 ---@return string[]
 local function rg_cmd(root, needle)
   return {
-    "rg", "--files-with-matches", "--fixed-strings", "--color=never",
-    "-g", "*.md", "-g", "!.git/*", "-g", "!node_modules/*",
-    "--", needle, root,
+    "rg",
+    "--files-with-matches",
+    "--fixed-strings",
+    "--color=never",
+    "-g",
+    "*.md",
+    "-g",
+    "!.git/*",
+    "-g",
+    "!node_modules/*",
+    "--",
+    needle,
+    root,
   }
 end
 
@@ -81,9 +91,7 @@ end
 --- Pure-Lua fallback candidate list (every `*.md` under root).
 ---@param root string
 ---@return string[]
-local function glob_files(root)
-  return vim.fn.globpath(root, "**/*.md", false, true)
-end
+local function glob_files(root) return vim.fn.globpath(root, "**/*.md", false, true) end
 
 --- Scan a candidate file list for links resolving to `wanted` (a normalized,
 --- lower-cased absolute path). Reads each file fully so fenced code blocks are
@@ -104,12 +112,12 @@ local function scan(files, wanted)
             local resolved, base_used, is_abs = path.resolve_traced(lk.target, file_dir)
             if resolved and path.normalize(resolved):lower() == wanted then
               out[#out + 1] = {
-                file           = file,
-                line           = lk.lnum,
-                target         = lk.target,
-                display        = lk.display,
-                base_dir       = base_used,
-                is_absolute    = is_abs,
+                file = file,
+                line = lk.lnum,
+                target = lk.target,
+                display = lk.display,
+                base_dir = base_used,
+                is_absolute = is_abs,
                 had_dot_prefix = lk.target:match("^%.[/\\]") ~= nil,
               }
             end
@@ -130,7 +138,7 @@ function M.find_references(target_path, opts)
   opts = opts or {}
   if not target_path or target_path == "" then return {} end
 
-  local root   = opts.root or vim.fn.getcwd()
+  local root = opts.root or vim.fn.getcwd()
   local wanted = path.normalize(target_path):lower()
   local needle = needle_for(target_path)
 
@@ -159,7 +167,7 @@ function M.find_references_async(target_path, opts, callback)
     return
   end
 
-  local root   = opts.root or vim.fn.getcwd()
+  local root = opts.root or vim.fn.getcwd()
   local wanted = path.normalize(target_path):lower()
   local needle = needle_for(target_path)
 
@@ -184,15 +192,11 @@ end
 ---@param new_abs_path string  New absolute path of the moved/renamed file.
 ---@return string  The link target to write in place of `ref.target`.
 function M.retarget(ref, new_abs_path)
-  if ref.is_absolute then
-    return (path.normalize(new_abs_path))
-  end
+  if ref.is_absolute then return (path.normalize(new_abs_path)) end
 
   local base = ref.base_dir or vim.fn.getcwd()
-  local rel  = path.relative_to(base, new_abs_path)
-  if ref.had_dot_prefix and not rel:match("^%.%.?/") and rel ~= "." then
-    rel = "./" .. rel
-  end
+  local rel = path.relative_to(base, new_abs_path)
+  if ref.had_dot_prefix and not rel:match("^%.%.?/") and rel ~= "." then rel = "./" .. rel end
   return rel
 end
 

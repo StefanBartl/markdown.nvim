@@ -49,25 +49,22 @@ M.actions = setmetatable({}, {
   __index = function(_, k) return require("markdown.bindings.actions")[k] end,
 })
 
-M.foldexpr           = function(lnum) return require("markdown.core.fold").foldexpr(lnum) end
-M.goto_prev_heading  = function() require("markdown.core.headings").goto_prev_heading() end
-M.goto_next_heading  = function() require("markdown.core.headings").goto_next_heading() end
+M.foldexpr = function(lnum) return require("markdown.core.fold").foldexpr(lnum) end
+M.goto_prev_heading = function() require("markdown.core.headings").goto_prev_heading() end
+M.goto_next_heading = function() require("markdown.core.headings").goto_next_heading() end
 M.toggle_visual_bold = function() require("markdown.core.wrap").toggle_visual_bold() end
 
-M.update_toc = function(header, opts)
-  require("markdown.core.toc").update_markdown_toc(header, opts)
-end
+M.update_toc = function(header, opts) require("markdown.core.toc").update_markdown_toc(header, opts) end
 
-M.handle_cursor_action = function()
-  require("markdown.handler").handle_cursor_action()
-end
+M.handle_cursor_action = function() require("markdown.handler").handle_cursor_action() end
 
 ---Apply H2-level blank-line separators to the current (or given) buffer.
 ---@param bufnr? integer  defaults to current buffer
 ---@param opts?  { notify?: boolean }
 M.apply_headline_separators = function(bufnr, opts)
   require("markdown.core.headline_spacing").apply_headl_separators(
-    bufnr or vim.api.nvim_get_current_buf(), opts or { notify = true }
+    bufnr or vim.api.nvim_get_current_buf(),
+    opts or { notify = true }
   )
 end
 

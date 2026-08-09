@@ -14,11 +14,11 @@ local cfg = require("markdown.config").get
 ---@return integer? ecol
 local function get_visual_selection()
   local mode = fn.mode()
-  local is_visual = mode:match('[vV\22]') ~= nil
+  local is_visual = mode:match("[vV\22]") ~= nil
 
   if is_visual then
     local cursor = api.nvim_win_get_cursor(0)
-    local vstart_ok, vstart = pcall(fn.getpos, 'v')
+    local vstart_ok, vstart = pcall(fn.getpos, "v")
     if not (vstart_ok and vstart) then return nil, nil, nil end
 
     local row1 = cursor[1] - 1
@@ -50,8 +50,8 @@ end
 ---@param scol integer
 ---@param ecol integer
 local function reselect_visual(row, scol, ecol)
-  fn.setpos("'<", {0, row + 1, scol + 1, 0})
-  fn.setpos("'>", {0, row + 1, ecol + 1, 0})
+  fn.setpos("'<", { 0, row + 1, scol + 1, 0 })
+  fn.setpos("'>", { 0, row + 1, ecol + 1, 0 })
   local reselect = api.nvim_replace_termcodes("<Esc>gv", true, false, true)
   api.nvim_feedkeys(reselect, "nx", false)
 end
@@ -71,7 +71,7 @@ local function wrap_with_asterisks(count)
   local pad = string.rep("*", count)
   local wrapped = pad .. selected_text .. pad
 
-  api.nvim_buf_set_text(bufnr, row, scol, row, ecol + 1, {wrapped})
+  api.nvim_buf_set_text(bufnr, row, scol, row, ecol + 1, { wrapped })
 
   if cfg().keep_inner_selection then
     reselect_visual(row, scol + count, scol + count + #selected_text - 1)
@@ -99,7 +99,7 @@ function M.toggle_visual_bold()
     local inner_start = scol - 2
     local inner_end = ecol + 3
     local unwrapped = line:sub(scol + 1, ecol + 1)
-    api.nvim_buf_set_text(bufnr, row, inner_start, row, inner_end, {unwrapped})
+    api.nvim_buf_set_text(bufnr, row, inner_start, row, inner_end, { unwrapped })
     reselect_visual(row, inner_start, inner_start + #unwrapped - 1)
   else
     wrap_with_asterisks(2)

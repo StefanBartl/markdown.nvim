@@ -19,14 +19,31 @@ local DEFAULTS = require("markdown.config.DEFAULTS")
 --- Canonical, gateable feature names. Anything not listed is always on.
 ---@type string[]
 local FEATURES = {
-  "keymaps", "fold", "hl", "link_hl", "fenced_fix", "fenced_scope",
-  "tableview", "refs",
+  "keymaps",
+  "fold",
+  "hl",
+  "link_hl",
+  "fenced_fix",
+  "fenced_scope",
+  "tableview",
+  "refs",
   -- :Markdown subcommand features
-  "links", "toc", "table", "render", "preview", "mdview", "create", "headline_spacing", "scope", "image",
+  "links",
+  "toc",
+  "table",
+  "render",
+  "preview",
+  "mdview",
+  "create",
+  "headline_spacing",
+  "scope",
+  "image",
 }
 
 local FEATURE_SET = {}
-for _, f in ipairs(FEATURES) do FEATURE_SET[f] = true end
+for _, f in ipairs(FEATURES) do
+  FEATURE_SET[f] = true
+end
 
 local _cfg = vim.deepcopy(DEFAULTS)
 ---@type table<string, boolean>
@@ -39,7 +56,9 @@ local _resolved = {}
 ---@param cfg Mkdn.Config
 local function resolve_features(cfg)
   _resolved = {}
-  for _, f in ipairs(FEATURES) do _resolved[f] = true end
+  for _, f in ipairs(FEATURES) do
+    _resolved[f] = true
+  end
 
   local F = cfg.features or {}
 
@@ -54,7 +73,9 @@ local function resolve_features(cfg)
 
   if type(F.just_enable) == "table" then
     warn_unknown(F.just_enable, "just_enable")
-    for _, f in ipairs(FEATURES) do _resolved[f] = false end
+    for _, f in ipairs(FEATURES) do
+      _resolved[f] = false
+    end
     for _, name in ipairs(F.just_enable) do
       if FEATURE_SET[name] then _resolved[name] = true end
     end
@@ -62,7 +83,9 @@ local function resolve_features(cfg)
   end
 
   if F.disable == "all" then
-    for _, f in ipairs(FEATURES) do _resolved[f] = false end
+    for _, f in ipairs(FEATURES) do
+      _resolved[f] = false
+    end
   elseif type(F.disable) == "table" then
     local disable_list = F.disable --[[@as string[] ]]
     warn_unknown(disable_list, "disable")
@@ -70,7 +93,7 @@ local function resolve_features(cfg)
       if FEATURE_SET[name] then _resolved[name] = false end
     end
   elseif F.disable ~= nil then
-    notify.warn("features.disable: expected \"all\" or a list of feature names")
+    notify.warn('features.disable: expected "all" or a list of feature names')
   end
 
   if type(F.enable) == "table" then
@@ -90,9 +113,7 @@ function M.setup(opts)
 end
 
 ---@return Mkdn.Config
-function M.get()
-  return _cfg
-end
+function M.get() return _cfg end
 
 --- Whether feature `name` is enabled by the resolved `features` gating.
 --- Unknown (non-gateable) names are always enabled.
@@ -105,8 +126,6 @@ end
 
 --- The canonical list of gateable feature names (for docs/tooling).
 ---@return string[]
-function M.features()
-  return FEATURES
-end
+function M.features() return FEATURES end
 
 return M

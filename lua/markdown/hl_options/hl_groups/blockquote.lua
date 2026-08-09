@@ -2,9 +2,9 @@
 local M = {}
 
 local GROUP_MARKER = "MarkdownBlockquoteMarker"
-local GROUP_TEXT   = "MarkdownBlockquoteText"
-local PRIORITY     = 110
-local NS           = vim.api.nvim_create_namespace("MarkdownNvimBlockquote")
+local GROUP_TEXT = "MarkdownBlockquoteText"
+local PRIORITY = 110
+local NS = vim.api.nvim_create_namespace("MarkdownNvimBlockquote")
 
 -- Matches a single leading blockquote marker: optional indent, `>`, optional
 -- following spaces. Deliberately not repeated (`(>%s*)+`), so nested markers
@@ -16,8 +16,12 @@ local function dim_bg(fg)
   local r = tonumber(fg:sub(2, 3), 16) or 0x6A
   local g = tonumber(fg:sub(4, 5), 16) or 0x99
   local b = tonumber(fg:sub(6, 7), 16) or 0x55
-  return string.format("#%02x%02x%02x",
-    math.floor(r * 0.20), math.floor(g * 0.20), math.floor(b * 0.20))
+  return string.format(
+    "#%02x%02x%02x",
+    math.floor(r * 0.20),
+    math.floor(g * 0.20),
+    math.floor(b * 0.20)
+  )
 end
 
 --- First resolved (non-nil) `fg` among `groups`, as "#rrggbb"; `fallback` when
@@ -28,9 +32,7 @@ end
 local function pick_group_fg(groups, fallback)
   for _, g in ipairs(groups) do
     local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = g, link = false })
-    if ok and hl and hl.fg then
-      return string.format("#%06x", hl.fg)
-    end
+    if ok and hl and hl.fg then return string.format("#%06x", hl.fg) end
   end
   return fallback
 end
@@ -58,21 +60,21 @@ local function set_hl(hl)
 
   if hl.link then
     vim.api.nvim_set_hl(0, GROUP_MARKER, { link = hl.link })
-    vim.api.nvim_set_hl(0, GROUP_TEXT,   { link = hl.link })
+    vim.api.nvim_set_hl(0, GROUP_TEXT, { link = hl.link })
     return
   end
 
   vim.api.nvim_set_hl(0, GROUP_MARKER, {
-    fg     = marker_fg,
-    bold   = hl.marker_bold   or false,
+    fg = marker_fg,
+    bold = hl.marker_bold or false,
     italic = hl.marker_italic or false,
   })
 
   vim.api.nvim_set_hl(0, GROUP_TEXT, {
-    fg     = hl.text_fg or theme_text_fg(),
-    bg     = text_bg,
+    fg = hl.text_fg or theme_text_fg(),
+    bg = text_bg,
     italic = hl.text_italic or false,
-    bold   = hl.text_bold   or false,
+    bold = hl.text_bold or false,
   })
 end
 
@@ -113,18 +115,18 @@ function M.highlight_line(bufnr, row)
   if not marker_end then return end -- not a blockquote line
 
   vim.api.nvim_buf_set_extmark(bufnr, NS, row, 0, {
-    end_col  = marker_end,
+    end_col = marker_end,
     hl_group = GROUP_MARKER,
     priority = PRIORITY,
-    strict   = false,
+    strict = false,
   })
   vim.api.nvim_buf_set_extmark(bufnr, NS, row, marker_end, {
-    end_row  = row + 1,
-    end_col  = 0,
+    end_row = row + 1,
+    end_col = 0,
     hl_group = GROUP_TEXT,
-    hl_eol   = true, -- extend the background past the text to the window edge
+    hl_eol = true, -- extend the background past the text to the window edge
     priority = PRIORITY,
-    strict   = false,
+    strict = false,
   })
 end
 
@@ -138,12 +140,8 @@ local function ensure_decoration_provider()
   if _registered then return end
   _registered = true
   vim.api.nvim_set_decoration_provider(NS, {
-    on_win = function(_, _, bufnr, _, _)
-      return is_blockquote_ft(bufnr)
-    end,
-    on_line = function(_, _, bufnr, row)
-      M.highlight_line(bufnr, row)
-    end,
+    on_win = function(_, _, bufnr, _, _) return is_blockquote_ft(bufnr) end,
+    on_line = function(_, _, bufnr, row) M.highlight_line(bufnr, row) end,
   })
 end
 

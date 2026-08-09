@@ -25,10 +25,14 @@ return function(H)
   do
     renderer.render_markdowntable(mt2col(), { floating = true })
 
-    local lhss = { "<M-Left>", "<M-Right>", "<M-h>", "<M-l>", "<M-Up>", "<M-Down>", "<M-k>", "<M-j>" }
+    local lhss =
+      { "<M-Left>", "<M-Right>", "<M-h>", "<M-l>", "<M-Up>", "<M-Down>", "<M-k>", "<M-j>" }
     for _, lhs in ipairs(lhss) do
       local m = vim.fn.maparg(lhs, "n", false, true)
-      ok(m and m.buffer == 1, ("%s is bound buffer-locally in Normal mode on the preview buffer"):format(lhs))
+      ok(
+        m and m.buffer == 1,
+        ("%s is bound buffer-locally in Normal mode on the preview buffer"):format(lhs)
+      )
     end
 
     local other = api.nvim_create_buf(false, true)
@@ -141,7 +145,10 @@ return function(H)
     eq(#lines(), 7, "box style: full grid line count")
     api.nvim_win_set_cursor(win, { 2, 3 }) -- header row, inside "Name"
     renderer.resize_current_column(1)
-    ok(lines()[2]:find("Name") ~= nil and #lines()[2] > #("│ Name  │ Age │"), "box style: header widens too")
+    ok(
+      lines()[2]:find("Name") ~= nil and #lines()[2] > #"│ Name  │ Age │",
+      "box style: header widens too"
+    )
 
     for i, l in ipairs(lines()) do
       if l:find("Bob") then api.nvim_win_set_cursor(win, { i, 2 }) end
@@ -159,12 +166,14 @@ return function(H)
     local mt_a = {
       header = { cells = { { content = "A" }, { content = "B" } } },
       rows = { { cells = { { content = "1" }, { content = "2" } } } },
-      alignments = {}, start_line = 1,
+      alignments = {},
+      start_line = 1,
     }
     local mt_b = {
       header = { cells = { { content = "X" }, { content = "Y" } } },
       rows = { { cells = { { content = "foo" }, { content = "bar" } } } },
-      alignments = {}, start_line = 5,
+      alignments = {},
+      start_line = 5,
     }
     renderer.render_tables({ mt_a, mt_b }, { floating = true, style = "markdown" })
     local win = api.nvim_get_current_win()
@@ -227,16 +236,29 @@ return function(H)
     local src_lines = api.nvim_buf_get_lines(src, 0, -1, false)
     eq(src_lines[1], "before", "write_back: line before the table is untouched")
     eq(src_lines[#src_lines], "after", "write_back: line after the table is untouched")
-    ok(table.concat(src_lines, "\n"):find("Bob") ~= nil
-      and table.concat(src_lines, "\n"):find("Alice") ~= nil, "write_back: both rows present in the source")
+    ok(
+      table.concat(src_lines, "\n"):find("Bob") ~= nil
+        and table.concat(src_lines, "\n"):find("Alice") ~= nil,
+      "write_back: both rows present in the source"
+    )
     local bob_line, alice_line
     for i, l in ipairs(src_lines) do
       if l:find("Bob") then bob_line = i end
       if l:find("Alice") then alice_line = i end
     end
-    ok(bob_line < alice_line, "write_back: reordered rows (Bob before Alice) persisted to the source buffer")
-    eq(src_lines[2], "| Name  | Age |", "write_back: writes NATURAL widths, ignoring the popup's column-widen override")
-    ok(not vim.bo[api.nvim_win_get_buf(win)].modified, "write_back: popup buffer's 'modified' flag is cleared after :w")
+    ok(
+      bob_line < alice_line,
+      "write_back: reordered rows (Bob before Alice) persisted to the source buffer"
+    )
+    eq(
+      src_lines[2],
+      "| Name  | Age |",
+      "write_back: writes NATURAL widths, ignoring the popup's column-widen override"
+    )
+    ok(
+      not vim.bo[api.nvim_win_get_buf(win)].modified,
+      "write_back: popup buffer's 'modified' flag is cleared after :w"
+    )
 
     renderer.close_view()
 

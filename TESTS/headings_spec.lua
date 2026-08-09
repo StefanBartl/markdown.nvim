@@ -40,11 +40,11 @@ return function(H)
   -- never matched a real fence, so fenced `#` lines got shifted and corrupted).
   vim.api.nvim_set_current_buf(buf)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-    "# A",             -- 1 heading (outside)
-    "```bash",         -- 2 fence open
+    "# A", -- 1 heading (outside)
+    "```bash", -- 2 fence open
     "# not a heading", -- 3 comment inside the fence
-    "```",             -- 4 fence close
-    "## B",            -- 5 heading (outside)
+    "```", -- 4 fence close
+    "## B", -- 5 heading (outside)
   })
   eq(head.shift_range(1, 5, 1), 2, "only the two real headings shift")
   local fenced = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -54,10 +54,10 @@ return function(H)
 
   -- same for a tilde fence
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-    "~~~",             -- 1 fence open (bare tilde)
-    "### inside",      -- 2 not a heading (fenced)
-    "~~~",             -- 3 fence close
-    "# After",         -- 4 heading (outside)
+    "~~~", -- 1 fence open (bare tilde)
+    "### inside", -- 2 not a heading (fenced)
+    "~~~", -- 3 fence close
+    "# After", -- 4 heading (outside)
   })
   eq(head.shift_range(1, 4, 1), 1, "only the heading outside the ~~~ fence shifts")
   local tfenced = vim.api.nvim_buf_get_lines(buf, 0, -1, false)

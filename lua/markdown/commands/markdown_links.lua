@@ -37,9 +37,7 @@ end
 ---@param title string
 ---@param path string
 ---@return string
-local function make_link(title, path)
-  return string.format("[%s](%s)", title, path)
-end
+local function make_link(title, path) return string.format("[%s](%s)", title, path) end
 
 ---@internal
 ---@param path string
@@ -119,7 +117,7 @@ function M.for_paths(paths, opts)
   local root = resolve_root(opts.root)
   local scan_opts = {
     recursive = opts.recursive or false,
-    noignore  = opts.noignore  or false,
+    noignore = opts.noignore or false,
   }
   local lines = {}
 

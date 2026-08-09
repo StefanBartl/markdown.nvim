@@ -11,19 +11,34 @@
 local M = {}
 
 local DEFAULT_IGNORE = {
-  ".git", ".hg", ".svn",
-  "node_modules", ".npm", ".pnpm",
-  "__pycache__", ".venv", "venv", ".env",
-  ".cache", ".tmp", "tmp",
-  "build", "dist", "target", "out",
-  ".DS_Store", "Thumbs.db",
-  ".idea", ".vscode",
+  ".git",
+  ".hg",
+  ".svn",
+  "node_modules",
+  ".npm",
+  ".pnpm",
+  "__pycache__",
+  ".venv",
+  "venv",
+  ".env",
+  ".cache",
+  ".tmp",
+  "tmp",
+  "build",
+  "dist",
+  "target",
+  "out",
+  ".DS_Store",
+  "Thumbs.db",
+  ".idea",
+  ".vscode",
 }
 
 ---@return table<string, boolean>
 function M.as_set()
   local ok, lib_ignore = pcall(require, "lib.nvim.fs.ignore.list")
-  local names = (ok and type(lib_ignore.basenames) == "table") and lib_ignore.basenames or DEFAULT_IGNORE
+  local names = (ok and type(lib_ignore.basenames) == "table") and lib_ignore.basenames
+    or DEFAULT_IGNORE
 
   local set = {}
   for _, v in ipairs(names) do

@@ -14,7 +14,15 @@ return function(H)
   do
     local buf = H.scratch("markdown")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# Title", "", "## Section A", "", "### Sub A1", "", "#### Deep A1a", "", "## Section B",
+      "# Title",
+      "",
+      "## Section A",
+      "",
+      "### Sub A1",
+      "",
+      "#### Deep A1a",
+      "",
+      "## Section B",
     })
     toc_cmd.update(nil, { separators = false })
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -30,7 +38,13 @@ return function(H)
   do
     local buf = H.scratch("markdown")
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# Title", "", "## Section A", "", "### Sub A1", "", "#### Deep A1a",
+      "# Title",
+      "",
+      "## Section A",
+      "",
+      "### Sub A1",
+      "",
+      "#### Deep A1a",
     })
     toc_cmd.update(nil, { separators = false })
     local body = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
@@ -56,7 +70,11 @@ return function(H)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "## Hello World" })
 
     local anchors = slug.heading_anchors(buf)
-    eq(anchors.list[1].anchor, "Hello_World", "heading_anchors respects config anchor_style/separator")
+    eq(
+      anchors.list[1].anchor,
+      "Hello_World",
+      "heading_anchors respects config anchor_style/separator"
+    )
 
     toc_cmd.update(nil, { separators = false })
     local body = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")

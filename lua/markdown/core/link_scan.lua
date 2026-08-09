@@ -34,9 +34,7 @@ end
 ---@internal
 ---@param s string
 ---@return string
-local function strip_trailing_punct(s)
-  return (s:gsub("[%.,;:%)%]%}>]+$", ""))
-end
+local function strip_trailing_punct(s) return (s:gsub("[%.,;:%)%]%}>]+$", "")) end
 
 --- Extract all links from a single line of text.
 ---@param line string
@@ -57,11 +55,11 @@ function M.from_line(line, lnum)
       local t = strip_angle_brackets(trim(target))
       out[#out + 1] = {
         display = string.format("[%s](%s)", text, t),
-        target  = t,
-        text    = text,
-        kind    = "mdlink",
-        lnum    = lnum,
-        col     = s - 1,
+        target = t,
+        text = text,
+        kind = "mdlink",
+        lnum = lnum,
+        col = s - 1,
         col_end = e - 1,
       }
     end
@@ -85,10 +83,10 @@ function M.from_line(line, lnum)
       local url = strip_trailing_punct(line:sub(s, e))
       out[#out + 1] = {
         display = url,
-        target  = url,
-        kind    = "url",
-        lnum    = lnum,
-        col     = s - 1,
+        target = url,
+        kind = "url",
+        lnum = lnum,
+        col = s - 1,
         col_end = e - 1,
       }
     end
@@ -108,7 +106,9 @@ function M.from_lines(lines)
     if line:match(FENCE) then in_fence = not in_fence end
     if not in_fence then
       local found = M.from_line(line, i)
-      for _, lk in ipairs(found) do out[#out + 1] = lk end
+      for _, lk in ipairs(found) do
+        out[#out + 1] = lk
+      end
     end
   end
   return out

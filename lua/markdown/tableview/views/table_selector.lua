@@ -9,7 +9,8 @@ local function format_item(t)
       table.insert(headers, c.content or "")
     end
   end
-  local header_preview = (#headers > 0) and table.concat(headers, ", ") or ("Table@" .. tostring(t.start_line))
+  local header_preview = (#headers > 0) and table.concat(headers, ", ")
+    or ("Table@" .. tostring(t.start_line))
   return string.format("col %d; %s (%d rows)", t.start_line or 0, header_preview, #t.rows)
 end
 
@@ -19,7 +20,5 @@ return function(tables)
   picker.select(tables, {
     prompt = "Markdown tables",
     format = format_item,
-  }, function(sel)
-    ui.render_table(sel, { floating = true })
-  end)
+  }, function(sel) ui.render_table(sel, { floating = true }) end)
 end

@@ -12,9 +12,7 @@ local ANY_HEADING = "^#\\+\\s\\+.*$"
 ---@internal
 ---@param level integer
 ---@return string
-local function level_pattern(level)
-  return "^" .. string.rep("#", level) .. "\\s\\+.*$"
-end
+local function level_pattern(level) return "^" .. string.rep("#", level) .. "\\s\\+.*$" end
 
 --- Move to `lnum`, restoring `col` (clipped to the line's length by `cursor()`)
 --- so heading nav keeps the cursor's horizontal position instead of snapping
@@ -22,9 +20,7 @@ end
 ---@internal
 ---@param lnum integer
 ---@param col integer
-local function restore_col(lnum, col)
-  fn.cursor(lnum, col)
-end
+local function restore_col(lnum, col) fn.cursor(lnum, col) end
 
 --- Resolve the fenced-block scope for `op`, or nil when scoping is off for it
 --- (feature disabled or that op opted out) — callers then use the plain,
@@ -59,9 +55,7 @@ local function scoped_search(pattern, backward, scope)
       fn.winrestview(view)
       return 0
     end
-    if not scope_mod.is_excluded(scope, lnum) then
-      return lnum
-    end
+    if not scope_mod.is_excluded(scope, lnum) then return lnum end
     -- Match sits inside an excluded fenced interior: keep searching from here.
   end
 end
@@ -158,30 +152,22 @@ end
 ---@return string out
 ---@return boolean changed
 local function shift_heading_line(line, delta, min_level, allow_creation)
-  if line == "" or line:match("^%s*$") then
-    return line, false
-  end
+  if line == "" or line:match("^%s*$") then return line, false end
 
   local hashes, rest = line:match("^(%s*#+)%s+(.*)$")
 
   if not hashes then
-    if delta > 0 and allow_creation then
-      return "# " .. line, true
-    end
+    if delta > 0 and allow_creation then return "# " .. line, true end
     return line, false
   end
 
   local indent = hashes:match("^%s*") or ""
   local level = #hashes - #indent
 
-  if level == 1 and delta < 0 then
-    return rest, true
-  end
+  if level == 1 and delta < 0 then return rest, true end
 
   local new_level = math.max(min_level, math.min(6, level + delta))
-  if new_level == level then
-    return line, false
-  end
+  if new_level == level then return line, false end
 
   return string.format("%s%s %s", indent, string.rep("#", new_level), rest), true
 end
@@ -208,9 +194,7 @@ local function shift_range_internal(bufnr, srow, erow, delta, min_level, allow_c
   for i = 1, #lines do
     local line = lines[i]
     local fence = line:match(fence_pat)
-    if fence then
-      in_fence = not in_fence
-    end
+    if fence then in_fence = not in_fence end
     if not in_fence then
       local out, did = shift_heading_line(line, delta, min_level, allow_creation)
       if did then
@@ -220,9 +204,7 @@ local function shift_range_internal(bufnr, srow, erow, delta, min_level, allow_c
     end
   end
 
-  if changed > 0 then
-    api.nvim_buf_set_lines(bufnr, srow - 1, erow, false, lines)
-  end
+  if changed > 0 then api.nvim_buf_set_lines(bufnr, srow - 1, erow, false, lines) end
 
   return changed
 end
@@ -266,11 +248,9 @@ function M.shift_visual_selection(delta)
   local srow = math.min(start_line, end_line)
   local erow = math.max(start_line, end_line)
 
-  vim.cmd('normal! \\<Esc>')
+  vim.cmd("normal! \\<Esc>")
 
-  if srow > 0 and erow > 0 then
-    M.shift_range(srow, erow, delta)
-  end
+  if srow > 0 and erow > 0 then M.shift_range(srow, erow, delta) end
 end
 
 ---@internal

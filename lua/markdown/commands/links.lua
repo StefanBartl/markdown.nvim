@@ -15,9 +15,7 @@ local uv = vim.uv or vim.loop
 
 ---@internal
 ---@param argv string[]
-local function do_create(argv)
-  require("markdown.commands.markdown_links").run(argv)
-end
+local function do_create(argv) require("markdown.commands.markdown_links").run(argv) end
 
 -- ---------------------------------------------------------------------------
 -- show
@@ -52,11 +50,11 @@ local function collect(scope)
 
   local function links_from_file(path)
     local lines = vim.fn.readfile(path)
-    local base  = vim.fn.fnamemodify(path, ":p:h")
+    local base = vim.fn.fnamemodify(path, ":p:h")
     local found = scan.from_lines(lines)
     for _, lk in ipairs(found) do
       lk.target = resolve_against(lk.target, base)
-      lk.file   = path
+      lk.file = path
     end
     return found
   end
@@ -65,16 +63,16 @@ local function collect(scope)
     local out = {}
     local md_files = vim.fn.globpath(vim.fn.getcwd(), "**/*.md", false, true)
     for _, path in ipairs(md_files) do
-      for _, lk in ipairs(links_from_file(path)) do out[#out + 1] = lk end
+      for _, lk in ipairs(links_from_file(path)) do
+        out[#out + 1] = lk
+      end
     end
     return out
   end
 
   -- Treat scope as a file path.
   local path = vim.fn.expand(scope)
-  if uv.fs_stat(path) then
-    return links_from_file(path)
-  end
+  if uv.fs_stat(path) then return links_from_file(path) end
 
   notify.warn("links show: scope not found: " .. tostring(scope))
   return {}
@@ -206,12 +204,10 @@ local function do_show(argv)
 
   local picker = require("markdown.util.picker")
   picker.select(links, {
-    prompt  = string.format("Markdown links (%d)", #links),
-    format  = format_item,
+    prompt = string.format("Markdown links (%d)", #links),
+    format = format_item,
     backend = (cfg.links and cfg.links.picker) or "hover_select",
-  }, function(lk)
-    require("markdown.handler").open_target(lk.target)
-  end)
+  }, function(lk) require("markdown.handler").open_target(lk.target) end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -227,7 +223,9 @@ local function do_check(_argv)
   if count == 0 then
     notify.info("Link check: no issues found")
   else
-    notify.warn(string.format("Link check: %d issue(s) — see vim.diagnostic.open_float() / :lopen", count))
+    notify.warn(
+      string.format("Link check: %d issue(s) — see vim.diagnostic.open_float() / :lopen", count)
+    )
   end
 end
 
@@ -236,9 +234,9 @@ end
 -- ---------------------------------------------------------------------------
 
 local subcommands = {
-  show   = do_show,
+  show = do_show,
   create = do_create,
-  check  = do_check,
+  check = do_check,
 }
 
 --- Runs `:Markdown links <sub>` (defaults to `create` for a bare path).

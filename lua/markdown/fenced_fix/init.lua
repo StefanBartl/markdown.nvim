@@ -6,10 +6,10 @@ local M = {}
 
 M.opts = {
   inline_base_hl = { "DiagnosticWarn", "Special", "Constant", "String" },
-  inline_style   = { bold = false, italic = false },
-  delimiter_hl   = "Comment",
-  enable_legacy  = true,
-  enable_ts      = true,
+  inline_style = { bold = false, italic = false },
+  delimiter_hl = "Comment",
+  enable_legacy = true,
+  enable_ts = true,
 }
 
 local function safe_set(name, target)
@@ -21,18 +21,18 @@ local function safe_set(name, target)
     end
   end)
   if not ok then
-    vim.schedule(function()
-      notify.debug(("fenced_fix: failed to set %s: %s"):format(name, err))
-    end)
+    vim.schedule(
+      function() notify.debug(("fenced_fix: failed to set %s: %s"):format(name, err)) end
+    )
   end
 end
 
-local function safe_clear(name)
-  pcall(vim.api.nvim_set_hl, 0, name, {})
-end
+local function safe_clear(name) pcall(vim.api.nvim_set_hl, 0, name, {}) end
 
 local function set_many(names, target)
-  for _, n in ipairs(names) do safe_set(n, target) end
+  for _, n in ipairs(names) do
+    safe_set(n, target)
+  end
 end
 
 local function get_hl(name)
@@ -70,12 +70,12 @@ function M.apply()
 
     if (base_hl.fg or base_hl.bg) and next(style) ~= nil then
       safe_set("MarkdownInlineCode", {
-        fg        = base_hl.fg,
-        bg        = base_hl.bg,
-        bold      = style.bold,
-        italic    = style.italic,
-        underline  = style.underline,
-        undercurl  = style.undercurl,
+        fg = base_hl.fg,
+        bg = base_hl.bg,
+        bold = style.bold,
+        italic = style.italic,
+        underline = style.underline,
+        undercurl = style.undercurl,
       })
     else
       safe_set("MarkdownInlineCode", base)
@@ -100,7 +100,9 @@ end
 
 function M.setup(opts)
   if type(opts) == "table" then
-    for k, v in pairs(opts) do M.opts[k] = v end
+    for k, v in pairs(opts) do
+      M.opts[k] = v
+    end
   end
   pcall(M.apply)
   return M
@@ -110,9 +112,7 @@ end
 -- name and would skip the clear on a second load of this module (e.g. a
 -- hot-reload via package.loaded reset), leaving the previous ColorScheme
 -- autocmd registered alongside the new one instead of replaced.
-autocmd.create("ColorScheme", function()
-  M.apply()
-end, {
+autocmd.create("ColorScheme", function() M.apply() end, {
   group = vim.api.nvim_create_augroup("MarkdownNvimFencedFix", { clear = true }),
   desc = "Re-apply fenced fix after colorscheme changes",
 })

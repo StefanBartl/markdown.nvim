@@ -25,13 +25,11 @@ local actions = require("markdown.bindings.actions")
 ---@param desc string
 local function map(bufnr, mode, lhs, rhs, desc)
   local ok, err = pcall(libmap, mode, lhs, rhs, {
-    buffer  = bufnr,
-    silent  = true,
-    desc    = "[markdown.nvim] " .. desc,
+    buffer = bufnr,
+    silent = true,
+    desc = "[markdown.nvim] " .. desc,
   })
-  if not ok then
-    notify.warn("keymap failed " .. lhs .. ": " .. tostring(err))
-  end
+  if not ok then notify.warn("keymap failed " .. lhs .. ": " .. tostring(err)) end
 end
 
 -- Default editing keymaps as DATA, each with a stable `id` the user config can
@@ -39,41 +37,214 @@ end
 -- binding when set to false. Order defines application order.
 ---@type { id: string, mode: string|string[], lhs: string, action: string, flag?: string, feature?: string, desc: string }[]
 local DEFAULT_KEYMAPS = {
-  { id = "toggle_bold",          mode = "v",               lhs = "**",             action = "toggle_bold_visual",  flag = "map_double_asterisk", desc = "Toggle bold" },
-  { id = "wrap_link_n",          mode = "n",               lhs = "<leader>[",      action = "wrap_link_normal",    flag = "map_wrap_link",       desc = "Wrap word in link" },
-  { id = "wrap_link_v",          mode = "v",               lhs = "<leader>[",      action = "wrap_link_visual",    flag = "map_wrap_link",       desc = "Wrap selection in link" },
-  { id = "prev_heading",         mode = { "n", "v", "x" }, lhs = "<C-p>",          action = "prev_heading",        desc = "Prev heading" },
-  { id = "prev_heading_bracket", mode = "n",               lhs = "[[",             action = "prev_heading",        desc = "Prev heading" },
-  { id = "next_heading",         mode = { "n", "v", "x" }, lhs = "<C-f>",          action = "next_heading",        desc = "Next heading" },
-  { id = "next_heading_bracket", mode = "n",               lhs = "]]",             action = "next_heading",        desc = "Next heading" },
-  { id = "prev_heading_level",   mode = "n",               lhs = "<leader><C-p>",  action = "prev_heading_level",  desc = "Prev heading of level" },
-  { id = "next_heading_level",   mode = "n",               lhs = "<leader><C-f>",  action = "next_heading_level",  desc = "Next heading of level" },
-  { id = "fold_toggle_zf",       mode = "n",               lhs = "zf",             action = "fold_toggle",         flag = "use_zf_override",     desc = "Fold toggle" },
-  { id = "fold_toggle",          mode = "n",               lhs = "<localleader>f", action = "fold_toggle",         desc = "Fold toggle" },
-  { id = "unfold_all",           mode = "n",               lhs = "zu",             action = "unfold_all",          desc = "Unfold all" },
-  { id = "fold_prev_heading",    mode = "n",               lhs = "zi",             action = "fold_prev_heading",   desc = "Fold prev heading" },
-  { id = "fold_h2plus",          mode = "n",               lhs = "zk",             action = "fold_h2plus",         desc = "Fold below H2 (toggle outline)" },
-  { id = "toc",                  mode = "n",               lhs = "<leader>toc",    action = "toc",                 feature = "toc", desc = "Insert/refresh TOC" },
-  { id = "cursor_action_2click", mode = "n",               lhs = "<2-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action / heading fold" },
-  { id = "cursor_action_cclick", mode = "n",               lhs = "<C-LeftMouse>",  action = "cursor_action_mouse", desc = "Cursor action" },
-  { id = "cursor_action",        mode = "n",               lhs = "ma",             action = "cursor_action",       desc = "Cursor action" },
-  { id = "open_image",           mode = "n",               lhs = "mi",             action = "open_image",          desc = "Open image" },
-  { id = "jump_anchor",          mode = "n",               lhs = "mj",             action = "jump_anchor",         desc = "Jump to anchor" },
-  { id = "heading_inc",          mode = "n",               lhs = "<C-Right>",      action = "heading_inc",         desc = "Increase heading level" },
-  { id = "heading_dec",          mode = "n",               lhs = "<C-Left>",       action = "heading_dec",         desc = "Decrease heading level" },
-  { id = "heading_inc_visual",   mode = { "v", "x" },      lhs = "<C-Right>",      action = "heading_inc_visual",  desc = "Increase heading level (visual)" },
-  { id = "heading_dec_visual",   mode = { "v", "x" },      lhs = "<C-Left>",       action = "heading_dec_visual",  desc = "Decrease heading level (visual)" },
-  { id = "heading_inc_all",      mode = "n",               lhs = "<S-Right>",      action = "heading_inc_all",     desc = "Increase all headings" },
-  { id = "heading_dec_all",      mode = "n",               lhs = "<S-Left>",       action = "heading_dec_all",     desc = "Decrease all headings" },
-  { id = "table_next_cell",      mode = "n",               lhs = "]|",             action = "table_next_cell",     feature = "table", desc = "Next table cell" },
-  { id = "table_prev_cell",      mode = "n",               lhs = "[|",             action = "table_prev_cell",     feature = "table", desc = "Prev table cell" },
+  {
+    id = "toggle_bold",
+    mode = "v",
+    lhs = "**",
+    action = "toggle_bold_visual",
+    flag = "map_double_asterisk",
+    desc = "Toggle bold",
+  },
+  {
+    id = "wrap_link_n",
+    mode = "n",
+    lhs = "<leader>[",
+    action = "wrap_link_normal",
+    flag = "map_wrap_link",
+    desc = "Wrap word in link",
+  },
+  {
+    id = "wrap_link_v",
+    mode = "v",
+    lhs = "<leader>[",
+    action = "wrap_link_visual",
+    flag = "map_wrap_link",
+    desc = "Wrap selection in link",
+  },
+  {
+    id = "prev_heading",
+    mode = { "n", "v", "x" },
+    lhs = "<C-p>",
+    action = "prev_heading",
+    desc = "Prev heading",
+  },
+  {
+    id = "prev_heading_bracket",
+    mode = "n",
+    lhs = "[[",
+    action = "prev_heading",
+    desc = "Prev heading",
+  },
+  {
+    id = "next_heading",
+    mode = { "n", "v", "x" },
+    lhs = "<C-f>",
+    action = "next_heading",
+    desc = "Next heading",
+  },
+  {
+    id = "next_heading_bracket",
+    mode = "n",
+    lhs = "]]",
+    action = "next_heading",
+    desc = "Next heading",
+  },
+  {
+    id = "prev_heading_level",
+    mode = "n",
+    lhs = "<leader><C-p>",
+    action = "prev_heading_level",
+    desc = "Prev heading of level",
+  },
+  {
+    id = "next_heading_level",
+    mode = "n",
+    lhs = "<leader><C-f>",
+    action = "next_heading_level",
+    desc = "Next heading of level",
+  },
+  {
+    id = "fold_toggle_zf",
+    mode = "n",
+    lhs = "zf",
+    action = "fold_toggle",
+    flag = "use_zf_override",
+    desc = "Fold toggle",
+  },
+  {
+    id = "fold_toggle",
+    mode = "n",
+    lhs = "<localleader>f",
+    action = "fold_toggle",
+    desc = "Fold toggle",
+  },
+  {
+    id = "unfold_all",
+    mode = "n",
+    lhs = "zu",
+    action = "unfold_all",
+    desc = "Unfold all",
+  },
+  {
+    id = "fold_prev_heading",
+    mode = "n",
+    lhs = "zi",
+    action = "fold_prev_heading",
+    desc = "Fold prev heading",
+  },
+  {
+    id = "fold_h2plus",
+    mode = "n",
+    lhs = "zk",
+    action = "fold_h2plus",
+    desc = "Fold below H2 (toggle outline)",
+  },
+  {
+    id = "toc",
+    mode = "n",
+    lhs = "<leader>toc",
+    action = "toc",
+    feature = "toc",
+    desc = "Insert/refresh TOC",
+  },
+  {
+    id = "cursor_action_2click",
+    mode = "n",
+    lhs = "<2-LeftMouse>",
+    action = "cursor_action_mouse",
+    desc = "Cursor action / heading fold",
+  },
+  {
+    id = "cursor_action_cclick",
+    mode = "n",
+    lhs = "<C-LeftMouse>",
+    action = "cursor_action_mouse",
+    desc = "Cursor action",
+  },
+  {
+    id = "cursor_action",
+    mode = "n",
+    lhs = "ma",
+    action = "cursor_action",
+    desc = "Cursor action",
+  },
+  {
+    id = "open_image",
+    mode = "n",
+    lhs = "mi",
+    action = "open_image",
+    desc = "Open image",
+  },
+  {
+    id = "jump_anchor",
+    mode = "n",
+    lhs = "mj",
+    action = "jump_anchor",
+    desc = "Jump to anchor",
+  },
+  {
+    id = "heading_inc",
+    mode = "n",
+    lhs = "<C-Right>",
+    action = "heading_inc",
+    desc = "Increase heading level",
+  },
+  {
+    id = "heading_dec",
+    mode = "n",
+    lhs = "<C-Left>",
+    action = "heading_dec",
+    desc = "Decrease heading level",
+  },
+  {
+    id = "heading_inc_visual",
+    mode = { "v", "x" },
+    lhs = "<C-Right>",
+    action = "heading_inc_visual",
+    desc = "Increase heading level (visual)",
+  },
+  {
+    id = "heading_dec_visual",
+    mode = { "v", "x" },
+    lhs = "<C-Left>",
+    action = "heading_dec_visual",
+    desc = "Decrease heading level (visual)",
+  },
+  {
+    id = "heading_inc_all",
+    mode = "n",
+    lhs = "<S-Right>",
+    action = "heading_inc_all",
+    desc = "Increase all headings",
+  },
+  {
+    id = "heading_dec_all",
+    mode = "n",
+    lhs = "<S-Left>",
+    action = "heading_dec_all",
+    desc = "Decrease all headings",
+  },
+  {
+    id = "table_next_cell",
+    mode = "n",
+    lhs = "]|",
+    action = "table_next_cell",
+    feature = "table",
+    desc = "Next table cell",
+  },
+  {
+    id = "table_prev_cell",
+    mode = "n",
+    lhs = "[|",
+    action = "table_prev_cell",
+    feature = "table",
+    desc = "Prev table cell",
+  },
 }
 
 --- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.
 ---@return table[]
-function M.defaults()
-  return DEFAULT_KEYMAPS
-end
+function M.defaults() return DEFAULT_KEYMAPS end
 
 --- Install the default editing keymaps for `bufnr`.
 --- No-op when `enable_keymaps = false`.
@@ -112,9 +283,7 @@ function M.apply(bufnr)
       end
 
       local fn = actions[spec.action]
-      if fn then
-        map(bufnr, mode, lhs, fn, spec.desc)
-      end
+      if fn then map(bufnr, mode, lhs, fn, spec.desc) end
     end
   end
 end
@@ -134,7 +303,13 @@ function M.apply_tableview(bufnr)
   map(bufnr, "n", "<leader>tvs", "<Cmd>TableViewSelect<CR>", "Select and preview table")
   map(bufnr, "n", "<leader>tvb", "<Cmd>TableViewOpenBrowser<CR>", "Open table in browser")
   map(bufnr, "n", "<leader>tvc", "<Cmd>TableViewClose<CR>", "Close TableView")
-  map(bufnr, "n", "<leader>tvm", "<Cmd>Markdown table mode toggle<CR>", "Toggle table auto-format mode")
+  map(
+    bufnr,
+    "n",
+    "<leader>tvm",
+    "<Cmd>Markdown table mode toggle<CR>",
+    "Toggle table auto-format mode"
+  )
 end
 
 return M

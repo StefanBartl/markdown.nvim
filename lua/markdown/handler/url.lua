@@ -11,9 +11,7 @@ M.config = {
 
 local api = vim.api
 
-local function trim(s)
-  return s:match("^%s*(.-)%s*$")
-end
+local function trim(s) return s:match("^%s*(.-)%s*$") end
 
 local function is_explicit_url(target)
   if not target then return false end
@@ -81,13 +79,9 @@ local function open_with_system_viewer(url)
   return ok
 end
 
-function M.is_url_line(line)
-  return extract_url_from_line(line) ~= nil
-end
+function M.is_url_line(line) return extract_url_from_line(line) ~= nil end
 
-function M.extract(line)
-  return extract_url_from_line(line)
-end
+function M.extract(line) return extract_url_from_line(line) end
 
 function M.open(line)
   line = line or api.nvim_get_current_line()

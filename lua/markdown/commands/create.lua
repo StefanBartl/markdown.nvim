@@ -50,7 +50,7 @@ end
 ---@return boolean
 local function is_local_path(target)
   if target == "" then return false end
-  if target:match("^#") then return false end          -- in-document anchor
+  if target:match("^#") then return false end -- in-document anchor
   if target:match("^%a[%w+.-]*://") then return false end -- url scheme (http, file, ...)
   if target:match("^mailto:") then return false end
   return true
@@ -88,14 +88,15 @@ local function do_fs(lines, base_dir)
     return
   end
 
-  notify.info(string.format(
-    "create fs: %d created, %d already existed%s",
-    #created, existed,
-    #errors > 0 and (", " .. #errors .. " failed") or ""
-  ))
-  if #errors > 0 then
-    notify.warn("create fs failed for:\n  " .. table.concat(errors, "\n  "))
-  end
+  notify.info(
+    string.format(
+      "create fs: %d created, %d already existed%s",
+      #created,
+      existed,
+      #errors > 0 and (", " .. #errors .. " failed") or ""
+    )
+  )
+  if #errors > 0 then notify.warn("create fs failed for:\n  " .. table.concat(errors, "\n  ")) end
 end
 
 local subcommands = {

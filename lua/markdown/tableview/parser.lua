@@ -9,10 +9,15 @@ end
 local function parse_alignment(token)
   if not token then return "left" end
   token = trim(token)
-  if token:match("^:%-+:$") then return "center"
-  elseif token:match("^:%-+$") then return "left"
-  elseif token:match("^-+:$") then return "right"
-  else return "left" end
+  if token:match("^:%-+:$") then
+    return "center"
+  elseif token:match("^:%-+$") then
+    return "left"
+  elseif token:match("^-+:$") then
+    return "right"
+  else
+    return "left"
+  end
 end
 
 local function parse_row(line)
@@ -113,7 +118,9 @@ function M.get_tables(bufnr)
   if not ok or not lines then return {} end
   local resolved_bufnr = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
   local tables = M.get_tables_from_lines(lines)
-  for _, t in ipairs(tables) do t.bufnr = resolved_bufnr end
+  for _, t in ipairs(tables) do
+    t.bufnr = resolved_bufnr
+  end
   return tables
 end
 
@@ -127,7 +134,9 @@ function M.get_tables_from_file(path)
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok or not lines then return {} end
   local tables = M.get_tables_from_lines(lines)
-  for _, t in ipairs(tables) do t.source = path end
+  for _, t in ipairs(tables) do
+    t.source = path
+  end
   return tables
 end
 

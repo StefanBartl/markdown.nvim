@@ -1,5 +1,6 @@
 ---@module 'markdown.tableview.views.browser_niceified'
-local notify = require("markdown.util.notify").create("[markdown.tableview.views.browser_niceified]")
+local notify =
+  require("markdown.util.notify").create("[markdown.tableview.views.browser_niceified]")
 
 local api = vim.api
 local parser = require("markdown.tableview.parser")
@@ -17,7 +18,9 @@ local function build_html(chosen, source)
   local buf = {}
   local function w(s) table.insert(buf, s) end
 
-  w("<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>")
+  w(
+    "<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+  )
   w("<title>TableView — Preview</title>")
   w([[<style>
     :root{--bg:#f7fafc;--card:#ffffff;--muted:#6b7280;--border:#c4c7cc;--accent:#0f172a;--header-bg:#0f172a;--header-fg:#ffffff;--zebra:#fbfdff;}
@@ -37,9 +40,7 @@ local function build_html(chosen, source)
   </style>]])
   w("</head><body><div class='wrap'><div class='card'>")
   w("<header><h1>Table Preview</h1>")
-  if source and source ~= "" then
-    w("<div class='meta'>" .. html_escape(source) .. "</div>")
-  end
+  if source and source ~= "" then w("<div class='meta'>" .. html_escape(source) .. "</div>") end
   w("</header>")
   w("<div class='table-wrap'><table><thead><tr>")
   for _, c in ipairs(chosen.header.cells) do
@@ -95,7 +96,5 @@ return function(bufnr, force_new)
 
   local html = build_html(chosen, source)
   local ok, err = session.show(html, "niceified", force_new)
-  if not ok then
-    notify.error("Failed to open browser preview: " .. tostring(err))
-  end
+  if not ok then notify.error("Failed to open browser preview: " .. tostring(err)) end
 end

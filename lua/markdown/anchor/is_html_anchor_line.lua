@@ -22,9 +22,7 @@ return function(line)
   local ok, lines = pcall(api.nvim_buf_get_lines, bufnr, start_line - 1, end_line, false)
   if ok and lines then
     local joined = table.concat(lines, "\n")
-    if joined:match("<figure.-<img[^>]-src%s*=%s*['\"]#.-['\"]") then
-      return true
-    end
+    if joined:match("<figure.-<img[^>]-src%s*=%s*['\"]#.-['\"]") then return true end
   end
 
   return false

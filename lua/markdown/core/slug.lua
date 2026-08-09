@@ -32,9 +32,7 @@ function M.slugify(title, opts)
   s = s:gsub("[^%w%-%_]", "")
   s = s:gsub("%-+", "-")
   s = s:gsub("^[-_]+", ""):gsub("[-_]+$", "")
-  if sep ~= "-" then
-    s = s:gsub("%-", sep)
-  end
+  if sep ~= "-" then s = s:gsub("%-", sep) end
   return s
 end
 
@@ -43,9 +41,7 @@ end
 --- anchors/links stay valid; equivalent to `M.slugify(title, { style = "gfm" })`.
 ---@param title string
 ---@return string
-function M.gfm(title)
-  return M.slugify(title, { style = "gfm", separator = "-" })
-end
+function M.gfm(title) return M.slugify(title, { style = "gfm", separator = "-" }) end
 
 --- `config.toc.anchor_style` / `anchor_separator`, read lazily so a module
 --- required before `markdown.config` exists still gets sane (gfm) defaults.
@@ -61,9 +57,7 @@ end
 ---@internal
 ---@param line string?
 ---@return boolean?
-local function is_frontmatter_fence(line)
-  return line and line:match("^%s*%-%-%-%s*$") ~= nil
-end
+local function is_frontmatter_fence(line) return line and line:match("^%s*%-%-%-%s*$") ~= nil end
 
 --- Row (1-indexed) at which body content begins, skipping a leading `--- … ---`
 --- YAML frontmatter block. Returns 1 when there is no frontmatter.

@@ -63,7 +63,10 @@ return function(H)
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
     table_cmd.run({ "import" }, {})
     local out = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
-    ok(out:match("| Name | Age |") ~= nil or out:match("Name") ~= nil, "import inserted a GFM table")
+    ok(
+      out:match("| Name | Age |") ~= nil or out:match("Name") ~= nil,
+      "import inserted a GFM table"
+    )
     ok(out:match("Bob") ~= nil, "imported data row present")
   end
 

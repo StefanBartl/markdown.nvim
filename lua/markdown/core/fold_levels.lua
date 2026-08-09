@@ -12,9 +12,7 @@ local function compute_foldlevel(levels_to_fold)
   local min_fold = 7
   for i = 1, #levels_to_fold do
     local lv = tonumber(levels_to_fold[i]) or 7
-    if lv >= 1 and lv <= 6 and lv < min_fold then
-      min_fold = lv
-    end
+    if lv >= 1 and lv <= 6 and lv < min_fold then min_fold = lv end
   end
   if min_fold == 7 then return 0 end
   return math.max(0, min_fold - 1)
@@ -58,7 +56,7 @@ function M.fold_h2_plus()
 
   local cur = vim.wo.foldlevel or 99
   if cur <= level then
-    apply_foldlevel(99)   -- currently folded to the outline (or deeper) → unfold all
+    apply_foldlevel(99) -- currently folded to the outline (or deeper) → unfold all
   else
     apply_foldlevel(level) -- fold below `level` (keep H1..level open)
   end

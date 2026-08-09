@@ -16,8 +16,8 @@ local api = vim.api
 local function is_url_or_path(text)
   if text:match("^%a[%w+.-]*://") then return true end -- http://, file://, ftp://, ...
   if text:match("^mailto:") then return true end
-  if text:match("[/\\]") then return true end          -- contains a path separator
-  if text:match("^%S+%.%S+$") then return true end      -- looks like name.ext
+  if text:match("[/\\]") then return true end -- contains a path separator
+  if text:match("^%S+%.%S+$") then return true end -- looks like name.ext
   return false
 end
 
@@ -44,9 +44,13 @@ function M.wrap_normal()
   local function is_word(c) return c:match("[%w_./:\\-]") ~= nil end
 
   local s, e = col, col
-  while s > 0 and is_word(line:sub(s, s)) do s = s - 1 end
+  while s > 0 and is_word(line:sub(s, s)) do
+    s = s - 1
+  end
   s = s + 1
-  while e < #line and is_word(line:sub(e + 1, e + 1)) do e = e + 1 end
+  while e < #line and is_word(line:sub(e + 1, e + 1)) do
+    e = e + 1
+  end
 
   local word = line:sub(s, e)
 
@@ -71,7 +75,7 @@ function M.wrap_visual()
   if not mode:match("[vV\22]") then return end
 
   local cur = api.nvim_win_get_cursor(0) -- { row(1-based), col(0-based) }
-  local vp = vim.fn.getpos("v")          -- { bufnum, lnum, col(1-based), off }
+  local vp = vim.fn.getpos("v") -- { bufnum, lnum, col(1-based), off }
 
   local srow, scol, erow, ecol
   if vp[2] < cur[1] or (vp[2] == cur[1] and (vp[3] - 1) <= cur[2]) then
@@ -101,9 +105,7 @@ function M.wrap_visual()
   local wrapped, off = build(trimmed)
   local repl = vim.split(wrapped, "\n", { plain = true })
   api.nvim_buf_set_text(bufnr, srow, scol, erow, ecol_excl, repl)
-  if #repl == 1 then
-    api.nvim_win_set_cursor(0, { srow + 1, scol + off })
-  end
+  if #repl == 1 then api.nvim_win_set_cursor(0, { srow + 1, scol + off }) end
 end
 
 return M

@@ -22,17 +22,17 @@ local function command_feature_enabled(command)
 end
 
 local commands = {
-  links             = require("markdown.commands.links").run,
-  toc               = require("markdown.commands.toc").run,
-  refs              = require("markdown.commands.refs").run,
-  table             = require("markdown.commands.table").run,
-  render            = require("markdown.commands.render").run,
-  preview           = require("markdown.commands.preview").run,
-  mdview            = require("markdown.commands.mdview").run,
-  create            = require("markdown.commands.create").run,
-  scope             = require("markdown.commands.scope").run,
-  image             = require("markdown.commands.image").run,
-  headline_spacing  = function()
+  links = require("markdown.commands.links").run,
+  toc = require("markdown.commands.toc").run,
+  refs = require("markdown.commands.refs").run,
+  table = require("markdown.commands.table").run,
+  render = require("markdown.commands.render").run,
+  preview = require("markdown.commands.preview").run,
+  mdview = require("markdown.commands.mdview").run,
+  create = require("markdown.commands.create").run,
+  scope = require("markdown.commands.scope").run,
+  image = require("markdown.commands.image").run,
+  headline_spacing = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
   end,
@@ -71,15 +71,19 @@ end
 
 -- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
 local sub_complete = {
-  links   = function(arglead) return require("markdown.commands.links").complete(arglead) end,
-  refs    = function(arglead, cmdline) return require("markdown.commands.refs").complete(arglead, cmdline) end,
-  table   = function(arglead, cmdline) return require("markdown.commands.table").complete(arglead, cmdline) end,
-  render  = function(arglead) return require("markdown.commands.render").complete(arglead) end,
+  links = function(arglead) return require("markdown.commands.links").complete(arglead) end,
+  refs = function(arglead, cmdline)
+    return require("markdown.commands.refs").complete(arglead, cmdline)
+  end,
+  table = function(arglead, cmdline)
+    return require("markdown.commands.table").complete(arglead, cmdline)
+  end,
+  render = function(arglead) return require("markdown.commands.render").complete(arglead) end,
   preview = function(arglead) return require("markdown.commands.preview").complete(arglead) end,
-  mdview  = function(arglead) return require("markdown.commands.mdview").complete(arglead) end,
-  create  = function(arglead) return require("markdown.commands.create").complete(arglead) end,
-  scope   = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
-  image   = function(arglead) return require("markdown.commands.image").complete(arglead) end,
+  mdview = function(arglead) return require("markdown.commands.mdview").complete(arglead) end,
+  create = function(arglead) return require("markdown.commands.create").complete(arglead) end,
+  scope = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
+  image = function(arglead) return require("markdown.commands.image").complete(arglead) end,
 }
 
 --- Completion for `:Markdown`: subcommand names, then delegates to the

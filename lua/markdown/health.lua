@@ -46,15 +46,17 @@ function M.check()
   if picker == "hover_select" or picker == "select" then
     info("links picker: " .. picker)
   else
-    warn(("links.picker is %q — expected \"hover_select\" or \"select\""):format(tostring(picker)))
+    warn(('links.picker is %q — expected "hover_select" or "select"'):format(tostring(picker)))
   end
 
-  info(("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s"):format(
-    tostring(cfg.enable_autocmds ~= false),
-    tostring(cfg.enable_keymaps ~= false),
-    tostring(cfg.ft_only ~= false),
-    tostring(cfg.ensure_headline_spacing ~= false)
-  ))
+  info(
+    ("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s"):format(
+      tostring(cfg.enable_autocmds ~= false),
+      tostring(cfg.enable_keymaps ~= false),
+      tostring(cfg.ft_only ~= false),
+      tostring(cfg.ensure_headline_spacing ~= false)
+    )
+  )
 
   -- Optional host plugins for :Markdown render / preview.
   if vim.fn.exists(":RenderMarkdown") == 2 then
@@ -79,7 +81,9 @@ function M.check()
   if pcall(require, "lib.nvim.usercmd.composer") then
     ok("lib.nvim detected (:Markdown/:TableView* command layer available)")
   else
-    warn("lib.nvim not found — :Markdown/:TableView* will fail to register; install \"StefanBartl/lib.nvim\"")
+    warn(
+      'lib.nvim not found — :Markdown/:TableView* will fail to register; install "StefanBartl/lib.nvim"'
+    )
   end
 
   -- Optional lib.nvim integration on top of the above (the default float
@@ -92,7 +96,7 @@ function M.check()
 
   -- Optional which-key integration.
   if require("markdown.bindings.which_key").available() then
-    ok("which-key detected (<leader>t grouped as \"Markdown\")")
+    ok('which-key detected (<leader>t grouped as "Markdown")')
   else
     info("which-key not found — mappings still carry their own descriptions")
   end
@@ -103,11 +107,16 @@ function M.check()
     info("fenced_scope: disabled")
   else
     local ops = fs.operations or {}
-    info(("fenced_scope: enabled | provider: %s | ops toc:%s nav:%s jump:%s shift:%s fold:%s"):format(
-      tostring(fs.provider or "auto"),
-      tostring(ops.toc ~= false), tostring(ops.nav ~= false), tostring(ops.jump ~= false),
-      tostring(ops.shift ~= false), tostring(ops.fold == true)
-    ))
+    info(
+      ("fenced_scope: enabled | provider: %s | ops toc:%s nav:%s jump:%s shift:%s fold:%s"):format(
+        tostring(fs.provider or "auto"),
+        tostring(ops.toc ~= false),
+        tostring(ops.nav ~= false),
+        tostring(ops.jump ~= false),
+        tostring(ops.shift ~= false),
+        tostring(ops.fold == true)
+      )
+    )
     info("fenced_scope langs: " .. table.concat(fs.langs or {}, ", "))
 
     local pref = fs.provider or "auto"
@@ -117,9 +126,13 @@ function M.check()
       has_cma = cma_ok and type(cma) == "table" and type(cma.fences) == "table"
     end
     if has_cma then
-      ok("fenced_scope provider: color_my_ascii fence API (robust heuristic + treesitter detection)")
+      ok(
+        "fenced_scope provider: color_my_ascii fence API (robust heuristic + treesitter detection)"
+      )
     elseif pref == "color_my_ascii" then
-      warn("fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner")
+      warn(
+        "fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner"
+      )
     else
       info("color_my_ascii not found — fenced_scope uses the built-in fallback scanner")
     end

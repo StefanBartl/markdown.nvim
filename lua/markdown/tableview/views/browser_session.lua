@@ -63,15 +63,11 @@ function M.show(html, style_key, force_new)
   local with_refresh = html:gsub("</body>", AUTO_REFRESH_SCRIPT .. "</body>", 1)
 
   local fh, err = io.open(path, "w")
-  if not fh then
-    return false, "failed to write preview file: " .. tostring(err)
-  end
+  if not fh then return false, "failed to write preview file: " .. tostring(err) end
   fh:write(with_refresh)
   fh:close()
 
-  if force_new then
-    opened[style_key] = false
-  end
+  if force_new then opened[style_key] = false end
   if opened[style_key] then
     -- A tab is presumably already open; it will pick up the new content on
     -- its next auto-refresh tick.
@@ -79,9 +75,7 @@ function M.show(html, style_key, force_new)
   end
 
   local ok, open_err = platform.open(path)
-  if ok then
-    opened[style_key] = true
-  end
+  if ok then opened[style_key] = true end
   return ok, open_err
 end
 

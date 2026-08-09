@@ -34,7 +34,9 @@ return function(bufnr, force_new)
   local function w(s) buf[#buf + 1] = s end
 
   w("<!doctype html><html><head><meta charset='utf-8'><title>TableView</title>")
-  w("<style>table{border-collapse:collapse;font-family:system-ui,Segoe UI,Roboto,Arial;}th,td{border:1px solid #bbb;padding:6px;text-align:left}</style>")
+  w(
+    "<style>table{border-collapse:collapse;font-family:system-ui,Segoe UI,Roboto,Arial;}th,td{border:1px solid #bbb;padding:6px;text-align:left}</style>"
+  )
   w("</head><body><table><thead><tr>")
   for _, c in ipairs(chosen.header.cells) do
     w("<th>" .. html_escape(c.content or "") .. "</th>")
@@ -50,7 +52,5 @@ return function(bufnr, force_new)
   w("</tbody></table></body></html>")
 
   local ok, err = session.show(table.concat(buf), "basic", force_new)
-  if not ok then
-    notify.error("Failed to open browser preview: " .. tostring(err))
-  end
+  if not ok then notify.error("Failed to open browser preview: " .. tostring(err)) end
 end

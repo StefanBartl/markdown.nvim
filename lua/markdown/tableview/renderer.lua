@@ -16,31 +16,37 @@ local state = {
   -- they're laid out, and per-column width overrides. Reset on every fresh
   -- render_markdowntable / render_tables call; carried across an internal
   -- `rerender()` call so the overrides survive repeated Alt-key presses.
-  tables        = nil, ---@type table[]|nil
-  style         = nil, ---@type "markdown"|"box"|nil
-  single        = nil, ---@type boolean|nil  true = render_markdowntable's own (unlabeled) layout
-  opts          = nil,
-  col_overrides = {},  ---@type table<integer, table<integer, integer>>  [table_idx][col_idx] = extra width
+  tables = nil, ---@type table[]|nil
+  style = nil, ---@type "markdown"|"box"|nil
+  single = nil, ---@type boolean|nil  true = render_markdowntable's own (unlabeled) layout
+  opts = nil,
+  col_overrides = {}, ---@type table<integer, table<integer, integer>>  [table_idx][col_idx] = extra width
   -- [line_idx(0-indexed)] = { table_idx = integer, row_idx = integer }  (row_idx 0 = header)
-  row_map       = nil, ---@type table<integer, { table_idx: integer, row_idx: integer }>|nil
+  row_map = nil, ---@type table<integer, { table_idx: integer, row_idx: integer }>|nil
 }
 
 local default_opts = {
-  floating       = true,
+  floating = true,
   max_width_frac = 0.85,
   max_height_frac = 0.75,
-  border         = "rounded",
+  border = "rounded",
   highlight = {
-    header    = "Title",
+    header = "Title",
     separator = "Comment",
-    cell      = "Normal",
+    cell = "Normal",
   },
 }
 
 local function merge(a, b)
   local out = {}
-  for k, v in pairs(a) do out[k] = v end
-  if b then for k, v in pairs(b) do out[k] = v end end
+  for k, v in pairs(a) do
+    out[k] = v
+  end
+  if b then
+    for k, v in pairs(b) do
+      out[k] = v
+    end
+  end
   return out
 end
 
@@ -68,9 +74,7 @@ local function divider_columns(line)
   local nchars = vim.fn.strchars(line)
   for i = 0, nchars - 1 do
     local ch = vim.fn.strcharpart(line, i, 1)
-    if ch == "|" or ch == "│" then
-      cols[#cols + 1] = col
-    end
+    if ch == "|" or ch == "│" then cols[#cols + 1] = col end
     col = col + display_width(ch)
   end
   return cols
@@ -86,9 +90,7 @@ local function cell_index_at(line, dispcol)
   local cols = divider_columns(line)
   if #cols < 2 then return nil end
   for i = 1, #cols - 1 do
-    if dispcol >= cols[i] and dispcol < cols[i + 1] then
-      return i
-    end
+    if dispcol >= cols[i] and dispcol < cols[i + 1] then return i end
   end
   return nil
 end
@@ -98,9 +100,7 @@ end
 ---@param line string
 ---@param bytecol integer
 ---@return integer
-local function byte_to_display_col(line, bytecol)
-  return display_width(line:sub(1, bytecol))
-end
+local function byte_to_display_col(line, bytecol) return display_width(line:sub(1, bytecol)) end
 
 --- Convert a 0-indexed DISPLAY column back to a 0-indexed BYTE column on
 --- `line` (the inverse of byte_to_display_col), for restoring the cursor
@@ -130,7 +130,9 @@ local function table_to_matrix(mt)
   table.insert(matrix, header_cells)
   for _, r in ipairs(mt.rows) do
     local row_cells = {}
-    for _, c in ipairs(r.cells) do table.insert(row_cells, tostring(c.content or "")) end
+    for _, c in ipairs(r.cells) do
+      table.insert(row_cells, tostring(c.content or ""))
+    end
     table.insert(matrix, row_cells)
   end
   return matrix
@@ -154,9 +156,7 @@ local function compute_col_widths(matrix, overrides)
   end
   if overrides then
     for col_idx, extra in pairs(overrides) do
-      if widths[col_idx] and extra and extra > 0 then
-        widths[col_idx] = widths[col_idx] + extra
-      end
+      if widths[col_idx] and extra and extra > 0 then widths[col_idx] = widths[col_idx] + extra end
     end
   end
   return widths
@@ -242,13 +242,17 @@ local function build_box_lines(mt, overrides)
 
   local function border(left, mid, right, fill)
     local parts = {}
-    for _, w in ipairs(widths) do parts[#parts + 1] = string.rep(fill, w + 2) end
+    for _, w in ipairs(widths) do
+      parts[#parts + 1] = string.rep(fill, w + 2)
+    end
     return left .. table.concat(parts, mid) .. right
   end
   local function row(cells)
     local parts = {}
     for i, w in ipairs(widths) do
-      parts[#parts + 1] = " " .. align_cell(cells[i] or "", w, (mt.alignments and mt.alignments[i]) or "left") .. " "
+      parts[#parts + 1] = " "
+        .. align_cell(cells[i] or "", w, (mt.alignments and mt.alignments[i]) or "left")
+        .. " "
     end
     return "│" .. table.concat(parts, "│") .. "│"
   end
@@ -312,10 +316,24 @@ local function apply_blocks_highlight(buf, lines, blocks, opts)
     if not (hl and hl.range) then return end
     for _, block in ipairs(blocks) do
       if block.label_line then
-        hl.range(buf, ns, sep_hl, { block.label_line, 0 }, { block.label_line, -1 }, { inclusive = false })
+        hl.range(
+          buf,
+          ns,
+          sep_hl,
+          { block.label_line, 0 },
+          { block.label_line, -1 },
+          { inclusive = false }
+        )
       end
       if #lines > block.header_line then
-        hl.range(buf, ns, header_hl, { block.header_line, 0 }, { block.header_line, -1 }, { inclusive = false })
+        hl.range(
+          buf,
+          ns,
+          header_hl,
+          { block.header_line, 0 },
+          { block.header_line, -1 },
+          { inclusive = false }
+        )
       end
       for _, sl in ipairs(block.sep_lines) do
         hl.range(buf, ns, sep_hl, { sl, 0 }, { sl, -1 }, { inclusive = false })
@@ -331,7 +349,14 @@ end
 --- past the last divider.
 ---@return { table_idx: integer, row_idx: integer, col_idx: integer }|nil
 local function resolve_cursor_target()
-  if not (state.win and api.nvim_win_is_valid(state.win) and state.buf and api.nvim_buf_is_valid(state.buf)) then
+  if
+    not (
+      state.win
+      and api.nvim_win_is_valid(state.win)
+      and state.buf
+      and api.nvim_buf_is_valid(state.buf)
+    )
+  then
     return nil
   end
   if not state.row_map then return nil end
@@ -355,9 +380,7 @@ local function ensure_view(opts)
   opts = opts or {}
 
   if state.buf and api.nvim_buf_is_valid(state.buf) then
-    if state.win and api.nvim_win_is_valid(state.win) then
-      return state.buf, state.win
-    end
+    if state.win and api.nvim_win_is_valid(state.win) then return state.buf, state.win end
   end
 
   if not (state.buf and api.nvim_buf_is_valid(state.buf)) then
@@ -382,12 +405,12 @@ local function ensure_view(opts)
 
   local win_opts = {
     relative = "editor",
-    width    = width,
-    height   = height,
-    col      = math.floor((vim.o.columns - width) / 2),
-    row      = math.floor((vim.o.lines - height) / 2),
-    style    = "minimal",
-    border   = opts.border or default_opts.border,
+    width = width,
+    height = height,
+    col = math.floor((vim.o.columns - width) / 2),
+    row = math.floor((vim.o.lines - height) / 2),
+    style = "minimal",
+    border = opts.border or default_opts.border,
   }
 
   if state.win and not api.nvim_win_is_valid(state.win) then state.win = nil end
@@ -412,16 +435,21 @@ local function ensure_view(opts)
   -- Vim-motion letters are a reliable fallback rather than the only way in.
   local map_opts = { buffer = state.buf, nowait = true, silent = true }
   local function bind(lhs, fn, desc)
-    vim.keymap.set("n", lhs, fn, vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: " .. desc }))
+    vim.keymap.set(
+      "n",
+      lhs,
+      fn,
+      vim.tbl_extend("force", map_opts, { desc = "[markdown.nvim] TableView: " .. desc })
+    )
   end
   bind("<M-Right>", function() M.resize_current_column(1) end, "widen current column")
-  bind("<M-l>",     function() M.resize_current_column(1) end, "widen current column")
-  bind("<M-Left>",  function() M.resize_current_column(-1) end, "narrow current column")
-  bind("<M-h>",     function() M.resize_current_column(-1) end, "narrow current column")
-  bind("<M-Up>",    function() M.move_current_row(-1) end, "move current row up")
-  bind("<M-k>",     function() M.move_current_row(-1) end, "move current row up")
-  bind("<M-Down>",  function() M.move_current_row(1) end, "move current row down")
-  bind("<M-j>",     function() M.move_current_row(1) end, "move current row down")
+  bind("<M-l>", function() M.resize_current_column(1) end, "widen current column")
+  bind("<M-Left>", function() M.resize_current_column(-1) end, "narrow current column")
+  bind("<M-h>", function() M.resize_current_column(-1) end, "narrow current column")
+  bind("<M-Up>", function() M.move_current_row(-1) end, "move current row up")
+  bind("<M-k>", function() M.move_current_row(-1) end, "move current row up")
+  bind("<M-Down>", function() M.move_current_row(1) end, "move current row down")
+  bind("<M-j>", function() M.move_current_row(1) end, "move current row down")
 
   -- `:w` in the popup writes row-order/content edits back to wherever the
   -- table(s) actually came from (source buffer or file — see M.write_back).
@@ -471,10 +499,17 @@ local function build_stacked_lines(tables, style, overrides_by_table)
     local label_line = nil
     if mt.source then
       label_line = #lines
-      lines[#lines + 1] = string.format("── %s:%d  (Table %d/%d) ──", mt.source, mt.start_line or 0, idx, #tables)
+      lines[#lines + 1] = string.format(
+        "── %s:%d  (Table %d/%d) ──",
+        mt.source,
+        mt.start_line or 0,
+        idx,
+        #tables
+      )
     elseif #tables > 1 then
       label_line = #lines
-      lines[#lines + 1] = string.format("── Table %d/%d (line %d) ──", idx, #tables, mt.start_line or 0)
+      lines[#lines + 1] =
+        string.format("── Table %d/%d (line %d) ──", idx, #tables, mt.start_line or 0)
     end
 
     local block_start = #lines -- 0-indexed row of this table's first line
@@ -503,19 +538,23 @@ local function build_stacked_lines(tables, style, overrides_by_table)
       sep_local[1] = 1
     end
 
-    for _, l in ipairs(table_lines) do lines[#lines + 1] = l end
+    for _, l in ipairs(table_lines) do
+      lines[#lines + 1] = l
+    end
 
     for i, r in pairs(table_row_map) do
       row_map[block_start + i] = { table_idx = idx, row_idx = r }
     end
 
     local sep_abs = {}
-    for _, i in ipairs(sep_local) do sep_abs[#sep_abs + 1] = block_start + i end
+    for _, i in ipairs(sep_local) do
+      sep_abs[#sep_abs + 1] = block_start + i
+    end
 
     blocks[#blocks + 1] = {
       header_line = block_start + header_local,
-      sep_lines   = sep_abs,
-      label_line  = label_line,
+      sep_lines = sep_abs,
+      label_line = label_line,
     }
   end
 
@@ -545,7 +584,9 @@ local function rerender()
       lines, raw_row_map = build_lines_from_markdowntable(mt, overrides)
     end
     row_map = {}
-    for i, r in pairs(raw_row_map) do row_map[i] = { table_idx = 1, row_idx = r } end
+    for i, r in pairs(raw_row_map) do
+      row_map[i] = { table_idx = 1, row_idx = r }
+    end
     blocks = { compute_single_highlight_block(lines, box) }
   else
     lines, blocks, row_map = build_stacked_lines(state.tables, state.style, state.col_overrides)
@@ -575,9 +616,7 @@ local function rerender_preserving_cursor(ctx)
 
   local target_row = ctx.row_idx
   local mt = state.tables and state.tables[ctx.table_idx]
-  if mt then
-    target_row = math.max(0, math.min(target_row, #mt.rows))
-  end
+  if mt then target_row = math.max(0, math.min(target_row, #mt.rows)) end
 
   local target_line = nil
   for i = 0, #lines - 1 do
@@ -618,7 +657,9 @@ function M.render_markdowntable(mt, opts)
     state.opts = opts
     state.col_overrides = {}
     state.row_map = {}
-    for i, r in pairs(row_map) do state.row_map[i] = { table_idx = 1, row_idx = r } end
+    for i, r in pairs(row_map) do
+      state.row_map[i] = { table_idx = 1, row_idx = r }
+    end
 
     set_buf_opt(state.buf, "modifiable", true)
     api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -750,7 +791,11 @@ function M.move_current_row(delta)
 
   mt.rows[ctx.row_idx], mt.rows[target_idx] = mt.rows[target_idx], mt.rows[ctx.row_idx]
 
-  rerender_preserving_cursor({ table_idx = ctx.table_idx, row_idx = target_idx, col_idx = ctx.col_idx })
+  rerender_preserving_cursor({
+    table_idx = ctx.table_idx,
+    row_idx = target_idx,
+    col_idx = ctx.col_idx,
+  })
 end
 
 --- Write every currently-shown table's content — including any row reorders
@@ -779,9 +824,13 @@ function M.write_back()
       local ok, file_lines = pcall(vim.fn.readfile, mt.source)
       if ok and file_lines then
         local new_content = {}
-        for i = 1, mt.start_line - 1 do new_content[#new_content + 1] = file_lines[i] end
+        for i = 1, mt.start_line - 1 do
+          new_content[#new_content + 1] = file_lines[i]
+        end
         vim.list_extend(new_content, lines)
-        for i = mt.end_line + 1, #file_lines do new_content[#new_content + 1] = file_lines[i] end
+        for i = mt.end_line + 1, #file_lines do
+          new_content[#new_content + 1] = file_lines[i]
+        end
         vim.fn.writefile(new_content, mt.source)
         wrote_file = wrote_file + 1
       else
@@ -792,9 +841,7 @@ function M.write_back()
     end
   end
 
-  if state.buf and api.nvim_buf_is_valid(state.buf) then
-    vim.bo[state.buf].modified = false
-  end
+  if state.buf and api.nvim_buf_is_valid(state.buf) then vim.bo[state.buf].modified = false end
 
   if wrote_buf == 0 and wrote_file == 0 then
     notify.warn("TableView: nothing to write back (no source buffer/file for the shown table(s))")
@@ -805,14 +852,16 @@ function M.write_back()
   if wrote_buf > 0 then parts[#parts + 1] = string.format("%d buffer(s)", wrote_buf) end
   if wrote_file > 0 then parts[#parts + 1] = string.format("%d file(s) on disk", wrote_file) end
   local msg = "TableView: wrote back to " .. table.concat(parts, ", ")
-  if skipped > 0 then msg = msg .. string.format(" (%d table(s) skipped: no known source)", skipped) end
+  if skipped > 0 then
+    msg = msg .. string.format(" (%d table(s) skipped: no known source)", skipped)
+  end
   if wrote_file > 0 then msg = msg .. " — buffer edits are NOT auto-saved, files on disk were" end
   notify.info(msg)
 end
 
 M.render_table = M.render_markdowntable
 M.toggle_table = M.toggle_markdowntable
-M.close        = M.close_view
+M.close = M.close_view
 
 --- Verify that a rendered table block (as returned by build_lines_from_
 --- markdowntable / build_box_lines / render_tables' stacked output) has every
@@ -833,15 +882,26 @@ function M.validate_alignment(lines)
       if not reference then
         reference, reference_lineno = cols, lineno
       elseif #cols ~= #reference then
-        return false, string.format(
-          "line %d has %d divider(s), line %d (reference) has %d",
-          lineno, #cols, reference_lineno, #reference)
+        return false,
+          string.format(
+            "line %d has %d divider(s), line %d (reference) has %d",
+            lineno,
+            #cols,
+            reference_lineno,
+            #reference
+          )
       else
         for i, c in ipairs(cols) do
           if c ~= reference[i] then
-            return false, string.format(
-              "line %d: divider %d is at display column %d, expected %d (from line %d)",
-              lineno, i, c, reference[i], reference_lineno)
+            return false,
+              string.format(
+                "line %d: divider %d is at display column %d, expected %d (from line %d)",
+                lineno,
+                i,
+                c,
+                reference[i],
+                reference_lineno
+              )
           end
         end
       end

@@ -22,8 +22,8 @@ function M.update(header, opts)
   header = header or toc_cfg.header or DEFAULT_HEADER
   if opts.min_level == nil then opts.min_level = toc_cfg.min_level end
   if opts.max_level == nil then opts.max_level = toc_cfg.max_level end
-  if opts.marker    == nil then opts.marker    = toc_cfg.marker end
-  opts.anchor_style     = toc_cfg.anchor_style
+  if opts.marker == nil then opts.marker = toc_cfg.marker end
+  opts.anchor_style = toc_cfg.anchor_style
   opts.anchor_separator = toc_cfg.anchor_separator
 
   -- When the cursor sits inside a markdown-family fenced block, scope the TOC to
@@ -35,8 +35,8 @@ function M.update(header, opts)
   if sc and sc.kind == "block" then
     block_scoped = true
     opts = vim.tbl_extend("force", opts, {
-      scan_first     = sc.first,
-      scan_last      = sc.last,
+      scan_first = sc.first,
+      scan_last = sc.last,
       no_frontmatter = true,
     })
   elseif sc and sc.kind == "buffer" then
@@ -54,9 +54,7 @@ function M.update(header, opts)
   -- Per-call override wins; otherwise fall back to the user config
   -- (`ensure_headline_spacing`, default true).
   local want_sep = opts.separators
-  if want_sep == nil then
-    want_sep = cfg().ensure_headline_spacing ~= false
-  end
+  if want_sep == nil then want_sep = cfg().ensure_headline_spacing ~= false end
 
   if want_sep then
     local bufnr = vim.api.nvim_get_current_buf()

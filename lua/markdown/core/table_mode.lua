@@ -82,15 +82,11 @@ end
 -- One shared, buffer-scoped debounce handle: `lib.nvim.debounce.buffer`
 -- keeps an independent 120ms timer per bufnr internally, matching what the
 -- old per-buffer `S[bufnr].timer` bookkeeping did by hand.
-local _debounce = lib_debounce_buffer.new(function(bufnr)
-  M.reformat(bufnr)
-end, { ms = 120 })
+local _debounce = lib_debounce_buffer.new(function(bufnr) M.reformat(bufnr) end, { ms = 120 })
 
 ---@param bufnr integer
 ---@return boolean
-function M.is_enabled(bufnr)
-  return S[bufnr] ~= nil
-end
+function M.is_enabled(bufnr) return S[bufnr] ~= nil end
 
 --- Enable auto-format for `bufnr`: a debounced reformat runs after leaving
 --- insert mode or changing text while the cursor is inside a table.
@@ -157,21 +153,21 @@ end
 -- delimiter. Everything here is lower-cased before lookup.
 ---@type table<string, { char?: string, ws?: boolean, label: string }>
 local FORMATS = {
-  csv        = { char = ",",  label = "csv" },
-  comma      = { char = ",",  label = "csv" },
-  tsv        = { char = "\t", label = "tsv" },
-  tab        = { char = "\t", label = "tsv" },
-  ["\\t"]    = { char = "\t", label = "tsv" },
-  psv        = { char = "|",  label = "psv" },
-  pipe       = { char = "|",  label = "psv" },
-  bar        = { char = "|",  label = "psv" },
-  ssv        = { char = ";",  label = "scsv" },
-  scsv       = { char = ";",  label = "scsv" },
-  semicolon  = { char = ";",  label = "scsv" },
-  colon      = { char = ":",  label = "colon" },
-  space      = { char = " ",  label = "space" },
-  spaces     = { ws = true,   label = "whitespace" },
-  whitespace = { ws = true,   label = "whitespace" },
+  csv = { char = ",", label = "csv" },
+  comma = { char = ",", label = "csv" },
+  tsv = { char = "\t", label = "tsv" },
+  tab = { char = "\t", label = "tsv" },
+  ["\\t"] = { char = "\t", label = "tsv" },
+  psv = { char = "|", label = "psv" },
+  pipe = { char = "|", label = "psv" },
+  bar = { char = "|", label = "psv" },
+  ssv = { char = ";", label = "scsv" },
+  scsv = { char = ";", label = "scsv" },
+  semicolon = { char = ";", label = "scsv" },
+  colon = { char = ":", label = "colon" },
+  space = { char = " ", label = "space" },
+  spaces = { ws = true, label = "whitespace" },
+  whitespace = { ws = true, label = "whitespace" },
 }
 
 --- Strip a `sep=` / `separator=` prefix and one matching pair of surrounding
@@ -182,9 +178,7 @@ local FORMATS = {
 local function clean_spec(spec)
   spec = spec:gsub("^%s*separator%s*=%s*", ""):gsub("^%s*sep%s*=%s*", "")
   local q = spec:sub(1, 1)
-  if (q == '"' or q == "'") and spec:sub(-1) == q and #spec >= 2 then
-    spec = spec:sub(2, -2)
-  end
+  if (q == '"' or q == "'") and spec:sub(-1) == q and #spec >= 2 then spec = spec:sub(2, -2) end
   return spec
 end
 
@@ -201,7 +195,12 @@ local function resolve_delim(lines, spec)
 
   if spec == nil or spec == "" or spec:lower() == "auto" then
     local sample = ""
-    for _, l in ipairs(lines) do if l:match("%S") then sample = l; break end end
+    for _, l in ipairs(lines) do
+      if l:match("%S") then
+        sample = l
+        break
+      end
+    end
     if sample:find("\t") then return "char", "\t", "tsv" end
     if sample:find(",") then return "char", ",", "csv" end
     if sample:find("%s%s+") then return "ws", "%s%s+", "whitespace" end
@@ -237,8 +236,12 @@ local function split_char(line, sep)
     local c = line:sub(i, i)
     if in_q then
       if c == '"' then
-        if line:sub(i + 1, i + 1) == '"' then buf[#buf + 1] = '"'; i = i + 1
-        else in_q = false end
+        if line:sub(i + 1, i + 1) == '"' then
+          buf[#buf + 1] = '"'
+          i = i + 1
+        else
+          in_q = false
+        end
       else
         buf[#buf + 1] = c
       end
@@ -307,14 +310,20 @@ function M.tableize(bufnr, line1, line2, delim)
   -- Build a raw GFM table (header, separator, body); table_fmt re-aligns it.
   local function render(cells)
     local parts = {}
-    for i = 1, cols do parts[i] = cells[i] or "" end
+    for i = 1, cols do
+      parts[i] = cells[i] or ""
+    end
     return "| " .. table.concat(parts, " | ") .. " |"
   end
   local out = { render(matrix[1]) }
   local sep = {}
-  for i = 1, cols do sep[i] = "---" end
+  for i = 1, cols do
+    sep[i] = "---"
+  end
   out[#out + 1] = "| " .. table.concat(sep, " | ") .. " |"
-  for i = 2, #matrix do out[#out + 1] = render(matrix[i]) end
+  for i = 2, #matrix do
+    out[#out + 1] = render(matrix[i])
+  end
 
   api.nvim_buf_set_lines(bufnr, line1 - 1, line2, false, out)
 
@@ -342,7 +351,9 @@ local function cell_starts(line)
     if not s then break end
     pos = s + 1
     local t = s -- 0-indexed position of the `|` is s-1; content begins at s
-    while t < #line and line:sub(t + 1, t + 1) == " " do t = t + 1 end
+    while t < #line and line:sub(t + 1, t + 1) == " " do
+      t = t + 1
+    end
     if t < #line then starts[#starts + 1] = t end -- t is 0-indexed content col
   end
   return starts
@@ -374,11 +385,12 @@ function M.prev_cell()
   -- Index of the current cell = last start ≤ cursor; jump to the one before it.
   local idx = nil
   for i = #starts, 1, -1 do
-    if starts[i] <= cur[2] then idx = i; break end
+    if starts[i] <= cur[2] then
+      idx = i
+      break
+    end
   end
-  if idx and idx > 1 then
-    api.nvim_win_set_cursor(win, { cur[1], starts[idx - 1] })
-  end
+  if idx and idx > 1 then api.nvim_win_set_cursor(win, { cur[1], starts[idx - 1] }) end
 end
 
 return M

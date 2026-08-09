@@ -13,20 +13,20 @@ return function(H)
   local scope = require("markdown.scope")
 
   local DOC = {
-    "# Doc Title",   -- 1
-    "",              -- 2
-    "## Section A",  -- 3
-    "",              -- 4
-    "```markdown",   -- 5
+    "# Doc Title", -- 1
+    "", -- 2
+    "## Section A", -- 3
+    "", -- 4
+    "```markdown", -- 5
     "# Inner Title", -- 6
-    "",              -- 7
-    "## Inner A",    -- 8
-    "",              -- 9
-    "## Inner B",    -- 10
-    "",              -- 11
-    "```",           -- 12
-    "",              -- 13
-    "## Section B",  -- 14
+    "", -- 7
+    "## Inner A", -- 8
+    "", -- 9
+    "## Inner B", -- 10
+    "", -- 11
+    "```", -- 12
+    "", -- 13
+    "## Section B", -- 14
   }
 
   local function fresh()
@@ -70,7 +70,10 @@ return function(H)
       if l == "```markdown" then open_i = i end
       if l == "```" and open_i and not close_i then close_i = i end
     end
-    ok(toc_i and open_i and close_i and toc_i > open_i and toc_i < close_i, "TOC inserted inside the block")
+    ok(
+      toc_i and open_i and close_i and toc_i > open_i and toc_i < close_i,
+      "TOC inserted inside the block"
+    )
     ok(has_sub(buf, "- [Inner A](#inner-a)"), "block TOC lists Inner A")
     ok(not has_sub(buf, "- [Section A](#section-a)"), "block TOC excludes outer Section A")
   end
@@ -145,13 +148,13 @@ return function(H)
     scope._reset_backend()
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# Doc",       -- 1
-      "```python",   -- 2
-      "# comment",   -- 3
-      "```",         -- 4
+      "# Doc", -- 1
+      "```python", -- 2
+      "# comment", -- 3
+      "```", -- 4
       "```markdown", -- 5
-      "## Inner",    -- 6
-      "```",         -- 7
+      "## Inner", -- 6
+      "```", -- 7
     })
     local fold = require("markdown.core.fold")
     eq(fold.foldexpr(3), "=", "python-fence # comment does not fold")

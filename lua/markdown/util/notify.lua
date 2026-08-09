@@ -25,16 +25,12 @@ function M.create(prefix)
 
   -- Standalone fallback.
   local p = prefix or ""
-  if type(p) == "string" and p ~= "" and not p:match("%s$") then
-    p = p .. " "
-  end
-  local function notify(msg, level)
-    vim.notify(p .. tostring(msg), level)
-  end
+  if type(p) == "string" and p ~= "" and not p:match("%s$") then p = p .. " " end
+  local function notify(msg, level) vim.notify(p .. tostring(msg), level) end
   return {
     notify = notify,
-    info  = function(msg) notify(msg, vim.log.levels.INFO) end,
-    warn  = function(msg) notify(msg, vim.log.levels.WARN) end,
+    info = function(msg) notify(msg, vim.log.levels.INFO) end,
+    warn = function(msg) notify(msg, vim.log.levels.WARN) end,
     error = function(msg) notify(msg, vim.log.levels.ERROR) end,
     debug = function(msg)
       if vim.g.markdown_debug then notify(msg, vim.log.levels.DEBUG) end

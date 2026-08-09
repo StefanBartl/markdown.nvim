@@ -47,14 +47,17 @@ return function(H)
     fresh_table(buf)
     tf.format_table_at_cursor(buf, { header_align = "right", entry_align = "right" })
     local out = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    ok(out[1]:match("Name%s* |$") == nil or out[1]:match("%s+Name |$") ~= nil, "explicit opts override config for header")
+    ok(
+      out[1]:match("Name%s* |$") == nil or out[1]:match("%s+Name |$") ~= nil,
+      "explicit opts override config for header"
+    )
   end
 
   -- config.table.col_overrides applies when the caller passes none.
   config.setup({
     table = {
-      header_align  = "center",
-      entry_align   = "center",
+      header_align = "center",
+      entry_align = "center",
       col_overrides = { { col = "Name", align = "left" } },
     },
   })

@@ -11,9 +11,7 @@ local M = {}
 
 ---@internal
 ---@return boolean
-local function available()
-  return vim.fn.exists(":MDViewStart") == 2
-end
+local function available() return vim.fn.exists(":MDViewStart") == 2 end
 
 --- Runs `:Markdown mdview [path]`.
 ---@param argv string[]
@@ -25,9 +23,7 @@ function M.run(argv)
   end
 
   local path = argv[1]
-  if not path or path == "" then
-    path = vim.api.nvim_buf_get_name(0)
-  end
+  if not path or path == "" then path = vim.api.nvim_buf_get_name(0) end
   if not path or path == "" then
     notify.warn("mdview: current buffer has no file path to open")
     return
@@ -38,8 +34,6 @@ end
 
 ---@param arglead string
 ---@return string[]
-function M.complete(arglead)
-  return vim.fn.getcompletion(arglead, "file")
-end
+function M.complete(arglead) return vim.fn.getcompletion(arglead, "file") end
 
 return M

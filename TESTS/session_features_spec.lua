@@ -29,11 +29,16 @@ return function(H)
 
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# Doc", "",
-      "## Table of content", "",
-      "- [Setup](#setup)", "",
-      "---", "",
-      "## Setup", "",
+      "# Doc",
+      "",
+      "## Table of content",
+      "",
+      "- [Setup](#setup)",
+      "",
+      "---",
+      "",
+      "## Setup",
+      "",
       "See [the setup section](#setup) for details.",
     })
     require("markdown.core.refs").baseline(buf)
@@ -49,8 +54,14 @@ return function(H)
 
     commands.execute({ "refs", "sync" })
     local text = table.concat(api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
-    ok(text:find("%[Installation%]%(#installation%)"), "refs sync: TOC entry updated to the new anchor")
-    ok(text:find("%[the setup section%]%(#installation%)"), "refs sync: inline link updated to the new anchor")
+    ok(
+      text:find("%[Installation%]%(#installation%)"),
+      "refs sync: TOC entry updated to the new anchor"
+    )
+    ok(
+      text:find("%[the setup section%]%(#installation%)"),
+      "refs sync: inline link updated to the new anchor"
+    )
 
     -- check: a genuinely broken anchor is reported via quickfix, not silently dropped.
     api.nvim_buf_set_lines(buf, -1, -1, false, { "", "dangling [link](#does-not-exist)." })
@@ -77,12 +88,18 @@ return function(H)
       local buf = H.scratch("markdown")
       keymaps.apply(buf)
       local lhs_list = {}
-      for _, m in ipairs(api.nvim_buf_get_keymap(buf, "n")) do lhs_list[#lhs_list + 1] = m.lhs end
-      for _, m in ipairs(api.nvim_buf_get_keymap(buf, "v")) do lhs_list[#lhs_list + 1] = "v:" .. m.lhs end
+      for _, m in ipairs(api.nvim_buf_get_keymap(buf, "n")) do
+        lhs_list[#lhs_list + 1] = m.lhs
+      end
+      for _, m in ipairs(api.nvim_buf_get_keymap(buf, "v")) do
+        lhs_list[#lhs_list + 1] = "v:" .. m.lhs
+      end
       return lhs_list
     end
     local function has(list, needle)
-      for _, x in ipairs(list) do if x == needle then return true end end
+      for _, x in ipairs(list) do
+        if x == needle then return true end
+      end
       return false
     end
     -- nvim_buf_get_keymap reports lhs AFTER <leader>/<localleader> expansion
@@ -92,21 +109,34 @@ return function(H)
 
     local default = apply_with({})
     ok(has(default, "mj"), "keymaps default: mj (jump_anchor) bound")
-    ok(has(default, leader .. "toc"), "keymaps default: <leader>toc bound (expands to '" .. leader .. "toc')")
+    ok(
+      has(default, leader .. "toc"),
+      "keymaps default: <leader>toc bound (expands to '" .. leader .. "toc')"
+    )
 
     local disabled = apply_with({ keymaps = { jump_anchor = false } })
     ok(not has(disabled, "mj"), "keymaps override: jump_anchor=false removes mj")
 
     local remapped = apply_with({ keymaps = { toc = "<leader>T" } })
-    ok(not has(remapped, leader .. "toc"), "keymaps override: toc remapped away from its default lhs")
+    ok(
+      not has(remapped, leader .. "toc"),
+      "keymaps override: toc remapped away from its default lhs"
+    )
     ok(has(remapped, leader .. "T"), "keymaps override: toc bound to the new lhs")
 
     -- Legacy boolean flags keep working alongside the new per-binding table.
     local flag_off = apply_with({ map_double_asterisk = false })
-    ok(not has(flag_off, "v:**"), "legacy flag: map_double_asterisk=false removes ** in visual mode")
+    ok(
+      not has(flag_off, "v:**"),
+      "legacy flag: map_double_asterisk=false removes ** in visual mode"
+    )
 
     -- The public actions facade exposes plain functions (no <Plug> indirection).
-    eq(type(require("markdown").actions.fold_toggle), "function", "actions.fold_toggle is a function")
+    eq(
+      type(require("markdown").actions.fold_toggle),
+      "function",
+      "actions.fold_toggle is a function"
+    )
     eq(type(require("markdown").actions.toc), "function", "actions.toc is a function")
   end
 
@@ -120,7 +150,11 @@ return function(H)
     cfg.setup({ features = { just_enable = { "table", "toc" } } })
     local comp = commands.complete("", "Markdown ")
     table.sort(comp)
-    eq(table.concat(comp, ","), "table,toc", "just_enable={table,toc}: completion lists exactly those two")
+    eq(
+      table.concat(comp, ","),
+      "table,toc",
+      "just_enable={table,toc}: completion lists exactly those two"
+    )
 
     cfg.setup({ features = { disable = "all" } })
     eq(#commands.complete("", "Markdown "), 0, "disable=all: no subcommand left in completion")
@@ -130,7 +164,9 @@ return function(H)
     -- surface (view/format/new/mode/tableize) working standalone.
     cfg.setup({ features = { just_enable = { "tableview" } } })
     local has_table = false
-    for _, c in ipairs(commands.complete("", "Markdown ")) do if c == "table" then has_table = true end end
+    for _, c in ipairs(commands.complete("", "Markdown ")) do
+      if c == "table" then has_table = true end
+    end
     ok(has_table, "just_enable={tableview}: 'table' subcommand is available via the alias")
 
     cfg.setup({}) -- reset for later sections
@@ -149,22 +185,40 @@ return function(H)
     api.nvim_win_set_cursor(0, { 4, 0 }) -- on "## Section"
     local on_heading = menu.items()
     local names = {}
-    for _, it in ipairs(on_heading) do names[#names + 1] = it.name end
-    ok(vim.tbl_contains(names, "Fold / Unfold Heading"), "menu on heading: fold-toggle entry present")
+    for _, it in ipairs(on_heading) do
+      names[#names + 1] = it.name
+    end
+    ok(
+      vim.tbl_contains(names, "Fold / Unfold Heading"),
+      "menu on heading: fold-toggle entry present"
+    )
     ok(vim.tbl_contains(names, "Insert / Refresh TOC"), "menu on heading: TOC entry present")
     ok(vim.tbl_contains(names, "Sync References"), "menu on heading: refs entry present")
 
     api.nvim_win_set_cursor(0, { 3, 0 }) -- on prose
     names = {}
-    for _, it in ipairs(menu.items()) do names[#names + 1] = it.name end
-    ok(not vim.tbl_contains(names, "Fold / Unfold Heading"), "menu off heading: fold entries hidden")
-    ok(vim.tbl_contains(names, "Insert / Refresh TOC"), "menu off heading: doc-level entries still present")
+    for _, it in ipairs(menu.items()) do
+      names[#names + 1] = it.name
+    end
+    ok(
+      not vim.tbl_contains(names, "Fold / Unfold Heading"),
+      "menu off heading: fold entries hidden"
+    )
+    ok(
+      vim.tbl_contains(names, "Insert / Refresh TOC"),
+      "menu off heading: doc-level entries still present"
+    )
 
     require("markdown.config").setup({ menu = { fold = false } })
     names = {}
     api.nvim_win_set_cursor(0, { 4, 0 })
-    for _, it in ipairs(menu.items()) do names[#names + 1] = it.name end
-    ok(not vim.tbl_contains(names, "Fold / Unfold Heading"), "menu opt-out: menu.fold=false hides fold entries")
+    for _, it in ipairs(menu.items()) do
+      names[#names + 1] = it.name
+    end
+    ok(
+      not vim.tbl_contains(names, "Fold / Unfold Heading"),
+      "menu opt-out: menu.fold=false hides fold entries"
+    )
 
     require("markdown.config").setup({ menu = { enable = false } })
     eq(#menu.items(), 0, "menu master switch: menu.enable=false yields zero entries")
@@ -183,8 +237,11 @@ return function(H)
 
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# ATX heading", "atx body",
-      "Setext Title", "============", "setext body",
+      "# ATX heading",
+      "atx body",
+      "Setext Title",
+      "============",
+      "setext body",
     })
     vim.wo.foldmethod = "expr"
     vim.wo.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
@@ -212,7 +269,10 @@ return function(H)
     require("markdown.config").setup({})
     require("markdown.hl_options").setup(require("markdown.config").get())
     local hlU = api.nvim_get_hl(0, { name = "@markup.link.url.markdown_inline" })
-    ok(hlU.underline ~= true, "link_hl default: underline stripped from @markup.link.url.markdown_inline")
+    ok(
+      hlU.underline ~= true,
+      "link_hl default: underline stripped from @markup.link.url.markdown_inline"
+    )
 
     require("markdown.config").setup({ link_hl = { underline = true } })
     require("markdown.hl_options").setup(require("markdown.config").get())
@@ -229,10 +289,14 @@ return function(H)
     local fold_levels = require("markdown.core.fold_levels")
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, {
-      "# H1", "intro",
-      "## H2 A", "a body",
-      "### H3 sub", "sub body",
-      "## H2 B", "b body",
+      "# H1",
+      "intro",
+      "## H2 A",
+      "a body",
+      "### H3 sub",
+      "sub body",
+      "## H2 B",
+      "b body",
     })
     vim.wo.foldmethod = "expr"
     vim.wo.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
@@ -267,11 +331,17 @@ return function(H)
     vim.wo.foldenable = false -- simulate the disturbed state a menu callback can see
     api.nvim_win_set_cursor(0, { 3, 0 })
     fold.toggle_under_cursor()
-    ok(vim.fn.foldclosed(4) > 0, "fold.toggle_under_cursor works even with foldenable off beforehand")
+    ok(
+      vim.fn.foldclosed(4) > 0,
+      "fold.toggle_under_cursor works even with foldenable off beforehand"
+    )
 
     vim.wo.foldenable = false
     fold.unfold_all_center()
-    ok(vim.fn.foldclosed(4) == -1, "fold.unfold_all_center works even with foldenable off beforehand")
+    ok(
+      vim.fn.foldclosed(4) == -1,
+      "fold.unfold_all_center works even with foldenable off beforehand"
+    )
   end
 
   -- ===========================================================================
@@ -288,7 +358,10 @@ return function(H)
     renderer.render_markdowntable(mt, { floating = true, style = "box" })
     local lines = api.nvim_buf_get_lines(api.nvim_get_current_buf(), 0, -1, false)
     ok(lines[1]:find("┌"), "box style: top border uses box-drawing characters")
-    ok(lines[2]:find("│") and lines[2]:find("Name"), "box style: header row rendered inside the grid")
+    ok(
+      lines[2]:find("│") and lines[2]:find("Name"),
+      "box style: header row rendered inside the grid"
+    )
     renderer.close_view()
 
     -- Configurable default: TableViewToggle (view "toggle") should honour
@@ -302,7 +375,10 @@ return function(H)
 
     local seen_style
     local orig_render = renderer.render_markdowntable
-    renderer.render_markdowntable = function(t, opts) seen_style = opts and opts.style; orig_render(t, opts) end
+    renderer.render_markdowntable = function(t, opts)
+      seen_style = opts and opts.style
+      orig_render(t, opts)
+    end
 
     require("markdown.config").setup({ tableview = { style = "box" } })
     commands.execute({ "table", "view", "toggle" })
@@ -336,7 +412,10 @@ return function(H)
     api.nvim_buf_set_lines(buf, 0, -1, false, { "Name,Age,City", "Alice,30,NYC", "Bob,5,LA" })
     commands.execute({ "table", "tableize" }, { range = 2, line1 = 1, line2 = 3 })
     local out = api.nvim_buf_get_lines(buf, 0, -1, false)
-    ok(out[1]:find("Name") and out[1]:find("Age") and out[1]:find("City"), "tableize: header row built from CSV")
+    ok(
+      out[1]:find("Name") and out[1]:find("Age") and out[1]:find("City"),
+      "tableize: header row built from CSV"
+    )
     ok(out[2]:find("%-%-%-"), "tableize: separator row inserted")
     ok(out[3]:find("Alice") and out[4]:find("Bob"), "tableize: data rows preserved")
 
@@ -344,19 +423,27 @@ return function(H)
     -- string (fargs mangles the quoted `" "`, so the dispatcher forwards ctx.args).
     -- Leading spaces must map to leading empty columns.
     api.nvim_buf_set_lines(buf, 0, -1, false, { "a b", "  c" })
-    commands.execute({ "table", "tableize" },
-      { range = 2, line1 = 1, line2 = 2, args = 'table tableize " "' })
+    commands.execute(
+      { "table", "tableize" },
+      { range = 2, line1 = 1, line2 = 2, args = 'table tableize " "' }
+    )
     out = api.nvim_buf_get_lines(buf, 0, -1, false)
     ok(out[1]:find("| a ") and out[1]:find(" b "), "tableize space: two header columns")
-    ok(out[3]:find("| c ") or out[3]:match("|%s+|%s+c%s+|"), "tableize space: leading space -> 3rd column")
+    ok(
+      out[3]:find("| c ") or out[3]:match("|%s+|%s+c%s+|"),
+      "tableize space: leading space -> 3rd column"
+    )
 
     -- Named format keyword (csv) plus RFC-4180 quoting: a quoted field keeps its
     -- embedded comma as a single cell.
     local qb = H.scratch("markdown")
-    api.nvim_buf_set_lines(qb, 0, -1, false, { 'Name,City', '"Smith, John","New York"' })
+    api.nvim_buf_set_lines(qb, 0, -1, false, { "Name,City", '"Smith, John","New York"' })
     table_mode.tableize(qb, 1, 2, "csv")
     local qout = api.nvim_buf_get_lines(qb, 0, -1, false)
-    ok(qout[3]:find("Smith, John") and qout[3]:find("New York"), "tableize csv: quoted comma stays in one cell")
+    ok(
+      qout[3]:find("Smith, John") and qout[3]:find("New York"),
+      "tableize csv: quoted comma stays in one cell"
+    )
     ok(not qout[3]:find('"'), "tableize csv: surrounding quotes stripped from cells")
 
     -- 'spaces' (runs of 2+ whitespace) collapses whitespace runs into one delim.
@@ -364,8 +451,13 @@ return function(H)
     api.nvim_buf_set_lines(sb, 0, -1, false, { "a    b   c", "1  2  3" })
     table_mode.tableize(sb, 1, 2, "spaces")
     local sout = api.nvim_buf_get_lines(sb, 0, -1, false)
-    ok(sout[1]:find("a") and sout[1]:find("b") and sout[1]:find("c") and not sout[2]:find("|%s*|%s*|%s*|%s*|"),
-      "tableize spaces: 2+ whitespace runs -> exactly three columns")
+    ok(
+      sout[1]:find("a")
+        and sout[1]:find("b")
+        and sout[1]:find("c")
+        and not sout[2]:find("|%s*|%s*|%s*|%s*|"),
+      "tableize spaces: 2+ whitespace runs -> exactly three columns"
+    )
 
     -- table mode: toggle on, mangle a cell, reformat re-aligns the columns.
     -- (the tableize cases above created scratch buffers; re-front the main one so
@@ -378,7 +470,10 @@ return function(H)
     api.nvim_win_set_cursor(0, { 1, 2 })
     table_mode.reformat(buf) -- what the debounced TextChanged callback would run
     local reformatted = api.nvim_buf_get_lines(buf, 0, -1, false)
-    ok(reformatted[1]:find("aaaa") and reformatted[3]:find("2000000"), "table mode: reformat realigned all rows to the new width")
+    ok(
+      reformatted[1]:find("aaaa") and reformatted[3]:find("2000000"),
+      "table mode: reformat realigned all rows to the new width"
+    )
     commands.execute({ "table", "mode", "off" })
     ok(not table_mode.is_enabled(buf), "table mode: 'off' disables auto-format tracking")
 
@@ -410,9 +505,14 @@ return function(H)
     -- lib.nvim is on the runtimepath it would otherwise handle the open
     -- itself (via a real jobstart call) before platform.lua ever reaches
     -- its own list-argv/vim.system fallback below.
-    package.loaded["lib.nvim.cross.open_default"] = function() return false, "stubbed: forced fallback" end
+    package.loaded["lib.nvim.cross.open_default"] = function()
+      return false, "stubbed: forced fallback"
+    end
     local captured
-    vim.system = function(argv, opts) captured = { argv = argv, detach = opts and opts.detach }; return {} end
+    vim.system = function(argv, opts)
+      captured = { argv = argv, detach = opts and opts.detach }
+      return {}
+    end
 
     local target = "C:/tmp/some file.html"
     local okOpen = platform.open(target)
@@ -423,7 +523,11 @@ return function(H)
       if platform.os() == "windows" then
         eq(#captured.argv, 2, "platform.open (windows): argv has exactly 2 elements")
         eq(captured.argv[1], "explorer.exe", "platform.open (windows): argv[1] is explorer.exe")
-        eq(captured.argv[2], target, "platform.open (windows): the raw target is the last argv element (no shellescape quoting)")
+        eq(
+          captured.argv[2],
+          target,
+          "platform.open (windows): the raw target is the last argv element (no shellescape quoting)"
+        )
       end
     end
 

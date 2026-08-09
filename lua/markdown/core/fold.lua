@@ -18,17 +18,13 @@ function M.foldexpr(lnum)
     local scope = require("markdown.scope")
     if scope.op_enabled("fold") then
       local kind = scope.row_fence_kind(vim.api.nvim_get_current_buf(), lnum - 1)
-      if kind == "code" then
-        return "="
-      end
+      if kind == "code" then return "=" end
     end
     return ">" .. #atx
   end
 
   local prev = vim.fn.getline(lnum - 1)
-  if prev and prev:match("^%s*%S") and line:match("^%s*[-=]+%s*$") then
-    return ">2"
-  end
+  if prev and prev:match("^%s*%S") and line:match("^%s*[-=]+%s*$") then return ">2" end
 
   return "="
 end
