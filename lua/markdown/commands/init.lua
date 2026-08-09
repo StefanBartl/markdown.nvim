@@ -32,6 +32,7 @@ local commands = {
   create = require("markdown.commands.create").run,
   scope = require("markdown.commands.scope").run,
   image = require("markdown.commands.image").run,
+  export = require("markdown.commands.export").run,
   headline_spacing = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -84,6 +85,7 @@ local sub_complete = {
   create = function(arglead) return require("markdown.commands.create").complete(arglead) end,
   scope = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
   image = function(arglead) return require("markdown.commands.image").complete(arglead) end,
+  export = function(arglead) return require("markdown.commands.export").complete(arglead) end,
 }
 
 --- Completion for `:Markdown`: subcommand names, then delegates to the

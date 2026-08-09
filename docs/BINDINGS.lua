@@ -491,6 +491,10 @@ return {
         name = "Markdown image [paste|screenshot]",
         desc = "Delegates to images.nvim's :Image paste/screenshot (optional host); default sub is paste",
       },
+      {
+        name = "Markdown export [pdf] [path]",
+        desc = "Delegates to pdfport.nvim's create() (optional host); default sub is pdf",
+      },
     },
 
     buffer_local = {

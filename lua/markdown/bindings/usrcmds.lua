@@ -240,6 +240,7 @@ local SUBCOMMAND_NAMES = {
   "scope",
   "headline_spacing",
   "image",
+  "export",
 }
 
 composer.register_type("MARKDOWN_SUBARG", {

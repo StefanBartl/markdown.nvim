@@ -237,6 +237,23 @@ exists purely for discoverability from `:Markdown <Tab>` — the actual
 clipboard→file→link logic lives entirely in images.nvim's `:Image paste`.
 Without images.nvim installed, both report a warning instead of erroring.
 
+## `:Markdown export`
+
+```vim
+:Markdown export pdf                     " export the current buffer/file to PDF
+:Markdown export pdf other.md            " export a different file instead
+```
+
+Thin delegator to [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)
+(optional host, soft dependency) — not a reimplementation. `pdf` is the only
+sub today, and the default when none is given. An unmodified buffer with a
+file on disk exports that file directly; an unsaved/new buffer exports the
+live buffer content instead (pdfport materializes it to a tmpfile itself).
+Which producer actually runs (pandoc + a PDF engine) is entirely pdfport's
+own `create_chain` — markdown.nvim neither knows nor names one. Without
+pdfport.nvim installed, or without an available markdown producer (no
+pandoc/PDF engine), reports a warning instead of erroring.
+
 ## `:MDTable*` (width-limited table wrapping)
 
 A separate, opt-in command family (not nested under `:Markdown table`),

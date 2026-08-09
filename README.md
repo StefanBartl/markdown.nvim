@@ -54,7 +54,7 @@ runtime:
 
 | Plugin | What it adds |
 | --- | --- |
-| [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | Following a `.pdf` link can render it into a Neovim buffer instead of opening the system reader. |
+| [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | Following a `.pdf` link can render it into a Neovim buffer instead of opening the system reader. `:Markdown export pdf` exports the current buffer/file to PDF. |
 | [images.nvim](https://github.com/StefanBartl/images.nvim) / [snacks.nvim](https://github.com/folke/snacks.nvim) / [image.nvim](https://github.com/3rd/image.nvim) | `mi` can preview an image in a floating window instead of the system viewer (`image.preview`) — images.nvim preferred when several are installed, the only one that draws on native Windows Neovim in WezTerm. With `snacks.picker` also installed, `:Markdown links show` gets a live per-item image preview too. `:Markdown image paste\|screenshot` delegates straight to `:Image paste`/`:Image screenshot`. |
 | telescope.nvim / fzf-lua | Extra picker backends for link selection (`links.picker`). |
 

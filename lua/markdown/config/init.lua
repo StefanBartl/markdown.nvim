@@ -38,6 +38,7 @@ local FEATURES = {
   "headline_spacing",
   "scope",
   "image",
+  "export",
   "underline_headings",
   "table_wrap",
 }
