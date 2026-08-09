@@ -102,6 +102,15 @@ require("markdown").setup({
     header_align = "center", -- "left" | "center" | "right"
     entry_align  = "center",
     -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
+    -- Width-limited table wrapping (:MDTable* commands); off by default.
+    -- See docs/table-wrap.md for the full option list, directives, profiles,
+    -- and API hooks.
+    wrap = { enabled = false, auto = false, min = 3, max = nil, pad = 1 },
+    wrap_profiles = {
+      compact = { auto = false, min = 4, max = 20, pad = 0 },
+      docs    = { auto = true,  min = 10, max = 40, pad = 1 },
+      wide    = { auto = true,  min = 15, max = nil, pad = 1 },
+    },
   },
 
   -- Following an image target with `mi`. When an in-Neovim preview provider is

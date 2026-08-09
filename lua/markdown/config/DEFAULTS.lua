@@ -59,6 +59,34 @@ local DEFAULTS = {
     -- default; example:
     --   col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } }
     -- `col` may be a 1-based index or a header-cell name (case-insensitive).
+    -- Also accepts `max`/`min` per column (width-limited wrapping, see `wrap`
+    -- below): { col = "Description", max = 40 }.
+
+    -- Width-limited table wrapping (`:MDTable*` commands, `core.table_wrap`).
+    -- Off by default: existing `:Markdown table format` behaviour (natural,
+    -- unbounded column widths) is unchanged unless a `:MDTable*` command is
+    -- used or `wrap.enabled = true`.
+    wrap = {
+      enabled = false, -- when true, `:Markdown table format`/table mode also wrap
+      auto = false, -- fit column widths to the window instead of a fixed `max`
+      min = 3, -- minimum column width (chars)
+      max = nil, -- maximum column width; nil = unlimited (still capped by `auto`)
+      pad = 1, -- cell padding (spaces each side of content)
+      join = " ", -- `:MDTableUnwrap` continuation-cell join separator: " " | "<br>"
+      soft_break_chars = "/._-?,&=#@:", -- extra break points, in addition to whitespace
+      continuation_marker = "↳", -- virtual-text gutter hint on continuation rows
+      flavor = "github", -- "github" (strict GFM: min 3 dashes, spaced separator) | "loose"
+      auto_resize = false, -- debounced reflow of auto-mode tables on VimResized/WinResized
+      resize_debounce_ms = 300,
+      selective_reflow = false, -- BufWritePre: only reflow tables that actually changed
+    },
+
+    -- `:MDTableProfile {name}` loads one of these as this table's wrap opts.
+    wrap_profiles = {
+      compact = { auto = false, min = 4, max = 20, pad = 0 },
+      docs = { auto = true, min = 10, max = 40, pad = 1 },
+      wide = { auto = true, min = 15, max = nil, pad = 1 },
+    },
   },
 
   -- Default style for the floating TableView (`:Markdown table view toggle` /

@@ -23,6 +23,7 @@ lua/markdown/
     link_scan.lua          collect links from a line/buffer
     table_fmt.lua          GFM table formatter (self-contained)
     table_mode.lua         auto-format mode, tableize, cell motions
+    table_wrap.lua         width-limited wrapping, unwrap, lint, CSV, hooks (:MDTable*)
     slug.lua               shared GFM slug + anchor map (toc + refs)
     headline_spacing/
       init.lua             ensure blank-dash-blank between H2+ sections (+ final closer)
@@ -64,12 +65,13 @@ lua/markdown/
     preview.lua            :Markdown preview (markdown-preview.nvim)
     mdview.lua             :Markdown mdview (mdview.nvim)
     create.lua             :Markdown create fs
+    mdtable.lua            :MDTable* operations (wrap/unwrap/lint/csv/profile/fold/...)
   bindings/                all keymaps, user commands and autocmds live here
     init.lua               orchestrator: setup(cfg)
     actions.lua            named editing actions (public via .actions)
     keymaps.lua            buffer-local default keys (editing + TableView)
-    usrcmds.lua            :Markdown + OpenWith + TableView* command registration
-    autocmds.lua           FileType / BufWritePost drivers
+    usrcmds.lua            :Markdown + OpenWith + TableView* + MDTable* command registration
+    autocmds.lua           FileType / BufWritePost / VimResized / WinResized drivers
     which_key.lua          optional which-key group labels (guarded)
 plugin/
   markdown.lua        guard (vim.g.loaded_markdown)

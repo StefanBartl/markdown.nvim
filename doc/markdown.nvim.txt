@@ -35,6 +35,7 @@ CONTENTS                                           *markdown.nvim-contents*
      7.9 scope ................. |:Markdown-scope|
      7.10 image ................. |:Markdown-image|
      7.11 Buffer commands ...... |markdown.nvim-buf-commands|
+     7.12 :MDTable* (wrapping) . |markdown.nvim-mdtable|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -68,6 +69,8 @@ Included subsystems:
     via vim.diagnostic
   * Unified `:Markdown` command: links, toc, table, render, preview, mdview,
     create, headline_spacing
+  * Width-limited table wrapping (`:MDTable*`): wraps over-wide cells onto
+    GFM-valid continuation rows, with unwrap, lint, CSV roundtrip, and more
 
 ==============================================================================
 2. REQUIREMENTS                                *markdown.nvim-requirements*
@@ -461,7 +464,12 @@ overrides (in addition to the legacy bare-number shorthand for `max=N`).
 Defaults for `:Markdown table format` (see |:Markdown-table|); explicit
 command args (`header=`, `cell=`, `skip=`) always override these per call.
 `col_overrides[].col` may be a 1-based column index or a header-cell name
-(case-insensitive).
+(case-insensitive); it also accepts `max`/`min` for width-limited wrapping
+(see below).
+
+`table.wrap` / `table.wrap_profiles` configure the `:MDTable*` width-limited
+wrapping command family; see |markdown.nvim-mdtable| for the full option
+list, per-table directive syntax, and API hooks.
 
 ------------------------------------------------------------------------------
 5.7 features (gating)                       *markdown.nvim-config-features*
@@ -485,7 +493,7 @@ Gateable feature names (also returned by `require("markdown.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
     links  toc  table  render  preview  mdview  create  headline_spacing  scope
-    image  underline_headings
+    image  underline_headings  table_wrap
 
 A disabled `:Markdown` subcommand drops out of completion and reports if
 invoked; disabled keymaps and autocmds are never installed. The legacy
@@ -1075,6 +1083,100 @@ autocmd):
 
   Export the table at the cursor as a styled HTML file (dark header, zebra
   rows, rounded card) and open it in the system default browser.
+
+------------------------------------------------------------------------------
+7.12 :MDTable* (width-limited wrapping)              *markdown.nvim-mdtable*
+
+A separate, opt-in command family (buffer-local, feature `table_wrap`, on by
+default) -- not nested under |:Markdown-table|. `table_fmt`'s formatter
+aligns columns to their natural, unbounded width; these commands add a width
+CAP: cells exceeding a column's planned width wrap onto GFM-valid
+continuation rows of the same logical row (every physical row keeps the same
+pipe count). Off by default -- nothing changes until one of these commands
+runs, or `table.wrap.enabled = true`. Continuation rows carry a `↳` gutter
+sign (virtual text only; the buffer text stays clean GFM).
+
+:MDTableWrap
+  Wrap the table at the cursor; falls back to every table in the buffer
+  when the cursor isn't inside one.
+
+:MDTableUnwrap
+  Merge the table at the cursor's continuation rows back into one physical
+  row each. Detected structurally (no in-buffer marker is written): a
+  non-separator row with at most one non-empty cell, directly following
+  another row of the same table, is treated as a continuation. One caveat:
+  a genuine data row matching that same shape is indistinguishable and
+  gets merged too.
+
+:MDTableWrapVisual[!] (range)
+  Wrap tables in the visual selection. `!` unwraps first, for a clean
+  recompute instead of re-wrapping an already-wrapped table in place.
+
+:MDTableWrapVisible[!]
+  Wrap tables intersecting the visible window range (`line("w0")` ..
+  `line("w$")`). `!` unwraps first.
+
+:MDTableReflowHeader
+  Reflow only the header + separator of the table at the cursor; body rows
+  (and any existing continuation rows) are left untouched.
+
+:MDTableFoldRow
+:MDTableFoldAll
+  Fold the continuation block under the cursor / every continuation block
+  in the buffer. Extends the heading |markdown.nvim-foldexpr| rather than a
+  separate manual-fold pass: continuation rows fold one level deeper than
+  their heading section once either command has run in the buffer.
+
+:MDTableProfile {compact|docs|wide}
+  Load a named preset from `table.wrap_profiles` as this buffer's wrap
+  opts, then re-wrap the table at the cursor.
+
+:MDTableCol {inc|dec} [n]
+  Widen/narrow the column under the cursor by `n` (default 1), taking the
+  width from (or giving it to) the neighboring column so the row's total
+  width is unchanged. (Vim command names can't contain `+`/`-`, hence
+  `inc`/`dec` rather than the roadmap note's original `Col+`/`Col-`.)
+
+:MDTableAlign {cycle|left|center|right}
+  Cycle (or set) the alignment of the column under the cursor.
+
+:MDTableFlavor {github|loose}
+  `github`: strict GFM -- minimum 3-dash separator, spaced style. `loose`:
+  no forced minimum. Re-wraps the table at the cursor.
+
+:MDTableLint
+  Flags unequal cell counts, missing separator lines, and empty header
+  cells via |vim.diagnostic| (namespace `markdown_table`).
+
+:MDTableFixMissingSeparator
+  Inserts a separator line after every table block in the buffer missing
+  one.
+
+:MDTableDebug
+  Prints the resolved column-width plan for the table at the cursor: avail
+  width, pipes, padding, sum, and per-column width/natural/min/max/mode.
+
+:MDTableToCSV [path]
+  Exports the table at the cursor as RFC-4180 CSV, to `path` or the `+`
+  register.
+
+:MDTableFromCSV [path]
+  Inserts a GFM table below the cursor, parsed from CSV (`path` or the `+`
+  register).
+
+Configuration (`table.wrap`, `table.wrap_profiles`; see
+|markdown.nvim-config-table|): `enabled`, `auto`, `min`, `max`, `pad`,
+`join`, `soft_break_chars`, `continuation_marker`, `flavor`, `auto_resize`,
+`resize_debounce_ms`, `selective_reflow`. A per-table directive comment
+immediately above a table overrides these for that one table:
+>
+  <!-- mdwrap: auto=false max=40 min=12 pad=1 join=br -->
+  | Name | Description |
+<
+API hooks: `require("markdown.core.table_wrap").on("before_reflow"|
+"after_reflow", function(bounds, opts) end)` -- `bounds` is
+`{ start_line, end_line }` (1-indexed, inclusive); errors inside a hook are
+caught and ignored.
 
 ==============================================================================
 8. TABLEVIEW                                    *markdown.nvim-tableview*

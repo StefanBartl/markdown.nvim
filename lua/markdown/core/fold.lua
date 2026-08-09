@@ -2,11 +2,55 @@
 --- Heading-based `foldexpr` plus the fold-toggle actions bound to keymaps.
 local M = {}
 
+---@internal
+---@param bufnr integer
+---@param lnum integer  1-indexed
+---@return integer
+local function ambient_heading_level(bufnr, lnum)
+  for l = lnum - 1, 1, -1 do
+    local line = vim.api.nvim_buf_get_lines(bufnr, l - 1, l, false)[1] or ""
+    local atx = line:match("^%s*(#+)%s+")
+    if atx then return #atx end
+  end
+  return 0
+end
+
+--- Table-wrap continuation-row detection, mirroring
+--- `core.table_wrap.unwrap_rows`'s heuristic (a non-separator table row with
+--- at most one non-empty cell, directly following another table row).
+--- Only consulted when `vim.b.mdtable_fold_continuations` is set (via
+--- `:MDTableFoldRow`/`:MDTableFoldAll`), so this is zero-overhead otherwise.
+---@internal
+---@param bufnr integer
+---@param lnum integer  1-indexed
+---@return boolean
+local function is_table_continuation_line(bufnr, lnum)
+  local table_fmt = require("markdown.core.table_fmt")
+  local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
+  if not table_fmt.is_table_line(line) or table_fmt.is_separator_line(line) then return false end
+  local prev = vim.api.nvim_buf_get_lines(bufnr, lnum - 2, lnum - 1, false)[1] or ""
+  if not table_fmt.is_table_line(prev) then return false end
+
+  local cells = table_fmt.parse_row(line)
+  local nonempty = 0
+  for _, c in ipairs(cells) do
+    if table_fmt.trim(c) ~= "" then nonempty = nonempty + 1 end
+  end
+  return nonempty <= 1
+end
+
 ---Computes the fold level for line `lnum` (used as `foldexpr`).
 ---@param lnum integer
 ---@return string|integer
 function M.foldexpr(lnum)
   local line = vim.fn.getline(lnum)
+
+  if vim.b.mdtable_fold_continuations then
+    local bufnr = vim.api.nvim_get_current_buf()
+    if is_table_continuation_line(bufnr, lnum) then
+      return ">" .. (ambient_heading_level(bufnr, lnum) + 1)
+    end
+  end
 
   local atx = line:match("^%s*(#+)%s+")
   if atx then

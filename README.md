@@ -69,6 +69,7 @@ runtime:
 - [Keymaps](docs/keymaps.md) — every default keymap, remapping/disabling, and the actions API.
 - [Commands](docs/commands.md) — the `:Markdown` command and all its subcommands.
 - [Fenced-block scope](docs/fenced-scope.md) — treating a fenced Markdown block as its own sub-document.
+- [Width-limited table wrapping](docs/table-wrap.md) — the `:MDTable*` command family (wrap/unwrap, lint, CSV, profiles, and more).
 - [Menu integration](docs/menu.md) — context-aware entries for nvzone/menu.
 - [Health](docs/health.md) — what `:checkhealth markdown` reports.
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.

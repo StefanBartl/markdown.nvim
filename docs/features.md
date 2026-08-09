@@ -16,6 +16,7 @@
 | **tableview** | Floating Markdown table browser; HTML export (basic + styled) and import (round-trip) |
 | **table\_fmt** | GFM table formatter (align columns, normalize separators), HTML→GFM table import — self-contained |
 | **table\_mode** | Auto-format table mode, `tableize`, cell motions — a dependency-free vim-table-mode core |
+| **table\_wrap** | Width-limited table wrapping: `:MDTable*` commands (`Wrap`/`Unwrap`/`WrapVisual[!]`/`WrapVisible[!]`/`ReflowHeader`/`FoldRow`/`FoldAll`/`Profile`/`Col inc\|dec`/`Align`/`Flavor`/`Lint`/`FixMissingSeparator`/`Debug`/`ToCSV`/`FromCSV`) — see [table-wrap.md](table-wrap.md) |
 | **link\_scan** | Collect every link in a line/buffer; powers `:Markdown links show` and `create fs` |
 | **link\_diagnostics** | Flag dead relative-file links + duplicate heading anchors via `vim.diagnostic` (`:Markdown links check`) |
 | **slug** | Heading-anchor algorithm (`gfm` default, opt-in `keep-case` + custom separator), shared by TOC/refs/diagnostics |

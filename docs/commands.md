@@ -237,6 +237,18 @@ exists purely for discoverability from `:Markdown <Tab>` — the actual
 clipboard→file→link logic lives entirely in images.nvim's `:Image paste`.
 Without images.nvim installed, both report a warning instead of erroring.
 
+## `:MDTable*` (width-limited table wrapping)
+
+A separate, opt-in command family (not nested under `:Markdown table`),
+mirroring the roadmap note's own naming: `:MDTableWrap`, `:MDTableUnwrap`,
+`:MDTableWrapVisual[!]`, `:MDTableWrapVisible[!]`, `:MDTableReflowHeader`,
+`:MDTableFoldRow`, `:MDTableFoldAll`, `:MDTableProfile`,
+`:MDTableCol {inc|dec} [n]`, `:MDTableAlign`, `:MDTableFlavor`,
+`:MDTableLint`, `:MDTableFixMissingSeparator`, `:MDTableDebug`,
+`:MDTableToCSV`, `:MDTableFromCSV`. See [table-wrap.md](table-wrap.md) for
+the full command table, config, directives, and the unwrap heuristic's one
+caveat.
+
 ## Buffer-local commands (Markdown buffers only)
 
 ```vim

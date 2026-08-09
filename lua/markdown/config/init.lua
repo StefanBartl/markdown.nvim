@@ -39,6 +39,7 @@ local FEATURES = {
   "scope",
   "image",
   "underline_headings",
+  "table_wrap",
 }
 
 local FEATURE_SET = {}

@@ -64,6 +64,166 @@ local function create_underline_headings_command(bufnr)
   })
 end
 
+---@internal Width-limited table wrapping: `:MDTable*` buffer-local commands.
+--- Vim user-command names may only contain alphanumerics, so the roadmap's
+--- `:MDTableCol+`/`:MDTableCol-` naming became `:MDTableCol inc|dec [n]`.
+---@param bufnr integer
+local function create_mdtable_commands(bufnr)
+  if not require("markdown.config").feature_enabled("table_wrap") then return end
+
+  local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
+  if not ok then cmds = {} end
+  if cmds["MDTableWrap"] then return end
+
+  local mdtable = require("markdown.commands.mdtable")
+
+  composer.verb("MDTableWrap", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Wrap the table at the cursor (or every table, off any) to the resolved width plan",
+    routes = { { path = {}, run = function() mdtable.wrap_at_cursor(bufnr) end } },
+  })
+
+  composer.verb("MDTableUnwrap", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Merge continuation rows of the table at the cursor back into one row each",
+    routes = { { path = {}, run = function() mdtable.unwrap_at_cursor(bufnr) end } },
+  })
+
+  composer.verb("MDTableWrapVisual", {
+    buffer = bufnr,
+    bang = true,
+    range = true,
+    desc = "[markdown.nvim] Wrap tables in the visual selection; ! unwraps first for a clean recompute",
+    routes = {
+      {
+        path = {},
+        range = true,
+        run = function(ctx) mdtable.wrap_visual(bufnr, ctx.range.line1, ctx.range.line2, ctx.bang) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableWrapVisible", {
+    buffer = bufnr,
+    bang = true,
+    desc = "[markdown.nvim] Wrap tables intersecting the visible window range; ! unwraps first",
+    routes = { { path = {}, run = function(ctx) mdtable.wrap_visible(bufnr, ctx.bang) end } },
+  })
+
+  composer.verb("MDTableReflowHeader", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Reflow only the header + separator of the table at the cursor; body untouched",
+    routes = { { path = {}, run = function() mdtable.reflow_header(bufnr) end } },
+  })
+
+  composer.verb("MDTableFoldRow", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Fold the continuation block under the cursor",
+    routes = { { path = {}, run = function() mdtable.fold_row_at_cursor(bufnr) end } },
+  })
+
+  composer.verb("MDTableFoldAll", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Fold every table continuation block in the buffer",
+    routes = { { path = {}, run = function() mdtable.fold_all(bufnr) end } },
+  })
+
+  composer.verb("MDTableProfile", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Load a named width profile (config.table.wrap_profiles) and re-wrap the table at the cursor",
+    routes = {
+      {
+        path = {},
+        args = { { name = "name", type = "STRING", enum = { "compact", "docs", "wide" } } },
+        run = function(ctx) mdtable.set_profile(bufnr, ctx.args.name) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableCol", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Widen/narrow the column under the cursor by n (default 1), preserving the row's total width",
+    routes = {
+      {
+        path = { "inc" },
+        args = { { name = "n", type = "INT", optional = true } },
+        run = function(ctx) mdtable.col_nudge(bufnr, ctx.args.n or 1) end,
+      },
+      {
+        path = { "dec" },
+        args = { { name = "n", type = "INT", optional = true } },
+        run = function(ctx) mdtable.col_nudge(bufnr, -(ctx.args.n or 1)) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableAlign", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Cycle (or set) the alignment of the column under the cursor",
+    routes = {
+      {
+        path = {},
+        args = { { name = "mode", type = "STRING", enum = { "cycle", "left", "center", "right" } } },
+        run = function(ctx) mdtable.align_cycle(bufnr, ctx.args.mode) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableFlavor", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Switch GFM strictness (min-dash-length/spacing) and re-wrap the table at the cursor",
+    routes = {
+      {
+        path = {},
+        args = { { name = "flavor", type = "STRING", enum = { "github", "loose" } } },
+        run = function(ctx) mdtable.set_flavor(bufnr, ctx.args.flavor) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableLint", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Flag unequal cell counts, missing separators, empty header cells (vim.diagnostic)",
+    routes = { { path = {}, run = function() mdtable.lint(bufnr) end } },
+  })
+
+  composer.verb("MDTableFixMissingSeparator", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Insert a separator line after every table block missing one",
+    routes = { { path = {}, run = function() mdtable.fix_missing_separators(bufnr) end } },
+  })
+
+  composer.verb("MDTableDebug", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Show the resolved column-width plan for the table at the cursor",
+    routes = { { path = {}, run = function() mdtable.debug_at_cursor(bufnr) end } },
+  })
+
+  composer.verb("MDTableToCSV", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Export the table at the cursor as CSV, to PATH or the + register",
+    routes = {
+      {
+        path = {},
+        args = { { name = "path", type = "PATH", optional = true } },
+        run = function(ctx) mdtable.to_csv(bufnr, ctx.args.path) end,
+      },
+    },
+  })
+
+  composer.verb("MDTableFromCSV", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Insert a GFM table below the cursor, parsed from CSV (PATH or the + register)",
+    routes = {
+      {
+        path = {},
+        args = { { name = "path", type = "PATH", optional = true } },
+        run = function(ctx) mdtable.from_csv(bufnr, ctx.args.path) end,
+      },
+    },
+  })
+end
+
 -- :Markdown's 11 subcommands, feature-gated at registration time (matches
 -- create_markdown_command()'s own idempotency: :Markdown is only ever
 -- registered once per session, on the first buffer that triggers it, so a
@@ -146,6 +306,7 @@ function M.apply(args)
 
   create_open_command(bufnr)
   create_underline_headings_command(bufnr)
+  create_mdtable_commands(bufnr)
   create_markdown_command()
 end
 

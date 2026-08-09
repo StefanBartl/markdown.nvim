@@ -462,6 +462,24 @@ end
 local collect_md_files = require("markdown.util.md_files").collect
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Internal re-exports (for markdown.core.table_wrap — avoids duplicating the
+-- parse/format primitives)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+M.trim = trim
+M.display_width = display_width
+M.pad_cell = pad_cell
+M.is_table_line = is_table_line
+M.is_separator_line = is_separator_line
+M.parse_row = parse_row
+M.parse_all_tables = parse_all_tables
+M.find_table_at_cursor = find_table_at_cursor
+M.calc_widths = calc_widths
+M.gen_separator = gen_separator
+M.format_row = format_row
+M.resolve_overrides = resolve_overrides
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- Public API
 -- ─────────────────────────────────────────────────────────────────────────────
 

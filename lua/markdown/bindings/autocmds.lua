@@ -128,6 +128,42 @@ function M.setup(cfg)
     })
   end
 
+  -- Table-wrap resize hook + selective on-save reflow (independent opt-in via
+  -- config.table.wrap.auto_resize / .selective_reflow; both default off).
+  if feat("table_wrap") then
+    local wrapcfg = (cfg.table and cfg.table.wrap) or {}
+
+    if wrapcfg.auto_resize then
+      local aug_resize = api.nvim_create_augroup("MarkdownNvimTableWrapResize", { clear = true })
+      local timer = nil
+      autocmd.create({ "VimResized", "WinResized" }, function()
+        if timer then pcall(function() timer:stop() end) end
+        timer = vim.defer_fn(function()
+          for _, bufnr in ipairs(api.nvim_list_bufs()) do
+            if api.nvim_buf_is_loaded(bufnr) and is_md(vim.bo[bufnr].filetype) then
+              pcall(require("markdown.commands.mdtable").reflow_auto_tables, bufnr)
+            end
+          end
+        end, wrapcfg.resize_debounce_ms or 300)
+      end, {
+        group = aug_resize,
+        desc = "[markdown.nvim] table-wrap: debounced reflow of auto-mode tables on resize",
+      })
+    end
+
+    if wrapcfg.selective_reflow then
+      local aug_sel = api.nvim_create_augroup("MarkdownNvimTableWrapSelective", { clear = true })
+      autocmd.create("BufWritePre", function(ev)
+        if not is_md(vim.bo[ev.buf].filetype) then return end
+        pcall(require("markdown.commands.mdtable").selective_reflow_on_save, ev.buf)
+      end, {
+        group = aug_sel,
+        pattern = { "*.md", "*.markdown", "*.mdx" },
+        desc = "[markdown.nvim] table-wrap: reflow only tables that changed since last save",
+      })
+    end
+  end
+
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
     local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })

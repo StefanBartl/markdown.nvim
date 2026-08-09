@@ -64,12 +64,30 @@
 
 ---@class Mkdn.TableColOverride
 ---@field col integer|string # 1-based column index, or a header-cell name (case-insensitive).
----@field align Mkdn.TableAlign
+---@field align? Mkdn.TableAlign
+---@field max? integer # Width-limited wrapping: per-column max width override.
+---@field min? integer # Width-limited wrapping: per-column min width override.
+
+---@class Mkdn.TableWrapConfig
+---@field enabled boolean # When true, plain `:Markdown table format`/table mode also wrap. Default false.
+---@field auto boolean # Fit column widths to the window instead of a fixed `max`. Default false.
+---@field min integer # Minimum column width (chars). Default 3.
+---@field max? integer # Maximum column width; nil = unlimited (still capped by `auto`).
+---@field pad integer # Cell padding (spaces each side of content). Default 1.
+---@field join string # `:MDTableUnwrap` continuation-cell join separator (" " or "<br>"). Default " ".
+---@field soft_break_chars string # Extra break points, in addition to whitespace.
+---@field continuation_marker string # Virtual-text gutter hint on continuation rows. Default "↳".
+---@field flavor "github"|"loose" # "github": strict GFM (min 3 dashes, spaced separator). Default "github".
+---@field auto_resize boolean # Debounced reflow of auto-mode tables on VimResized/WinResized. Default false.
+---@field resize_debounce_ms integer # Default 300.
+---@field selective_reflow boolean # BufWritePre: only reflow tables that actually changed. Default false.
 
 ---@class Mkdn.TableConfig
 ---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
 ---@field entry_align Mkdn.TableAlign # Default body-row alignment.
 ---@field col_overrides? Mkdn.TableColOverride[] # Per-column alignment overrides applied on every format.
+---@field wrap Mkdn.TableWrapConfig # Width-limited wrapping (`:MDTable*` commands).
+---@field wrap_profiles table<string, table> # Named wrap-opt presets for `:MDTableProfile`.
 
 ---@class Mkdn.TableViewConfig
 ---@field style "markdown"|"box" # Default float style for `view toggle` / <leader>tvt.
