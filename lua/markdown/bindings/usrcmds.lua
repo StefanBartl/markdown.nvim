@@ -39,6 +39,31 @@ local function create_open_command(bufnr)
   })
 end
 
+---@internal
+---@param bufnr integer
+local function create_underline_headings_command(bufnr)
+  if not require("markdown.config").feature_enabled("underline_headings") then return end
+
+  local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
+  if not ok then cmds = {} end
+  if cmds["MarkdownNvimUnderlineHeadings"] then return end
+
+  composer.verb("MarkdownNvimUnderlineHeadings", {
+    buffer = bufnr,
+    desc = "[markdown.nvim] Underline every ATX heading's text with '=' (Setext-style decoration)",
+    routes = {
+      {
+        path = {},
+        run = function()
+          local cfg = require("markdown.config").get()
+          local char = (cfg.underline_headings and cfg.underline_headings.char) or "="
+          require("markdown.core.underline_headings").apply(bufnr, { notify = true, char = char })
+        end,
+      },
+    },
+  })
+end
+
 -- :Markdown's 11 subcommands, feature-gated at registration time (matches
 -- create_markdown_command()'s own idempotency: :Markdown is only ever
 -- registered once per session, on the first buffer that triggers it, so a
@@ -120,6 +145,7 @@ function M.apply(args)
   if not (api.nvim_buf_is_valid(bufnr) and api.nvim_buf_is_loaded(bufnr)) then return end
 
   create_open_command(bufnr)
+  create_underline_headings_command(bufnr)
   create_markdown_command()
 end
 

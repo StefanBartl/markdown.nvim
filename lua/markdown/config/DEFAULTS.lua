@@ -25,6 +25,12 @@ local DEFAULTS = {
   ft_only = true,
   ensure_headline_spacing = true,
 
+  -- `:MarkdownNvimUnderlineHeadings` (manual, buffer-local): the underline
+  -- character drawn below each ATX heading's text, matching its length.
+  underline_headings = {
+    char = "=",
+  },
+
   -- nvzone/menu integration (opt-in on the host side; entries provided by
   -- markdown.integrations.menu). Per-entry opt-out; set enable = false to
   -- provide no entries at all. See :help markdown.nvim (menu) if documented.

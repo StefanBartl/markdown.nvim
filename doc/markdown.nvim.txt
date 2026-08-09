@@ -57,6 +57,8 @@ Included subsystems:
   * Link wrap (`<leader>[`) — wrap word/selection in `[]()`
   * Headline spacing enforcer (blank-dash-blank between H2+ sections,
     including a closing separator after the final section)
+  * Underline headings (`:MarkdownNvimUnderlineHeadings`): Setext-style `=`
+    decoration below every ATX heading's text
   * Fenced-code and inline-code highlight override
   * Blockquote coloring via matchadd
   * Anchor / URL / image / file handler on double-click or `ma`
@@ -142,6 +144,7 @@ GitHub-only, not duplicated into this helpfile.
     enable_keymaps         = true,
     ft_only                = true,
     ensure_headline_spacing = true,
+    underline_headings = { char = "=" },  -- :MarkdownNvimUnderlineHeadings
     keymaps = {},  -- per-binding disable/remap by id (see |markdown.nvim-keymaps|)
     tableview = { style = "markdown" },  -- default float style: "markdown" | "box"
     link_hl = { underline = false },
@@ -206,6 +209,11 @@ GitHub-only, not duplicated into this helpfile.
   Override per call with the `--sep` / `--no-sep` flags of `:Markdown toc`,
   or apply on demand with `:Markdown headline_spacing` (see
   |:Markdown-headline-spacing|).
+
+`underline_headings`
+  `char` (default `"="`) is the underline character drawn below each ATX
+  heading's text by `:MarkdownNvimUnderlineHeadings` (see
+  |:MarkdownNvimUnderlineHeadings|).
 
 `links`
   Options for `:Markdown links show`/`check` (see |:Markdown-links|). >
@@ -477,6 +485,7 @@ Gateable feature names (also returned by `require("markdown.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
     links  toc  table  render  preview  mdview  create  headline_spacing  scope
+    image  underline_headings
 
 A disabled `:Markdown` subcommand drops out of completion and reports if
 invoked; disabled keymaps and autocmds are never installed. The legacy
@@ -1025,6 +1034,19 @@ autocmd):
 
   Identical to pressing `ma`. Dispatches to the cursor-action handler:
   opens anchors, images, URLs or local files under the cursor.
+
+                                    *:MarkdownNvimUnderlineHeadings*
+:MarkdownNvimUnderlineHeadings
+
+  Inserts (or corrects) a line of `=` below every ATX heading's text in the
+  buffer, matching its length — a purely visual, Setext-style decoration.
+  The ATX `#` marker is left untouched, and this applies at every heading
+  level (not just H1/H2, unlike real Setext syntax). Idempotent: a
+  correctly-sized underline already in place is left alone; fenced code
+  interiors are skipped. Underline character is `underline_headings.char`
+  (see |markdown.nvim-config-general|), default `"="`. Disable via
+  `features.disable = { "underline_headings" }`
+  (see |markdown.nvim-config-features|).
 
                                                     *:TableViewToggle*
 :TableViewToggle

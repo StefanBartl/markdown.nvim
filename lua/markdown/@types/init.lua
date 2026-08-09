@@ -106,6 +106,9 @@
 ---@class Mkdn.ImageConfig
 ---@field preview Mkdn.ImagePreviewMode # System viewer vs. in-Neovim float. Default "ask".
 
+---@class Mkdn.UnderlineHeadingsConfig
+---@field char string # Underline character drawn below each ATX heading's text. Default "=".
+
 ---@class Mkdn.TocConfig
 ---@field header string # TOC header line, e.g. "## Table of content".
 ---@field marker string # Bullet marker prefix for each TOC entry (e.g. "-" or "*").
@@ -130,6 +133,7 @@
 ---@field enable_keymaps boolean # Install buffer-local keymaps (requires enable_autocmds).
 ---@field ft_only boolean # Only activate for markdown filetypes.
 ---@field ensure_headline_spacing boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
+---@field underline_headings Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
 ---@field image Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.

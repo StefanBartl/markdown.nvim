@@ -38,6 +38,7 @@ local FEATURES = {
   "headline_spacing",
   "scope",
   "image",
+  "underline_headings",
 }
 
 local FEATURE_SET = {}

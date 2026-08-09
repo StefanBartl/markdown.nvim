@@ -241,6 +241,7 @@ Without images.nvim installed, both report a warning instead of erroring.
 
 ```vim
 :OpenWithSystemApplication   " same as 'ma' - open target under cursor
+:MarkdownNvimUnderlineHeadings " underline every ATX heading's text with '=' (idempotent)
 
 :TableViewToggle             " toggle floating table preview at cursor
 :TableViewSelect             " pick a table from the buffer
@@ -248,3 +249,11 @@ Without images.nvim installed, both report a warning instead of erroring.
 :TableViewOpenBrowser        " export table as basic HTML and open in browser
 :TableViewOpenBrowserNice    " export table as styled HTML and open in browser
 ```
+
+`:MarkdownNvimUnderlineHeadings` inserts (or corrects) a line of `=` below
+every ATX heading's text, matching its length — a purely visual, Setext-style
+decoration; the ATX `#` marker is left untouched and this applies at every
+heading level, not just H1/H2. Idempotent: a correctly-sized underline is
+left alone. The character is configurable via `underline_headings.char`
+(default `"="`); the whole command can be disabled via `features.disable`
+(feature name `underline_headings`).

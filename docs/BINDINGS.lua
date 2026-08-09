@@ -496,6 +496,10 @@ return {
     buffer_local = {
       { name = "OpenWithSystemApplication", desc = "Same as 'ma' — open target under cursor" },
       {
+        name = "MarkdownNvimUnderlineHeadings",
+        desc = "Underline every ATX heading's text with '=' (Setext-style decoration, idempotent)",
+      },
+      {
         name = "TableViewToggle",
         desc = "Toggle floating table preview (config default style)",
       },
