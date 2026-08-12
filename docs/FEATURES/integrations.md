@@ -37,6 +37,26 @@ native Windows Neovim in WezTerm; images.nvim's
 
 - **Config:** `image.preview` (`"ask"`|`"preview"`|`"system"`)
 
+## pdfport.nvim
+
+Optional host for two call sites: following a `.pdf` link from the
+cursor-action handler, and `:Markdown export pdf`.
+
+- **Modules:** `commands/export.lua` (`:Markdown export`), `handler/file.lua`
+  (`open_pdf`)
+- **Command:** `:Markdown export pdf [path]` (see
+  [commands.md](../commands.md#markdown-export))
+- **Reached via:** the cursor-action handler (`ma`/double-click/`<C-LeftMouse>`)
+  on a `.pdf` link — see
+  [editing-and-handlers.md](editing-and-handlers.md#cursor-action-handler)
+- Following a `.pdf` link prompts "System app" vs. "pdfport (new buffer)" when
+  pdfport.nvim is installed; without it, opens with the system application
+  directly, no prompt. `:Markdown export pdf` exports the current buffer/file
+  (or `path`) through pdfport's own producer chain (pandoc + a PDF engine) —
+  markdown.nvim neither knows nor names one. Without pdfport.nvim installed,
+  or without an available producer, both report a warning instead of
+  erroring.
+
 ## nvzone/menu
 
 markdown.nvim doesn't depend on a menu plugin; it *provides* entries in the

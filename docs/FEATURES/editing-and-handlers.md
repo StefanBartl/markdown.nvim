@@ -18,8 +18,10 @@ Toggle `**bold**` on a visual selection.
 
 Dispatches on whatever is under the cursor: heading/TOC/HTML anchors jump
 in-buffer, images open (system viewer or in-Neovim preview), URLs open in
-the browser, and local files open via the system app (media/binary) or
-`:edit` (text-like).
+the browser, local files open via the system app (media/binary) or `:edit`
+(text-like), and a `.pdf` link gets its own choice — system app vs.
+pdfport.nvim, when installed (see
+[integrations.md](integrations.md#pdfportnvim)).
 
 - **Module:** `handler/init.lua` (`handle_cursor_action`), delegating to
   `handler/url.lua`, `handler/file.lua`, `handler/image.lua`,
