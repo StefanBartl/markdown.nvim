@@ -121,8 +121,16 @@ function M.jump()
     return
   end
 
-  local success = pcall(jump_to_anchor, anchor)
-  if not success then notify.warn("Could not jump to anchor: " .. anchor) end
+  -- `ok` is pcall's own success flag (no Lua error), not jump_to_anchor's
+  -- "found it" result — the two were conflated before, so a plain "heading
+  -- not found" case (no error, `jumped == false`) fell through both branches
+  -- and gave the user no feedback at all.
+  local ok, jumped = pcall(jump_to_anchor, anchor)
+  if not ok then
+    notify.warn("Could not jump to anchor: " .. anchor)
+  elseif not jumped then
+    notify.info("No heading found for anchor: " .. anchor)
+  end
 end
 
 return M
