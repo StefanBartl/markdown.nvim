@@ -24,6 +24,7 @@ The runner prints one line per spec and exits non-zero on the first failure
 | `link_scan_spec.lua` | `from_line` / `from_lines` link extraction (+ fenced skip).     |
 | `headings_spec.lua`  | Heading level shift + nav (up/down, H6 clamp, H1 reach, column preservation, non-markdown no-op). |
 | `handler_spec.lua`   | Cursor-action handler: silent mode suppresses the "no target" notification for mouse invocation. |
+| `anchor_jump_spec.lua` | Anchor jump: successful jump notifies nothing, "no anchor under cursor" vs. "anchor resolves to no heading" are distinct info notifications (regression for the pcall-ok-flag-vs-result mixup), duplicate-slug disambiguation (`#note`/`#note-1`/`#note-2`), and the TOC-list-entry double-click end-to-end via the handler. |
 | `tableview_spec.lua` | Floating TableView preview closes via `q`/`<Esc>`.              |
 | `tableview_alignment_spec.lua` | TableView column alignment with multi-byte UTF-8 content (umlauts, em dashes, curly quotes, arrows, ellipses) — regression coverage for the byte-length-vs-display-width padding bug, using the new `renderer.validate_alignment(lines)` de-facto check (also verifies the validator itself catches a genuinely drifted table, not just rubber-stamps everything). |
 | `browser_session_spec.lua` | TableView browser export (`browser`/`browsernice`) reuses one tab across calls: opens the system browser once per style, later calls overwrite the same fixed file instead of opening a new tab, a different style opens independently, and `force_new` ('reopen') opens a fresh tab on demand. |
