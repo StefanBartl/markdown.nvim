@@ -1,0 +1,146 @@
+---@module 'markdown.hover.float'
+---@brief The hover window itself: a small, cursor-relative, unfocused float.
+---@description
+--- Deliberately *not* `markdown.util.image_preview`'s float: that one is a
+--- centred 80% window the user enters and closes with `q`. A hover must be
+--- small, appear next to the cursor, never steal focus, and disappear on the
+--- next cursor move — otherwise it fights the editing it is supposed to
+--- annotate.
+---
+--- Exactly one hover window exists at a time; opening a second closes the
+--- first.
+
+local M = {}
+
+local api = vim.api
+
+---@type integer|nil
+local _win = nil
+---@type integer|nil
+local _buf = nil
+---@type integer|nil
+local _augroup = nil
+---@type (fun())|nil Teardown for whatever was drawn into the window.
+local _on_close = nil
+
+--- Is a hover window currently open?
+---@return boolean
+function M.is_open() return _win ~= nil and api.nvim_win_is_valid(_win) end
+
+--- Register teardown to run when this hover closes — used by previewers that
+--- draw into the window after it is already open (a rasterized PDF page
+--- arriving from an async render, say) and must clear that drawing again.
+---@param on_close fun()
+function M.set_on_close(on_close) _on_close = on_close end
+
+--- Close the hover window, if any. Safe to call repeatedly.
+---@param on_close fun()|nil Extra teardown, in addition to any registered via `set_on_close`.
+function M.close(on_close)
+  if _on_close then
+    pcall(_on_close)
+    _on_close = nil
+  end
+  if on_close then pcall(on_close) end
+
+  if _augroup then
+    pcall(api.nvim_del_augroup_by_id, _augroup)
+    _augroup = nil
+  end
+  if _win and api.nvim_win_is_valid(_win) then pcall(api.nvim_win_close, _win, true) end
+  if _buf and api.nvim_buf_is_valid(_buf) then
+    pcall(api.nvim_buf_delete, _buf, { force = true })
+  end
+  _win, _buf = nil, nil
+end
+
+---@internal
+--- Width/height from the content, clamped to the caller's maxima and to what
+--- actually fits on screen. Width is measured in display columns rather than
+--- bytes, so a CJK or emoji preview is not cut off half a cell short.
+---@param lines string[]
+---@param opts Mkdn.Hover.FloatOpts
+---@return integer width
+---@return integer height
+local function measure(lines, opts)
+  local width_of = require("lib.lua.strings.width").display_width
+
+  local width = 1
+  for _, line in ipairs(lines) do
+    local w = width_of(line)
+    if w > width then width = w end
+  end
+
+  width = math.min(width, opts.max_width or 80, math.max(20, vim.o.columns - 4))
+  local height = math.min(#lines, opts.max_height or 20, math.max(3, vim.o.lines - 4))
+  return width, math.max(height, 1)
+end
+
+--- Open (or replace) the hover window showing `lines`.
+---@param lines string[]
+---@param opts Mkdn.Hover.FloatOpts
+---@return integer|nil win
+---@return integer|nil buf
+function M.open(lines, opts)
+  opts = opts or {}
+  M.close()
+
+  if not lines or #lines == 0 then return nil, nil end
+
+  local buf = api.nvim_create_buf(false, true)
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  vim.bo[buf].modifiable = false
+  vim.bo[buf].bufhidden = "wipe"
+  if opts.filetype and opts.filetype ~= "" then
+    -- `pcall`: a filetype whose ftplugin errors must not take the hover down.
+    pcall(function() vim.bo[buf].filetype = opts.filetype end)
+  end
+
+  local width, height = measure(lines, opts)
+
+  local ok, win = pcall(api.nvim_open_win, buf, false, {
+    relative = "cursor",
+    row = 1,
+    col = 0,
+    width = width,
+    height = height,
+    style = "minimal",
+    border = opts.border or "rounded",
+    focusable = opts.focusable == true,
+    noautocmd = true,
+    title = opts.title,
+    title_pos = opts.title and "left" or nil,
+  })
+  if not ok then
+    pcall(api.nvim_buf_delete, buf, { force = true })
+    return nil, nil
+  end
+
+  vim.wo[win].wrap = true
+  vim.wo[win].linebreak = true
+  vim.wo[win].conceallevel = 2
+  vim.wo[win].winhighlight = "Normal:NormalFloat,FloatBorder:FloatBorder"
+
+  _win, _buf = win, buf
+
+  -- Dismiss on the next thing the user does. `CursorMoved` alone is not
+  -- enough: leaving insert mode or switching windows must also clear it, or
+  -- a stale hover outlives the context it described.
+  _augroup = api.nvim_create_augroup("MarkdownHoverDismiss", { clear = true })
+  api.nvim_create_autocmd(
+    { "CursorMoved", "CursorMovedI", "InsertEnter", "BufLeave", "WinScrolled" },
+    {
+      group = _augroup,
+      once = true,
+      callback = function() M.close(opts.on_close) end,
+    }
+  )
+
+  return win, buf
+end
+
+--- The window handle of the open hover, or nil.
+---@return integer|nil
+function M.win() return M.is_open() and _win or nil end
+
+return M

@@ -40,6 +40,11 @@ effects on non-Markdown buffers. Requires Neovim >= 0.9 and
 
 See [docs/installation.md](docs/installation.md) for packer.nvim and vim-plug.
 
+> 💡 Rest the cursor on any link and a small float previews what it points
+> at — an image, a PDF's first page, another file's section, a directory
+> listing, an in-page anchor, a URL — or tells you the target doesn't
+> exist. See [docs/hover.md](docs/hover.md).
+
 > 💡 A `> quoted` line gets VS Code-style coloring by default (green marker +
 > text, dimmed background across the whole line) regardless of your
 > colorscheme. Don't want that? See
@@ -68,6 +73,7 @@ runtime:
 - [Config templates](docs/templates/README.md) — copy-paste `setup()` snippets for common customizations (blockquote colors, feature subsets, picker backends, image preview).
 - [Keymaps](docs/keymaps.md) — every default keymap, remapping/disabling, and the actions API.
 - [Commands](docs/commands.md) — the `:Markdown` command and all its subcommands.
+- [Link hover preview](docs/hover.md) — the float that previews a link target under the cursor, and everything it can show.
 - [Fenced-block scope](docs/fenced-scope.md) — treating a fenced Markdown block as its own sub-document.
 - [Width-limited table wrapping](docs/table-wrap.md) — the `:MDTable*` command family (wrap/unwrap, lint, CSV, profiles, and more).
 - [Menu integration](docs/menu.md) — context-aware entries for nvzone/menu.

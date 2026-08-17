@@ -65,6 +65,19 @@ function M.setup(cfg)
     })
   end
 
+  -- Link-target hover preview. Gated by the "hover" feature AND by
+  -- `cfg.hover.enabled`; `markdown.hover.attach` installs the per-buffer
+  -- CursorHold/mouse autocmds and re-checks the config itself, so toggling
+  -- it off at runtime takes effect without re-running setup().
+  if feat("hover") and (cfg.hover and cfg.hover.enabled) ~= false then
+    local aug_hover = api.nvim_create_augroup("MarkdownNvimHover", { clear = true })
+    autocmd.create("FileType", function(ev) require("markdown.hover").attach(ev.buf) end, {
+      group = aug_hover,
+      pattern = ftpat,
+      desc = "[markdown.nvim] Install buffer-local link-hover preview",
+    })
+  end
+
   -- Reference sync automatic triggers (independent opt-in via config.refs.mode).
   -- "off" installs nothing; the manual :Markdown refs commands still work.
   local refs_mode = (cfg.refs and cfg.refs.mode) or "off"

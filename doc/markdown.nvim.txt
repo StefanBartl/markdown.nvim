@@ -15,6 +15,7 @@ CONTENTS                                           *markdown.nvim-contents*
      5.5 toc ................... |markdown.nvim-config-toc|
      5.6 table .................. |markdown.nvim-config-table|
      5.7 features (gating) ..... |markdown.nvim-config-features|
+     5.8 hover (link preview) .. |markdown.nvim-config-hover|
   6. Keymaps ................... |markdown.nvim-keymaps|
      6.1 Navigation ............ |markdown.nvim-keymaps-nav|
      6.2 Heading shift ......... |markdown.nvim-keymaps-shift|
@@ -493,11 +494,77 @@ Gateable feature names (also returned by `require("markdown.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
     links  toc  table  render  preview  mdview  create  headline_spacing  scope
-    image  underline_headings  table_wrap
+    image  underline_headings  table_wrap  hover
 
 A disabled `:Markdown` subcommand drops out of completion and reports if
 invoked; disabled keymaps and autocmds are never installed. The legacy
 `enable_keymaps` / `enable_autocmds` flags still work alongside this gating.
+
+------------------------------------------------------------------------------
+5.8 hover (link preview)                        *markdown.nvim-config-hover*
+
+Rest the cursor on a link and a small float previews what it points at: an
+image, a PDF's first page, another file's section, a directory listing, an
+in-page anchor, a URL -- or, when the target does not exist, that fact,
+which is often the most useful answer of all.
+>
+    require("markdown").setup({
+      hover = {
+        enabled = true,
+        trigger = { "CursorHold" },  -- add "mouse" to follow the pointer
+        delay_ms = 250,
+        max_lines = 20,
+        max_width = 80,
+        border = "rounded",
+        inline_images = true,
+        url = {
+          fetch = false,
+          timeout_ms = 2000,
+        },
+      },
+    })
+<
+Options: ~
+    enabled        (boolean)  Master switch. Default true.
+    trigger        (string[]) "CursorHold" and/or "mouse".
+                              Default { "CursorHold" }.
+    delay_ms       (integer)  Debounce before the float opens. Default 250.
+    max_lines      (integer)  Preview line cap, and the float's height cap.
+                              Default 20.
+    max_width      (integer)  Float width cap in display columns. Default 80.
+    border         (string)   As |nvim_open_win()|. Default "rounded".
+    inline_images  (boolean)  Draw images / PDF pages into the float.
+                              Default true.
+    url.fetch      (boolean)  Fetch <title>/<meta description> for http(s)
+                              targets. Default FALSE -- see below.
+    url.timeout_ms (integer)  Per-fetch timeout. Default 2000.
+
+The "mouse" trigger additionally requires 'mousemoveevent', a global option
+this plugin deliberately does not set for you. Without it, that trigger
+simply never fires.
+
+`url.fetch` is off by default on purpose: a hover that silently issues HTTP
+requests would disclose every link you brush past to its host, and would
+turn a link-heavy document into a request storm while scrolling. With it
+off, URLs still preview -- parsed into host, path and decoded query,
+entirely locally.
+
+Drawing pictures into the float needs images.nvim specifically: it is the
+only supported provider that can draw into a window it does not own. With
+snacks.nvim or image.nvim you still get the metadata float, just without
+the picture. PDF page rendering additionally needs pdfport.nvim, and runs
+asynchronously -- move the cursor away and the render is discarded.
+
+On demand, regardless of `enabled`: >
+    require("markdown").hover()       -- preview the link under the cursor
+    require("markdown").hover_hide()  -- close it
+
+    vim.keymap.set("n", "K", require("markdown").hover, { buffer = true })
+<
+Mapping `K` replaces |vim.lsp.buf.hover()| in that buffer; keep the mapping
+buffer-local as shown.
+
+Full write-up: `docs/hover.md`.
 
 ==============================================================================
 6. KEYMAPS                                        *markdown.nvim-keymaps*

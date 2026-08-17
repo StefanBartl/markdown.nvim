@@ -23,6 +23,60 @@
 ---@class Mkdn.OpenConfig
 ---@field external_extensions string[] # Extensions launched with the system app; others open via `:edit`.
 
+-- hover/*.lua
+
+---@alias Mkdn.HoverTrigger "CursorHold"|"mouse"
+
+---@class Mkdn.HoverUrlConfig
+---@field fetch boolean # Fetch `<title>`/`<meta description>` for http(s) targets. Default false — a hover that silently issues HTTP requests discloses every link you brush past.
+---@field timeout_ms integer # Per-fetch timeout. Default 2000.
+
+---@class Mkdn.HoverConfig
+---@field enabled boolean # Master switch. Default true.
+---@field trigger Mkdn.HoverTrigger[] # What opens a hover. `"mouse"` additionally needs `:set mousemoveevent`.
+---@field delay_ms integer # Debounce before the float opens. Default 250.
+---@field max_lines integer # Preview line cap (also the float's max height). Default 20.
+---@field max_width integer # Float width cap, in display columns. Default 80.
+---@field border string|string[] # `nvim_open_win` border. Default "rounded".
+---@field inline_images boolean # Draw images / rasterized PDF pages into the float when a provider can. Default true.
+---@field url Mkdn.HoverUrlConfig
+
+--- What a link target turned out to be (`markdown.hover.classify`).
+---@class Mkdn.Hover.Target
+---@field type "image"|"pdf"|"markdown"|"file"|"directory"|"url"|"anchor"|"missing"
+---@field raw string # The target exactly as written in the document.
+---@field path? string # Absolute, normalized path for local targets.
+---@field anchor? string # Fragment after `#`, without the `#`.
+---@field url? string # Normalized URL for `type == "url"`.
+---@field ext? string # Lowercased extension, when there is one.
+---@field size? integer # Byte size, for local files.
+---@field reason? string # Why it is `missing`.
+
+--- Options threaded from `hover` config into the previewers.
+---@class Mkdn.Hover.PreviewOpts
+---@field max_lines integer
+---@field inline_images? boolean
+---@field url_fetch? boolean
+---@field url_timeout_ms? integer
+
+--- What a previewer produces for the float.
+---@class Mkdn.Hover.Content
+---@field lines string[]
+---@field filetype? string # Set only where a filetype is known, never guessed.
+---@field title? string # Rendered in the float border.
+---@field image_path? string # Draw this image into the float, if a provider can.
+---@field pending? boolean # Provisional; an async result replaces it (and it is not cached).
+
+--- Geometry/appearance for `markdown.hover.float.open`.
+---@class Mkdn.Hover.FloatOpts
+---@field title? string
+---@field filetype? string
+---@field max_width? integer
+---@field max_height? integer
+---@field border? string|string[]
+---@field focusable? boolean
+---@field on_close? fun()
+
 ---@class Mkdn.BlockquoteHL
 ---@field marker_fg? string # Color for the `>` marker token. Unset: derived from the active colorscheme.
 ---@field text_fg? string # Color for the text after `>`. Unset: derived from the active colorscheme.
@@ -154,6 +208,7 @@
 ---@field underline_headings Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
+---@field hover Mkdn.HoverConfig # Link-target preview under the cursor (see `markdown.hover`).
 ---@field image Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.
 ---@field open Mkdn.OpenConfig
 ---@field blockquote_hl Mkdn.BlockquoteHL

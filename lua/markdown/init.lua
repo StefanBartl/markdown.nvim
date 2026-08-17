@@ -58,6 +58,15 @@ M.update_toc = function(header, opts) require("markdown.core.toc").update_markdo
 
 M.handle_cursor_action = function() require("markdown.handler").handle_cursor_action() end
 
+---Preview the link target under the cursor in a float. Normally triggered by
+---the `hover` autocmds; call it directly for an on-demand hover (a keymap,
+---say), which bypasses the enabled flag.
+---@return boolean shown
+M.hover = function() return require("markdown.hover").show({ force = true }) end
+
+---Close an open hover preview.
+M.hover_hide = function() require("markdown.hover").hide() end
+
 ---Apply H2-level blank-line separators to the current (or given) buffer.
 ---@param bufnr? integer  defaults to current buffer
 ---@param opts?  { notify?: boolean }

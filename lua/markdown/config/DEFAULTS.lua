@@ -114,6 +114,33 @@ local DEFAULTS = {
     },
   },
 
+  -- Preview the link target under the cursor in a small float: image, PDF
+  -- page, another file's section, a directory listing, an in-page anchor, a
+  -- URL -- or "this target does not exist", which is often the most useful
+  -- answer of all. See markdown.hover.
+  hover = {
+    enabled = true,
+    -- "CursorHold" follows 'updatetime'. "mouse" additionally requires
+    -- `:set mousemoveevent` — a global user setting this plugin deliberately
+    -- does not set on your behalf.
+    trigger = { "CursorHold" },
+    delay_ms = 250,
+    max_lines = 20,
+    max_width = 80,
+    border = "rounded",
+    -- Draw images / rasterized PDF pages into the float. Needs images.nvim
+    -- (the only provider that can draw into a window it does not own);
+    -- metadata lines are shown either way.
+    inline_images = true,
+    url = {
+      -- Off by default on purpose: a hover that silently fetches would
+      -- disclose every link you brush past to its host, and turn a
+      -- link-heavy document into a request storm while scrolling.
+      fetch = false,
+      timeout_ms = 2000,
+    },
+  },
+
   -- Following an image target (`mi`). When an in-Neovim preview provider is
   -- installed — snacks.nvim (`Snacks.image`) or image.nvim, both soft deps —
   -- `mi` can render the image in a floating window instead of handing it to

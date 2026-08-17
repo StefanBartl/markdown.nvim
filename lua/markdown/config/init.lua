@@ -41,6 +41,7 @@ local FEATURES = {
   "export",
   "underline_headings",
   "table_wrap",
+  "hover",
 }
 
 local FEATURE_SET = {}

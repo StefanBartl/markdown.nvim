@@ -72,6 +72,7 @@ local specs = {
   "handler_pdf_spec.lua",
   "handler_image_spec.lua",
   "anchor_jump_spec.lua",
+  "hover_spec.lua",
   "tableview_spec.lua",
   "tableview_alignment_spec.lua",
   "tableview_resize_spec.lua",
