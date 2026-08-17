@@ -17,10 +17,39 @@
 > markdown.nvim renders and structures the document (TOC, folding, tables),
 > while cascade.nvim edits the list content inside it (continue, renumber, rotate).
 
-A self-contained Markdown toolkit for Neovim. Pure FileType-scoped — zero side
-effects on non-Markdown buffers. Requires Neovim >= 0.9 and
+A self-contained Markdown toolkit for Neovim: headings/TOC/folding, GFM
+tables (format, align, width-limited wrap, CSV round-trip, linting),
+links/references (scan, create, dead-link checks), a cursor-action
+dispatcher (open whatever's under the cursor — anchor, image, URL, file,
+PDF), fenced-block scope, and delegated preview/export (render-markdown.nvim,
+mdview.nvim, image paste/screenshot via images.nvim, PDF export via
+pdfport.nvim). Pure FileType-scoped — zero side effects on non-Markdown
+buffers. Requires Neovim >= 0.9 and
 [lib.nvim](https://github.com/StefanBartl/lib.nvim) (the `:Markdown`/
 `:TableView*` command layer, plus buffer debouncing); no external tools.
+
+---
+
+## Capabilities
+
+| Capability | What it does | Details |
+|---|---|---|
+| `:Markdown links` | Scan/list/open links in a picker, create files from link targets, flag dead links | [Links and references](docs/FEATURES/links-and-references.md) |
+| `:Markdown toc` | Generate/update a table of contents | [Headings](docs/FEATURES/headings.md) |
+| `:Markdown refs` | Sync reference-style link anchors | [Links and references](docs/FEATURES/links-and-references.md) |
+| `:Markdown table` | GFM table formatter, alignment, CSV import/export, linting, flavor conversion | [Tables](docs/FEATURES/tables.md) |
+| `:MDTable*` family | Width-limited table wrapping/unwrapping, row/column folding, CSV round-trip, lint (12 standalone commands) | [Width-limited table wrapping](docs/table-wrap.md) |
+| `:TableView*` family | Floating table browser/export toggle | [Tables](docs/FEATURES/tables.md) |
+| `:Markdown render` / `preview` / `mdview` | Delegate rendering/preview to render-markdown.nvim, markdown-preview.nvim, or mdview.nvim | [Integrations](docs/FEATURES/integrations.md) |
+| `:Markdown create` | Create files/directories for local link targets in the buffer or selection | [Links and references](docs/FEATURES/links-and-references.md) |
+| `:Markdown scope` | Treat a fenced code block as its own sub-document | [Fenced-block scope](docs/fenced-scope.md) |
+| `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections | [Headings](docs/FEATURES/headings.md) |
+| `:Markdown image` | Paste/screenshot an image into the document (delegates to images.nvim) | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
+| `:Markdown export` | Export the buffer/file to PDF (delegates to pdfport.nvim) | [Integrations](docs/FEATURES/integrations.md) |
+| Cursor-action dispatcher | `<CR>`-style action on whatever's under the cursor: anchor, image, URL, file, PDF | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
+| Link hover preview | Floating preview of what a link under the cursor points to | [Link hover preview](docs/hover.md) |
+| `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings | [Headings](docs/FEATURES/headings.md) |
+| `:OpenWithSystemApplication` | Open the file/link target under the cursor with the OS default application | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
 
 ---
 
