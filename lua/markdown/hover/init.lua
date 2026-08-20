@@ -85,7 +85,10 @@ end
 ---@param bufnr? integer
 ---@return Mkdn.Link|nil
 function M.link_under_cursor(bufnr)
-  bufnr = bufnr or api.nvim_get_current_buf()
+  -- `0` means "current buffer" by Neovim convention but is truthy in Lua, so
+  -- `bufnr or ...` would leave it as 0 and the window/buffer check below would
+  -- then compare a real handle against 0 and always bail out.
+  if not bufnr or bufnr == 0 then bufnr = api.nvim_get_current_buf() end
   local win = api.nvim_get_current_win()
   if api.nvim_win_get_buf(win) ~= bufnr then return nil end
 
