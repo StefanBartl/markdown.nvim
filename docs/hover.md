@@ -22,7 +22,7 @@ See [the architecture doc](docs/architecture.md#modules) for details.
 | Target | Shown |
 | --- | --- |
 | **Image** (`png`, `jpg`, `gif`, `webp`, `svg`, …) | The picture itself, in a float shaped to its aspect ratio — or dimensions, format and size where nothing can draw |
-| **PDF** | Size, plus page 1 rendered inline (via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)) |
+| **PDF** | Page 1 rendered inline, in a float shaped to the page (via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)) — or size and a reason where it cannot be rendered |
 | **Markdown file** | First lines, markdown-highlighted |
 | **Markdown file + `#anchor`** | Just that section — heading, body, and any deeper subsections, stopping at the next same-level heading |
 | **In-page `#anchor`** | The section it points at, from the current buffer |
@@ -133,10 +133,20 @@ of their own, which a borrowed hover window is not — with those installed
 you get the metadata float instead. Set `inline_images = false` to skip
 drawing entirely and always get metadata.
 
-PDF page rendering additionally needs pdfport.nvim (which uses `pdftoppm`).
-It runs asynchronously: the float appears immediately with `rendering page
-1…`, and the page replaces it when ready. Move the cursor away first and
-the render is discarded rather than popping up over unrelated text.
+A PDF ends up in the same place — a blank float in the page's aspect ratio
+— but has to be rasterized first, which needs pdfport.nvim (using
+`pdftoppm`).
+
+That render is asynchronous, so the hover is quiet about it for 250 ms. A
+render that finishes inside that window shows the finished page and nothing
+before it. One that takes longer gets a `rendering page 1…` float, because
+by then the wait is real and silence would read as a broken hover.
+
+Rendered pages are kept for the session, keyed by file *and* mtime, so a
+second hover over the same PDF opens instantly and a PDF that changed on
+disk is rasterized again. The files are removed at exit. Move the cursor
+away mid-render and the page is still kept — it just does not pop up over
+the link you already left.
 
 ## On demand
 

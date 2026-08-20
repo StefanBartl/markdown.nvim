@@ -110,6 +110,12 @@ function M.link_under_cursor(bufnr)
 end
 
 ---@internal
+--- How long an async preview may take before it is allowed to interrupt the
+--- reader with a placeholder. Below this, waiting quietly and showing only
+--- the result reads as instant; above it, silence reads as breakage.
+local PLACEHOLDER_GRACE_MS = 250
+
+---@internal
 --- Build the content for `target`, then hand it to `emit`. Synchronous
 --- previewers call `emit` immediately; async ones later.
 ---@param target Mkdn.Hover.Target
@@ -134,29 +140,29 @@ local function build(target, bufnr, opts, emit)
   elseif target.type == "pdf" then
     local media = require("markdown.hover.preview.media")
     local generation = _generation
-    local content = media.pdf(target, opts, function(png_path)
-      if generation ~= _generation then
-        -- The cursor moved on: drop the render and clean up the temp file
-        -- pdfport handed us ownership of.
-        if png_path then pcall(os.remove, png_path) end
-        return
-      end
-      vim.schedule(function()
-        local win = float.win()
-        if not win or generation ~= _generation then
-          if png_path then pcall(os.remove, png_path) end
-          return
-        end
-        if png_path then
-          local on_close = media.draw_into(png_path, win)
-          float.set_on_close(function()
-            if on_close then on_close() end
-            pcall(os.remove, png_path)
-          end)
-        end
-      end)
+    local settled = false
+
+    local provisional = media.pdf(target, opts, function(content)
+      settled = true
+      -- The cursor moved on while pdftoppm ran: the page is kept for the next
+      -- hover (media owns it now), but nothing opens over the link the reader
+      -- has already left.
+      if generation ~= _generation then return end
+      emit(content)
     end)
-    emit(content)
+
+    if not provisional.pending then
+      emit(provisional)
+    else
+      -- Hold the "rendering page 1…" float back. A render that beats the
+      -- grace period shows the finished page and nothing else — no flash of
+      -- a differently sized text float first. One that misses it has a real
+      -- wait to explain, and then the float is worth its interruption.
+      vim.defer_fn(function()
+        if settled or generation ~= _generation then return end
+        emit(provisional)
+      end, PLACEHOLDER_GRACE_MS)
+    end
   elseif target.type == "url" then
     local url = require("markdown.hover.preview.url")
     if opts.url_fetch then

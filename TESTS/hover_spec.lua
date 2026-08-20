@@ -366,5 +366,82 @@ return function(H)
     package.loaded["markdown.util.image_preview"] = saved
   end
 
+  -- ----------------------------------------------------------- pdf hover
+
+  do
+    local media = require("markdown.hover.preview.media")
+    local preview_opts = { max_lines = 10, max_width = 40 }
+
+    local pdf = tmp .. "/doc.pdf"
+    vim.fn.writefile({ "%PDF-1.4 not really a pdf" }, pdf)
+
+    local saved_preview = package.loaded["markdown.util.image_preview"]
+    local saved_pdfport = package.loaded["pdfport"]
+    package.loaded["markdown.util.image_preview"] = { detect = function() return "images.nvim" end }
+
+    -- Stands in for pdftoppm: hands back the PNG fixture and counts how often
+    -- it was asked to do so.
+    local renders = 0
+    package.loaded["pdfport"] = {
+      render_page = function(_, _, _, cb)
+        renders = renders + 1
+        cb(png, nil)
+      end,
+    }
+
+    local delivered
+    local provisional = media.pdf(
+      { type = "pdf", path = pdf, size = 42 },
+      preview_opts,
+      function(c) delivered = c end
+    )
+
+    ok(provisional.pending, "pdf hover: the float returned during a render is provisional")
+    eq(
+      provisional.lines[2],
+      "rendering page 1…",
+      "pdf hover: provisional float says what it is waiting for"
+    )
+
+    -- The render callback is scheduled onto the main loop, so it lands a tick later.
+    vim.wait(500, function() return delivered ~= nil end)
+    ok(delivered ~= nil, "pdf hover: the rendered page is delivered")
+    eq(
+      delivered.canvas.cols,
+      40,
+      "pdf hover: page float is sized to the rendered page, not to text"
+    )
+    eq(delivered.canvas.rows, 5, "pdf hover: page float keeps the page ratio")
+    eq(delivered.title, nil, "pdf hover: no filename over the rendered page")
+    eq(#delivered.lines, 0, "pdf hover: no metadata over the rendered page")
+    eq(renders, 1, "pdf hover: one render so far")
+
+    -- Second hover, same file, same mtime: answered from the kept page, with
+    -- no provisional float at all -- there is nothing to wait for.
+    local again = media.pdf({ type = "pdf", path = pdf, size = 42 }, preview_opts, function() end)
+    eq(again.pending, nil, "pdf hover: a cached page needs no provisional float")
+    eq(again.image_path, png, "pdf hover: cached page is reused")
+    eq(renders, 1, "pdf hover: cached page does not shell out again")
+
+    -- A changed PDF must not answer with the old page.
+    vim.wait(1100) -- mtime has second resolution
+    vim.fn.writefile({ "%PDF-1.4 changed" }, pdf)
+    media.pdf({ type = "pdf", path = pdf, size = 43 }, preview_opts, function() end)
+    eq(renders, 2, "pdf hover: a changed file is rendered again")
+
+    -- Without a drawing provider the metadata float is all there is.
+    package.loaded["markdown.util.image_preview"] = { detect = function() return nil end }
+    local meta = media.pdf({ type = "pdf", path = pdf, size = 43 }, preview_opts, function() end)
+    eq(meta.pending, nil, "pdf hover: no provider means nothing to wait for")
+    eq(meta.title, "doc.pdf", "pdf hover: metadata float is titled with the filename")
+    ok(
+      meta.lines[2]:match("no image provider"),
+      "pdf hover: metadata float says why there is no page"
+    )
+
+    package.loaded["markdown.util.image_preview"] = saved_preview
+    package.loaded["pdfport"] = saved_pdfport
+  end
+
   vim.fn.delete(tmp, "rf")
 end
