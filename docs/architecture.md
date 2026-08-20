@@ -21,6 +21,7 @@ lua/markdown/
     wrap.lua               visual bold toggle
     wrap_link.lua          <leader>[ wrap word/selection in a link
     link_scan.lua          collect links from a line/buffer
+    html_links.lua         `<img src>` / `<a href>` / `<figure>` blocks as links
     table_fmt.lua          GFM table formatter (self-contained)
     table_mode.lua         auto-format mode, tableize, cell motions
     table_wrap.lua         width-limited wrapping, unwrap, lint, CSV, hooks (:MDTable*)

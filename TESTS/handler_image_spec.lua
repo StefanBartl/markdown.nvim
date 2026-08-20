@@ -55,6 +55,61 @@ return function(H)
     return opened
   end
 
+  -- Case 0: what counts as an image target under the cursor.
+  --
+  -- The interesting half is the negative: `extract` used to scan a fixed
+  -- radius for any `<img src>` at all, so a paragraph a few lines under a
+  -- figure claimed to *be* that figure and `ma`/`mi` opened it. A block has
+  -- ends; prose outside them is prose.
+  do
+    reset()
+    local image = require("markdown.handler.image")
+
+    eq(image.extract("![alt](pic.png)"), "pic.png", "extract: markdown image")
+    eq(image.extract("[doc](notes.md)"), nil, "extract: a plain link is not an image")
+    eq(image.extract('<img src="pic.png">'), "pic.png", "extract: img on the line itself")
+
+    local buf = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "# Doc", -- 1
+      "", -- 2
+      "<figure>", -- 3
+      '  <img src="assets/start.png" alt="Start Screen">', -- 4
+      "  <figcaption>Abbildung 1: Start Screen</figcaption>", -- 5
+      "</figure>", -- 6
+      "", -- 7
+      "Prosa, die zufaellig unter einer Abbildung steht.", -- 8
+      "", -- 9
+      "<picture>", -- 10
+      '  <source src="wide.webp">', -- 11
+      "</picture>", -- 12
+    })
+
+    local function extract_at(row)
+      vim.api.nvim_win_set_cursor(0, { row, 0 })
+      local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
+      return image.extract(line)
+    end
+
+    eq(extract_at(5), "assets/start.png", "extract: figcaption line resolves the figure")
+    eq(extract_at(6), "assets/start.png", "extract: closing tag resolves the figure")
+    eq(extract_at(3), "assets/start.png", "extract: opening tag resolves the figure")
+    eq(extract_at(11), "wide.webp", "extract: a <picture> block resolves too")
+
+    eq(extract_at(8), nil, "extract: prose near a figure is not the figure")
+    eq(extract_at(1), nil, "extract: a heading near a figure is not the figure")
+    eq(extract_at(9), nil, "extract: the gap between two blocks belongs to neither")
+
+    vim.api.nvim_win_set_cursor(0, { 8, 0 })
+    eq(
+      image.is_image_line("Prosa, die zufaellig unter einer Abbildung steht."),
+      false,
+      "is_image_line: false for prose that merely sits near a picture"
+    )
+
+    vim.api.nvim_buf_delete(buf, { force = true })
+  end
+
   -- Case 1: no provider installed -> system viewer, no prompt.
   do
     reset()

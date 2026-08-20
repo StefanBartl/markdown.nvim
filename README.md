@@ -48,6 +48,7 @@ buffers. Requires Neovim >= 0.9 and
 | `:Markdown export` | Export the buffer/file to PDF (delegates to pdfport.nvim) | [Integrations](docs/FEATURES/integrations.md) |
 | Cursor-action dispatcher | `<CR>`-style action on whatever's under the cursor: anchor, image, URL, file, PDF | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
 | Link hover preview | Floating preview of what a link under the cursor points to | [Link hover preview](docs/hover.md) |
+| HTML link resolution | `<img src>` / `<a href>` count as links everywhere — a captioned `<figure>` keeps its hover, `mi`, picker entry and dead-link check | [Image captions](docs/image-captions.md) |
 | `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings | [Headings](docs/FEATURES/headings.md) |
 | `:OpenWithSystemApplication` | Open the file/link target under the cursor with the OS default application | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
 
@@ -103,6 +104,7 @@ runtime:
 - [Keymaps](docs/keymaps.md) — every default keymap, remapping/disabling, and the actions API.
 - [Commands](docs/commands.md) — the `:Markdown` command and all its subcommands.
 - [Link hover preview](docs/hover.md) — the float that previews a link target under the cursor, and everything it can show.
+- [Image captions](docs/image-captions.md) — implicit figures vs. an HTML `<figure>` vs. `@fig:` cross-references, and what each one costs you in the editor.
 - [Fenced-block scope](docs/fenced-scope.md) — treating a fenced Markdown block as its own sub-document.
 - [Width-limited table wrapping](docs/table-wrap.md) — the `:MDTable*` command family (wrap/unwrap, lint, CSV, profiles, and more).
 - [Menu integration](docs/menu.md) — context-aware entries for nvzone/menu.

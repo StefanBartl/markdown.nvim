@@ -25,28 +25,25 @@ local function trim(s)
   return s:match("^%s*(.-)%s*$")
 end
 
-local function find_img_src_in_buffer_near_cursor(bufnr, curline, radius)
-  radius = radius or 8
-  if not bufnr or not curline then return nil end
-  local start_line = math.max(1, curline - radius)
-  local end_line = curline + radius
-  local ok, lines = pcall(api.nvim_buf_get_lines, bufnr, start_line - 1, end_line, false)
-  if not ok or not lines then return nil end
+--- The image of the `<figure>`/`<picture>` block the cursor is *inside*.
+---
+--- This used to be a fixed-radius scan: any `<img src>` within a dozen lines
+--- of the cursor, whether or not the cursor was in the same block -- or in
+--- any block at all. That made `is_image_line()` true for ordinary prose
+--- that merely sat near a picture, so `ma`/`mi` on a paragraph opened
+--- whatever image happened to be nearby. `core.html_links` walks to the
+--- block's real delimiters instead, so "inside a figure" and "near a figure"
+--- stop being the same answer.
+---@return string|nil
+local function media_block_src()
+  local ok_buf, bufnr = pcall(api.nvim_get_current_buf)
+  if not ok_buf or not bufnr then return nil end
 
-  for _, l in ipairs(lines) do
-    local single = l:match('<img[^>]-src%s*=%s*"(.-)"') or l:match("<img[^>]-src%s*=%s*'(.-)'")
-    if single and single ~= "" then return trim(single) end
-  end
+  local ok_cur, cursor = pcall(api.nvim_win_get_cursor, 0)
+  local curline = (ok_cur and cursor and cursor[1]) or 1
 
-  local joined = table.concat(lines, "\n")
-  local src = joined:match('<img.-src%s*=%s*"(.-)"') or joined:match("<img.-src%s*=%s*'(.-)'")
-  if src and src ~= "" then return trim(src) end
-
-  local source_src = joined:match('<source.-src%s*=%s*"(.-)"')
-    or joined:match("<source.-src%s*=%s*'(.-)'")
-  if source_src and source_src ~= "" then return trim(source_src) end
-
-  return nil
+  local link = require("markdown.core.html_links").media_at(bufnr, curline)
+  return link and link.target or nil
 end
 
 local function extract_image_target_from_line(line)
@@ -65,21 +62,10 @@ local function extract_image_target_from_line(line)
   local img_src = line:match('<img[^>]-src%s*=%s*"(.-)"') or line:match("<img[^>]-src%s*=%s*'(.-)'")
   if img_src and img_src ~= "" then return trim(img_src) end
 
-  local ok, bufnr = pcall(api.nvim_get_current_buf)
-  if not ok or not bufnr then return nil end
-
-  local ok2, cursor = pcall(api.nvim_win_get_cursor, 0)
-  local curline = (ok2 and cursor and cursor[1]) or 1
-
-  if line:match("<figure") or line:match("<img") or line:match("<picture") then
-    local found = find_img_src_in_buffer_near_cursor(bufnr, curline, 12)
-    if found and found ~= "" then return found end
-  end
-
-  local found = find_img_src_in_buffer_near_cursor(bufnr, curline, 12)
-  if found and found ~= "" then return found end
-
-  return nil
+  -- Nothing on this line -- but a `<figure>` is one picture spread over
+  -- several, and the lines carrying no target of their own (the
+  -- `<figcaption>`, the bare `</figure>`) are exactly where a reader parks.
+  return media_block_src()
 end
 
 local function is_url(target) return target and target:match("^https?://") ~= nil end

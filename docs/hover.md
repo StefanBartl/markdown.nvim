@@ -35,6 +35,26 @@ That last row matters more than it looks. A hover that immediately says
 "this file isn't there" catches broken links while you write them, long
 before `:Markdown links check` runs.
 
+## HTML targets and `<figure>` blocks
+
+A hover does not need markdown syntax. Raw `<img src>` and `<a href>` are
+link targets too, and a `<figure>` block resolves *as a block*: park the
+cursor on the `<figcaption>` — the one line that contains no target at all —
+and the float shows the image the caption belongs to.
+
+```markdown
+<figure>
+  <img src="assets/start.png" alt="Start Screen">
+  <figcaption>Abbildung 1: Start Screen</figcaption>
+                └─ hover here shows assets/start.png ─┘
+</figure>
+```
+
+That is what makes a captioned image behave like the plain
+`![alt](assets/start.png)` it replaced. See
+[Image captions](image-captions.md) for the three ways to caption an image
+and what each costs.
+
 ## Configuration
 
 ```lua

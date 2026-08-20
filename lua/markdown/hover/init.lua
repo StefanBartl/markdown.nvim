@@ -98,7 +98,12 @@ function M.link_under_cursor(bufnr)
   for _, link in ipairs(links) do
     if col >= link.col and col <= link.col_end then return link end
   end
-  return nil
+
+  -- Nothing on this line -- but a `<figure>` block is one link spread over
+  -- several, and the line the reader parks on is usually the `<figcaption>`,
+  -- which carries no target of its own. Resolving the enclosing figure's
+  -- image makes the caption hover like the picture it captions.
+  return require("markdown.core.html_links").figure_at(bufnr, row)
 end
 
 ---@internal

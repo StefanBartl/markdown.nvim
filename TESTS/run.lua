@@ -64,6 +64,7 @@ local specs = {
   "html_table_import_spec.lua",
   "blockquote_theme_spec.lua",
   "link_scan_spec.lua",
+  "html_links_spec.lua",
   "link_diagnostics_spec.lua",
   "picker_spec.lua",
   "toc_config_spec.lua",

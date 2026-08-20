@@ -51,6 +51,10 @@ function M.from_line(line, lnum)
   while true do
     local s, e, text, target = line:find("%[(.-)%]%((.-)%)", from)
     if not s then break end
+    -- An image link's span starts at its `!`, not at the `[`: the bang is
+    -- part of the link a reader sees, and a cursor sitting on it means that
+    -- image -- not "no link here".
+    if s > 1 and line:sub(s - 1, s - 1) == "!" then s = s - 1 end
     if target and target ~= "" then
       local t = strip_angle_brackets(trim(target))
       out[#out + 1] = {
@@ -65,6 +69,14 @@ function M.from_line(line, lnum)
     end
     covered[#covered + 1] = { s, e }
     from = e + 1
+  end
+
+  -- Raw HTML targets (`<img src>`, `<a href>`, ...). Reported before the
+  -- bare-URL pass and added to `covered` for the same reason inline links
+  -- are: `<img src="https://…">` is one link, not a link plus a loose URL.
+  for _, link in ipairs(require("markdown.core.html_links").from_line(line, lnum)) do
+    out[#out + 1] = link
+    covered[#covered + 1] = { link.col + 1, link.col_end + 1 }
   end
 
   -- Bare URLs outside any covered markdown-link span.

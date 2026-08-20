@@ -17,13 +17,24 @@ part, plain text in the `[text]` part.
 
 ## Link scan
 
-Collects every link (`[text](target)`, bare URLs, `#anchor`s) in a line or
-buffer — the shared primitive `links show`/`create fs`/`link_diagnostics`
-all build on.
+Collects every link (`[text](target)`, bare URLs, `#anchor`s, and raw HTML
+`<img src>` / `<a href>`) in a line or buffer — the shared primitive
+`links show`/`create fs`/`link_diagnostics` all build on.
 
-- **Module:** `core/link_scan.lua`
+- **Module:** `core/link_scan.lua`, with HTML handled by `core/html_links.lua`
 - Not a standalone command; powers `:Markdown links show` and
-  `:Markdown create fs` below, plus `link_diagnostics`.
+  `:Markdown create fs` below, plus `link_diagnostics` and the hover.
+
+## HTML links and `<figure>` blocks
+
+`src` / `href` attributes are reported in the same `Mkdn.Link` shape as
+markdown links, and a multi-line `<figure>` resolves as one unit: the
+`<figcaption>` line — which contains no target of its own — hovers and opens
+the block's `<img>`. That is what lets a captioned image keep the hover,
+`mi`, picker entry and dead-link check a plain `![alt](src)` has.
+
+- **Module:** `core/html_links.lua`
+- **Details:** [Image captions](../image-captions.md)
 
 ## Link diagnostics
 

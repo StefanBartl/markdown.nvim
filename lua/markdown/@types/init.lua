@@ -227,8 +227,8 @@
 ---@class Mkdn.Link
 ---@field display string # Human-readable label for pickers.
 ---@field target string # The resolved URL / path / anchor.
----@field text? string # Link text for `[text](target)`.
----@field kind "mdlink"|"url"
+---@field text? string # Link text for `[text](target)`, `alt` for `<img>`, the `<figcaption>` for a figure.
+---@field kind "mdlink"|"url"|"html_media"|"html_link" # `html_*` come from `core.html_links`.
 ---@field lnum integer # 1-based source line.
 ---@field col integer # 0-based byte column of the match start.
 ---@field col_end integer # 0-based byte column of the match end (inclusive).
