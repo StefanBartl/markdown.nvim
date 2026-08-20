@@ -198,6 +198,7 @@ function M.show(opts)
 
   local preview_opts = {
     max_lines = c.max_lines or 20,
+    max_width = c.max_width or 80,
     inline_images = c.inline_images,
     url_fetch = c.url and c.url.fetch == true,
     url_timeout_ms = c.url and c.url.timeout_ms or 2000,
@@ -212,6 +213,7 @@ function M.show(opts)
     float.open(content.lines, {
       title = content.title,
       filetype = content.filetype,
+      canvas = content.canvas,
       max_width = c.max_width or 80,
       max_height = c.max_lines or 20,
       border = c.border,

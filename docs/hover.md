@@ -21,7 +21,7 @@ See [the architecture doc](docs/architecture.md#modules) for details.
 
 | Target | Shown |
 | --- | --- |
-| **Image** (`png`, `jpg`, `gif`, `webp`, `svg`, …) | Dimensions, format, size — and the picture itself when a provider can draw it |
+| **Image** (`png`, `jpg`, `gif`, `webp`, `svg`, …) | The picture itself, in a float shaped to its aspect ratio — or dimensions, format and size where nothing can draw |
 | **PDF** | Size, plus page 1 rendered inline (via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)) |
 | **Markdown file** | First lines, markdown-highlighted |
 | **Markdown file + `#anchor`** | Just that section — heading, body, and any deeper subsections, stopping at the next same-level heading |
@@ -106,16 +106,32 @@ target.
 
 ### Images and PDFs
 
-Metadata (dimensions, size, format) is always shown and needs nothing
-installed.
+An image hover has two shapes, depending on whether the picture can
+actually be drawn.
 
-Drawing the actual picture into the hover needs
+**Drawable** — the float is blank and sized to the image's aspect ratio,
+and holds nothing but the picture: no filename in the border, no
+`1810 × 1426 px` or `JPG · 612 KB` line. You are looking at the image; a
+caption for it is noise. The sizing is not cosmetic either. The drawing box
+handed to the terminal *is* the float's geometry, so a float measured
+against two lines of text would squeeze the image into a box two cells
+tall. `hover.max_width` and `hover.max_lines` bound that box; the ratio
+within it comes from the file.
+
+**Not drawable** — the metadata lines, which are then the only thing the
+hover can say at all. Dimensions are parsed straight out of the file header
+(PNG, GIF, BMP, and JPEG by walking its segment chain), so they need
+nothing installed; ImageMagick is consulted only for formats the parser
+cannot read, such as WebP.
+
+Drawing the picture needs
 [images.nvim](https://github.com/StefanBartl/images.nvim): it is the only
 supported provider that can draw into a window it does not own
-(`browse.draw_in_window`). snacks.nvim and image.nvim need a buffer of
-their own, which a borrowed hover window is not — with those installed you
-still get the metadata float, just no inline picture. Set
-`inline_images = false` to skip drawing entirely.
+(`images.anchor.draw`, deferred — an undeferred draw is repainted over by
+the float that was just opened). snacks.nvim and image.nvim need a buffer
+of their own, which a borrowed hover window is not — with those installed
+you get the metadata float instead. Set `inline_images = false` to skip
+drawing entirely and always get metadata.
 
 PDF page rendering additionally needs pdfport.nvim (which uses `pdftoppm`).
 It runs asynchronously: the float appears immediately with `rendering page

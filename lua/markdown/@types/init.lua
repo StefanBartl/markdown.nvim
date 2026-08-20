@@ -55,16 +55,22 @@
 --- Options threaded from `hover` config into the previewers.
 ---@class Mkdn.Hover.PreviewOpts
 ---@field max_lines integer
+---@field max_width? integer # Needed by the image previewer, which sizes the float itself rather than letting it be measured from text.
 ---@field inline_images? boolean
 ---@field url_fetch? boolean
 ---@field url_timeout_ms? integer
 
 --- What a previewer produces for the float.
+---@class Mkdn.Hover.Canvas
+---@field cols integer # Float width in cells, already fitted to the image's aspect ratio.
+---@field rows integer # Float height in cells.
+
 ---@class Mkdn.Hover.Content
 ---@field lines string[]
 ---@field filetype? string # Set only where a filetype is known, never guessed.
 ---@field title? string # Rendered in the float border.
 ---@field image_path? string # Draw this image into the float, if a provider can.
+---@field canvas? Mkdn.Hover.Canvas # Size the float to this instead of to `lines`, and show no text or title: the float is a frame for the picture, not a caption for it.
 ---@field pending? boolean # Provisional; an async result replaces it (and it is not cached).
 
 --- Geometry/appearance for `markdown.hover.float.open`.
@@ -73,6 +79,7 @@
 ---@field filetype? string
 ---@field max_width? integer
 ---@field max_height? integer
+---@field canvas? Mkdn.Hover.Canvas # Blank float of this exact size; `lines`, `title` and `filetype` are ignored.
 ---@field border? string|string[]
 ---@field focusable? boolean
 ---@field on_close? fun()

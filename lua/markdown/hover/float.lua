@@ -84,6 +84,18 @@ function M.open(lines, opts)
   opts = opts or {}
   M.close()
 
+  -- Canvas mode: the float exists only to give a drawn image a frame and a
+  -- set of coordinates, so it gets blank lines at the caller's exact size and
+  -- neither text nor a title. A filename in the border and a "PNG · 10 KB"
+  -- line describe a picture the reader is already looking at.
+  local canvas = opts.canvas
+  if canvas then
+    lines = {}
+    for i = 1, math.max(1, canvas.rows) do
+      lines[i] = ""
+    end
+  end
+
   if not lines or #lines == 0 then return nil, nil end
 
   local buf = api.nvim_create_buf(false, true)
@@ -91,12 +103,18 @@ function M.open(lines, opts)
 
   vim.bo[buf].modifiable = false
   vim.bo[buf].bufhidden = "wipe"
-  if opts.filetype and opts.filetype ~= "" then
+  if not canvas and opts.filetype and opts.filetype ~= "" then
     -- `pcall`: a filetype whose ftplugin errors must not take the hover down.
     pcall(function() vim.bo[buf].filetype = opts.filetype end)
   end
 
-  local width, height = measure(lines, opts)
+  local width, height
+  if canvas then
+    width = math.max(1, math.min(canvas.cols, math.max(20, vim.o.columns - 4)))
+    height = math.max(1, math.min(canvas.rows, math.max(3, vim.o.lines - 4)))
+  else
+    width, height = measure(lines, opts)
+  end
 
   local ok, win = pcall(api.nvim_open_win, buf, false, {
     relative = "cursor",
@@ -108,8 +126,8 @@ function M.open(lines, opts)
     border = opts.border or "rounded",
     focusable = opts.focusable == true,
     noautocmd = true,
-    title = opts.title,
-    title_pos = opts.title and "left" or nil,
+    title = not canvas and opts.title or nil,
+    title_pos = not canvas and opts.title and "left" or nil,
   })
   if not ok then
     pcall(api.nvim_buf_delete, buf, { force = true })

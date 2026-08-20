@@ -268,5 +268,103 @@ return function(H)
     eq(float.open({}, {}), nil, "float: empty content opens nothing")
   end
 
+  -- --------------------------------------------------------- image hover
+
+  -- Synthetic headers, not real pictures: `dimensions` only ever reads the
+  -- first bytes, so a valid header is the whole fixture. It also keeps the
+  -- ImageMagick fallback out of the test -- these parse locally or not at all.
+  local function write_bytes(path, bytes)
+    local f = assert(io.open(path, "wb"))
+    f:write(bytes)
+    f:close()
+  end
+
+  local function be16(n) return string.char(math.floor(n / 256), n % 256) end
+  local function be32(n)
+    return string.char(
+      math.floor(n / 0x1000000) % 256,
+      math.floor(n / 0x10000) % 256,
+      math.floor(n / 0x100) % 256,
+      n % 256
+    )
+  end
+
+  local png = tmp .. "/wide.png"
+  write_bytes(
+    png,
+    "\137PNG\r\n\26\n" .. be32(13) .. "IHDR" .. be32(400) .. be32(100) .. "\8\6\0\0\0"
+  )
+
+  -- SOI, an APP0 the walker must skip over, then the SOF0 carrying the size.
+  local jpg = tmp .. "/wide.jpg"
+  write_bytes(
+    jpg,
+    "\255\216"
+      .. "\255\224"
+      .. be16(16)
+      .. "JFIF\0\1\1\0\0\1\0\1\0\0"
+      .. "\255\192"
+      .. be16(17)
+      .. "\8"
+      .. be16(300)
+      .. be16(900)
+      .. "\3\1\17\0\2\17\1\3\17\1"
+  )
+
+  do
+    local media = require("markdown.hover.preview.media")
+    local preview_opts = { max_lines = 10, max_width = 40 }
+
+    local function target_for(path)
+      local st = vim.uv.fs_stat(path)
+      return { type = "image", path = path, ext = path:match("%.(%w+)$"), size = st and st.size }
+    end
+
+    -- With a drawing provider present the float is a frame for the picture:
+    -- sized to the file's aspect ratio, and carrying no text or title at all.
+    local saved = package.loaded["markdown.util.image_preview"]
+    package.loaded["markdown.util.image_preview"] = { detect = function() return "images.nvim" end }
+
+    local c = media.image(target_for(png), preview_opts)
+    ok(c.canvas ~= nil, "image hover: drawable target yields a canvas")
+    -- 400x100 is wider than the 40x10 box allows, so width is the binding
+    -- limit and the height follows from it (cells being ~twice as tall as wide).
+    eq(c.canvas.cols, 40, "image hover: canvas width clamped to max_width")
+    eq(c.canvas.rows, 5, "image hover: canvas height follows the image ratio")
+    eq(#c.lines, 0, "image hover: no metadata lines next to the picture")
+    eq(c.title, nil, "image hover: no filename in the border")
+    eq(c.image_path, png, "image hover: still asks for the draw")
+
+    -- JPEG has no fixed size offset; its segment chain has to be walked.
+    local j = media.image(target_for(jpg), preview_opts)
+    eq(j.canvas.cols, 40, "image hover: JPEG width clamped")
+    eq(j.canvas.rows, 6, "image hover: JPEG ratio read from the SOF segment past APP0")
+
+    -- The float takes the canvas verbatim, and shows nothing in it.
+    local win, fbuf =
+      float.open(c.lines, { title = c.title, canvas = c.canvas, max_width = 40, max_height = 10 })
+    ok(win ~= nil, "image hover: canvas opens a float even with no lines")
+    eq(vim.api.nvim_win_get_width(win), 40, "image hover: float is the canvas width")
+    eq(vim.api.nvim_win_get_height(win), 5, "image hover: float is the canvas height")
+    eq(vim.api.nvim_win_get_config(win).title, nil, "image hover: float has no border title")
+    eq(
+      table.concat(vim.api.nvim_buf_get_lines(fbuf, 0, -1, false), "|"),
+      "||||",
+      "image hover: float holds blank lines only"
+    )
+    float.close()
+
+    -- No provider: metadata is then the only thing the hover can say, so it
+    -- says it -- including the dimensions parsed out of the header.
+    package.loaded["markdown.util.image_preview"] = { detect = function() return nil end }
+    local m = media.image(target_for(png), preview_opts)
+    eq(m.canvas, nil, "image hover: no provider means no canvas")
+    eq(m.title, "wide.png", "image hover: metadata float is titled with the filename")
+    eq(m.lines[1], "400 × 100 px", "image hover: dimensions parsed from the PNG header")
+    ok(m.lines[2]:match("^PNG"), "image hover: format and size line")
+
+    package.loaded["markdown.util.image_preview"] = saved
+  end
+
   vim.fn.delete(tmp, "rf")
 end
