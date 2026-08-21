@@ -201,6 +201,54 @@ function M.canvas_for(path, opts)
   return { lines = {}, canvas = { cols = cols, rows = rows }, image_path = path }
 end
 
+--- Draw `png_path` into an already-open hover window, if a provider can.
+--- Returns a teardown function to run when the hover closes, or nil when
+--- no provider could draw at all.
+---
+--- The draw is deferred by one tick (`images.anchor`'s `defer` option), and
+--- that is the whole reason this goes through `images.anchor` rather than
+--- `images.browse.draw_in_window`: the hover float is opened in the *same*
+--- tick this runs in. `nvim_ui_send` puts the image on the terminal at once,
+--- but Neovim repaints everything that turned dirty since the last return to
+--- its main loop — including the cells of the float that was just created —
+--- and paints straight over it. Float there, image gone. `browse
+--- .draw_in_window` never needed the defer (its snacks picker window has
+--- stood for a while by then), so it draws immediately and is the wrong
+--- primitive here.
+---
+--- Because the draw happens later, whether it succeeded is not known when
+--- this returns; the teardown is registered on the strength of the provider
+--- being present, and clearing when nothing was drawn is a no-op anyway.
+---@param png_path string
+---@param win integer
+---@return (fun())|nil on_close
+function M.draw_into(png_path, win)
+  local provider = require("markdown.util.image_preview").detect()
+  if provider ~= "images.nvim" then
+    -- Only images.nvim can draw into an arbitrary existing window;
+    -- snacks/image.nvim need a buffer they own, which a borrowed hover
+    -- window is not.
+    return nil
+  end
+
+  local ok_anchor, anchor = pcall(require, "images.anchor")
+  if ok_anchor and type(anchor.draw) == "function" then
+    pcall(anchor.draw, win, "full", png_path, { defer = true })
+  else
+    -- images.nvim without `images.anchor`: fall back to the older public
+    -- entry point, undeferred — worse, but better than no image.
+    local ok, browse = pcall(require, "images.browse")
+    if not ok or type(browse.draw_in_window) ~= "function" then return nil end
+    local drawn = false
+    pcall(function() drawn = browse.draw_in_window(png_path, win) end)
+    if not drawn then return nil end
+  end
+
+  return function()
+    pcall(function() require("images.terminal").clear() end)
+  end
+end
+
 --- Image preview.
 ---
 --- Two shapes, depending on whether the picture can actually be drawn:
