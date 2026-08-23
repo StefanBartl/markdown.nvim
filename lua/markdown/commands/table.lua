@@ -279,17 +279,21 @@ end
 function M.complete(arglead, cmdline)
   -- Are we completing the sub-subcommand or its arguments?
   local tokens = vim.split(vim.trim(cmdline), "%s+")
-  -- tokens: Markdown, table, <sub>, <args...>
+  -- tokens: Markdown(1) table(2) <sub>(3) <args…>(4…). The slot being completed
+  -- is the token under the cursor, or one past the last committed token when
+  -- nothing has been typed for it yet. Subs taking a single argument match it
+  -- exactly, so they stop offering that argument once it is filled in.
   local sub = tokens[3]
-  local on_args = #tokens > 3 or (#tokens == 3 and arglead == "")
+  local slot = (arglead == "") and (#tokens + 1) or #tokens
 
-  if sub == "format" and on_args then
+  -- `format` takes an open-ended run of option tokens, so every slot past the
+  -- sub name offers the same set.
+  if sub == "format" and slot >= 4 then
     return require("markdown.core.table_fmt").complete(arglead)
   end
   if sub == "view" then
     -- tokens: Markdown(1) table(2) view(3) <action>(4) <scope>(5)
-    local completing_scope = #tokens > 4 or (#tokens == 4 and arglead == "")
-    if completing_scope then
+    if slot == 5 then
       local action = (tokens[4] or ""):lower()
       local out = {}
       if action == "toggle" or action == "markdown" or action == "box" then
@@ -301,7 +305,7 @@ function M.complete(arglead, cmdline)
       end
       return out
     end
-    if on_args then -- completing the action itself (token 4)
+    if slot == 4 then -- completing the action itself
       local out = {}
       for name in pairs(VIEW_ACTIONS) do
         if vim.startswith(name, arglead) then out[#out + 1] = name end
@@ -310,20 +314,20 @@ function M.complete(arglead, cmdline)
       return out
     end
   end
-  if sub == "mode" and on_args then
+  if sub == "mode" and slot == 4 then
     local out = {}
     for _, name in ipairs({ "on", "off", "toggle" }) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     return out
   end
-  if sub == "import" and on_args then
+  if sub == "import" and slot == 4 then
     local out = {}
     if vim.startswith("clipboard", arglead) then out[#out + 1] = "clipboard" end
     vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
     return out
   end
-  if sub == "tableize" and on_args then
+  if sub == "tableize" and slot == 4 then
     -- Offer the named separator formats; a literal/quoted delimiter is typed
     -- freehand. `auto` is the default (omit the argument entirely).
     local out = {}
@@ -347,6 +351,11 @@ function M.complete(arglead, cmdline)
     end
     return out
   end
+
+  -- Past the sub-subcommand slot with nothing above matching: that sub takes no
+  -- completable argument here. Falling through to the sub names would offer
+  -- `format`/`view`/… again in an argument position.
+  if slot >= 4 then return {} end
 
   local out = {}
   for name in pairs(subcommands) do

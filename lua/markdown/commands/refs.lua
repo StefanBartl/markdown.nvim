@@ -106,17 +106,22 @@ end
 ---@return string[]
 function M.complete(arglead, cmdline)
   local tokens = vim.split(vim.trim(cmdline), "%s+")
-  -- tokens: Markdown, refs, <sub>, <args...>
+  -- tokens: Markdown(1) refs(2) <sub>(3) <args…>(4…); `slot` is the one being
+  -- completed (one past the last token when nothing is typed for it yet).
   local sub = tokens[3]
-  local on_args = #tokens > 3 or (#tokens == 3 and arglead == "")
+  local slot = (arglead == "") and (#tokens + 1) or #tokens
 
-  if sub == "live" and on_args then
+  if sub == "live" and slot == 4 then
     local out = {}
     for _, name in ipairs({ "on", "off", "toggle" }) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     return out
   end
+
+  -- Past the sub-subcommand slot with nothing above matching: no completable
+  -- argument there, and the sub names are not candidates any more.
+  if slot >= 4 then return {} end
 
   local out = {}
   for name in pairs(subcommands) do

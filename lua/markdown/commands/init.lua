@@ -70,22 +70,22 @@ function M.execute(argv, ctx)
   fn(argv, ctx)
 end
 
--- Subcommands exposing their own `complete(arglead, cmdline)` for nested completion.
+-- Subcommands exposing their own `complete(arglead, cmdline)` for nested
+-- completion. `nested = true` marks the ones that read the cmdline and so have
+-- something to say beyond their own sub-subcommand slot; the rest only know
+-- that first slot, and delegating deeper would just echo their sub-subcommand
+-- names into an argument position.
 local sub_complete = {
-  links = function(arglead) return require("markdown.commands.links").complete(arglead) end,
-  refs = function(arglead, cmdline)
-    return require("markdown.commands.refs").complete(arglead, cmdline)
-  end,
-  table = function(arglead, cmdline)
-    return require("markdown.commands.table").complete(arglead, cmdline)
-  end,
-  render = function(arglead) return require("markdown.commands.render").complete(arglead) end,
-  preview = function(arglead) return require("markdown.commands.preview").complete(arglead) end,
-  mdview = function(arglead) return require("markdown.commands.mdview").complete(arglead) end,
-  create = function(arglead) return require("markdown.commands.create").complete(arglead) end,
-  scope = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
-  image = function(arglead) return require("markdown.commands.image").complete(arglead) end,
-  export = function(arglead) return require("markdown.commands.export").complete(arglead) end,
+  links = { mod = "markdown.commands.links", nested = true },
+  refs = { mod = "markdown.commands.refs", nested = true },
+  table = { mod = "markdown.commands.table", nested = true },
+  render = { mod = "markdown.commands.render" },
+  preview = { mod = "markdown.commands.preview" },
+  mdview = { mod = "markdown.commands.mdview" },
+  create = { mod = "markdown.commands.create" },
+  scope = { mod = "markdown.commands.scope" },
+  image = { mod = "markdown.commands.image" },
+  export = { mod = "markdown.commands.export" },
 }
 
 --- Completion for `:Markdown`: subcommand names, then delegates to the
@@ -99,13 +99,21 @@ function M.complete(arglead, cmdline, _cursorpos)
   local tokens = vim.split(vim.trim(cmdline), "%s+")
   -- tokens[1] == "Markdown"; tokens[2] == first subcommand (if present).
   local first = tokens[2]
+  -- The slot being completed: the token under the cursor, or one past the last
+  -- committed token when nothing has been typed for it yet. Slot 2 is the
+  -- subcommand itself, 3 its first argument.
+  local slot = (arglead == "") and (#tokens + 1) or #tokens
 
-  -- If a first subcommand is complete and we are now on a later argument,
-  -- delegate to that subcommand's own completion.
-  local on_second = #tokens > 2 or (#tokens == 2 and arglead == "" and first ~= nil)
-  if first and on_second and sub_complete[first] then
-    return sub_complete[first](arglead, cmdline)
+  -- A first subcommand is complete and we are on one of its arguments.
+  local entry = first and slot >= 3 and sub_complete[first]
+  if entry then
+    if slot > 3 and not entry.nested then return {} end
+    return require(entry.mod).complete(arglead, cmdline)
   end
+
+  -- A subcommand with no nested completion of its own (toc, headline_spacing)
+  -- takes no further candidates — its own name is not one of them.
+  if slot >= 3 then return {} end
 
   local result = {}
   for name in pairs(commands) do
