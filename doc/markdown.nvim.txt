@@ -34,9 +34,10 @@ CONTENTS                                           *markdown.nvim-contents*
      7.7 create ................ |:Markdown-create|
      7.8 headline_spacing ...... |:Markdown-headline-spacing|
      7.9 scope ................. |:Markdown-scope|
-     7.10 image ................. |:Markdown-image|
-     7.11 Buffer commands ...... |markdown.nvim-buf-commands|
-     7.12 :MDTable* (wrapping) . |markdown.nvim-mdtable|
+     7.10 list .................. |:Markdown-list|
+     7.11 image ................. |:Markdown-image|
+     7.12 Buffer commands ....... |markdown.nvim-buf-commands|
+     7.13 :MDTable* (wrapping) .. |markdown.nvim-mdtable|
   8. TableView ................. |markdown.nvim-tableview|
   9. Fold expression ........... |markdown.nvim-foldexpr|
  10. Lua API ................... |markdown.nvim-api|
@@ -494,7 +495,7 @@ Gateable feature names (also returned by `require("markdown.config")
 .features()`):
     keymaps  fold  hl  link_hl  fenced_fix  fenced_scope  tableview  refs
     links  toc  table  render  preview  mdview  create  headline_spacing  scope
-    image  underline_headings  table_wrap  hover
+    list  image  underline_headings  table_wrap  hover
 
 A disabled `:Markdown` subcommand drops out of completion and reports if
 invoked; disabled keymaps and autocmds are never installed. The legacy
@@ -824,6 +825,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
     create             Create files for link targets     |:Markdown-create|
     headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
     scope              Toggle fenced-block scope         |:Markdown-scope|
+    list               List document items in a picker   |:Markdown-list|
     image              Delegate to images.nvim paste/screenshot |:Markdown-image|
 
 ------------------------------------------------------------------------------
@@ -1081,7 +1083,29 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   With no argument, toggles. `status` reports the current state.
 
 ------------------------------------------------------------------------------
-7.10 :Markdown image                                      *:Markdown-image*
+7.10 :Markdown list                                        *:Markdown-list*
+
+:Markdown list [headings] [%|cwd|<file>]
+
+  List the document's items in a picker and jump to the chosen one. The only
+  option so far is `headings` (also the default). The scope vocabulary is the
+  same as |:Markdown-links|: the current buffer (`%`, the default), every
+  `*.md` below the current working directory (`cwd`), or a given file.
+
+  Entries are indented by heading level and labelled with their source
+  location. Picking one opens the file if it is not the current buffer and
+  moves the cursor to the heading; the jump is undoable with |CTRL-O|.
+
+  Headings inside YAML frontmatter and inside fenced code blocks are skipped,
+  so what is listed matches what |:Markdown-toc| would generate. Setext
+  headings (underlined with `===` / `---`) are not recognized, also matching
+  the TOC generator.
+
+  The picker backend is set by the `list.picker` option (same values and
+  fallback behavior as `links.picker`, see |markdown.nvim-config-links|).
+
+------------------------------------------------------------------------------
+7.11 :Markdown image                                      *:Markdown-image*
 
 :Markdown image [paste|screenshot]
 
@@ -1099,7 +1123,7 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   logic lives entirely in images.nvim.
 
 ------------------------------------------------------------------------------
-7.11 Buffer-local commands                       *markdown.nvim-buf-commands*
+7.12 Buffer-local commands                       *markdown.nvim-buf-commands*
 
 These commands are available only in Markdown buffers (installed via FileType
 autocmd):
@@ -1152,7 +1176,7 @@ autocmd):
   rows, rounded card) and open it in the system default browser.
 
 ------------------------------------------------------------------------------
-7.12 :MDTable* (width-limited wrapping)              *markdown.nvim-mdtable*
+7.13 :MDTable* (width-limited wrapping)              *markdown.nvim-mdtable*
 
 A separate, opt-in command family (buffer-local, feature `table_wrap`, on by
 default) -- not nested under |:Markdown-table|. `table_fmt`'s formatter
@@ -1393,6 +1417,7 @@ Sub-modules can be imported individually, e.g.: >
       wrap.lua               visual bold toggle
       wrap_link.lua          <leader>[ wrap word/selection in a link
       link_scan.lua          collect links from a line/buffer
+      heading_scan.lua       collect ATX headings from lines/buffer/file
       link_diagnostics.lua   dead links / duplicate anchors (vim.diagnostic)
       slug.lua               anchor slug algorithm (gfm/keep-case) + anchor map
       table_fmt.lua          GFM table formatter + HTML->GFM import (self-contained)

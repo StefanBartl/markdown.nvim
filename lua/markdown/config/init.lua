@@ -37,6 +37,7 @@ local FEATURES = {
   "create",
   "headline_spacing",
   "scope",
+  "list",
   "image",
   "export",
   "underline_headings",

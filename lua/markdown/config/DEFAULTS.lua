@@ -114,6 +114,12 @@ local DEFAULTS = {
     },
   },
 
+  -- `:Markdown list [headings] [%|cwd|<file>]` picker backend. Same backend
+  -- vocabulary and fallback behavior as `links.picker` above.
+  list = {
+    picker = "hover_select",
+  },
+
   -- Preview the link target under the cursor in a small float: image, PDF
   -- page, another file's section, a directory listing, an in-page anchor, a
   -- URL -- or "this target does not exist", which is often the most useful

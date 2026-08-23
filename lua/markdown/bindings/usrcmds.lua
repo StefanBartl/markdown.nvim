@@ -238,6 +238,7 @@ local SUBCOMMAND_NAMES = {
   "mdview",
   "create",
   "scope",
+  "list",
   "headline_spacing",
   "image",
   "export",

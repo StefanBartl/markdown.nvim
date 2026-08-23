@@ -31,6 +31,7 @@ local commands = {
   mdview = require("markdown.commands.mdview").run,
   create = require("markdown.commands.create").run,
   scope = require("markdown.commands.scope").run,
+  list = require("markdown.commands.list").run,
   image = require("markdown.commands.image").run,
   export = require("markdown.commands.export").run,
   headline_spacing = function()
@@ -84,6 +85,9 @@ local sub_complete = {
   mdview = function(arglead) return require("markdown.commands.mdview").complete(arglead) end,
   create = function(arglead) return require("markdown.commands.create").complete(arglead) end,
   scope = function(arglead) return require("markdown.commands.scope").complete(arglead) end,
+  list = function(arglead, cmdline)
+    return require("markdown.commands.list").complete(arglead, cmdline)
+  end,
   image = function(arglead) return require("markdown.commands.image").complete(arglead) end,
   export = function(arglead) return require("markdown.commands.export").complete(arglead) end,
 }

@@ -96,6 +96,12 @@ require("markdown").setup({
     },
   },
 
+  -- :Markdown list [headings] [%|cwd|<file>]
+  list = {
+    -- picker backend, same values and fallback behavior as links.picker above
+    picker = "hover_select",
+  },
+
   -- Defaults for :Markdown table format; explicit command args (header=,
   -- cell=, skip=) always override these per call.
   table = {
@@ -211,6 +217,6 @@ then re-applies `enable`. Unknown names emit a warning.
 Gateable features: `keymaps`, `fold`, `hl`, `link_hl`, `fenced_fix`,
 `fenced_scope`, `tableview`, `refs`, and the `:Markdown` subcommand features
 `links`, `toc`, `table`, `render`, `preview`, `mdview`, `create`, `headline_spacing`,
-`scope`. A disabled subcommand drops out of completion and reports if invoked;
+`scope`, `list`. A disabled subcommand drops out of completion and reports if invoked;
 disabled keymaps/autocmds are never installed. (The legacy `enable_keymaps` /
 `enable_autocmds` flags still work alongside this.)

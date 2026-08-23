@@ -21,6 +21,7 @@ lua/markdown/
     wrap.lua               visual bold toggle
     wrap_link.lua          <leader>[ wrap word/selection in a link
     link_scan.lua          collect links from a line/buffer
+    heading_scan.lua       collect ATX headings from lines/buffer/file
     html_links.lua         `<img src>` / `<a href>` / `<figure>` blocks as links
     table_fmt.lua          GFM table formatter (self-contained)
     table_mode.lua         auto-format mode, tableize, cell motions
@@ -58,6 +59,7 @@ lua/markdown/
   commands/
     init.lua               :Markdown dispatcher + nested completion
     links.lua              :Markdown links show|create
+    list.lua               :Markdown list headings (picker + jump)
     markdown_links.lua     directory-to-link generator (links create)
     toc.lua                :Markdown toc (TOC + separators)
     refs.lua               :Markdown refs sync|check|live|baseline

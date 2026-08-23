@@ -20,6 +20,9 @@
 ---@field picker Mkdn.LinkPicker # `:Markdown links show` picker backend.
 ---@field diagnostics Mkdn.LinkDiagnosticsConfig # Dead-link / duplicate-anchor checking (see `core.link_diagnostics`).
 
+---@class Mkdn.ListConfig
+---@field picker Mkdn.LinkPicker # `:Markdown list` picker backend (same vocabulary as `links.picker`).
+
 ---@class Mkdn.OpenConfig
 ---@field external_extensions string[] # Extensions launched with the system app; others open via `:edit`.
 
@@ -215,6 +218,7 @@
 ---@field underline_headings Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links Mkdn.LinksConfig
+---@field list Mkdn.ListConfig # `:Markdown list` picker backend.
 ---@field hover Mkdn.HoverConfig # Link-target preview under the cursor (see `markdown.hover`).
 ---@field image Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.
 ---@field open Mkdn.OpenConfig
@@ -240,6 +244,15 @@
 ---@field col integer # 0-based byte column of the match start.
 ---@field col_end integer # 0-based byte column of the match end (inclusive).
 ---@field file? string # Source file path (set for cross-file scans).
+
+-- #####################################################################
+-- core/heading_scan.lua
+
+---@class Mkdn.Heading
+---@field level integer # 1-6, the number of leading `#`.
+---@field title string # Heading text with the `#`s and surrounding space stripped.
+---@field lnum integer # 1-based source line.
+---@field file? string # Source file path (set for file/cwd scans, absent for buffer scans).
 
 --- One `vim.diagnostic`-shaped entry from `core.link_diagnostics.collect()`.
 ---@class Mkdn.LinkDiagnostic

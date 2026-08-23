@@ -222,6 +222,27 @@ URLs, `mailto:` and `#anchors` are skipped; existing paths are left untouched.
 :Markdown scope status                   " report current state
 ```
 
+## `:Markdown list`
+
+```vim
+:Markdown list                           " headings in the current buffer (default)
+:Markdown list headings                  " same, spelled out
+:Markdown list headings cwd              " headings across every *.md below the cwd
+:Markdown list headings notes/api.md     " headings in one file
+```
+
+Lists the document's items in a picker and jumps to the chosen one. Entries are
+indented by heading level and labelled with their source location; picking one
+opens the file if it is not the current buffer and moves the cursor there. The
+jump is undoable with `<C-o>`.
+
+Headings inside YAML frontmatter and inside fenced code blocks are skipped, so
+the listing matches what `:Markdown toc` would generate. Setext headings
+(underlined with `===` / `---`) are not recognized, matching the TOC generator.
+
+The picker backend comes from the `list.picker` option — same values and
+fallback behavior as `links.picker`.
+
 ## `:Markdown image`
 
 ```vim
