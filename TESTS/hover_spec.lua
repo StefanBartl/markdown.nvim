@@ -443,5 +443,140 @@ return function(H)
     package.loaded["pdfport"] = saved_pdfport
   end
 
+  -- ------------------------------------------------------------ escalation
+
+  -- `escalate()` reuses each target's existing opener rather than growing a
+  -- second one: mocking those modules (instead of e.g. images.nvim's actual
+  -- draw path) is the point -- it proves the dispatch, not the openers,
+  -- which are already covered where they live.
+  do
+    local hover = require("markdown.hover")
+
+    local function escalate_on(buf, target_text)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { ("[link](%s)"):format(target_text) })
+      vim.api.nvim_win_set_cursor(0, { 1, 2 })
+      return hover.escalate()
+    end
+
+    do -- markdown -> mdview.run({ path })
+      local buf = H.scratch("markdown")
+      local captured
+      local saved = package.loaded["markdown.commands.mdview"]
+      package.loaded["markdown.commands.mdview"] = { run = function(argv) captured = argv end }
+
+      ok(escalate_on(buf, doc), "escalate: markdown target reports handled")
+      ok(
+        captured ~= nil and captured[1] ~= nil and captured[1]:match("doc%.md$") ~= nil,
+        "escalate: markdown hands mdview the resolved path"
+      )
+
+      package.loaded["markdown.commands.mdview"] = saved
+    end
+
+    do -- anchor -> mdview.run({}): nothing to escalate an in-page anchor to
+      -- but a full render of the current file itself.
+      local buf = H.scratch("markdown")
+      local captured
+      local saved = package.loaded["markdown.commands.mdview"]
+      package.loaded["markdown.commands.mdview"] = { run = function(argv) captured = argv end }
+
+      escalate_on(buf, "#second")
+      ok(captured ~= nil and captured[1] == nil, "escalate: anchor hands mdview no path")
+
+      package.loaded["markdown.commands.mdview"] = saved
+    end
+
+    do -- image -> images.zen.open(path), an explicit path -- untouched by
+      -- images.nvim's own (separately in-flux) under-cursor resolution.
+      local buf = H.scratch("markdown")
+      -- A dedicated fixture, not the outer `png`: that name gets
+      -- re-declared (shadowed) further up for the wide.png/wide.jpg cases,
+      -- and a test tied to "whatever `png` currently refers to" is fragile.
+      local esc_png = tmp .. "/escalate.png"
+      local f = assert(io.open(esc_png, "wb"))
+      f:write("\137PNG\r\n\26\n\0\0\0\13IHDR\0\0\0\1\0\0\0\1" .. string.rep("\0", 8))
+      f:close()
+
+      local captured
+      local saved = package.loaded["images.zen"]
+      package.loaded["images.zen"] = { open = function(p) captured = p end }
+
+      escalate_on(buf, esc_png)
+      ok(
+        captured ~= nil and captured:match("escalate%.png$") ~= nil,
+        "escalate: image hands images.zen.open the resolved path"
+      )
+
+      package.loaded["images.zen"] = saved
+    end
+
+    do -- pdf -> handler.file.open_pdf(path)
+      local buf = H.scratch("markdown")
+      local pdf = tmp .. "/escalate.pdf"
+      vim.fn.writefile({ "%PDF-1.4 not really a pdf" }, pdf)
+      local captured
+      local saved = package.loaded["markdown.handler.file"]
+      package.loaded["markdown.handler.file"] =
+        { open_pdf = function(p) captured = p end, system_open = function() end }
+
+      escalate_on(buf, pdf)
+      ok(captured ~= nil and captured:match("escalate%.pdf$") ~= nil, "escalate: pdf hands handler.file.open_pdf the resolved path")
+
+      package.loaded["markdown.handler.file"] = saved
+    end
+
+    do -- other file -> handler.file.system_open(path)
+      local buf = H.scratch("markdown")
+      local captured
+      local saved = package.loaded["markdown.handler.file"]
+      package.loaded["markdown.handler.file"] =
+        { open_pdf = function() end, system_open = function(p) captured = p end }
+
+      escalate_on(buf, plain)
+      ok(
+        captured ~= nil and captured:match("notes%.txt$") ~= nil,
+        "escalate: plain file hands handler.file.system_open the resolved path"
+      )
+
+      package.loaded["markdown.handler.file"] = saved
+    end
+
+    do -- directory -> platform.open(path)
+      local buf = H.scratch("markdown")
+      local captured
+      local saved = package.loaded["markdown.util.platform"]
+      package.loaded["markdown.util.platform"] = { open = function(p) captured = p end }
+
+      escalate_on(buf, tmp .. "/sub")
+      ok(captured ~= nil and captured:match("sub$") ~= nil, "escalate: directory hands platform.open the resolved path")
+
+      package.loaded["markdown.util.platform"] = saved
+    end
+
+    do -- url -> platform.open(url) directly, not through a line-extraction opener
+      local buf = H.scratch("markdown")
+      local captured
+      local saved = package.loaded["markdown.util.platform"]
+      package.loaded["markdown.util.platform"] = { open = function(p) captured = p end }
+
+      escalate_on(buf, "https://example.com/a?b=c")
+      eq(captured, "https://example.com/a?b=c", "escalate: url hands platform.open the raw url")
+
+      package.loaded["markdown.util.platform"] = saved
+    end
+
+    do -- missing target -> nothing to open
+      local buf = H.scratch("markdown")
+      ok(not escalate_on(buf, "nope-escalate.md"), "escalate: missing target is not handled")
+    end
+
+    do -- no link under cursor -> not handled, nothing crashes
+      local buf = H.scratch("markdown")
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "no link on this line" })
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+      ok(not hover.escalate(), "escalate: no link under cursor is not handled")
+    end
+  end
+
   vim.fn.delete(tmp, "rf")
 end

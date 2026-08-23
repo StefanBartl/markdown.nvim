@@ -67,6 +67,12 @@ M.hover = function() return require("markdown.hover").show({ force = true }) end
 ---Close an open hover preview.
 M.hover_hide = function() require("markdown.hover").hide() end
 
+---Escalate the link under the cursor from the hover's quick preview to the
+---full thing: mdview.nvim for markdown, a full-screen images.zen window for
+---a picture, the existing PDF/file/URL openers for everything else.
+---@return boolean handled
+M.hover_escalate = function() return require("markdown.hover").escalate() end
+
 ---Apply H2-level blank-line separators to the current (or given) buffer.
 ---@param bufnr? integer  defaults to current buffer
 ---@param opts?  { notify?: boolean }

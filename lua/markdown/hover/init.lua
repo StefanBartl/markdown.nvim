@@ -24,6 +24,7 @@ local api = vim.api
 
 local classify = require("markdown.hover.classify")
 local float = require("markdown.hover.float")
+local notify = require("markdown.util.notify").create("[markdown.hover]")
 
 ---@type integer Bumped on every request; stale async results compare against it.
 local _generation = 0
@@ -249,6 +250,65 @@ end
 
 --- Close any open hover.
 function M.hide() float.close() end
+
+--- Open the *full* thing the link under the cursor points at, in whatever
+--- surface already owns that job: `mdview.nvim` for markdown, a full-screen
+--- `images.zen` window for a picture, the existing PDF/file/URL openers for
+--- everything else. The hover float is the fast, cheap answer; this is the
+--- escalation for when it is not enough.
+---
+--- Deliberately reuses each target's existing opener rather than growing a
+--- second one here: `markdown.commands.mdview` already knows whether
+--- mdview.nvim is installed and warns if not, `markdown.handler.file`
+--- already prompts system-vs-pdfport for a `.pdf`, and `images.zen.open`
+--- takes an explicit path -- it does not touch `images.nvim`'s own
+--- under-cursor resolution, so this does not depend on that (currently
+--- being reworked) matching logic at all.
+---@return boolean handled
+function M.escalate()
+  local bufnr = api.nvim_get_current_buf()
+  local link = M.link_under_cursor(bufnr)
+  if not link then
+    notify.info("escalate: no link under cursor")
+    return false
+  end
+
+  local source = api.nvim_buf_get_name(bufnr)
+  local target = classify.classify(link.target, source ~= "" and source or nil)
+
+  if target.type == "markdown" then
+    require("markdown.commands.mdview").run({ target.path })
+    return true
+  elseif target.type == "anchor" then
+    -- In-page anchor: there is nowhere else to escalate to but a full render
+    -- of the current file itself.
+    require("markdown.commands.mdview").run({})
+    return true
+  elseif target.type == "image" then
+    local ok, zen = pcall(require, "images.zen")
+    if not ok or type(zen.open) ~= "function" then
+      notify.warn("escalate: images.nvim not available")
+      return false
+    end
+    zen.open(target.path)
+    return true
+  elseif target.type == "pdf" then
+    require("markdown.handler.file").open_pdf(target.path)
+    return true
+  elseif target.type == "file" then
+    require("markdown.handler.file").system_open(target.path)
+    return true
+  elseif target.type == "directory" then
+    require("markdown.util.platform").open(target.path)
+    return true
+  elseif target.type == "url" then
+    require("markdown.util.platform").open(target.url or target.raw)
+    return true
+  else -- "missing"
+    notify.warn("escalate: " .. (target.reason or "target does not exist"))
+    return false
+  end
+end
 
 --- Debounced entry point used by the CursorHold/mouse autocmds.
 function M.trigger()

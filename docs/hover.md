@@ -164,6 +164,32 @@ automatic hover switched off:
 vim.keymap.set("n", "K", require("markdown").hover, { buffer = true })
 ```
 
+## Escalating to the full thing
+
+The hover float is deliberately small and fast. When it is not enough,
+`hover_escalate()` opens the *full* preview for the link under the cursor —
+in whatever surface already owns that job, not a new one built for this:
+
+| Target | Opens via |
+| --- | --- |
+| Markdown file / in-page anchor | `:Markdown mdview` ([mdview.nvim](https://github.com/StefanBartl/mdview.nvim)) |
+| Image | A full-screen window via [images.nvim](https://github.com/StefanBartl/images.nvim)'s `images.zen.open` |
+| PDF | The same system-vs-pdfport prompt the cursor-action handler uses |
+| Other file / directory | The system default application |
+| URL | The system default browser |
+| Missing target | Nothing to open — reports why |
+
+```lua
+vim.keymap.set("n", "<CR>", require("markdown").hover_escalate, { buffer = true })
+```
+
+No default keymap is bound — `<CR>` above is a suggestion, not something set
+for you, since it is a common mapping already spoken for in some setups.
+Each destination is reached through its existing opener (`markdown.commands
+.mdview`, `markdown.handler.file`, `images.zen`), so a missing optional
+dependency warns exactly the way it already does everywhere else in this
+plugin, rather than through new logic here.
+
 ## Behavior notes
 
 - **The float never takes focus** and closes on the next cursor move,
@@ -189,7 +215,7 @@ trailing-punctuation trimming.
 
 | Module | Responsibility |
 | --- | --- |
-| `markdown.hover` | Trigger, debounce, cache, cancellation, dispatch |
+| `markdown.hover` | Trigger, debounce, cache, cancellation, dispatch, escalation |
 | `markdown.hover.classify` | Target string → type (the only filesystem touch is one `fs_stat`) |
 | `markdown.hover.float` | The window: cursor-relative, unfocused, single-instance |
 | `markdown.hover.preview.text` | Files, sections, anchors, directories, missing targets |
