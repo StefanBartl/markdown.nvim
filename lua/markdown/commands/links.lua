@@ -223,8 +223,11 @@ local function do_check(_argv)
   if count == 0 then
     notify.info("Link check: no issues found")
   else
+    -- `:copen`, not `:lopen`. The old message named the location list, which
+    -- `vim.diagnostic.set` never populates -- following that advice raised
+    -- E776. `check` now fills the quickfix list, matching `refs check`.
     notify.warn(
-      string.format("Link check: %d issue(s) — see vim.diagnostic.open_float() / :lopen", count)
+      string.format("Link check: %d issue(s) — see vim.diagnostic.open_float() / :copen", count)
     )
   end
 end
