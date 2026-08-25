@@ -5,6 +5,8 @@
 --- `tableview`'s `%`/path/`cwd` preview scopes, so both features agree on what
 --- "every markdown file under this directory" means.
 
+local globbable = require("lib.nvim.fs.globbable")
+
 local M = {}
 
 ---@param dir string
