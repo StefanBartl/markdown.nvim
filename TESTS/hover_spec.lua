@@ -520,7 +520,10 @@ return function(H)
         { open_pdf = function(p) captured = p end, system_open = function() end }
 
       escalate_on(buf, pdf)
-      ok(captured ~= nil and captured:match("escalate%.pdf$") ~= nil, "escalate: pdf hands handler.file.open_pdf the resolved path")
+      ok(
+        captured ~= nil and captured:match("escalate%.pdf$") ~= nil,
+        "escalate: pdf hands handler.file.open_pdf the resolved path"
+      )
 
       package.loaded["markdown.handler.file"] = saved
     end
@@ -548,7 +551,10 @@ return function(H)
       package.loaded["markdown.util.platform"] = { open = function(p) captured = p end }
 
       escalate_on(buf, tmp .. "/sub")
-      ok(captured ~= nil and captured:match("sub$") ~= nil, "escalate: directory hands platform.open the resolved path")
+      ok(
+        captured ~= nil and captured:match("sub$") ~= nil,
+        "escalate: directory hands platform.open the resolved path"
+      )
 
       package.loaded["markdown.util.platform"] = saved
     end

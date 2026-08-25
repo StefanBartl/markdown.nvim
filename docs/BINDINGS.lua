@@ -521,7 +521,10 @@ return {
         name = "MDTableCol {inc|dec} [n]",
         desc = "Widen/narrow the column under the cursor, preserving row total width",
       },
-      { name = "MDTableAlign {cycle|left|center|right}", desc = "Cycle/set the current column's alignment" },
+      {
+        name = "MDTableAlign {cycle|left|center|right}",
+        desc = "Cycle/set the current column's alignment",
+      },
       { name = "MDTableFlavor {github|loose}", desc = "Strict GFM vs. loose separator style" },
       { name = "MDTableLint", desc = "Flag table structural issues via vim.diagnostic" },
       { name = "MDTableFixMissingSeparator", desc = "Insert missing separator lines" },
