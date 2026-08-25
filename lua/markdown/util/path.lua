@@ -33,6 +33,33 @@ local lib_cwd = optional("lib.nvim.cross.fs._cwd")
 local lib_sep_norm = optional("lib.nvim.cross.fs.separators.normalize")
 local lib_unify = optional("lib.nvim.cross.fs.separators.unify_slashes")
 local lib_collapse = optional("lib.nvim.cross.fs.separators.collapse_dots")
+local lib_expand_path = optional("lib.nvim.cross.fs.expand_path")
+
+--- Expand `~` and environment variables in a path, and nothing else.
+---
+--- Deliberately **not** `vim.fn.expand`. That is Vim's filename expansion:
+--- a backtick span in its argument is a *command substitution*, run through
+--- `&shell`. Every caller below hands it a link target read out of a Markdown
+--- buffer, so `![x](`mkdir /tmp/pwned; echo a.png#`)` was arbitrary command
+--- execution from opening a file and putting the cursor on it -- confirmed,
+--- the directory appeared. It also expands `%`, `#` and `<cfile>`, none of
+--- which is meaningful in a link target either.
+---@param p string
+---@return string
+local function expand_path(p)
+  if lib_expand_path then return lib_expand_path(p) end
+  -- Fallback with the same contract, for a load without lib.nvim present.
+  if type(p) ~= "string" or p == "" then return p end
+  local out = p
+  if out:sub(1, 1) == "~" then
+    local home = uv.os_homedir()
+    if home then out = home .. out:sub(2) end
+  end
+  out = out:gsub("%%([%w_]+)%%", function(n) return vim.env[n] or ("%" .. n .. "%") end)
+  out = out:gsub("%${([%w_]+)}", function(n) return vim.env[n] or ("${" .. n .. "}") end)
+  out = out:gsub("%$([%w_]+)", function(n) return vim.env[n] or ("$" .. n) end)
+  return out
+end
 local lib_relpath = optional("lib.nvim.fs.relpath")
 
 --- True when `p` starts with a Windows drive prefix (`C:/` or `C:\`).
@@ -120,11 +147,11 @@ end
 ---@param p string
 ---@return string
 function M.normalize(p)
-  -- Unify separators *before* vim.fn.expand(): expand() treats a bare
-  -- backslash as an escape character (drops it and keeps the following
-  -- character verbatim), so a Windows-style "a\b\c" fed to expand() first
-  -- comes back as "abc" -- the backslashes vanish instead of becoming "/".
-  return collapse(vim.fn.expand(to_slashes(p)))
+  -- Separators are still unified first, though the reason is now historical:
+  -- vim.fn.expand() treated a bare backslash as an escape and ate it, so
+  -- "a\b\c" came back as "abc". expand_path does not, but the order costs
+  -- nothing and the result is the same.
+  return collapse(expand_path(to_slashes(p)))
 end
 
 --- Ordered list of base directories a relative target is resolved against.
@@ -167,7 +194,7 @@ local function resolve_impl(target, first_base)
   if not target or target == "" then return nil end
   if target:match("^%w[%w+.%-]*://") then return target end
 
-  local expanded = to_slashes(vim.fn.expand(to_slashes(target)))
+  local expanded = to_slashes(expand_path(to_slashes(target)))
 
   if is_absolute(expanded) then return to_os(drive_fallback_if_exists(collapse(expanded))) end
 
@@ -215,7 +242,7 @@ function M.resolve_traced(target, base_dir)
   if not target or target == "" then return nil, nil, false end
   if target:match("^%w[%w+.%-]*://") then return target, nil, false end
 
-  local expanded = to_slashes(vim.fn.expand(to_slashes(target)))
+  local expanded = to_slashes(expand_path(to_slashes(target)))
   if is_absolute(expanded) then
     return to_os(drive_fallback_if_exists(collapse(expanded))), nil, true
   end
@@ -246,8 +273,8 @@ end
 ---@param target_path string
 ---@return string
 function M.relative_to(base_dir, target_path)
-  local b = collapse(to_slashes(vim.fn.expand(base_dir)))
-  local t = collapse(to_slashes(vim.fn.expand(target_path)))
+  local b = collapse(to_slashes(expand_path(base_dir)))
+  local t = collapse(to_slashes(expand_path(target_path)))
 
   if lib_relpath then
     local ok, rel = pcall(lib_relpath, t, b)

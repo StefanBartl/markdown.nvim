@@ -77,4 +77,38 @@ return function(H)
   package.loaded["markdown.util.path"] = nil
 
   if not run_ok then error(err, 0) end
+
+  -- Every resolver here takes a link target read out of a Markdown buffer, so
+  -- none of them may hand it to vim.fn.expand: a backtick span in that argument
+  -- is a *command substitution* run through &shell. It used to execute --
+  -- confirmed with a real payload, the directory appeared -- which made opening
+  -- a Markdown file and touching its link arbitrary command execution.
+  do
+    local saved =
+      { vim.o.shell, vim.o.shellcmdflag, vim.o.shellquote, vim.o.shellxquote, vim.o.shellredir }
+    vim.o.shell = "sh"
+    vim.o.shellcmdflag = "-c"
+    vim.o.shellquote = ""
+    vim.o.shellxquote = ""
+    vim.o.shellredir = ">%s 2>&1"
+
+    for _, name in ipairs({ "resolve", "resolve_traced", "normalize" }) do
+      local dir = (vim.fn.tempname() .. "-path-shell-probe-" .. name):gsub("\\", "/")
+      pcall(path[name], "`mkdir -p " .. dir .. "; echo x`")
+      vim.wait(1200)
+      H.ok(vim.fn.isdirectory(dir) ~= 1, name .. ": a backtick span in the target is not run")
+    end
+
+    -- The expansion that *is* wanted still happens.
+    local home = (vim.uv or vim.loop).os_homedir()
+    if home then
+      H.ok(
+        path.normalize("~/x"):find(home:gsub("\\", "/"), 1, true) ~= nil,
+        "normalize still expands a leading ~"
+      )
+    end
+
+    vim.o.shell, vim.o.shellcmdflag, vim.o.shellquote, vim.o.shellxquote, vim.o.shellredir =
+      saved[1], saved[2], saved[3], saved[4], saved[5]
+  end
 end
