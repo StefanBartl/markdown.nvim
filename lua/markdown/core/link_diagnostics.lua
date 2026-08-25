@@ -125,13 +125,62 @@ function M.collect(bufnr)
   return out
 end
 
---- Populate `vim.diagnostic` for `bufnr`.
+--- Severity -> quickfix `type` column.
+---
+--- `HINT` maps to `N` (note) rather than `I`: the only hint this module emits
+--- is the duplicate-heading one, which reports something already handled (the
+--- anchor was auto-suffixed) and should not read as loudly as a real info item.
+---@type table<integer, string>
+local QF_TYPE = {
+  [vim.diagnostic.severity.ERROR] = "E",
+  [vim.diagnostic.severity.WARN] = "W",
+  [vim.diagnostic.severity.INFO] = "I",
+  [vim.diagnostic.severity.HINT] = "N",
+}
+
+--- Convert collected diagnostics into quickfix entries.
+---
+--- Index bases differ between the two APIs and silently produce off-by-ones:
+--- `vim.diagnostic` is 0-based in both `lnum` and `col`, the quickfix list is
+--- 1-based in both.
+---@param diags Mkdn.LinkDiagnostic[]
+---@param bufnr integer
+---@return table[]
+function M.to_qf_entries(diags, bufnr)
+  local entries = {}
+  for i, d in ipairs(diags) do
+    entries[i] = {
+      bufnr = bufnr,
+      lnum = d.lnum + 1,
+      col = d.col + 1,
+      text = d.message,
+      type = QF_TYPE[d.severity] or "I",
+    }
+  end
+  return entries
+end
+
+--- Populate `vim.diagnostic` for `bufnr`, and mirror the findings into the
+--- quickfix list.
+---
+--- Both, not either: the diagnostics carry the inline presentation (signs,
+--- virtual text, `open_float`), the quickfix list is what lets you walk the
+--- findings with `:cnext`. `refs.check` in this same plugin already set that
+--- precedent for a buffer-local check -- quickfix, not the location list.
+---
+--- An empty result **clears** the list rather than leaving the previous run's
+--- findings standing: "no issues" showing yesterday's dead links is worse than
+--- showing nothing.
 ---@param bufnr? integer
 ---@return integer count
 function M.check(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local diags = M.collect(bufnr)
   vim.diagnostic.set(M.namespace, bufnr, diags)
+  vim.fn.setqflist({}, " ", {
+    title = "markdown.nvim: link check",
+    items = M.to_qf_entries(diags, bufnr),
+  })
   return #diags
 end
 
