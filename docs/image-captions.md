@@ -67,13 +67,13 @@ inside the block is not processed by default, so a caption cannot contain
 ```markdown
 ![Start Screen](assets/Device_und_TMA_READY.png){#fig:startscreen}
 
-Siehe [@fig:startscreen] für den Ausgangszustand.
+See [@fig:startscreen] for the initial state.
 ```
 
 This is not a third caption syntax — it is option 1 plus a label. The figure
 still comes from `implicit_figures`; `pandoc-crossref` (a filter, installed
 separately: `pandoc --filter pandoc-crossref`) numbers it and rewrites
-`[@fig:startscreen]` into "Abbildung 1".
+`[@fig:startscreen]` into "Figure 1".
 
 Take this when you need *numbering that stays correct* and references from
 the text — a thesis, a manual, anything where figures get reordered. For a
