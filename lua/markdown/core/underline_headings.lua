@@ -51,14 +51,14 @@ function M.apply_range(bufnr, srow, erow, char)
         local next_line = lines[i + 1]
         local adjusted = i + offset
 
-        if next_line == want then
-          -- already correct, nothing to do
-        elseif next_line and is_underline_of(next_line, char) then
-          api.nvim_buf_set_lines(bufnr, adjusted, adjusted + 1, false, { want })
-          changed = changed + 1
-        else
-          api.nvim_buf_set_lines(bufnr, adjusted, adjusted, false, { want })
-          offset = offset + 1
+        -- `next_line == want` is the already-correct case: no edit, no count.
+        if next_line ~= want then
+          if next_line and is_underline_of(next_line, char) then
+            api.nvim_buf_set_lines(bufnr, adjusted, adjusted + 1, false, { want })
+          else
+            api.nvim_buf_set_lines(bufnr, adjusted, adjusted, false, { want })
+            offset = offset + 1
+          end
           changed = changed + 1
         end
       end
