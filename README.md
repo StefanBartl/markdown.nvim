@@ -62,9 +62,7 @@ buffers. Requires Neovim >= 0.9 and
   "StefanBartl/markdown.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
   ft = { "markdown", "mdx", "md" },
-  config = function()
-    require("markdown").setup()
-  end,
+  opts = {},
 }
 ```
 
