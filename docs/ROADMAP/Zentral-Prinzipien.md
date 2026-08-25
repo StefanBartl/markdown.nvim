@@ -1,7 +1,13 @@
 # Zentrale Prinzipien — applied to markdown.nvim
 
-Application of [`Zentrale-Prinzipien.md`](../../../Notes/MyNotes/Checklists/Lua/Zentrale-Prinzipien.md)
+Application of [`regeln/PRINCIPLES.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/PRINCIPLES.md)
 — the per-module mental check. Legend: ✅ · 🟡 · ❌ · N/A.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 | # | Principle | markdown.nvim | Status |
 |---|---|---|---|

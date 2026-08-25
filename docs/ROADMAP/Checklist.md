@@ -1,9 +1,15 @@
 # Checklist (PR-Review / Coding) — applied to markdown.nvim
 
-Application of [`Checklist.md`](../../../Notes/MyNotes/Checklists/Lua/Checklist.md).
+Application of [`regeln/`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/).
 Only the Neovim/Lua sections apply; the algorithm/data-structure/sorting
 sections (sort selection, BST/heap/trie/…, complexity notation, bit tricks) are
 **N/A** — markdown.nvim implements no such structures.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 ## Schnell-Check (10 points)
 

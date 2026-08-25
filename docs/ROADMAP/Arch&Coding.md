@@ -1,8 +1,14 @@
 # Arch & Coding-Regeln — applied to markdown.nvim
 
-Application of [`Arch&Coding-Regeln.md`](../../../Notes/MyNotes/Checklists/Lua/Arch&Coding-Regeln.md)
+Application of [`regeln/PRINCIPLES.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/PRINCIPLES.md)
 to this repo. Status per rule group with concrete findings and action items.
 Legend: ✅ compliant · 🟡 partial · ❌ gap · N/A not applicable.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 ## 1. Safety & error handling
 - ✅ `pcall` around buffer mutations and keymap/command wiring (`bindings/keymaps.lua`,
