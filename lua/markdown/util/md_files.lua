@@ -11,6 +11,9 @@ local M = {}
 ---@return string[]
 function M.collect(dir)
   dir = dir:gsub("[/\\]$", "")
+  -- Glob reads its argument as a pattern, so an 8.3 short root ("~1") is read
+  -- as a home-directory reference and matches nothing. See lib.nvim.fs.globbable.
+  dir = globbable(dir)
   local found = vim.fn.glob(dir .. "/**/*.md", false, true)
   for _, f in ipairs(vim.fn.glob(dir .. "/*.md", false, true)) do
     found[#found + 1] = f

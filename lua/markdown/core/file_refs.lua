@@ -18,6 +18,7 @@
 
 local link_scan = require("markdown.core.link_scan")
 local path = require("markdown.util.path")
+local globbable = require("lib.nvim.fs.globbable")
 local ignore = require("markdown.util.ignore")
 
 local M = {}
@@ -91,7 +92,7 @@ end
 --- Pure-Lua fallback candidate list (every `*.md` under root).
 ---@param root string
 ---@return string[]
-local function glob_files(root) return vim.fn.globpath(root, "**/*.md", false, true) end
+local function glob_files(root) return vim.fn.globpath(globbable(root), "**/*.md", false, true) end
 
 --- Scan a candidate file list for links resolving to `wanted` (a normalized,
 --- lower-cased absolute path). Reads each file fully so fenced code blocks are

@@ -9,6 +9,7 @@ local notify = require("markdown.util.notify").create("[markdown.commands.links]
 local M = {}
 
 local uv = vim.uv or vim.loop
+local globbable = require("lib.nvim.fs.globbable")
 
 -- ---------------------------------------------------------------------------
 -- create (delegates to the existing filesystem-link generator)
@@ -62,7 +63,7 @@ local function collect(scope)
 
   if scope == "cwd" then
     local out = {}
-    local md_files = vim.fn.globpath(vim.fn.getcwd(), "**/*.md", false, true)
+    local md_files = vim.fn.globpath(globbable(vim.fn.getcwd()), "**/*.md", false, true)
     for _, path in ipairs(md_files) do
       for _, lk in ipairs(links_from_file(path)) do
         out[#out + 1] = lk
@@ -251,7 +252,7 @@ local function do_sanitize(argv)
   end
 
   if scope == "cwd" then
-    local files = vim.fn.globpath(vim.fn.getcwd(), "**/*.md", false, true)
+    local files = vim.fn.globpath(globbable(vim.fn.getcwd()), "**/*.md", false, true)
     local total, touched = 0, 0
     for _, path in ipairs(files) do
       local n = sanitize.path(path)
