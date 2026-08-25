@@ -34,9 +34,9 @@ jobs:
   lint:
     name: lint (stylua + luacheck)
     runs-on: ubuntu-latest
-    # Advisory until a one-time `stylua .` + luacheck cleanup has landed.
-    # The `test` job is the authoritative gate.
-    continue-on-error: true
+    # Was advisory pending the one-time `stylua .` + luacheck cleanup. Both
+    # have landed and run clean, so this is a real gate again -- otherwise the
+    # formatting simply drifts back.
     steps:
       - uses: actions/checkout@v4
       - name: stylua --check
