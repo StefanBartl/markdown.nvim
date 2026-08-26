@@ -119,11 +119,16 @@
 ---@field operations Mkdn.FencedScopeOps # Per-operation opt-out.
 
 --- Per-binding keymap override, keyed by the ids in
---- `markdown.bindings.keymaps.defaults()`:
+--- `markdown.bindings.keymaps.defaults()` and
+--- `markdown.bindings.keymaps.tableview_defaults()`:
 ---   * `false`                         disable this binding
 ---   * `string`                        remap to a new lhs (same mode)
+---   * `string[]`                      several keys for the same action
 ---   * `{ lhs?: string, mode?: string|string[] }`  remap lhs and/or mode
----@alias Mkdn.KeymapOverride boolean|string|{ lhs?: string, mode?: string|string[] }
+---
+--- An id that matches no binding is reported (with its nearest match) rather
+--- than silently ignored.
+---@alias Mkdn.KeymapOverride boolean|string|string[]|{ lhs?: string, mode?: string|string[] }
 
 ---@alias Mkdn.TableAlign "left"|"center"|"right"
 

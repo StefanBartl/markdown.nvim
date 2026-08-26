@@ -97,7 +97,7 @@ function M.check()
   end
 
   -- Optional which-key integration.
-  if require("markdown.bindings.which_key").available() then
+  if pcall(require, "which-key") then
     ok('which-key detected (<leader>t grouped as "Markdown")')
   else
     info("which-key not found — mappings still carry their own descriptions")

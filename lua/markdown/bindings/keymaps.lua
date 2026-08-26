@@ -8,29 +8,20 @@
 --- can bind the same functions via `require("markdown").actions`.
 --- `apply_tableview` installs the `<leader>tv*` TableView keys, which drive the
 --- `:TableView*` commands and are independent of `enable_keymaps`.
+---
+--- Both go through `lib.nvim.bindings.keymap`'s registry. The config shape is
+--- unchanged -- `keymaps[id]` still takes `false`, an lhs, or
+--- `{ lhs = ..., mode = ... }` -- and three things are new: an override may be
+--- a *list* of keys, a wrong id is reported with its nearest match instead of
+--- being silently ignored, and the TableView keys are overridable at all
+--- (`keymaps.tableview_toggle = "<leader>mt"`), which they were not.
 
-local notify = require("markdown.util.notify").create("[markdown.bindings.keymaps]")
-local libmap = require("lib.nvim.bindings.keymap")
+local libkeymap = require("lib.nvim.bindings.keymap")
 
 local M = {}
 
 local cfg = require("markdown.config").get
 local actions = require("markdown.bindings.actions")
-
----@internal
----@param bufnr integer
----@param mode string|string[]
----@param lhs string
----@param rhs string|fun()
----@param desc string
-local function map(bufnr, mode, lhs, rhs, desc)
-  local ok, err = pcall(libmap, mode, lhs, rhs, {
-    buffer = bufnr,
-    silent = true,
-    desc = "[markdown.nvim] " .. desc,
-  })
-  if not ok then notify.warn("keymap failed " .. lhs .. ": " .. tostring(err)) end
-end
 
 -- Default editing keymaps as DATA, each with a stable `id` the user config can
 -- target. `flag` (optional) is a legacy boolean option that still gates the
@@ -246,23 +237,67 @@ local DEFAULT_KEYMAPS = {
 ---@return table[]
 function M.defaults() return DEFAULT_KEYMAPS end
 
+--- The TableView keys, in declaration order.
+---@type { id: string, lhs: string, cmd: string, desc: string }[]
+local TABLEVIEW_KEYMAPS = {
+  {
+    id = "tableview_toggle",
+    lhs = "<leader>tvt",
+    cmd = "TableViewToggle",
+    desc = "Toggle table preview at cursor",
+  },
+  {
+    id = "tableview_box",
+    lhs = "<leader>tvx",
+    cmd = "TableViewBox",
+    desc = "Toggle box-drawing table preview",
+  },
+  {
+    id = "tableview_select",
+    lhs = "<leader>tvs",
+    cmd = "TableViewSelect",
+    desc = "Select and preview table",
+  },
+  {
+    id = "tableview_browser",
+    lhs = "<leader>tvb",
+    cmd = "TableViewOpenBrowser",
+    desc = "Open table in browser",
+  },
+  { id = "tableview_close", lhs = "<leader>tvc", cmd = "TableViewClose", desc = "Close TableView" },
+  {
+    id = "tableview_mode",
+    lhs = "<leader>tvm",
+    cmd = "Markdown table mode toggle",
+    desc = "Toggle table auto-format mode",
+  },
+}
+
 --- Install the default editing keymaps for `bufnr`.
 --- No-op when `enable_keymaps = false`.
 ---
 --- Per-binding control via `config.keymaps[id]`:
----   * `false`                       — disable this binding
----   * `"<newlhs>"`                  — remap to a new key (same mode)
----   * `{ lhs = "<newlhs>", mode = … }` — remap key and/or mode
+---   * `false`                       -- disable this binding
+---   * `"<newlhs>"`                  -- remap to a new key (same mode)
+---   * `{ "<lhs1>", "<lhs2>" }`      -- several keys for the same action
+---   * `{ lhs = "<newlhs>", mode = ... }` -- remap key and/or mode
 --- The legacy boolean flags (`map_double_asterisk`, `map_wrap_link`,
 --- `use_zf_override`) still disable their bindings when set to false.
 ---@param bufnr integer
----@return nil
+---@return Lib.Keymap.Registered[]
 function M.apply(bufnr)
-  if type(bufnr) ~= "number" then return end
-  if cfg().enable_keymaps == false then return end
+  if type(bufnr) ~= "number" then return {} end
+  if cfg().enable_keymaps == false then return {} end
 
   local feat = require("markdown.config").feature_enabled
   local overrides = cfg().keymaps or {}
+
+  ---@type table<string, Lib.Keymap.Action>
+  local decl = {}
+  ---@type string[]
+  local order = {}
+  ---@type table<string, string|string[]|false>
+  local user = {}
 
   for _, spec in ipairs(DEFAULT_KEYMAPS) do
     -- Legacy flag gate (e.g. map_double_asterisk = false).
@@ -273,42 +308,91 @@ function M.apply(bufnr)
     local feature_off = not feat(spec.feature or "keymaps")
     local ov = overrides[spec.id]
 
-    if not flag_off and not feature_off and ov ~= false then
-      local lhs, mode = spec.lhs, spec.mode
-      if type(ov) == "string" then
-        lhs = ov
-      elseif type(ov) == "table" then
-        lhs = ov.lhs or lhs
-        mode = ov.mode or mode
-      end
+    local mode = spec.mode
+    -- An override may move the binding to another mode. That is the one part
+    -- of the override the registry cannot read for itself: it takes the lhs
+    -- from the user's table and everything else from the declaration, so the
+    -- mode has to be folded into the declaration here.
+    if type(ov) == "table" and ov.mode then mode = ov.mode end
 
-      local fn = actions[spec.action]
-      if fn then map(bufnr, mode, lhs, fn, spec.desc) end
-    end
+    decl[spec.id] = {
+      default = spec.lhs,
+      mode = mode,
+      rhs = actions[spec.action],
+      desc = spec.desc,
+      opts = { silent = true },
+    }
+    order[#order + 1] = spec.id
+
+    -- A gate switched off is expressed as "this key is not bound", not as
+    -- "there is no such action": `:checkhealth` and the generated docs ask
+    -- what EXISTS, and those are different answers.
+    if flag_off or feature_off then user[spec.id] = false end
   end
+
+  -- Everything the user wrote that is not a TableView id, whether or not it
+  -- names a real action: unknown ids are exactly what the registry reports,
+  -- and pre-filtering them out would throw away the typo along with the
+  -- report. The TableView ids live in the same table and belong to the other
+  -- surface, so they are the one thing removed here.
+  local tableview_id = {}
+  for _, spec in ipairs(TABLEVIEW_KEYMAPS) do
+    tableview_id[spec.id] = true
+  end
+  for id, ov in pairs(overrides) do
+    if not tableview_id[id] and user[id] == nil then user[id] = ov end
+  end
+
+  return libkeymap.register(
+    "markdown.nvim",
+    { order = order, actions = decl },
+    user,
+    { buffer = bufnr, surface = "editing" }
+  )
 end
+
+--- The TableView keymap specs, exposed for docs/tooling.
+---@return table[]
+function M.tableview_defaults() return TABLEVIEW_KEYMAPS end
 
 --- Install the buffer-local TableView keys (`<leader>tv*`) for `bufnr`.
 --- These drive the `:TableView*` commands and are independent of enable_keymaps.
+---
+--- Overridable by id through the same `config.keymaps` table as the editing
+--- keys -- they were fixed strings before, which made `<leader>tv*` the one
+--- prefix in this plugin nobody could move.
 ---@param bufnr integer
----@return nil
+---@return Lib.Keymap.Registered[]
 function M.apply_tableview(bufnr)
-  if type(bufnr) ~= "number" then return end
+  if type(bufnr) ~= "number" then return {} end
   local ft = vim.bo[bufnr].filetype
-  if not ft or not ft:match("markdown") then return end
-  if not require("markdown.config").feature_enabled("tableview") then return end
+  if not ft or not ft:match("markdown") then return {} end
+  if not require("markdown.config").feature_enabled("tableview") then return {} end
 
-  map(bufnr, "n", "<leader>tvt", "<Cmd>TableViewToggle<CR>", "Toggle table preview at cursor")
-  map(bufnr, "n", "<leader>tvx", "<Cmd>TableViewBox<CR>", "Toggle box-drawing table preview")
-  map(bufnr, "n", "<leader>tvs", "<Cmd>TableViewSelect<CR>", "Select and preview table")
-  map(bufnr, "n", "<leader>tvb", "<Cmd>TableViewOpenBrowser<CR>", "Open table in browser")
-  map(bufnr, "n", "<leader>tvc", "<Cmd>TableViewClose<CR>", "Close TableView")
-  map(
-    bufnr,
-    "n",
-    "<leader>tvm",
-    "<Cmd>Markdown table mode toggle<CR>",
-    "Toggle table auto-format mode"
+  local overrides = cfg().keymaps or {}
+
+  ---@type table<string, Lib.Keymap.Action>
+  local decl = {}
+  ---@type string[]
+  local order = {}
+  ---@type table<string, string|string[]|false>
+  local user = {}
+  for _, spec in ipairs(TABLEVIEW_KEYMAPS) do
+    decl[spec.id] = {
+      default = spec.lhs,
+      rhs = ("<Cmd>%s<CR>"):format(spec.cmd),
+      desc = spec.desc,
+      opts = { silent = true },
+    }
+    order[#order + 1] = spec.id
+    if overrides[spec.id] ~= nil then user[spec.id] = overrides[spec.id] end
+  end
+
+  return libkeymap.register(
+    "markdown.nvim",
+    { order = order, actions = decl },
+    user,
+    { buffer = bufnr, surface = "tableview" }
   )
 end
 

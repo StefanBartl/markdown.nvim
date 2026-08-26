@@ -73,14 +73,19 @@ way in.
 Buffer-local on markdown buffers; they open/close the popup from the source
 buffer. Each is a thin wrapper around the corresponding command.
 
-| lhs | mode | command | desc |
-| --- | --- | --- | --- |
-| `<leader>tvt` | n | `:TableViewToggle` | Toggle table preview (config default style) |
-| `<leader>tvx` | n | `:TableViewBox` | Toggle table preview (box-drawing style) |
-| `<leader>tvs` | n | `:TableViewSelect` | Select and preview table |
-| `<leader>tvb` | n | `:TableViewOpenBrowser` | Open table in browser (basic HTML) |
-| `<leader>tvc` | n | `:TableViewClose` | Close TableView |
-| `<leader>tvm` | n | `:Markdown table mode toggle` | Toggle table mode (auto-format) |
+| lhs | mode | id | command | desc |
+| --- | --- | --- | --- | --- |
+| `<leader>tvt` | n | `tableview_toggle` | `:TableViewToggle` | Toggle table preview (config default style) |
+| `<leader>tvx` | n | `tableview_box` | `:TableViewBox` | Toggle table preview (box-drawing style) |
+| `<leader>tvs` | n | `tableview_select` | `:TableViewSelect` | Select and preview table |
+| `<leader>tvb` | n | `tableview_browser` | `:TableViewOpenBrowser` | Open table in browser (basic HTML) |
+| `<leader>tvc` | n | `tableview_close` | `:TableViewClose` | Close TableView |
+| `<leader>tvm` | n | `tableview_mode` | `:Markdown table mode toggle` | Toggle table mode (auto-format) |
+
+These are overridable by id through the same `keymaps` table as the editing
+keys (`keymaps = { tableview_toggle = "<leader>mt" }`) — they were fixed
+strings before, which made `<leader>tv*` the one prefix here nobody could
+move.
 
 ## Keymaps — inside the TableView popup
 
