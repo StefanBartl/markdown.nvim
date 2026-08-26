@@ -80,7 +80,7 @@ Included subsystems:
 
   * Neovim >= 0.9
   * lib.nvim (https://github.com/StefanBartl/lib.nvim) — REQUIRED. Supplies
-    the :Markdown/:TableView* command layer (lib.nvim.usercmd.composer) and
+    the :Markdown/:TableView* command layer (lib.nvim.bindings.usercmd.composer) and
     core/table_mode.lua's buffer debouncing.
 
 No other external tools required. Every other feature uses built-in Neovim

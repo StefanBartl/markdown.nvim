@@ -37,7 +37,7 @@ GFM table (`tableize`), and jump between cells.
   [keymaps.md](../keymaps.md#tableview) and the `table_next_cell`/
   `table_prev_cell` ids
 - Requires `lib.nvim.debounce.buffer` for its auto-format debounce (the one
-  hard runtime dependency beyond `lib.nvim.usercmd.composer`).
+  hard runtime dependency beyond `lib.nvim.bindings.usercmd.composer`).
 
 ## `tableview` — floating browser + export
 

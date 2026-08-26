@@ -1,7 +1,7 @@
 ---@module 'markdown.hl_options'
 local M = {}
 
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 local blockquote = require("markdown.hl_options.hl_groups.blockquote")
 local link = require("markdown.hl_options.hl_groups.link")
 

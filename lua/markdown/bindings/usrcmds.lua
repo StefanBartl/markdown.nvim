@@ -1,6 +1,6 @@
 ---@module 'markdown.bindings.usrcmds'
 ---@brief User commands: the global `:Markdown` plus buffer-local commands,
---- built via lib.nvim.usercmd.composer.
+--- built via lib.nvim.bindings.usercmd.composer.
 ---@description
 --- `apply` creates the global `:Markdown` dispatcher (once) and the buffer-local
 --- `OpenWithSystemApplication`. `apply_tableview` creates the buffer-local
@@ -17,7 +17,7 @@
 --- per-subcommand delegation table.
 
 local notify = require("markdown.util.notify").create("[markdown.bindings.usrcmds]")
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 
 local M = {}
 

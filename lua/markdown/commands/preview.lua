@@ -3,7 +3,7 @@
 --- Tracks an "active" flag and refreshes the preview on BufEnter for *.md while
 --- active. markdown-preview.nvim is an optional host dependency.
 local notify = require("markdown.util.notify").create("[markdown.commands.preview]")
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 

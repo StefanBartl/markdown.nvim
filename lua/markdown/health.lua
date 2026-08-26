@@ -78,9 +78,9 @@ function M.check()
   end
 
   -- lib.nvim: required for the :Markdown/:TableView* command layer
-  -- (lib.nvim.usercmd.composer) and core/table_mode.lua's buffer debouncing,
+  -- (lib.nvim.bindings.usercmd.composer) and core/table_mode.lua's buffer debouncing,
   -- both unconditional requires with no pcall.
-  if pcall(require, "lib.nvim.usercmd.composer") then
+  if pcall(require, "lib.nvim.bindings.usercmd.composer") then
     ok("lib.nvim detected (:Markdown/:TableView* command layer available)")
   else
     warn(
@@ -140,7 +140,7 @@ function M.check()
     end
   end
 
-  require("lib.nvim.usercmd.composer").checkhealth("Markdown")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("Markdown")
 end
 
 return M

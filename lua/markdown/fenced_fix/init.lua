@@ -1,6 +1,6 @@
 ---@module 'markdown.fenced_fix'
 local notify = require("markdown.util.notify").create("[markdown.fenced_fix]")
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 

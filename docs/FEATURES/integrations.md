@@ -93,5 +93,5 @@ both which-key v3 (`wk.add`) and v2 (`wk.register`).
 
 Not an optional integration — the one hard runtime dependency. Supplies the
 `:Markdown`/`:TableView*`/`:MDTable*` command layer
-(`lib.nvim.usercmd.composer`) and `core/table_mode.lua`'s auto-format
+(`lib.nvim.bindings.usercmd.composer`) and `core/table_mode.lua`'s auto-format
 debounce (`lib.nvim.debounce.buffer`).

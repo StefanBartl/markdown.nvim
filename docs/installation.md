@@ -5,7 +5,7 @@
 | Tool | Required | Purpose |
 |------|----------|---------|
 | Neovim | **>= 0.9** | core |
-| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.usercmd.composer`), plus buffer debouncing |
+| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.bindings.usercmd.composer`), plus buffer debouncing |
 
 No other external tools required beyond lib.nvim — every other feature runs
 on built-in Neovim APIs.

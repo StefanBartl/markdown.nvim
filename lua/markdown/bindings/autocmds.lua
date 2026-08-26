@@ -8,7 +8,7 @@
 --- (mirroring the previous behavior). All augroups are cleared on every setup().
 
 local notify = require("markdown.util.notify").create("[markdown.bindings.autocmds]")
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 
