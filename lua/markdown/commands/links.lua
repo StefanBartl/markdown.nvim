@@ -312,9 +312,34 @@ function M.run(argv)
   do_create(argv)
 end
 
+--- Completion for `:Markdown links …`: the sub-subcommand, then whatever that
+--- sub takes — `show`'s scope (`%` | `cwd` | a file), `create`'s paths.
 ---@param arglead string
+---@param cmdline string?
 ---@return string[]
-function M.complete(arglead)
+function M.complete(arglead, cmdline)
+  -- tokens: Markdown(1) links(2) <sub>(3) <arg>(4…). The slot being completed
+  -- is one past the last token when arglead is empty, else the last token.
+  local tokens = vim.split(vim.trim(cmdline or ""), "%s+")
+  local sub = tokens[3]
+  local slot = (arglead == "") and (#tokens + 1) or #tokens
+
+  if sub and slot >= 4 then
+    if sub == "show" then
+      -- One scope argument only; nothing to offer past it.
+      if slot > 4 then return {} end
+      local out = {}
+      if vim.startswith("%", arglead) then out[#out + 1] = "%" end
+      if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
+      vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
+      return out
+    end
+    -- `create` takes one or more filesystem paths (plus its own -r flag,
+    -- which markdown_links parses); `check` takes nothing.
+    if sub == "create" then return vim.fn.getcompletion(arglead, "file") end
+    return {}
+  end
+
   local out = {}
   for name in pairs(subcommands) do
     if vim.startswith(name, arglead) then out[#out + 1] = name end

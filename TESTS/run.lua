@@ -82,6 +82,7 @@ local specs = {
   "browser_session_spec.lua",
   "fenced_scope_spec.lua",
   "session_features_spec.lua",
+  "usrcmd_complete_spec.lua",
 }
 
 local failed = 0

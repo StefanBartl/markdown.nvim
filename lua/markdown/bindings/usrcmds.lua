@@ -245,11 +245,25 @@ local SUBCOMMAND_NAMES = {
   "export",
 }
 
+-- How many positional slots each :Markdown route declares. Completion stops at
+-- the last declared slot (composer has no variadic arg), and the deepest
+-- surface here is `:Markdown table format <opt> <opt> ...` — an open-ended run
+-- of option tokens. Six covers every documented invocation with room to spare;
+-- tokens past it still EXECUTE fine (the handler reads ctx.raw.fargs, not the
+-- bound args), they just stop offering <Tab>.
+local MAX_SUBARGS = 6
+
 composer.register_type("MARKDOWN_SUBARG", {
   validate = function(raw) return true, raw, nil end,
-  complete = function(arg_lead, spec)
-    local synthetic = "Markdown " .. spec.subcmd .. " " .. arg_lead
-    local ok, result = pcall(require("markdown.commands").complete, arg_lead, synthetic, 0)
+  -- `cmd_line` is the real command line, forwarded by composer's argtypes.
+  -- markdown.commands.complete() decides which nested completer to delegate to
+  -- by counting the tokens in it, so anything reconstructed from `arg_lead`
+  -- alone pins every slot to the first argument. The synthetic fallback only
+  -- applies when there is no command line to read (a direct call in a test).
+  complete = function(arg_lead, spec, cmd_line)
+    local line = cmd_line
+    if not line or line == "" then line = "Markdown " .. spec.subcmd .. " " .. arg_lead end
+    local ok, result = pcall(require("markdown.commands").complete, arg_lead, line, #line)
     return (ok and result) or {}
   end,
 })
@@ -282,9 +296,13 @@ local function create_markdown_command()
   local routes = {}
   for _, name in ipairs(SUBCOMMAND_NAMES) do
     if enabled(name) then
+      local args = {}
+      for i = 1, MAX_SUBARGS do
+        args[i] = { name = "a" .. i, type = "MARKDOWN_SUBARG", optional = true, subcmd = name }
+      end
       routes[#routes + 1] = {
         path = { name },
-        args = { { name = "a1", type = "MARKDOWN_SUBARG", optional = true, subcmd = name } },
+        args = args,
         run = function(ctx)
           commands_mod.execute(ctx.raw.fargs, {
             range = ctx.raw.range,
