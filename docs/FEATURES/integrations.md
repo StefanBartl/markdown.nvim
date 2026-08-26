@@ -88,6 +88,9 @@ both which-key v3 (`wk.add`) and v2 (`wk.register`).
 
 ## lib.nvim (required, not soft)
 
+- **Module:** `bindings/usrcmds.lua` (the command layer), `core/table_mode.lua` (the debounce)
+- **Dependency:** lib.nvim — hard, not soft: without it the commands do not exist
+
 Not an optional integration — the one hard runtime dependency. Supplies the
 `:Markdown`/`:TableView*`/`:MDTable*` command layer
 (`lib.nvim.usercmd.composer`) and `core/table_mode.lua`'s auto-format
