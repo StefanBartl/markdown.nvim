@@ -22,6 +22,14 @@ fenced-scope block where you don't want the outer separator convention).
 with a different count re-derives the TOC from scratch — it doesn't merge
 with whatever was there.
 
+**It also checks for skipped heading levels on every refresh** (an H1 followed
+directly by an H3), reports them and offers to renumber the offending headings
+on the spot. That is a sub-behaviour of TOC generation rather than a feature of
+its own, which is why it is on by default (`check_heading_gaps`) and overridable
+per call with `--check-gaps`/`--no-check-gaps`. `:Markdown gaps` runs the check
+alone — reach for that on somebody else's document, where you want to see the
+structure problem before touching the file.
+
 ## Renaming headings: pick `refs.mode` for how you actually write
 
 `core/refs.lua` keeps `[text](#anchor)` links and the TOC in sync when a
@@ -121,6 +129,69 @@ provider being "installed". `:checkhealth markdown` doesn't check for any
 of the three providers, so a silent no-op there isn't a bug report waiting
 to happen — check `require("markdown.util.image_preview").detect()`
 directly if `mi` isn't previewing and you expect it to.
+
+## Two link-hygiene passes, and they answer different questions
+
+`:Markdown links check` answers *does this target exist* — it publishes
+diagnostics and mirrors the findings into the **quickfix** list, so the loop is
+`:copen` and work the list. Quickfix rather than the location list on purpose:
+`refs check` in this same plugin already set that precedent, and two sibling
+`check` subcommands landing in different lists is the odder outcome.
+
+`:Markdown links sanitize` answers the other one — *is this target written the
+way this project writes targets*. It normalizes inline-link spelling only:
+backslashes become forward slashes, and a bare relative path gains its `./`
+(`[t](doc.md)` → `[t](./doc.md)`). URLs, scheme targets, anchors, absolute
+paths and `~`-relative paths are left alone, so it is safe to run over a
+document you did not write.
+
+It also runs on `BufWritePre` unless `links.sanitize_on_save = false` — the
+same shape as `refs.mode = "save"`. Which means in normal use you never type
+it: the one time to reach for `:Markdown links sanitize cwd` by hand is right
+after importing a tree of documents written on Windows, where every link is
+backslashed at once.
+
+## `:Markdown list headings` when you know the heading, the TOC when you are structuring
+
+The TOC is a *document artifact* — it belongs in the file and it is regenerated.
+`:Markdown list headings` is navigation and writes nothing: it collects ATX
+headings for a scope and jumps to the chosen one, opening the file first if the
+heading is in another one.
+
+The scope vocabulary is the same as `:Markdown links show`: `%` for this
+buffer, `cwd` for every `*.md` beneath the working directory, or a named file.
+`cwd` is the one worth the habit — "which document was that section in" is a
+question no single-file TOC can answer.
+
+It skips frontmatter and fenced code blocks, so its results match what
+`:Markdown toc` would generate rather than being a superset that includes
+`# comments` inside a shell block.
+
+## A captioned image is HTML, and it stays live now
+
+Captioning a picture in Markdown means an HTML `<figure>` block or a pandoc
+implicit figure. The block form renders everywhere, and it used to go dark
+inside Neovim the moment it appeared: none of the link machinery read HTML, so
+adding a caption cost the picture its hover preview, its `mi`, its picker entry
+and its dead-link check all at once.
+
+`src`/`href` out of `<img>`, `<a>`, `<source>`, `<video>`, `<audio>`, `<embed>`
+and `<iframe>` now resolve in the same shape the Markdown scanner produces, and
+a multi-line `<figure>` resolves as one unit. Practical consequence: you no
+longer have to choose between a caption and the tooling — and if a link check
+suddenly reports targets it never mentioned before, this is why.
+
+## Hover, then escalate — one key deeper instead of a different command
+
+The hover shows what is under the cursor; `hover_escalate()` hands the same
+target to whatever already owns the full view — mdview.nvim for Markdown,
+`images.zen` for a picture, and the existing PDF/file/URL openers otherwise. No
+new opener logic, and **no default keymap**: it is worth binding if you read
+more than you write, and worth leaving unbound if the hover is usually enough.
+
+The picture case takes an explicit path rather than going through images.nvim's
+own under-cursor resolution, so it escalates the link you are looking at even
+where the two would disagree.
 
 ## Underline headings: run it once, not as a habit
 

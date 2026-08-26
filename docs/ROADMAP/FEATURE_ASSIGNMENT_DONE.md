@@ -1,4 +1,9 @@
-# Diese feaures in FEATURES korrekt zurodnen
+# Assigning these features to their FEATURES themes
+
+A closed working note. Every entry below is struck through: each of these
+features has been filed into its theme in `docs/FEATURES/`. Kept as the record
+of what moved where, not as open work.
+
 
 - ~~**Telescope / fzf-lua picker backends**~~ — `links.picker` supports
   `"telescope"` / `"fzf"` (soft deps) alongside `"hover_select"` / `"select"`
