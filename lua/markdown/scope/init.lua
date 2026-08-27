@@ -188,11 +188,14 @@ end
 ---@type table<integer, { tick: integer, blocks: { content_start: integer, content_end: integer, is_md: boolean }[] }>
 local fold_cache = {}
 
-api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
-  group = api.nvim_create_augroup("MarkdownNvimScopeFoldCache", { clear = true }),
-  callback = function(ev) fold_cache[ev.buf] = nil end,
-  desc = "[markdown.nvim] Invalidate scope fold cache on buffer delete",
-})
+require("lib.nvim.bindings.autocmd").create(
+  { "BufDelete", "BufWipeout" },
+  function(ev) fold_cache[ev.buf] = nil end,
+  {
+    group = "MarkdownNvimScopeFoldCache",
+    desc = "[markdown.nvim] Invalidate scope fold cache on buffer delete",
+  }
+)
 
 ---@param bufnr integer
 ---@return { content_start: integer, content_end: integer, is_md: boolean }[]

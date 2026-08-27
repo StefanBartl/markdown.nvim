@@ -303,14 +303,14 @@ end
 local function remember_page(key, png)
   if not _cleanup_hooked then
     _cleanup_hooked = true
-    vim.api.nvim_create_autocmd("VimLeavePre", {
+    require("lib.nvim.bindings.autocmd").create("VimLeavePre", function()
+      for _, file in pairs(_pages) do
+        pcall(os.remove, file)
+      end
+      _pages = {}
+    end, {
+      group = "MarkdownNvimHoverMedia",
       desc = "markdown.nvim: delete rasterized PDF hover pages",
-      callback = function()
-        for _, file in pairs(_pages) do
-          pcall(os.remove, file)
-        end
-        _pages = {}
-      end,
     })
   end
 

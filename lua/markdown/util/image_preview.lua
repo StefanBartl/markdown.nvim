@@ -89,12 +89,13 @@ local function wire_close(buf, win, on_close)
 
   -- Also covers the window being closed some other way (:q, <C-w>c), so an
   -- image.nvim placement is never left rendered over an unrelated buffer.
-  vim.api.nvim_create_autocmd("WinClosed", {
+  require("lib.nvim.bindings.autocmd").create("WinClosed", function()
+    if on_close then pcall(on_close) end
+  end, {
+    group = "MarkdownNvimImagePreview",
     pattern = tostring(win),
     once = true,
-    callback = function()
-      if on_close then pcall(on_close) end
-    end,
+    desc = "[markdown.nvim] image preview: clear the placement when its window closes",
   })
 end
 

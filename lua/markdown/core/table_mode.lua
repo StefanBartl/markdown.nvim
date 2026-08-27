@@ -16,6 +16,7 @@
 --- header/cell alignment config and separator style stay consistent with
 --- `:Markdown table format`.
 
+local autocmd = require("lib.nvim.bindings.autocmd")
 local fmt = require("markdown.core.table_fmt")
 local lib_debounce_buffer = require("lib.nvim.debounce.buffer")
 
@@ -96,7 +97,7 @@ function M.enable(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   if S[bufnr] then return end
 
-  local aug = api.nvim_create_augroup("MarkdownNvimTableMode_" .. bufnr, { clear = true })
+  local aug = autocmd.group("MarkdownNvimTableMode_" .. bufnr, true)
   S[bufnr] = { aug = aug, busy = false }
 
   local function schedule()
@@ -105,16 +106,15 @@ function M.enable(bufnr)
     _debounce.call(bufnr)
   end
 
-  api.nvim_create_autocmd({ "InsertLeave", "TextChanged" }, {
+  autocmd.create({ "InsertLeave", "TextChanged" }, schedule, {
     group = aug,
     buffer = bufnr,
-    callback = schedule,
     desc = "[markdown.nvim] table mode: auto-format",
   })
-  api.nvim_create_autocmd("BufWipeout", {
+  autocmd.create("BufWipeout", function() M.disable(bufnr) end, {
     group = aug,
     buffer = bufnr,
-    callback = function() M.disable(bufnr) end,
+    desc = "[markdown.nvim] table mode: disable when the buffer is wiped",
   })
 end
 

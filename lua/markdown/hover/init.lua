@@ -22,6 +22,7 @@ local M = {}
 
 local api = vim.api
 
+local autocmd = require("lib.nvim.bindings.autocmd")
 local classify = require("markdown.hover.classify")
 local float = require("markdown.hover.float")
 local notify = require("markdown.util.notify").create("[markdown.hover]")
@@ -344,14 +345,14 @@ function M.attach(bufnr)
   local c = cfg()
   if c.enabled == false then return end
 
-  local group = api.nvim_create_augroup("MarkdownHover" .. bufnr, { clear = true })
+  local group = autocmd.group("MarkdownHover" .. bufnr, true)
   local triggers = c.trigger or { "CursorHold" }
 
   if vim.tbl_contains(triggers, "CursorHold") then
-    api.nvim_create_autocmd("CursorHold", {
+    autocmd.create("CursorHold", function() M.trigger() end, {
       group = group,
       buffer = bufnr,
-      callback = function() M.trigger() end,
+      desc = "[markdown.nvim] hover: show the link under the cursor on CursorHold",
     })
   end
 
@@ -359,17 +360,17 @@ function M.attach(bufnr)
     -- Mouse hovering needs `mousemoveevent`; it is a global user setting and
     -- is deliberately NOT set here (see README) -- without it this autocmd
     -- simply never fires.
-    api.nvim_create_autocmd("CursorMoved", {
+    autocmd.create("CursorMoved", function() M.trigger() end, {
       group = group,
       buffer = bufnr,
-      callback = function() M.trigger() end,
+      desc = "[markdown.nvim] hover: show the link under the mouse (needs 'mousemoveevent')",
     })
   end
 
-  api.nvim_create_autocmd({ "BufLeave", "InsertEnter" }, {
+  autocmd.create({ "BufLeave", "InsertEnter" }, function() M.hide() end, {
     group = group,
     buffer = bufnr,
-    callback = function() M.hide() end,
+    desc = "[markdown.nvim] hover: hide when leaving the buffer or entering insert",
   })
 end
 

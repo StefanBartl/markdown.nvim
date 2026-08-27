@@ -13,6 +13,7 @@
 local M = {}
 
 local api = vim.api
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 ---@type integer|nil
 local _win = nil
@@ -144,13 +145,14 @@ function M.open(lines, opts)
   -- Dismiss on the next thing the user does. `CursorMoved` alone is not
   -- enough: leaving insert mode or switching windows must also clear it, or
   -- a stale hover outlives the context it described.
-  _augroup = api.nvim_create_augroup("MarkdownHoverDismiss", { clear = true })
-  api.nvim_create_autocmd(
+  _augroup = autocmd.group("MarkdownHoverDismiss", true)
+  autocmd.create(
     { "CursorMoved", "CursorMovedI", "InsertEnter", "BufLeave", "WinScrolled" },
+    function() M.close(opts.on_close) end,
     {
       group = _augroup,
       once = true,
-      callback = function() M.close(opts.on_close) end,
+      desc = "[markdown.nvim] hover: dismiss on the next cursor move or mode change",
     }
   )
 

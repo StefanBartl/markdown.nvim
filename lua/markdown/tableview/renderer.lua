@@ -3,6 +3,7 @@ local M = {}
 
 local hl = vim.highlight
 local api = vim.api
+local autocmd = require("lib.nvim.bindings.autocmd")
 local window = require("lib.nvim.window")
 local notify = require("markdown.util.notify").create("[markdown.tableview.renderer]")
 
@@ -454,9 +455,9 @@ local function ensure_view(opts)
   -- `:w` in the popup writes row-order/content edits back to wherever the
   -- table(s) actually came from (source buffer or file — see M.write_back).
   -- BufWriteCmd is the standard way to give a `nofile` buffer a working `:w`.
-  api.nvim_create_autocmd("BufWriteCmd", {
+  autocmd.create("BufWriteCmd", function() M.write_back() end, {
+    group = autocmd.group("MarkdownNvimTableView", true),
     buffer = state.buf,
-    callback = function() M.write_back() end,
     desc = "[markdown.nvim] TableView: write row edits back to source",
   })
 
