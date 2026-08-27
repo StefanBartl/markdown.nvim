@@ -63,6 +63,11 @@ require("markdown").setup({
     enabled = true,
     trigger = { "CursorHold" },  -- add "mouse" to follow the pointer
     delay_ms = 250,
+    -- How long an async preview (image, rasterized PDF page) may take before
+    -- it is allowed to interrupt you with a "rendering…" placeholder. Below
+    -- this, waiting quietly reads as instant; above it, silence reads as
+    -- breakage. "Instant" is a property of the machine, hence the knob.
+    placeholder_grace_ms = 250,
     max_lines = 20,
     max_width = 80,
     border = "rounded",
