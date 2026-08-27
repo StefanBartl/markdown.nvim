@@ -39,6 +39,7 @@
 ---@field enabled boolean # Master switch. Default true.
 ---@field trigger Mkdn.HoverTrigger[] # What opens a hover. `"mouse"` additionally needs `:set mousemoveevent`.
 ---@field delay_ms integer # Debounce before the float opens. Default 250.
+---@field placeholder_grace_ms integer # How long an async preview may take before a "rendering…" placeholder is shown. Default 250.
 ---@field max_lines integer # Preview line cap (also the float's max height). Default 20.
 ---@field max_width integer # Float width cap, in display columns. Default 80.
 ---@field border string|string[] # `nvim_open_win` border. Default "rounded".

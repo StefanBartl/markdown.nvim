@@ -114,7 +114,18 @@ end
 --- How long an async preview may take before it is allowed to interrupt the
 --- reader with a placeholder. Below this, waiting quietly and showing only
 --- the result reads as instant; above it, silence reads as breakage.
-local PLACEHOLDER_GRACE_MS = 250
+---
+--- Configurable as `hover.placeholder_grace_ms`, because "instant" is a
+--- property of the machine: on a fast one 250ms hides every placeholder that
+--- would only have flickered, on a slow one it hides the reassurance that
+--- something is happening at all.
+---@return integer
+local function placeholder_grace_ms()
+  local ok, config = pcall(require, "markdown.config")
+  if not ok or type(config.get) ~= "function" then return 250 end
+  local n = ((config.get() or {}).hover or {}).placeholder_grace_ms
+  return (type(n) == "number" and n >= 0) and n or 250
+end
 
 ---@internal
 --- Build the content for `target`, then hand it to `emit`. Synchronous
@@ -162,7 +173,7 @@ local function build(target, bufnr, opts, emit)
       vim.defer_fn(function()
         if settled or generation ~= _generation then return end
         emit(provisional)
-      end, PLACEHOLDER_GRACE_MS)
+      end, placeholder_grace_ms())
     end
   elseif target.type == "url" then
     local url = require("markdown.hover.preview.url")
