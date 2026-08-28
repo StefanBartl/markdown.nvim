@@ -70,23 +70,18 @@ function M.setup(cfg)
   -- CursorHold/mouse autocmds and re-checks the config itself, so toggling
   -- it off at runtime takes effect without re-running setup().
   if feat("hover") and (cfg.hover and cfg.hover.enabled) ~= false then
-    local aug_hover = api.nvim_create_augroup("MarkdownNvimHover", { clear = true })
-    -- Push this plugin's hover block into the framework and register its
-    -- markdown contributions once, here rather than per buffer: the config is
-    -- global, and `attach` would otherwise re-apply it on every FileType.
+    -- No autocmd of our own: `lib.nvim.hover.enable` installs the FileType
+    -- trigger (and attaches to already-open buffers), because the hover is not
+    -- a markdown feature and must not be gated on this plugin having loaded.
+    -- `configure` registers markdown.nvim's link source and section previews
+    -- and hands over this plugin's `hover` block; `enable` then turns it on.
+    --
+    -- Note this only covers users who reach markdown.nvim at all — it is
+    -- lazy-loaded on markdown filetypes in most specs, so a session that never
+    -- opens a markdown file still needs `require("lib.nvim.hover").enable()`
+    -- from somewhere that is not lazy. See lua/lib/nvim/hover/README.md.
     require("markdown.hover").configure(cfg.hover)
-    -- Not `ftpat`: a path worth previewing is not a markdown phenomenon. It
-    -- sits in a code comment, a log, a `:messages` dump, a plain .txt note --
-    -- and `hover.bare_paths` exists precisely to hover those, which it cannot
-    -- do from a markdown-only autocmd. `hover.filetypes` narrows it again for
-    -- anyone who wants the old scope back (`markdown.hover.attach` skips
-    -- non-file buffers on its own either way).
-    local hover_pat = (cfg.hover and cfg.hover.filetypes) or "*"
-    autocmd.create("FileType", function(ev) require("markdown.hover").attach(ev.buf) end, {
-      group = aug_hover,
-      pattern = hover_pat,
-      desc = "[markdown.nvim] Install buffer-local link/path hover preview",
-    })
+    require("lib.nvim.hover").enable()
   end
 
   -- Reference sync automatic triggers (independent opt-in via config.refs.mode).
