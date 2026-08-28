@@ -211,12 +211,21 @@ function M.directory(target, opts)
 end
 
 --- Preview for a target that does not exist.
+---
+--- Marked with a red ✗ rather than stated in prose alone: this is the one
+--- preview whose whole content is "the thing you are pointing at is not
+--- there", and a glance has to carry that. The symbol is highlighted through
+--- `MarkdownHoverMissing` (linked to `DiagnosticError` by default, so it
+--- follows the colorscheme instead of hard-coding a red).
+---
+--- The path is shown on its own line because it is the actionable half: what
+--- was *tried* is what tells you whether the link is wrong or the file moved.
 ---@param target Mkdn.Hover.Target
 ---@return Mkdn.Hover.Content
 function M.missing(target)
-  local lines = { target.reason or "target not found" }
+  local lines = { "✗ " .. (target.reason or "target does not exist") }
   if target.path then lines[#lines + 1] = target.path end
-  return { lines = lines, title = "broken link" }
+  return { lines = lines, title = "broken link", highlight = "MarkdownHoverMissing" }
 end
 
 return M

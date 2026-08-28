@@ -183,7 +183,11 @@ return function(H)
       reason = "no such file",
     })
     eq(content.title, "broken link", "preview.missing: titled as a broken link")
-    eq(content.lines[1], "no such file", "preview.missing: states the reason")
+    eq(
+      content.lines[1],
+      "✗ no such file",
+      "preview.missing: states the reason, behind a ✗ marker"
+    )
   end
 
   -- ------------------------------------------------- anchor in the buffer
@@ -626,10 +630,37 @@ return function(H)
 
     -- False positives are the whole risk of running on every CursorHold.
     ok(not target_on("local function helper()", 8), "bare path: an ordinary word is not a target")
+    -- A missing target is reported only when the text cannot have been
+    -- anything but a path. `name.ext` without a separator is how every Lua
+    -- identifier is spelled, so those must stay silent, or a code buffer
+    -- would carry a red ✗ on half its tokens.
     ok(
       not target_on("-- nope-does-not-exist.png here", 6),
-      "bare path: a non-existent path stays silent"
+      "bare path: bare name.ext that is missing stays silent"
     )
+    ok(
+      not target_on("local x = vim.api.nvim_get_mode()", 12),
+      "bare path: vim.api is an identifier, not a broken path"
+    )
+
+    local gone = target_on("-- see docs/nope-missing.md for that", 12)
+    ok(gone ~= nil, "bare path: a missing path WITH a separator is still a target")
+    eq(
+      gone and classify.classify(gone.target, nil).type,
+      "missing",
+      "bare path: ... and classifies as missing rather than being dropped"
+    )
+
+    do -- the ✗ marker is what makes "missing" readable at a glance
+      local content = text.missing({
+        type = "missing",
+        raw = "a/b.md",
+        path = tmp .. "/a/b.md",
+        reason = "no such file",
+      })
+      ok(content.lines[1]:match("^✗") ~= nil, "preview.missing: marked with a ✗")
+      eq(content.highlight, "MarkdownHoverMissing", "preview.missing: carries its highlight group")
+    end
     ok(not target_on("   ", 1), "bare path: whitespace under the cursor is not a target")
 
     -- Opt-out, even where a real path sits under the cursor.

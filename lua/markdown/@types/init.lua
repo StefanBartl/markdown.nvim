@@ -78,6 +78,7 @@
 ---@field title? string # Rendered in the float border.
 ---@field image_path? string # Draw this image into the float, if a provider can.
 ---@field canvas? Mkdn.Hover.Canvas # Size the float to this instead of to `lines`, and show no text or title: the float is a frame for the picture, not a caption for it.
+---@field highlight? string # Highlight group applied to the first line (the `missing` preview's ✗ marker).
 ---@field pending? boolean # Provisional; an async result replaces it (and it is not cached).
 
 --- Geometry/appearance for `markdown.hover.float.open`.
@@ -89,6 +90,7 @@
 ---@field canvas? Mkdn.Hover.Canvas # Blank float of this exact size; `lines`, `title` and `filetype` are ignored.
 ---@field border? string|string[]
 ---@field focusable? boolean
+---@field highlight? string # Highlight group for the first line; `MarkdownHoverMissing` (→ `DiagnosticError`) is defined on demand.
 ---@field on_close? fun()
 
 ---@class Mkdn.BlockquoteHL

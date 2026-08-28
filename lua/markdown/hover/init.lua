@@ -242,6 +242,7 @@ function M.show(opts)
       title = content.title,
       filetype = content.filetype,
       canvas = content.canvas,
+      highlight = content.highlight,
       max_width = c.max_width or 80,
       max_height = c.max_lines or 20,
       border = c.border,

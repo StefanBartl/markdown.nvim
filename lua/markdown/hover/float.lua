@@ -102,6 +102,22 @@ function M.open(lines, opts)
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
+  -- Highlight the first line before the buffer is locked. Used by the
+  -- "missing" preview for its ✗ marker: a filetype cannot express "this one
+  -- line is an error", and the marker is the whole point of that preview.
+  --
+  -- `default = true` on the link, set here rather than at setup(): a
+  -- colorscheme loaded after us must be able to override it, and a user who
+  -- defined the group themselves must not have it overwritten.
+  if opts.highlight and opts.highlight ~= "" then
+    pcall(api.nvim_set_hl, 0, "MarkdownHoverMissing", { link = "DiagnosticError", default = true })
+    pcall(api.nvim_buf_set_extmark, buf, api.nvim_create_namespace("markdown.hover"), 0, 0, {
+      end_row = 1,
+      hl_group = opts.highlight,
+      hl_eol = true,
+    })
+  end
+
   vim.bo[buf].modifiable = false
   vim.bo[buf].bufhidden = "wipe"
   if not canvas and opts.filetype and opts.filetype ~= "" then

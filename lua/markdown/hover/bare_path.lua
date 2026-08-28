@@ -57,6 +57,26 @@ local function looks_like_path(str)
 end
 
 ---@internal
+--- Whether `str` can *only* have been meant as a path.
+---
+--- The distinction that decides whether a **non-existent** target is worth
+--- reporting. `looks_like_path` accepts a bare `name.ext` because `README.md`
+--- in prose is a path — but so is `vim.api`, `string.format` or any Lua
+--- module name, and those are the overwhelming majority of what a code buffer
+--- puts under the cursor. Reporting those as broken paths would put a red ✗
+--- on half the identifiers in every Lua file.
+---
+--- A separator or a `...` truncation is different: no identifier is spelled
+--- `docs/setup.md` or `...nvim/init.lua`. Those were meant as paths, so if
+--- they do not resolve, saying so is the useful answer rather than noise.
+---@param str string
+---@return boolean
+local function is_unambiguous_path(str)
+  if type(str) ~= "string" or str == "" then return false end
+  return str:match("[/\\]") ~= nil or str:match("^%.%.%.") ~= nil or str:match("^…") ~= nil
+end
+
+---@internal
 --- Strip what surrounds a path in real prose but is not part of it: quotes,
 --- markdown emphasis, brackets, and trailing sentence punctuation. A path at
 --- the end of a sentence ("see ./docs/a.md.") must not lose its match to the
@@ -160,15 +180,22 @@ function M.under_cursor(bufnr)
   local char = line:sub(col + 1, col + 1)
   if char == "" or char:match("%s") then return nil end
 
-  local token = vim.fn.expand("<cfile>")
-  if not looks_like_path(trim_delimiters(type(token) == "string" and token or "")) then
-    return nil
-  end
+  local token =
+    trim_delimiters(type(vim.fn.expand("<cfile>")) == "string" and vim.fn.expand("<cfile>") or "")
+  if not looks_like_path(token) then return nil end
 
   -- gopath first: it is the one that handles truncated paths and `:line`
   -- suffixes, which is the case `<cfile>` cannot resolve on its own.
   local resolved = via_gopath() or via_cfile(bufnr)
-  if not resolved then return nil end
+
+  -- Nothing on disk. Worth reporting only when the text cannot have been
+  -- anything but a path -- see `is_unambiguous_path`. `classify` then turns
+  -- it into a `missing` target and the preview marks it with a red ✗, the
+  -- same answer a broken *link* already gets.
+  if not resolved then
+    if not is_unambiguous_path(token) then return nil end
+    resolved = (split_location(token))
+  end
 
   return {
     target = resolved,

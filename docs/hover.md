@@ -29,7 +29,7 @@ See [the architecture doc](docs/architecture.md#modules) for details.
 | **Other file** | First lines, plain |
 | **Directory** | Its entries, directories first |
 | **URL** | Host, path, decoded query — and optionally the page's `<title>`/description (off by default, see below) |
-| **Missing target** | *That it is missing*, and the path that was tried |
+| **Missing target** | A red ✗ saying it is missing, and the path that was tried |
 
 That last row matters more than it looks. A hover that immediately says
 "this file isn't there" catches broken links while you write them, long
@@ -53,11 +53,29 @@ linked one gets, and a bare `.md` the same section preview.
 
 Two rules keep this from firing constantly:
 
-- **The path must exist.** A broken *link* is worth reporting — someone
-  wrote it meaning to point somewhere. Plain prose is not, or every word
-  under the cursor would open a "target does not exist" float.
 - **It must look like a path** — a separator, an extension, or a `...`
   truncation. `helper` is a word; `helper.lua` is a path.
+- **A path that does not exist is reported only when it cannot have been
+  anything else** — that is, when it carries a separator (`docs/gone.md`) or
+  a `...` truncation. Those get the same red ✗ a broken link gets. A bare
+  `name.ext` that resolves to nothing stays silent, because that is exactly
+  how `vim.api`, `string.format` and every other identifier is spelled — and
+  a ✗ on half the tokens in a Lua file is noise, not information.
+
+```
+┌ broken link ──────────────────────┐
+│ ✗ no such file                    │
+│ /home/you/docs/gone.md            │
+└───────────────────────────────────┘
+```
+
+The ✗ uses the `MarkdownHoverMissing` highlight group, linked to
+`DiagnosticError` by default so it follows your colorscheme. Override it
+before or after setup:
+
+```lua
+vim.api.nvim_set_hl(0, "MarkdownHoverMissing", { fg = "#ff5555", bold = true })
+```
 
 Truncated paths (`...nvim/init.lua`, `…/lua/config/init.lua`) and `:line:col`
 suffixes are resolved by [gopath.nvim](https://github.com/StefanBartl/gopath.nvim),
