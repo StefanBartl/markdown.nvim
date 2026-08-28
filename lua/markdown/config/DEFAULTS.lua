@@ -146,6 +146,19 @@ local DEFAULTS = {
     max_lines = 20,
     max_width = 80,
     border = "rounded",
+    -- Also hover a path that carries no link syntax at all -- in prose, in a
+    -- code comment, in a `:messages` dump. Same previews as a linked target
+    -- (image, PDF page, file head, directory listing); only the detection is
+    -- new. Truncated paths ("...nvim/init.lua:42") need gopath.nvim, a soft
+    -- dependency -- without it, ordinary relative/absolute paths still work.
+    -- A bare path must exist to hover at all, or every word in the buffer
+    -- would report "target does not exist". See markdown.hover.bare_path.
+    bare_paths = true,
+    -- Which buffers get a hover. "*" because a path worth previewing is not a
+    -- markdown phenomenon -- narrow it to a filetype list (e.g.
+    -- { "markdown", "text" }) to restrict hovering to those. Non-file buffers
+    -- (pickers, trees, terminals) are always skipped, whatever this says.
+    filetypes = "*",
     -- Draw images / rasterized PDF pages into the float. Needs images.nvim
     -- (the only provider that can draw into a window it does not own);
     -- metadata lines are shown either way.

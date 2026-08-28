@@ -1,7 +1,7 @@
 # Link hover preview
 
-Rest the cursor on a markdown link and a small float shows what it points
-at — whatever that is.
+Rest the cursor on a markdown link — or on a path written as plain text —
+and a small float shows what it points at, whatever that is.
 
 ```markdown
 See [the architecture doc](docs/architecture.md#modules) for details.
@@ -34,6 +34,49 @@ See [the architecture doc](docs/architecture.md#modules) for details.
 That last row matters more than it looks. A hover that immediately says
 "this file isn't there" catches broken links while you write them, long
 before `:Markdown links check` runs.
+
+## Paths without link syntax
+
+A target does not have to be a link, and does not have to sit in a markdown
+file. A path written as ordinary text hovers too — in prose, in a code
+comment, in output pasted from a log:
+
+```
+./assets/diagram.png          → the picture
+../ROADMAP/ROADMAP.md         → its first lines, markdown-highlighted
+...AppData/Local/nvim/init.lua:42   → the file, found despite the truncation
+```
+
+Everything above under *What it previews* applies unchanged: detection is
+the only thing that is new, so a bare `.png` gets the same picture float a
+linked one gets, and a bare `.md` the same section preview.
+
+Two rules keep this from firing constantly:
+
+- **The path must exist.** A broken *link* is worth reporting — someone
+  wrote it meaning to point somewhere. Plain prose is not, or every word
+  under the cursor would open a "target does not exist" float.
+- **It must look like a path** — a separator, an extension, or a `...`
+  truncation. `helper` is a word; `helper.lua` is a path.
+
+Truncated paths (`...nvim/init.lua`, `…/lua/config/init.lua`) and `:line:col`
+suffixes are resolved by [gopath.nvim](https://github.com/StefanBartl/gopath.nvim),
+a soft dependency — that is exactly its subject matter, so this plugin asks
+it rather than reimplementing the search. Without gopath.nvim installed,
+ordinary relative and absolute paths still hover; only the truncated forms
+stop resolving.
+
+Because a path is not a markdown phenomenon, the hover attaches in **every
+filetype** by default (`hover.filetypes = "*"`). Non-file buffers — pickers,
+file trees, terminals, dashboards — are always skipped. Narrow the scope
+with a filetype list, or turn bare paths off entirely:
+
+```lua
+hover = {
+  bare_paths = false,               -- links only, the pre-0.x behaviour
+  filetypes = { "markdown", "text" }, -- or: only hover in these buffers
+}
+```
 
 ## HTML targets and `<figure>` blocks
 

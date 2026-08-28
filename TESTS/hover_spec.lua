@@ -584,5 +584,65 @@ return function(H)
     end
   end
 
+  -- ------------------------------------------------- bare paths (no link syntax)
+  -- A path written as plain text -- in prose, a code comment, a `:messages`
+  -- dump -- is a hover target too. Everything downstream is shared with a
+  -- linked target, so what is asserted here is only the detection: that a real
+  -- path is found, that ordinary words are not, and that a non-existent one
+  -- stays silent rather than opening a "does not exist" float on every word.
+  do
+    local hover = require("markdown.hover")
+    local config = require("markdown.config")
+    local saved_cwd = vim.fn.getcwd()
+    vim.cmd("lcd " .. vim.fn.fnameescape(tmp))
+
+    ---@param line string
+    ---@param col integer
+    ---@return table|nil
+    local function target_on(line, col)
+      local buf = H.scratch("lua") -- deliberately NOT markdown
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { line })
+      vim.api.nvim_win_set_cursor(0, { 1, col })
+      return hover.link_under_cursor(buf)
+    end
+
+    local found = target_on("-- see pic.png for the layout", 10)
+    ok(found ~= nil, "bare path: a plain path in a lua comment is a target")
+    eq(found and found.kind, "bare_path", "bare path: reported as kind=bare_path")
+    eq(
+      found and classify.classify(found.target, nil).type,
+      "image",
+      "bare path: classified by the same rules as a linked target"
+    )
+
+    -- The case markdown links never covered: a non-image file.
+    local md = target_on("-- doc.md has the details", 6)
+    ok(md ~= nil, "bare path: a non-image file is a target too")
+    eq(
+      md and classify.classify(md.target, nil).type,
+      "markdown",
+      "bare path: .md classifies as markdown"
+    )
+
+    -- False positives are the whole risk of running on every CursorHold.
+    ok(not target_on("local function helper()", 8), "bare path: an ordinary word is not a target")
+    ok(
+      not target_on("-- nope-does-not-exist.png here", 6),
+      "bare path: a non-existent path stays silent"
+    )
+    ok(not target_on("   ", 1), "bare path: whitespace under the cursor is not a target")
+
+    -- Opt-out, even where a real path sits under the cursor.
+    config.setup({ hover = { bare_paths = false } })
+    ok(
+      not target_on("-- see pic.png for the layout", 10),
+      "bare path: hover.bare_paths = false disables it"
+    )
+    config.setup({ hover = { bare_paths = true } })
+    ok(target_on("-- see pic.png for the layout", 10) ~= nil, "bare path: re-enabling restores it")
+
+    vim.cmd("lcd " .. vim.fn.fnameescape(saved_cwd))
+  end
+
   vim.fn.delete(tmp, "rf")
 end

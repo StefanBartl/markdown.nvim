@@ -44,6 +44,8 @@
 ---@field max_width integer # Float width cap, in display columns. Default 80.
 ---@field border string|string[] # `nvim_open_win` border. Default "rounded".
 ---@field inline_images boolean # Draw images / rasterized PDF pages into the float when a provider can. Default true.
+---@field bare_paths boolean # Also hover a path written without link syntax (prose, code comment, `:messages`). Truncated paths need gopath.nvim, a soft dependency. Default true. See `markdown.hover.bare_path`.
+---@field filetypes string|string[] # Which buffers get a hover, as a `FileType` autocmd pattern. Default `"*"`; non-file buffers are always skipped.
 ---@field url Mkdn.HoverUrlConfig
 
 --- What a link target turned out to be (`markdown.hover.classify`).

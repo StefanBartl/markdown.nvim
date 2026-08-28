@@ -108,7 +108,16 @@ function M.link_under_cursor(bufnr)
   -- several, and the line the reader parks on is usually the `<figcaption>`,
   -- which carries no target of its own. Resolving the enclosing figure's
   -- image makes the caption hover like the picture it captions.
-  return require("markdown.core.html_links").figure_at(bufnr, row)
+  local figure = require("markdown.core.html_links").figure_at(bufnr, row)
+  if figure then return figure end
+
+  -- Still nothing: the text may be a path carrying no link syntax at all --
+  -- a path in prose, in a code comment, in a `:messages` dump. Same target
+  -- shape, so everything downstream (classify/build/preview) is unchanged.
+  -- Opt-out via `hover.bare_paths`, and off entirely for a buffer that
+  -- `attach` did not enable it for.
+  if cfg().bare_paths == false then return nil end
+  return require("markdown.hover.bare_path").under_cursor(bufnr)
 end
 
 ---@internal
@@ -340,10 +349,19 @@ function M.trigger()
 end
 
 --- Install the hover autocmds for `bufnr`.
+---
+--- Since `hover.filetypes` defaults to every filetype (see
+--- `markdown.bindings.autocmds`), the buffers that must be excluded are
+--- excluded here rather than by pattern: a picker, a file tree, a terminal or
+--- a dashboard has no document to hover in, and a float opening over one is
+--- always wrong. `buftype ~= ""` catches all of them in one check, which a
+--- filetype blocklist could never keep up with.
 ---@param bufnr integer
 function M.attach(bufnr)
   local c = cfg()
   if c.enabled == false then return end
+  if not api.nvim_buf_is_valid(bufnr) then return end
+  if vim.bo[bufnr].buftype ~= "" then return end
 
   local group = autocmd.group("MarkdownHover" .. bufnr, true)
   local triggers = c.trigger or { "CursorHold" }

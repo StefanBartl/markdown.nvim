@@ -47,7 +47,7 @@ buffers. Requires Neovim >= 0.9 and
 | `:Markdown image` | Paste/screenshot an image into the document (delegates to images.nvim) | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
 | `:Markdown export` | Export the buffer/file to PDF (delegates to pdfport.nvim) | [Integrations](docs/FEATURES/integrations.md) |
 | Cursor-action dispatcher | `<CR>`-style action on whatever's under the cursor: anchor, image, URL, file, PDF | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
-| Link hover preview | Floating preview of what a link under the cursor points to | [Link hover preview](docs/hover.md) |
+| Link hover preview | Floating preview of what a link — or a bare path, in any filetype — under the cursor points to | [Link hover preview](docs/hover.md) |
 | HTML link resolution | `<img src>` / `<a href>` count as links everywhere — a captioned `<figure>` keeps its hover, `mi`, picker entry and dead-link check | [Image captions](docs/image-captions.md) |
 | `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings | [Headings](docs/FEATURES/headings.md) |
 | `:OpenWithSystemApplication` | Open the file/link target under the cursor with the OS default application | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
@@ -71,7 +71,9 @@ See [docs/installation.md](docs/installation.md) for packer.nvim and vim-plug.
 > 💡 Rest the cursor on any link and a small float previews what it points
 > at — an image, a PDF's first page, another file's section, a directory
 > listing, an in-page anchor, a URL — or tells you the target doesn't
-> exist. See [docs/hover.md](docs/hover.md).
+> exist. A path written as plain text hovers the same way, in any filetype:
+> `./assets/diagram.png` in a code comment, or a truncated
+> `...nvim/init.lua:42` out of a log. See [docs/hover.md](docs/hover.md).
 
 > 💡 A `> quoted` line gets VS Code-style coloring by default (green marker +
 > text, dimmed background across the whole line) regardless of your

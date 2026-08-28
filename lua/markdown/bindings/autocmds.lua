@@ -71,10 +71,17 @@ function M.setup(cfg)
   -- it off at runtime takes effect without re-running setup().
   if feat("hover") and (cfg.hover and cfg.hover.enabled) ~= false then
     local aug_hover = api.nvim_create_augroup("MarkdownNvimHover", { clear = true })
+    -- Not `ftpat`: a path worth previewing is not a markdown phenomenon. It
+    -- sits in a code comment, a log, a `:messages` dump, a plain .txt note --
+    -- and `hover.bare_paths` exists precisely to hover those, which it cannot
+    -- do from a markdown-only autocmd. `hover.filetypes` narrows it again for
+    -- anyone who wants the old scope back (`markdown.hover.attach` skips
+    -- non-file buffers on its own either way).
+    local hover_pat = (cfg.hover and cfg.hover.filetypes) or "*"
     autocmd.create("FileType", function(ev) require("markdown.hover").attach(ev.buf) end, {
       group = aug_hover,
-      pattern = ftpat,
-      desc = "[markdown.nvim] Install buffer-local link-hover preview",
+      pattern = hover_pat,
+      desc = "[markdown.nvim] Install buffer-local link/path hover preview",
     })
   end
 
