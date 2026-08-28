@@ -8,9 +8,10 @@
 return function(H)
   local eq, ok = H.eq, H.ok
 
-  local classify = require("markdown.hover.classify")
-  local text = require("markdown.hover.preview.text")
-  local float = require("markdown.hover.float")
+  local classify = require("lib.nvim.hover.classify")
+  local text = require("lib.nvim.hover.preview.text")
+  local section = require("markdown.hover.section")
+  local float = require("lib.nvim.hover.float")
 
   -- ------------------------------------------------------------- fixtures
 
@@ -141,7 +142,7 @@ return function(H)
   end
 
   do
-    local content = text.file_anchor(
+    local content = section.file_anchor(
       { type = "markdown", raw = "doc.md#second", path = doc, anchor = "second" },
       { max_lines = 20 }
     )
@@ -155,7 +156,7 @@ return function(H)
   end
 
   do
-    local content = text.file_anchor(
+    local content = section.file_anchor(
       { type = "markdown", raw = "doc.md#nope", path = doc, anchor = "nope" },
       { max_lines = 20 }
     )
@@ -203,7 +204,7 @@ return function(H)
       "",
       "## After",
     })
-    local content = text.anchor(
+    local content = section.anchor(
       { type = "anchor", raw = "#target-section", anchor = "target-section" },
       { max_lines = 20 },
       buf
@@ -213,7 +214,7 @@ return function(H)
     ok(joined:match("the body") ~= nil, "preview.anchor: includes the section body")
     ok(joined:match("## After") == nil, "preview.anchor: stops at the next same-level heading")
 
-    local miss = text.anchor(
+    local miss = section.anchor(
       { type = "anchor", raw = "#nope", anchor = "nope" },
       { max_lines = 20 },
       buf
@@ -316,7 +317,7 @@ return function(H)
   )
 
   do
-    local media = require("markdown.hover.preview.media")
+    local media = require("lib.nvim.hover.preview.media")
     local preview_opts = { max_lines = 10, max_width = 40 }
 
     local function target_for(path)
@@ -326,8 +327,8 @@ return function(H)
 
     -- With a drawing provider present the float is a frame for the picture:
     -- sized to the file's aspect ratio, and carrying no text or title at all.
-    local saved = package.loaded["markdown.util.image_preview"]
-    package.loaded["markdown.util.image_preview"] = { detect = function() return "images.nvim" end }
+    local saved = package.loaded["lib.nvim.image_preview"]
+    package.loaded["lib.nvim.image_preview"] = { detect = function() return "images.nvim" end }
 
     local c = media.image(target_for(png), preview_opts)
     ok(c.canvas ~= nil, "image hover: drawable target yields a canvas")
@@ -360,28 +361,28 @@ return function(H)
 
     -- No provider: metadata is then the only thing the hover can say, so it
     -- says it -- including the dimensions parsed out of the header.
-    package.loaded["markdown.util.image_preview"] = { detect = function() return nil end }
+    package.loaded["lib.nvim.image_preview"] = { detect = function() return nil end }
     local m = media.image(target_for(png), preview_opts)
     eq(m.canvas, nil, "image hover: no provider means no canvas")
     eq(m.title, "wide.png", "image hover: metadata float is titled with the filename")
     eq(m.lines[1], "400 × 100 px", "image hover: dimensions parsed from the PNG header")
     ok(m.lines[2]:match("^PNG"), "image hover: format and size line")
 
-    package.loaded["markdown.util.image_preview"] = saved
+    package.loaded["lib.nvim.image_preview"] = saved
   end
 
   -- ----------------------------------------------------------- pdf hover
 
   do
-    local media = require("markdown.hover.preview.media")
+    local media = require("lib.nvim.hover.preview.media")
     local preview_opts = { max_lines = 10, max_width = 40 }
 
     local pdf = tmp .. "/doc.pdf"
     vim.fn.writefile({ "%PDF-1.4 not really a pdf" }, pdf)
 
-    local saved_preview = package.loaded["markdown.util.image_preview"]
+    local saved_preview = package.loaded["lib.nvim.image_preview"]
     local saved_pdfport = package.loaded["pdfport"]
-    package.loaded["markdown.util.image_preview"] = { detect = function() return "images.nvim" end }
+    package.loaded["lib.nvim.image_preview"] = { detect = function() return "images.nvim" end }
 
     -- Stands in for pdftoppm: hands back the PNG fixture and counts how often
     -- it was asked to do so.
@@ -434,7 +435,7 @@ return function(H)
     eq(renders, 2, "pdf hover: a changed file is rendered again")
 
     -- Without a drawing provider the metadata float is all there is.
-    package.loaded["markdown.util.image_preview"] = { detect = function() return nil end }
+    package.loaded["lib.nvim.image_preview"] = { detect = function() return nil end }
     local meta = media.pdf({ type = "pdf", path = pdf, size = 43 }, preview_opts, function() end)
     eq(meta.pending, nil, "pdf hover: no provider means nothing to wait for")
     eq(meta.title, "doc.pdf", "pdf hover: metadata float is titled with the filename")
@@ -443,7 +444,7 @@ return function(H)
       "pdf hover: metadata float says why there is no page"
     )
 
-    package.loaded["markdown.util.image_preview"] = saved_preview
+    package.loaded["lib.nvim.image_preview"] = saved_preview
     package.loaded["pdfport"] = saved_pdfport
   end
 
@@ -596,25 +597,44 @@ return function(H)
   -- stays silent rather than opening a "does not exist" float on every word.
   do
     local hover = require("markdown.hover")
-    local config = require("markdown.config")
-    local saved_cwd = vim.fn.getcwd()
-    vim.cmd("lcd " .. vim.fn.fnameescape(tmp))
+    local lib_hover = require("lib.nvim.hover")
+
+    -- The buffer is *named* into the fixture directory rather than the cwd
+    -- being changed to it: `bare_path` resolves against the buffer's own
+    -- directory first, so this exercises the same code path without leaving
+    -- global state behind. An earlier version used `lcd`, and when an
+    -- assertion below failed the restore never ran -- which broke every spec
+    -- the runner loaded afterwards by a relative path.
+    local counter = 0
 
     ---@param line string
     ---@param col integer
     ---@return table|nil
     local function target_on(line, col)
+      counter = counter + 1
       local buf = H.scratch("lua") -- deliberately NOT markdown
+      vim.api.nvim_buf_set_name(buf, tmp .. "/probe" .. counter .. ".lua")
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, { line })
       vim.api.nvim_win_set_cursor(0, { 1, col })
-      return hover.link_under_cursor(buf)
+      return hover.link_under_cursor(buf), vim.api.nvim_buf_get_name(buf)
+    end
+
+    --- Detection plus classification, against the probe buffer's own path --
+    --- the same pair `show()` performs at runtime.
+    ---@param line string
+    ---@param col integer
+    ---@return string|nil target type
+    local function type_on(line, col)
+      local found, src = target_on(line, col)
+      if not found then return nil end
+      return classify.classify(found.target, src).type
     end
 
     local found = target_on("-- see pic.png for the layout", 10)
     ok(found ~= nil, "bare path: a plain path in a lua comment is a target")
     eq(found and found.kind, "bare_path", "bare path: reported as kind=bare_path")
     eq(
-      found and classify.classify(found.target, nil).type,
+      type_on("-- see pic.png for the layout", 10),
       "image",
       "bare path: classified by the same rules as a linked target"
     )
@@ -622,11 +642,7 @@ return function(H)
     -- The case markdown links never covered: a non-image file.
     local md = target_on("-- doc.md has the details", 6)
     ok(md ~= nil, "bare path: a non-image file is a target too")
-    eq(
-      md and classify.classify(md.target, nil).type,
-      "markdown",
-      "bare path: .md classifies as markdown"
-    )
+    eq(type_on("-- doc.md has the details", 6), "markdown", "bare path: .md classifies as markdown")
 
     -- False positives are the whole risk of running on every CursorHold.
     ok(not target_on("local function helper()", 8), "bare path: an ordinary word is not a target")
@@ -646,7 +662,7 @@ return function(H)
     local gone = target_on("-- see docs/nope-missing.md for that", 12)
     ok(gone ~= nil, "bare path: a missing path WITH a separator is still a target")
     eq(
-      gone and classify.classify(gone.target, nil).type,
+      type_on("-- see docs/nope-missing.md for that", 12),
       "missing",
       "bare path: ... and classifies as missing rather than being dropped"
     )
@@ -659,20 +675,20 @@ return function(H)
         reason = "no such file",
       })
       ok(content.lines[1]:match("^✗") ~= nil, "preview.missing: marked with a ✗")
-      eq(content.highlight, "MarkdownHoverMissing", "preview.missing: carries its highlight group")
+      eq(content.highlight, "LibHoverMissing", "preview.missing: carries its highlight group")
     end
     ok(not target_on("   ", 1), "bare path: whitespace under the cursor is not a target")
 
-    -- Opt-out, even where a real path sits under the cursor.
-    config.setup({ hover = { bare_paths = false } })
+    -- Opt-out, even where a real path sits under the cursor. Set on the
+    -- framework directly: markdown.nvim hands its `hover` block to
+    -- `lib.nvim.hover.setup` and the library owns the value from there on.
+    lib_hover.setup({ bare_paths = false })
     ok(
       not target_on("-- see pic.png for the layout", 10),
       "bare path: hover.bare_paths = false disables it"
     )
-    config.setup({ hover = { bare_paths = true } })
+    lib_hover.setup({ bare_paths = true })
     ok(target_on("-- see pic.png for the layout", 10) ~= nil, "bare path: re-enabling restores it")
-
-    vim.cmd("lcd " .. vim.fn.fnameescape(saved_cwd))
   end
 
   vim.fn.delete(tmp, "rf")

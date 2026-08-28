@@ -93,7 +93,7 @@ end
 ---@param file_path string
 ---@return boolean ok
 local function open_with_preview(file_path)
-  local ok, err = require("markdown.util.image_preview").preview(file_path)
+  local ok, err = require("lib.nvim.image_preview").preview(file_path)
   if ok then return true end
   if M.config.notify_on_error then
     notify.warn("In-Neovim preview failed (" .. tostring(err) .. "), using system viewer")
@@ -115,7 +115,7 @@ function M.open_image(file_path)
   local mode = M.config.preview or "ask"
   if mode == "system" then return open_with_system_viewer(file_path) end
 
-  if not require("markdown.util.image_preview").available() then
+  if not require("lib.nvim.image_preview").available() then
     return open_with_system_viewer(file_path)
   end
 

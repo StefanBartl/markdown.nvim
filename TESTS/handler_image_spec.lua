@@ -16,7 +16,7 @@ return function(H)
 
   local function reset()
     package.loaded["markdown.handler.image"] = nil
-    package.loaded["markdown.util.image_preview"] = nil
+    package.loaded["lib.nvim.image_preview"] = nil
     package.loaded["markdown.util.picker"] = nil
     package.loaded["snacks"] = nil
     package.loaded["image"] = nil
@@ -28,7 +28,7 @@ return function(H)
   ---@return table state
   local function stub_preview(available, result)
     local state = { previewed = nil }
-    package.loaded["markdown.util.image_preview"] = {
+    package.loaded["lib.nvim.image_preview"] = {
       available = function() return available end,
       detect = function() return available and "snacks" or nil end,
       preview = function(p)

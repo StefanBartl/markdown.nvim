@@ -28,70 +28,14 @@
 ---@field external_extensions string[] # Extensions launched with the system app; others open via `:edit`.
 
 -- hover/*.lua
+--
+-- The hover framework moved to `lib.nvim.hover`; its internal types live
+-- there as `Lib.Hover.*`. What stays here is the plugin-facing config block,
+-- which markdown.nvim owns and hands to `lib.nvim.hover.setup`.
 
----@alias Mkdn.HoverTrigger "CursorHold"|"mouse"
-
----@class Mkdn.HoverUrlConfig
----@field fetch boolean # Fetch `<title>`/`<meta description>` for http(s) targets. Default false — a hover that silently issues HTTP requests discloses every link you brush past.
----@field timeout_ms integer # Per-fetch timeout. Default 2000.
-
----@class Mkdn.HoverConfig
----@field enabled boolean # Master switch. Default true.
----@field trigger Mkdn.HoverTrigger[] # What opens a hover. `"mouse"` additionally needs `:set mousemoveevent`.
----@field delay_ms integer # Debounce before the float opens. Default 250.
----@field placeholder_grace_ms integer # How long an async preview may take before a "rendering…" placeholder is shown. Default 250.
----@field max_lines integer # Preview line cap (also the float's max height). Default 20.
----@field max_width integer # Float width cap, in display columns. Default 80.
----@field border string|string[] # `nvim_open_win` border. Default "rounded".
----@field inline_images boolean # Draw images / rasterized PDF pages into the float when a provider can. Default true.
----@field bare_paths boolean # Also hover a path written without link syntax (prose, code comment, `:messages`). Truncated paths need gopath.nvim, a soft dependency. Default true. See `markdown.hover.bare_path`.
----@field filetypes string|string[] # Which buffers get a hover, as a `FileType` autocmd pattern. Default `"*"`; non-file buffers are always skipped.
----@field url Mkdn.HoverUrlConfig
-
---- What a link target turned out to be (`markdown.hover.classify`).
----@class Mkdn.Hover.Target
----@field type "image"|"pdf"|"markdown"|"file"|"directory"|"url"|"anchor"|"missing"
----@field raw string # The target exactly as written in the document.
----@field path? string # Absolute, normalized path for local targets.
----@field anchor? string # Fragment after `#`, without the `#`.
----@field url? string # Normalized URL for `type == "url"`.
----@field ext? string # Lowercased extension, when there is one.
----@field size? integer # Byte size, for local files.
----@field reason? string # Why it is `missing`.
-
---- Options threaded from `hover` config into the previewers.
----@class Mkdn.Hover.PreviewOpts
----@field max_lines integer
----@field max_width? integer # Needed by the image previewer, which sizes the float itself rather than letting it be measured from text.
----@field inline_images? boolean
----@field url_fetch? boolean
----@field url_timeout_ms? integer
-
---- What a previewer produces for the float.
----@class Mkdn.Hover.Canvas
----@field cols integer # Float width in cells, already fitted to the image's aspect ratio.
----@field rows integer # Float height in cells.
-
----@class Mkdn.Hover.Content
----@field lines string[]
----@field filetype? string # Set only where a filetype is known, never guessed.
----@field title? string # Rendered in the float border.
----@field image_path? string # Draw this image into the float, if a provider can.
----@field canvas? Mkdn.Hover.Canvas # Size the float to this instead of to `lines`, and show no text or title: the float is a frame for the picture, not a caption for it.
----@field highlight? string # Highlight group applied to the first line (the `missing` preview's ✗ marker).
----@field pending? boolean # Provisional; an async result replaces it (and it is not cached).
-
---- Geometry/appearance for `markdown.hover.float.open`.
----@class Mkdn.Hover.FloatOpts
----@field title? string
----@field filetype? string
----@field max_width? integer
----@field max_height? integer
----@field canvas? Mkdn.Hover.Canvas # Blank float of this exact size; `lines`, `title` and `filetype` are ignored.
----@field border? string|string[]
----@field focusable? boolean
----@field highlight? string # Highlight group for the first line; `MarkdownHoverMissing` (→ `DiagnosticError`) is defined on demand.
----@field on_close? fun()
+---@alias Mkdn.HoverTrigger Lib.HoverTrigger
+---@alias Mkdn.HoverUrlConfig Lib.HoverUrlConfig
+---@alias Mkdn.HoverConfig Lib.HoverConfig
 
 ---@class Mkdn.BlockquoteHL
 ---@field marker_fg? string # Color for the `>` marker token. Unset: derived from the active colorscheme.

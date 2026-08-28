@@ -71,6 +71,10 @@ function M.setup(cfg)
   -- it off at runtime takes effect without re-running setup().
   if feat("hover") and (cfg.hover and cfg.hover.enabled) ~= false then
     local aug_hover = api.nvim_create_augroup("MarkdownNvimHover", { clear = true })
+    -- Push this plugin's hover block into the framework and register its
+    -- markdown contributions once, here rather than per buffer: the config is
+    -- global, and `attach` would otherwise re-apply it on every FileType.
+    require("markdown.hover").configure(cfg.hover)
     -- Not `ftpat`: a path worth previewing is not a markdown phenomenon. It
     -- sits in a code comment, a log, a `:messages` dump, a plain .txt note --
     -- and `hover.bare_paths` exists precisely to hover those, which it cannot

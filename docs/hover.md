@@ -3,6 +3,17 @@
 Rest the cursor on a markdown link — or on a path written as plain text —
 and a small float shows what it points at, whatever that is.
 
+> **Where this lives.** The framework itself is
+> [`lib.nvim.hover`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/hover/README.md),
+> not this plugin: classification, the float, file/directory/URL previews,
+> the debounce and bare-path detection are "a path is a path" and were never
+> markdown. markdown.nvim contributes the two parts that genuinely are —
+> finding a link or `<figure>` in a line, and resolving `#heading` sections —
+> through that module's registry, alongside images.nvim (draws pictures),
+> pdfport.nvim (rasterizes PDF pages) and gopath.nvim (truncated paths).
+> Everything below still applies; `hover = { … }` in markdown.nvim's spec is
+> handed to the framework unchanged.
+
 ```markdown
 See [the architecture doc](docs/architecture.md#modules) for details.
                           └─ hover here ─┘
@@ -69,12 +80,12 @@ Two rules keep this from firing constantly:
 └───────────────────────────────────┘
 ```
 
-The ✗ uses the `MarkdownHoverMissing` highlight group, linked to
+The ✗ uses the `LibHoverMissing` highlight group, linked to
 `DiagnosticError` by default so it follows your colorscheme. Override it
 before or after setup:
 
 ```lua
-vim.api.nvim_set_hl(0, "MarkdownHoverMissing", { fg = "#ff5555", bold = true })
+vim.api.nvim_set_hl(0, "LibHoverMissing", { fg = "#ff5555", bold = true })
 ```
 
 Truncated paths (`...nvim/init.lua`, `…/lua/config/init.lua`) and `:line:col`
