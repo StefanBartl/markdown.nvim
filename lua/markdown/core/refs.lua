@@ -16,6 +16,7 @@
 local notify = require("markdown.util.notify").create("[markdown.core.refs]")
 local slug = require("markdown.core.slug")
 local cfg = require("markdown.config").get
+local list = require("lib.nvim.ui.list")
 
 local api = vim.api
 local uv = vim.uv or vim.loop
@@ -252,7 +253,7 @@ function M.check(bufnr)
       text = "broken anchor: " .. o.target,
     }
   end
-  vim.fn.setqflist({}, " ", { title = "markdown.nvim: broken anchors", items = items })
+  list.qf(items, "markdown.nvim: broken anchors", { open = false })
   notify.warn(string.format("refs check: %d broken anchor link(s) — see :copen", #orphans))
   return orphans
 end

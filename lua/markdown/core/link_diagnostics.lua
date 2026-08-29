@@ -177,10 +177,13 @@ function M.check(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local diags = M.collect(bufnr)
   vim.diagnostic.set(M.namespace, bufnr, diags)
-  vim.fn.setqflist({}, " ", {
-    title = "markdown.nvim: link check",
-    items = M.to_qf_entries(diags, bufnr),
-  })
+  -- Required here rather than at the top: this file loads its dependencies
+  -- lazily, inside the functions that need them.
+  require("lib.nvim.ui.list").qf(
+    M.to_qf_entries(diags, bufnr),
+    "markdown.nvim: link check",
+    { open = false }
+  )
   return #diags
 end
 
