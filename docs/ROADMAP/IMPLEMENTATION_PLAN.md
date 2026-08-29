@@ -87,6 +87,6 @@ IDs match the checklist docs.
 ## Notes
 - The four filetree-related gaps found during the Neo-tree audit
   (markdown-link bridge, pdfport, buffers-source, neotest) belong to
-  **filetree.nvim**, not here — tracked in `filetree.nvim/docs/ROADMAP/NEOTREE_FEATURES.md`.
+  **filetree.nvim**, not here.
 - markdown.nvim keeps `lib.nvim` as an *optional* dependency and its README in
   English (both intentional deviations from the config-module rules).
