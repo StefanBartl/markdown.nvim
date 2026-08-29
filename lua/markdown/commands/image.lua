@@ -1,8 +1,8 @@
 ---@module 'markdown.commands.image'
 --- `:Markdown image <sub>` router — thin delegators to images.nvim (soft
 --- dependency, pcall-guarded), not a reimplementation. images.nvim is
---- FileType-scoped to the same buffers as markdown.nvim (see
---- docs/ROADMAP/CROSS-PLUGIN.md), so the natural coupling is discoverability
+--- FileType-scoped to the same buffers as markdown.nvim, so the natural
+--- coupling is discoverability
 --- from markdown.nvim's own `:Markdown` namespace, not duplicated logic —
 --- `:Image paste`/`:Image screenshot` already do the actual work.
 local notify = require("markdown.util.notify").create("[markdown.commands.image]")

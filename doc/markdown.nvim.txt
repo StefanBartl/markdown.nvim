@@ -866,9 +866,8 @@ See |markdown.nvim-tableview| and |:Markdown-table| for details.
   `snacks.picker` and images.nvim are installed, `show` routes through a
   `snacks.picker` picker instead, with a live image preview per image link
   (`images.browse.draw_in_window()`) — `links.picker` is ignored in that
-  case, since none of its backends support a per-item live preview (same
-  constraint documented for pickers.nvim in images.nvim's
-  docs/ROADMAP/CROSS-PLUGIN.md). Without both deps, or with no image link in
+  case, since none of its backends support a per-item live preview (the same
+  constraint that applies to pickers.nvim). Without both deps, or with no image link in
   the results, `show` behaves exactly as above.
 
 :Markdown links create [-r] [--noignore] [--root <path>] <path>

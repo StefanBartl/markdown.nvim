@@ -54,7 +54,7 @@ comment, in output pasted from a log:
 
 ```
 ./assets/diagram.png          → the picture
-../ROADMAP/ROADMAP.md         → its first lines, markdown-highlighted
+../docs/BINDINGS.md           → its first lines, markdown-highlighted
 ...AppData/Local/nvim/init.lua:42   → the file, found despite the truncation
 ```
 

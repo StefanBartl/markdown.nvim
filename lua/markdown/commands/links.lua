@@ -125,7 +125,7 @@ end
 ---@internal
 --- `:Markdown links show` with a live image preview, via snacks.picker +
 --- images.nvim (both soft deps, same "checked and only works with snacks"
---- reasoning as `pickers.nvim` in docs/ROADMAP/CROSS-PLUGIN.md — the generic
+--- reasoning as for `pickers.nvim` — the generic
 --- `markdown.util.picker` abstraction has no cross-backend preview hook).
 ---@param links Mkdn.Link[]
 ---@param Picker table

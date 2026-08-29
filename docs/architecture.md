@@ -83,6 +83,5 @@ doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
 docs/
   BINDINGS.md             machine-readable binding cheatsheet
-  ROADMAP.md               planned work
   TESTS/                   headless spec suite
 ```
