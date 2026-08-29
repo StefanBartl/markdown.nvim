@@ -160,33 +160,33 @@
 ---@field just_enable? string[] # Hard allowlist: only these features on; wins over disable/enable.
 
 ---@class Mkdn.Config
----@field features Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
----@field map_double_asterisk boolean # Map `**` in visual mode to toggle bold.
----@field map_wrap_link boolean # Map `<leader>[` to wrap the word/selection in a link.
----@field keep_inner_selection boolean # After toggling bold, keep the inner text selected.
----@field protect_h1 boolean # Protect H1 from being shifted down.
----@field use_zf_override boolean # Override `zf` to fold under the cursor.
----@field enable_autocmds boolean # Install FileType autocmds (keymaps + user commands).
----@field enable_keymaps boolean # Install buffer-local keymaps (requires enable_autocmds).
----@field ft_only boolean # Only activate for markdown filetypes.
----@field ensure_headline_spacing boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
----@field underline_headings Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
----@field check_heading_gaps boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
----@field keymaps table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
----@field links Mkdn.LinksConfig
----@field list Mkdn.ListConfig # `:Markdown list` picker backend.
----@field hover Mkdn.HoverConfig # Link-target preview under the cursor (see `markdown.hover`).
----@field image Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.
----@field open Mkdn.OpenConfig
----@field blockquote_hl Mkdn.BlockquoteHL
----@field fenced_fix Mkdn.FencedFix
----@field fenced_scope Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
----@field tableview Mkdn.TableViewConfig # Default TableView float style ("markdown" | "box").
----@field menu Mkdn.MenuConfig # nvzone/menu integration entries (opt-out).
----@field link_hl Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
----@field refs Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
----@field toc Mkdn.TocConfig # TOC header/marker/level defaults for `<leader>toc` / `:Markdown toc`.
----@field table Mkdn.TableConfig # Default alignment/overrides for `:Markdown table format`.
+---@field features? Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
+---@field map_double_asterisk? boolean # Map `**` in visual mode to toggle bold.
+---@field map_wrap_link? boolean # Map `<leader>[` to wrap the word/selection in a link.
+---@field keep_inner_selection? boolean # After toggling bold, keep the inner text selected.
+---@field protect_h1? boolean # Protect H1 from being shifted down.
+---@field use_zf_override? boolean # Override `zf` to fold under the cursor.
+---@field enable_autocmds? boolean # Install FileType autocmds (keymaps + user commands).
+---@field enable_keymaps? boolean # Install buffer-local keymaps (requires enable_autocmds).
+---@field ft_only? boolean # Only activate for markdown filetypes.
+---@field ensure_headline_spacing? boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
+---@field underline_headings? Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
+---@field check_heading_gaps? boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
+---@field keymaps? table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
+---@field links? Mkdn.LinksConfig
+---@field list? Mkdn.ListConfig # `:Markdown list` picker backend.
+---@field hover? Mkdn.HoverConfig # Link-target preview under the cursor (see `markdown.hover`).
+---@field image? Mkdn.ImageConfig # Following an image target: system viewer vs. in-Neovim preview.
+---@field open? Mkdn.OpenConfig
+---@field blockquote_hl? Mkdn.BlockquoteHL
+---@field fenced_fix? Mkdn.FencedFix
+---@field fenced_scope? Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
+---@field tableview? Mkdn.TableViewConfig # Default TableView float style ("markdown" | "box").
+---@field menu? Mkdn.MenuConfig # nvzone/menu integration entries (opt-out).
+---@field link_hl? Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
+---@field refs? Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
+---@field toc? Mkdn.TocConfig # TOC header/marker/level defaults for `<leader>toc` / `:Markdown toc`.
+---@field table? Mkdn.TableConfig # Default alignment/overrides for `:Markdown table format`.
 
 -- #####################################################################
 -- core/link_scan.lua

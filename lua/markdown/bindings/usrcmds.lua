@@ -27,6 +27,10 @@ local api = vim.api
 ---@param bufnr integer
 local function create_open_command(bufnr)
   local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
+  -- The empty fallback is checked against `vim.api.keyset.command_info`,
+  -- whose every field Neovim's meta declares required -- there is nothing to
+  -- put in a "the call failed" placeholder.
+  ---@diagnostic disable-next-line: missing-fields
   if not ok then cmds = {} end
   if cmds["OpenWithSystemApplication"] then return end
 
@@ -45,6 +49,10 @@ local function create_underline_headings_command(bufnr)
   if not require("markdown.config").feature_enabled("underline_headings") then return end
 
   local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
+  -- The empty fallback is checked against `vim.api.keyset.command_info`,
+  -- whose every field Neovim's meta declares required -- there is nothing to
+  -- put in a "the call failed" placeholder.
+  ---@diagnostic disable-next-line: missing-fields
   if not ok then cmds = {} end
   if cmds["MarkdownNvimUnderlineHeadings"] then return end
 
@@ -72,6 +80,10 @@ local function create_mdtable_commands(bufnr)
   if not require("markdown.config").feature_enabled("table_wrap") then return end
 
   local ok, cmds = pcall(api.nvim_buf_get_commands, bufnr, { builtin = false })
+  -- The empty fallback is checked against `vim.api.keyset.command_info`,
+  -- whose every field Neovim's meta declares required -- there is nothing to
+  -- put in a "the call failed" placeholder.
+  ---@diagnostic disable-next-line: missing-fields
   if not ok then cmds = {} end
   if cmds["MDTableWrap"] then return end
 

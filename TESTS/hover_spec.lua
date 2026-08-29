@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- The hover targets built below carry only what the assertion reads; a full
+-- Lib.Hover.Target per case would be noise, not coverage.
 -- TESTS/hover_spec.lua — markdown.hover
 --
 -- Real files in a real temp directory: classification and the text previewers
