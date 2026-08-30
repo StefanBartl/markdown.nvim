@@ -11,11 +11,11 @@
             a self-contained markdown toolkit
 ```
 
-![version](https://img.shields.io/badge/version-0.1.0-blue.svg)
-![status](https://img.shields.io/badge/status-beta-orange.svg)
-![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-success.svg)
-![Lua](https://img.shields.io/badge/language-Lua-yellow.svg)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
+[![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
+![Status](https://img.shields.io/badge/status-beta-orange)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
 
 > 💡 Pairs well with [cascade.nvim](https://github.com/StefanBartl/cascade.nvim):
 > markdown.nvim renders and structures the document (TOC, folding, tables),
