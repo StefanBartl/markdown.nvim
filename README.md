@@ -115,3 +115,7 @@ runtime:
 - [Health](docs/health.md) — what `:checkhealth markdown` reports.
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.
 - [Bindings cheatsheet](docs/BINDINGS.lua) — machine-readable list of every binding.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
