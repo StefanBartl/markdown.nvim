@@ -1,3 +1,7 @@
+-- Test code: when something here comes back nil -- a `pcall(require, ...)`,
+-- a fixture read, a uv handle -- this file must crash and name it. The nil
+-- guards LuaLS asks for below would hide the very failure it exists to report.
+---@diagnostic disable: need-check-nil
 -- docs/TESTS/handler_spec.lua — cursor-action handler: silent mode for mouse
 -- invocation (a "no target" miss should not notify when triggered by the mouse).
 ---@diagnostic disable: missing-fields

@@ -1,3 +1,7 @@
+-- Test code: when something here comes back nil -- a `pcall(require, ...)`,
+-- a fixture read, a uv handle -- this file must crash and name it. The nil
+-- guards LuaLS asks for below would hide the very failure it exists to report.
+---@diagnostic disable: need-check-nil
 ---@diagnostic disable: missing-fields
 -- The hover targets built below carry only what the assertion reads; a full
 -- Lib.Hover.Target per case would be noise, not coverage.

@@ -1,3 +1,7 @@
+-- Test code: when something here comes back nil -- a `pcall(require, ...)`,
+-- a fixture read, a uv handle -- this file must crash and name it. The nil
+-- guards LuaLS asks for below would hide the very failure it exists to report.
+---@diagnostic disable: need-check-nil
 -- TESTS/link_sanitize_spec.lua — core.link_sanitize: normalize link-target
 -- paths (./, forward slashes) without touching URLs/anchors/absolute paths.
 ---@diagnostic disable: missing-fields

@@ -1,3 +1,7 @@
+-- Test code: when something here comes back nil -- a `pcall(require, ...)`,
+-- a fixture read, a uv handle -- this file must crash and name it. The nil
+-- guards LuaLS asks for below would hide the very failure it exists to report.
+---@diagnostic disable: need-check-nil
 -- TESTS/html_table_import_spec.lua — HTML <table> -> GFM round-trip
 -- (core.table_fmt.parse_html_table / rows_to_gfm), and the
 -- :Markdown table import command.
