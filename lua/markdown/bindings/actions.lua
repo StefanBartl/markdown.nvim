@@ -148,4 +148,10 @@ function M.table_prev_cell() repeat_cell_move(require("markdown.core.table_mode"
 ---Toggles table mode for the current buffer.
 function M.table_mode_toggle() require("markdown.core.table_mode").toggle() end
 
+-- Routed through the command instead of `table_fmt` directly so the key and
+-- `:Markdown table format` stay one behaviour: same default scope (cursor),
+-- same config-derived alignment, same notifications.
+---Formats the table under the cursor, exactly as `:Markdown table format`.
+function M.table_format() require("markdown.commands.table").run({ "format" }) end
+
 return M

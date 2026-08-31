@@ -16,6 +16,8 @@ round-trip.
 - **Command:** `:Markdown table format [header=|cell=|skip=|scope=]`,
   `:Markdown table import [clipboard|PATH]` (see
   [commands.md](../commands.md#markdown-table))
+- **Keymap:** `<leader>mtf` (format the table at the cursor — the
+  argument-less `:Markdown table format`), id `table_format`
 - **Config:** `table.header_align`, `table.entry_align`, `table.col_overrides`
   (per-column `align`, and — via `table_wrap`, below — `max`/`min`)
 - Also exports its parse/format primitives (`parse_all_tables`,

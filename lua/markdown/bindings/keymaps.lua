@@ -231,6 +231,14 @@ local DEFAULT_KEYMAPS = {
     feature = "table",
     desc = "Prev table cell",
   },
+  {
+    id = "table_format",
+    mode = "n",
+    lhs = "<leader>mtf",
+    action = "table_format",
+    feature = "table",
+    desc = "Format table at cursor",
+  },
 }
 
 --- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.

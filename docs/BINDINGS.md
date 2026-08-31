@@ -62,6 +62,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `heading_dec_all` | `<S-Left>` | n | `heading_dec_all` | | Decrease all headings |
 | `table_next_cell` | `]\|` | n | `table_next_cell` | feature `table` | Next table cell |
 | `table_prev_cell` | `[\|` | n | `table_prev_cell` | feature `table` | Prev table cell |
+| `table_format` | `<leader>mtf` | n | `table_format` | feature `table` | Format table at cursor |
 
 `zf` is an override of a builtin. It only takes effect with
 `use_zf_override = true`; `<localleader>f` does the same thing without touching
@@ -134,6 +135,7 @@ remapping, if you prefer.
 | `heading_dec_visual` | v, x | Decrease heading level, selection |
 | `heading_inc_all` | n | Increase all headings in buffer |
 | `heading_dec_all` | n | Decrease all headings in buffer |
+| `table_format` | n | Format table at cursor (`:Markdown table format`) |
 
 ## User commands — `:Markdown`
 

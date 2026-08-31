@@ -119,6 +119,11 @@ return {
       mode = "n",
       desc = "Decrease all headings in buffer",
     },
+    {
+      action = "table_format",
+      mode = "n",
+      desc = "Format table at cursor (`:Markdown table format`)",
+    },
   },
 
   default_keys = {
@@ -325,6 +330,14 @@ return {
         action = "table_prev_cell",
         feature = "table",
         desc = "Prev table cell",
+      },
+      {
+        id = "table_format",
+        lhs = "<leader>mtf",
+        mode = "n",
+        action = "table_format",
+        feature = "table",
+        desc = "Format table at cursor",
       },
     },
 

@@ -150,7 +150,9 @@ dependency-free reimplementation of the vim-table-mode essentials.
   reopen`, `:TableViewOpenBrowserNice reopen`.
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope. Defaults come from `config.table` (`header_align`, `entry_align`,
-  `col_overrides`) when the command args don't set them.
+  `col_overrides`) when the command args don't set them. `<leader>mtf` is the
+  argument-less form of it (id `table_format`, see
+  [keymaps.md](keymaps.md#tableview)).
 - **mode** turns on per-buffer *table mode*: after each edit inside a table it is
   re-aligned automatically (debounced, on `InsertLeave` / `TextChanged`), reusing
   the same alignment as `format`.

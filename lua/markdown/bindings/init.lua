@@ -16,11 +16,12 @@ local M = {}
 function M.setup(cfg)
   require("markdown.bindings.autocmds").setup(cfg)
 
-  -- Group labels for the two prefixes the default keys share. Everything else
+  -- Group labels for the prefixes the default keys share. Everything else
   -- which-key needs it reads off the mappings themselves.
   require("lib.nvim.bindings.keymap.which_key").add_group({
     { prefix = "<leader>t", group = "Markdown" },
     { prefix = "<leader>tv", group = "Markdown TableView" },
+    { prefix = "<leader>mt", group = "Markdown Table" },
   })
 end
 

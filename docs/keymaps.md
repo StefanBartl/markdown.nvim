@@ -107,6 +107,7 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvc` | n | Close TableView float |
 | `<leader>tvm` | n | Toggle table mode (auto-format) |
 | `]\|` / `[\|` | n | Next / previous table cell |
+| `<leader>mtf` | n | Format the table at the cursor (`:Markdown table format`) |
 
 Inside the floating preview itself (buffer-local to the popup, Normal mode
 only — not active anywhere else):

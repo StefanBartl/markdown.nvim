@@ -788,6 +788,8 @@ Link (`<leader>[`):
   <leader>tvm   n     Toggle table mode (auto-format on edit)
   ]|            n     Jump to the next cell on the current table row
   [|            n     Jump to the previous cell on the current table row
+  <leader>mtf   n     Format the table at the cursor -- identical to
+                      `:Markdown table format` (id `table_format`)
 
 Inside the floating preview itself (buffer-local to the popup, Normal mode
 only — not active anywhere else):
