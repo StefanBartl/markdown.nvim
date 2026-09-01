@@ -145,8 +145,13 @@ require("markdown").setup({
     border = "rounded",
     inline_images = true,
     url = {
-      fetch = false,       -- see "URL previews" below
+      hover = false,       -- whether a link hovers at all — see "URL previews" below
+      fetch = false,       -- and whether the page behind it is fetched
       timeout_ms = 2000,
+    },
+    office = {
+      convert = false,     -- .docx/.xlsx/.pptx → PDF → page, see "Office documents"
+      timeout_ms = 60000,
     },
   },
 })
@@ -176,16 +181,53 @@ optional — without it a hover would be recomputed on every pointer motion.
 
 ### URL previews
 
-`url.fetch` is **off by default**, on purpose. A hover that silently issues
-HTTP requests would:
+Two switches, both **off by default**, and for two different reasons.
 
-- disclose every link you brush past to its host, and
-- turn a link-heavy document into a request storm while scrolling.
+`url.hover` decides whether a link hovers at all. Off, because a markdown
+document is largely made of links: with it on, resting the cursor almost
+anywhere in a paragraph opens a float, and the float lands over the sentence
+you were reading. On, the URL is parsed and shown broken into host, path and
+decoded query — entirely locally, nothing leaves the machine.
 
-With it off, URLs still preview — the URL is parsed and shown broken into
-host, path and decoded query, entirely locally. Switch `fetch = true` on if
-you want `<title>` and `<meta description>` fetched; results are cached per
-target.
+`url.fetch` decides whether the page behind the link is fetched, for its
+**status code** (`HTTP 404 Not Found`, `HTTP 500 Internal Server Error` — the
+answer a link hover is really being asked for), its `<title>` and its
+`<meta description>`. Off on top of that, because fetching would disclose
+every link you brush past to its host and turn a link-heavy document into a
+request storm while scrolling. Switching it on implies `url.hover`.
+
+For a session, without touching the config:
+
+```vim
+:Lib hover web on          " links hover, offline
+:Lib hover web fetch on    " …and are fetched for status/title
+:Lib hover web off         " back to silence on links
+```
+
+Both come from lib.nvim, like the rest of the framework, and they apply in
+every filetype — a URL in a Lua comment or a `.txt` hovers the same way, from
+lib.nvim's own bare-URL source. markdown.nvim contributes only the *finding*
+of links inside markdown (inline links, autolinks, reference links).
+
+Fetched results are cached per target for the session, so a server that has
+since recovered keeps showing its old status until the cache is dropped —
+which any of those three commands does.
+
+### Office documents
+
+`.docx`, `.xlsx`, `.pptx`, `.odt` and their legacy siblings cannot be read as
+text: they are containers, and previewing their first lines produces mojibake.
+By default they hover as a badge — `◆ Word document · DOCX · 24 KB` — and so
+does any other file whose bytes are not text (archives, executables, media),
+decided by looking at the bytes rather than at a list of extensions.
+
+`office.convert = true` (or `:Lib hover office on`) turns that into a real
+preview: [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) converts
+the document to a PDF through LibreOffice, and the first page is drawn like
+any other picture — with the same paging keys, because by then it *is* a PDF.
+Opt-in because the first conversion of each document starts LibreOffice, which
+is seconds; the result is cached per file and mtime, so only the first hover
+pays.
 
 ### Images and PDFs
 
@@ -322,7 +364,8 @@ what the `markdown.*` rows below still are. markdown.nvim hands it over through
 | `lib.nvim.hover.classify` | Target string → type (the only filesystem touch is one `fs_stat`) |
 | `lib.nvim.hover.float` | The window: cursor-relative, unfocused, single-instance |
 | `lib.nvim.hover.preview.text` · `.media` · `.url` | Files, directories, missing targets · images and PDFs · URL parsing and the optional fetch |
-| `lib.nvim.hover.bare_path` | A path carrying no link syntax at all, in any filetype |
+| `lib.nvim.hover.preview.binary` · `.office` | "these bytes are not text" and what to call them · office documents, badge or converted page |
+| `lib.nvim.hover.bare_path` · `.bare_url` | A path, and a URL, carrying no link syntax at all, in any filetype |
 
 Older notes name `markdown.hover.classify`, `markdown.hover.float` and
 `markdown.hover.preview.*`; those are the pre-move names of the `lib.nvim.*`

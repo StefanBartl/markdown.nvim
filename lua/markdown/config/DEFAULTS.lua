@@ -164,11 +164,28 @@ local DEFAULTS = {
     -- metadata lines are shown either way.
     inline_images = true,
     url = {
+      -- Whether a link hovers at all. Off by default because a markdown
+      -- document is largely made of links: with it on, resting the cursor
+      -- almost anywhere in a paragraph opens a float over the sentence being
+      -- read. `:Lib hover web on` switches it on for a session.
+      hover = false,
       -- Off by default on purpose: a hover that silently fetches would
       -- disclose every link you brush past to its host, and turn a
-      -- link-heavy document into a request storm while scrolling.
+      -- link-heavy document into a request storm while scrolling. On, the
+      -- float leads with the response's status code -- which is the thing a
+      -- link hover is actually asked for. Implies `hover`.
       fetch = false,
       timeout_ms = 2000,
+    },
+    -- Office documents (.docx/.xlsx/.pptx/.odt and the legacy formats) are
+    -- containers, not text: previewing their first lines produces mojibake.
+    -- Off, they hover as a badge saying what the file is. On, pdfport.nvim
+    -- converts them to a PDF through LibreOffice and the first page is drawn
+    -- like any other picture -- opt-in because the first conversion of each
+    -- document starts LibreOffice, which is seconds.
+    office = {
+      convert = false,
+      timeout_ms = 60000,
     },
   },
 
