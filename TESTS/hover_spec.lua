@@ -4,7 +4,7 @@
 ---@diagnostic disable: need-check-nil
 ---@diagnostic disable: missing-fields
 -- The hover targets built below carry only what the assertion reads; a full
--- Lib.Hover.Target per case would be noise, not coverage.
+-- Hover.Target per case would be noise, not coverage.
 -- TESTS/hover_spec.lua — markdown.hover
 --
 -- Real files in a real temp directory: classification and the text previewers
@@ -15,10 +15,10 @@
 return function(H)
   local eq, ok = H.eq, H.ok
 
-  local classify = require("lib.nvim.hover.classify")
-  local text = require("lib.nvim.hover.preview.text")
+  local classify = require("hover.classify")
+  local text = require("hover.preview.text")
   local section = require("markdown.hover.section")
-  local float = require("lib.nvim.hover.float")
+  local float = require("hover.float")
 
   -- ------------------------------------------------------------- fixtures
 
@@ -325,7 +325,7 @@ return function(H)
   )
 
   do
-    local media = require("lib.nvim.hover.preview.media")
+    local media = require("hover.preview.media")
     local preview_opts = { max_lines = 10, max_width = 40 }
 
     local function target_for(path)
@@ -384,7 +384,7 @@ return function(H)
   -- ----------------------------------------------------------- pdf hover
 
   do
-    local media = require("lib.nvim.hover.preview.media")
+    local media = require("hover.preview.media")
     local preview_opts = { max_lines = 10, max_width = 40 }
 
     local pdf = tmp .. "/doc.pdf"
@@ -607,7 +607,7 @@ return function(H)
   -- stays silent rather than opening a "does not exist" float on every word.
   do
     local hover = require("markdown.hover")
-    local lib_hover = require("lib.nvim.hover")
+    local lib_hover = require("hover")
 
     -- The buffer is *named* into the fixture directory rather than the cwd
     -- being changed to it: `bare_path` resolves against the buffer's own
@@ -686,13 +686,13 @@ return function(H)
         reason = "no such file",
       })
       ok(content.lines[1]:match("^✗") ~= nil, "preview.missing: marked with a ✗")
-      eq(content.highlight, "LibHoverMissing", "preview.missing: carries its highlight group")
+      eq(content.highlight, "HoverMissing", "preview.missing: carries its highlight group")
     end
     ok(not target_on("   ", 1), "bare path: whitespace under the cursor is not a target")
 
     -- Opt-out, even where a real path sits under the cursor. Set on the
     -- framework directly: markdown.nvim hands its `hover` block to
-    -- `lib.nvim.hover.setup` and the library owns the value from there on.
+    -- `hover.setup` and the library owns the value from there on.
     lib_hover.setup({ bare_paths = false })
     ok(
       not target_on("-- see pic.png for the layout", 10),

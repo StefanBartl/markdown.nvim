@@ -1,7 +1,7 @@
 ---@module 'markdown.hover'
 ---@brief markdown.nvim's contribution to the hover, plus the public entry points.
 ---@description
---- The hover framework itself lives in `lib.nvim.hover` — classification, the
+--- The hover framework itself lives in `hover.nvim` — classification, the
 --- float, file/directory/URL previews, the debounce, the LRU cache, and
 --- bare-path detection are all "a path is a path" and were never markdown.
 --- What this module keeps is the part that genuinely is:
@@ -12,7 +12,7 @@
 ---   * **section previews**: `#heading` and `file.md#heading`, which need GFM
 ---     slugging and heading parsing (`markdown.hover.section`).
 ---
---- Both are handed over through `lib.nvim.hover.registry`, so the library
+--- Both are handed over through `hover.registry`, so the library
 --- reaches them without knowing this plugin exists. `escalate()` stays here
 --- too: opening the *full* thing is routed per target type into markdown.nvim's
 --- own openers (mdview, the PDF chooser, the platform opener), none of which
@@ -28,7 +28,7 @@ local api = vim.api
 local notify = require("markdown.util.notify").create("[markdown.hover]")
 
 ---@return table
-local function lib() return require("lib.nvim.hover") end
+local function lib() return require("hover") end
 
 ---@type boolean
 local _registered = false
@@ -48,7 +48,7 @@ local _registered = false
 ---@return nil
 local function register()
   if _registered then return end
-  local ok, registry = pcall(require, "lib.nvim.hover.registry")
+  local ok, registry = pcall(require, "hover.registry")
   if not ok then return end
   _registered = true
 
@@ -98,7 +98,7 @@ end
 --- The link (or bare path) under the cursor. Delegates to the framework,
 --- which asks this plugin's registered source first.
 ---@param bufnr? integer
----@return Lib.Hover.Source|nil
+---@return Hover.Source|nil
 function M.link_under_cursor(bufnr)
   register()
   return lib().target_under_cursor(bufnr)
@@ -133,7 +133,7 @@ function M.attach(bufnr)
 end
 
 --- Push markdown.nvim's `hover` config into the framework.
----@param hover_cfg Lib.HoverConfig|nil
+---@param hover_cfg Hover.Config|nil
 ---@return nil
 function M.configure(hover_cfg)
   register()
@@ -163,7 +163,7 @@ function M.escalate()
 
   local source = api.nvim_buf_get_name(bufnr)
   local target =
-    require("lib.nvim.hover.classify").classify(found.target, source ~= "" and source or nil)
+    require("hover.classify").classify(found.target, source ~= "" and source or nil)
 
   if target.type == "markdown" then
     require("markdown.commands.mdview").run({ target.path })

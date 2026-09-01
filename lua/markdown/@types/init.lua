@@ -37,13 +37,13 @@
 
 -- hover/*.lua
 --
--- The hover framework moved to `lib.nvim.hover`; its internal types live
--- there as `Lib.Hover.*`. What stays here is the plugin-facing config block,
--- which markdown.nvim owns and hands to `lib.nvim.hover.setup`.
+-- The hover framework moved to `hover.nvim`; its internal types live
+-- there as `Hover.*`. What stays here is the plugin-facing config block,
+-- which markdown.nvim owns and hands to `hover.setup`.
 
----@alias Mkdn.HoverTrigger Lib.HoverTrigger
----@alias Mkdn.HoverUrlConfig Lib.HoverUrlConfig
----@alias Mkdn.HoverConfig Lib.HoverConfig
+---@alias Mkdn.HoverTrigger Hover.Trigger
+---@alias Mkdn.HoverUrlConfig Hover.LegacyUrlConfig
+---@alias Mkdn.HoverConfig Hover.Config
 
 ---@class Mkdn.BlockquoteHL
 ---@field marker_fg? string # Color for the `>` marker token. Unset: derived from the active colorscheme.

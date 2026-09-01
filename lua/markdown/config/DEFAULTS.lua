@@ -152,7 +152,7 @@ local DEFAULTS = {
     -- new. Truncated paths ("...nvim/init.lua:42") need gopath.nvim, a soft
     -- dependency -- without it, ordinary relative/absolute paths still work.
     -- A bare path must exist to hover at all, or every word in the buffer
-    -- would report "target does not exist". See lib.nvim.hover.bare_path.
+    -- would report "target does not exist". See hover.bare_path.
     bare_paths = true,
     -- Which buffers get a hover. "*" because a path worth previewing is not a
     -- markdown phenomenon -- narrow it to a filetype list (e.g.
@@ -167,7 +167,7 @@ local DEFAULTS = {
       -- Whether a link hovers at all. Off by default because a markdown
       -- document is largely made of links: with it on, resting the cursor
       -- almost anywhere in a paragraph opens a float over the sentence being
-      -- read. `:Lib hover web on` switches it on for a session.
+      -- read. `:Hover links web on` switches it on for a session.
       hover = false,
       -- Off by default on purpose: a hover that silently fetches would
       -- disclose every link you brush past to its host, and turn a

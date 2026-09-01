@@ -4,7 +4,7 @@ Rest the cursor on a markdown link — or on a path written as plain text —
 and a small float shows what it points at, whatever that is.
 
 > **Where this lives.** The framework itself is
-> [`lib.nvim.hover`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/hover/README.md),
+> [`hover.nvim`](https://github.com/StefanBartl/hover.nvim/blob/main/README.md),
 > not this plugin: classification, the float, file/directory/URL previews,
 > the debounce and bare-path detection are "a path is a path" and were never
 > markdown. markdown.nvim contributes the two parts that genuinely are —
@@ -161,7 +161,7 @@ Turn it off entirely with `hover = { enabled = false }`, or via the feature
 gate: `features = { disable = { "hover" } }`.
 
 Both of those are read at startup. For the rest of a session there is
-`:Lib hover toggle` (also `on` / `off`), which comes from lib.nvim and works
+`:Hover toggle` (also `mode auto` / `mode off`), which comes from hover.nvim and works
 whether or not markdown.nvim is loaded — the framework is lib.nvim's, and so
 is the switch. It is announced when you throw it, because an off hover is
 otherwise indistinguishable from a line that simply has no link on it.
@@ -199,9 +199,9 @@ request storm while scrolling. Switching it on implies `url.hover`.
 For a session, without touching the config:
 
 ```vim
-:Lib hover web on          " links hover, offline
-:Lib hover web fetch on    " …and are fetched for status/title
-:Lib hover web off         " back to silence on links
+:Hover links web on          " links hover, offline
+:Hover links web fetch on    " …and are fetched for status/title
+:Hover links web off         " back to silence on links
 ```
 
 Both come from lib.nvim, like the rest of the framework, and they apply in
@@ -221,7 +221,7 @@ By default they hover as a badge — `◆ Word document · DOCX · 24 KB` — an
 does any other file whose bytes are not text (archives, executables, media),
 decided by looking at the bytes rather than at a list of extensions.
 
-`office.convert = true` (or `:Lib hover office on`) turns that into a real
+`office.convert = true` (or `:Hover office on`) turns that into a real
 preview: [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) converts
 the document to a PDF through LibreOffice, and the first page is drawn like
 any other picture — with the same paging keys, because by then it *is* a PDF.
@@ -353,19 +353,19 @@ classification, the float, the file/directory/URL previews, the debounce, the
 cache and bare-path detection are all just "a path is a path". What genuinely
 needs a markdown parser is roughly a tenth of the code, and that tenth is
 what the `markdown.*` rows below still are. markdown.nvim hands it over through
-`lib.nvim.hover.registry` and is never named inside the library.
+`hover.registry` and is never named inside the library.
 
 | Module | Responsibility |
 | --- | --- |
 | `markdown.hover` | The façade: registers this plugin's contributions, then delegates. Plus `escalate`, which is ours |
 | `markdown.hover.section` | `#heading` and `file.md#heading` previews — the part that needs GFM slugging and heading parsing |
 | `markdown.core.link_scan` / `markdown.core.html_links` | Registered as *sources*: the link, or the enclosing `<figure>`, under the cursor |
-| `lib.nvim.hover` | Trigger, debounce, cache, cancellation, dispatch — and the dismissal (`q`/`<Esc>`) and session switch |
-| `lib.nvim.hover.classify` | Target string → type (the only filesystem touch is one `fs_stat`) |
-| `lib.nvim.hover.float` | The window: cursor-relative, unfocused, single-instance |
-| `lib.nvim.hover.preview.text` · `.media` · `.url` | Files, directories, missing targets · images and PDFs · URL parsing and the optional fetch |
-| `lib.nvim.hover.preview.binary` · `.office` | "these bytes are not text" and what to call them · office documents, badge or converted page |
-| `lib.nvim.hover.bare_path` · `.bare_url` | A path, and a URL, carrying no link syntax at all, in any filetype |
+| `hover.nvim` | Trigger, debounce, cache, cancellation, dispatch — and the dismissal (`q`/`<Esc>`) and session switch |
+| `hover.classify` | Target string → type (the only filesystem touch is one `fs_stat`) |
+| `hover.nvim.float` | The window: cursor-relative, unfocused, single-instance |
+| `hover.nvim.preview.text` · `.media` · `.url` | Files, directories, missing targets · images and PDFs · URL parsing and the optional fetch |
+| `hover.nvim.preview.binary` · `.office` | "these bytes are not text" and what to call them · office documents, badge or converted page |
+| `hover.bare_path` · `.bare_url` | A path, and a URL, carrying no link syntax at all, in any filetype |
 
 Older notes name `markdown.hover.classify`, `markdown.hover.float` and
 `markdown.hover.preview.*`; those are the pre-move names of the `lib.nvim.*`

@@ -70,7 +70,7 @@ function M.setup(cfg)
   -- CursorHold/mouse autocmds and re-checks the config itself, so toggling
   -- it off at runtime takes effect without re-running setup().
   if feat("hover") and (cfg.hover and cfg.hover.enabled) ~= false then
-    -- No autocmd of our own: `lib.nvim.hover.enable` installs the FileType
+    -- No autocmd of our own: `hover.enable` installs the FileType
     -- trigger (and attaches to already-open buffers), because the hover is not
     -- a markdown feature and must not be gated on this plugin having loaded.
     -- `configure` registers markdown.nvim's link source and section previews
@@ -78,10 +78,10 @@ function M.setup(cfg)
     --
     -- Note this only covers users who reach markdown.nvim at all — it is
     -- lazy-loaded on markdown filetypes in most specs, so a session that never
-    -- opens a markdown file still needs `require("lib.nvim.hover").enable()`
+    -- opens a markdown file still needs `require("hover").enable()`
     -- from somewhere that is not lazy. See lua/lib/nvim/hover/README.md.
     require("markdown.hover").configure(cfg.hover)
-    require("lib.nvim.hover").enable()
+    require("hover").enable()
   end
 
   -- Reference sync automatic triggers (independent opt-in via config.refs.mode).

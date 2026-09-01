@@ -1,6 +1,6 @@
 ---@diagnostic disable: missing-fields
 -- The hover targets built below carry only what the assertion reads; a full
--- Lib.Hover.Target per case would be noise, not coverage.
+-- Hover.Target per case would be noise, not coverage.
 -- TESTS/usrcmd_complete_spec.lua — `:Markdown` argument completion past the
 -- first argument.
 --

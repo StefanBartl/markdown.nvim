@@ -31,6 +31,9 @@ pdfport.nvim). Pure FileType-scoped — zero side effects on non-Markdown
 buffers. Requires Neovim >= 0.9 and
 [lib.nvim](https://github.com/StefanBartl/lib.nvim) (the `:Markdown`/
 `:TableView*` command layer, plus buffer debouncing); no external tools.
+The link/path hover lives in
+[hover.nvim](https://github.com/StefanBartl/hover.nvim), which this plugin
+contributes its link scanner and `#heading` previews to.
 
 ---
 
@@ -64,7 +67,12 @@ buffers. Requires Neovim >= 0.9 and
 -- lazy.nvim
 {
   "StefanBartl/markdown.nvim",
-  dependencies = { "StefanBartl/lib.nvim" },
+  dependencies = {
+    "StefanBartl/lib.nvim",
+    -- Optional. markdown.nvim registers its link scanner and #heading
+    -- previews into it; without it those simply do not exist.
+    "StefanBartl/hover.nvim",
+  },
   ft = { "markdown", "mdx", "md" },
   opts = {},
 }

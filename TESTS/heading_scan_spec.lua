@@ -1,6 +1,6 @@
 ---@diagnostic disable: missing-fields
 -- The hover targets built below carry only what the assertion reads; a full
--- Lib.Hover.Target per case would be noise, not coverage.
+-- Hover.Target per case would be noise, not coverage.
 -- TESTS/heading_scan_spec.lua — core.heading_scan + `:Markdown list headings`:
 --   * ATX headings are extracted with level/title/lnum.
 --   * Frontmatter and fenced code blocks are skipped.
