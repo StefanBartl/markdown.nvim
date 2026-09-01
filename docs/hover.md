@@ -80,12 +80,12 @@ Two rules keep this from firing constantly:
 └───────────────────────────────────┘
 ```
 
-The ✗ uses the `LibHoverMissing` highlight group, linked to
+The ✗ uses the `HoverMissing` highlight group, linked to
 `DiagnosticError` by default so it follows your colorscheme. Override it
 before or after setup:
 
 ```lua
-vim.api.nvim_set_hl(0, "LibHoverMissing", { fg = "#ff5555", bold = true })
+vim.api.nvim_set_hl(0, "HoverMissing", { fg = "#ff5555", bold = true })
 ```
 
 Truncated paths (`...nvim/init.lua`, `…/lua/config/init.lua`) and `:line:col`
@@ -162,8 +162,8 @@ gate: `features = { disable = { "hover" } }`.
 
 Both of those are read at startup. For the rest of a session there is
 `:Hover toggle` (also `mode auto` / `mode off`), which comes from hover.nvim and works
-whether or not markdown.nvim is loaded — the framework is lib.nvim's, and so
-is the switch. It is announced when you throw it, because an off hover is
+whether or not markdown.nvim is loaded — the framework is hover.nvim's, and
+so is the switch. It is announced when you throw it, because an off hover is
 otherwise indistinguishable from a line that simply has no link on it.
 
 ### Triggers
@@ -204,9 +204,9 @@ For a session, without touching the config:
 :Hover links web off         " back to silence on links
 ```
 
-Both come from lib.nvim, like the rest of the framework, and they apply in
+Both come from hover.nvim, like the rest of the framework, and they apply in
 every filetype — a URL in a Lua comment or a `.txt` hovers the same way, from
-lib.nvim's own bare-URL source. markdown.nvim contributes only the *finding*
+hover.nvim's own bare-URL source. markdown.nvim contributes only the *finding*
 of links inside markdown (inline links, autolinks, reference links).
 
 Fetched results are cached per target for the session, so a server that has
@@ -325,7 +325,7 @@ plugin, rather than through new logic here.
   so a plain close would pop straight back while you are still standing on
   the link you wanted out of the way. The dismissal ends by itself at the
   next target, so there is nothing to remember and undo. The keys are
-  lib.nvim's (`hover.dismiss_keys`), borrowed only while a float is on screen
+  hover.nvim's (`hover.dismiss_keys`), borrowed only while a float is on screen
   and *restored* — not deleted — when it closes, since the float is
   unfocusable and can hold no mapping of its own.
 - **No fallback to "the only link on the line".** Unlike the link *opener*
@@ -347,31 +347,31 @@ Nothing here re-parses markdown. Link detection is
 already handles inline links, bare URLs, `<…>` autolinks and
 trailing-punctuation trimming.
 
-**The framework moved to lib.nvim; the markdown half stayed here.** It began
+**The framework moved to hover.nvim; the markdown half stayed here.** It began
 in this plugin, but almost none of it turned out to be *about* markdown —
 classification, the float, the file/directory/URL previews, the debounce, the
 cache and bare-path detection are all just "a path is a path". What genuinely
 needs a markdown parser is roughly a tenth of the code, and that tenth is
 what the `markdown.*` rows below still are. markdown.nvim hands it over through
-`hover.registry` and is never named inside the library.
+`hover.registry` and is never named inside hover.nvim.
 
 | Module | Responsibility |
 | --- | --- |
 | `markdown.hover` | The façade: registers this plugin's contributions, then delegates. Plus `escalate`, which is ours |
 | `markdown.hover.section` | `#heading` and `file.md#heading` previews — the part that needs GFM slugging and heading parsing |
 | `markdown.core.link_scan` / `markdown.core.html_links` | Registered as *sources*: the link, or the enclosing `<figure>`, under the cursor |
-| `hover.nvim` | Trigger, debounce, cache, cancellation, dispatch — and the dismissal (`q`/`<Esc>`) and session switch |
+| `hover` | Trigger, debounce, cache, cancellation, dispatch — and the dismissal (`q`/`<Esc>`) and session switch |
 | `hover.classify` | Target string → type (the only filesystem touch is one `fs_stat`) |
-| `hover.nvim.float` | The window: cursor-relative, unfocused, single-instance |
-| `hover.nvim.preview.text` · `.media` · `.url` | Files, directories, missing targets · images and PDFs · URL parsing and the optional fetch |
-| `hover.nvim.preview.binary` · `.office` | "these bytes are not text" and what to call them · office documents, badge or converted page |
+| `hover.float` | The window: cursor-relative, unfocused, single-instance |
+| `hover.preview.text` · `.media` · `.url` | Files, directories, missing targets · images and PDFs · URL parsing and the optional fetch |
+| `hover.preview.binary` · `.office` | "these bytes are not text" and what to call them · office documents, badge or converted page |
 | `hover.bare_path` · `.bare_url` | A path, and a URL, carrying no link syntax at all, in any filetype |
 
 Older notes name `markdown.hover.classify`, `markdown.hover.float` and
-`markdown.hover.preview.*`; those are the pre-move names of the `lib.nvim.*`
-rows above.
+`markdown.hover.preview.*`, and notes written between the two moves name them
+`lib.nvim.hover.*`. Both are pre-move spellings of the `hover.*` rows above.
 
 Asynchronous previews (PDF rasterization, URL fetch) are guarded by a
-generation counter in lib.nvim: if the cursor moves on before the result
+generation counter in hover.nvim: if the cursor moves on before the result
 lands, the result is dropped instead of opening a float for a link you have
 already left.
