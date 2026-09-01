@@ -162,8 +162,7 @@ function M.escalate()
   end
 
   local source = api.nvim_buf_get_name(bufnr)
-  local target =
-    require("hover.classify").classify(found.target, source ~= "" and source or nil)
+  local target = require("hover.classify").classify(found.target, source ~= "" and source or nil)
 
   if target.type == "markdown" then
     require("markdown.commands.mdview").run({ target.path })
