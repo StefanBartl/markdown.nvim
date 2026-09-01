@@ -273,6 +273,9 @@ composer.register_type("MARKDOWN_SUBARG", {
   -- alone pins every slot to the first argument. The synthetic fallback only
   -- applies when there is no command line to read (a direct call in a test).
   complete = function(arg_lead, spec, cmd_line)
+    -- `subcmd` is this plugin's own payload on the arg spec (see the
+    -- `register_type` call site below), not part of composer's shape.
+    ---@cast spec Mkdn.SubargSpec
     local line = cmd_line
     if not line or line == "" then line = "Markdown " .. spec.subcmd .. " " .. arg_lead end
     local ok, result = pcall(require("markdown.commands").complete, arg_lead, line, #line)

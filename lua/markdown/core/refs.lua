@@ -276,6 +276,16 @@ function M.on_change(bufnr)
   end
 
   local timer = uv.new_timer()
+  if not timer then
+    -- No timer means no debounce, not no reconcile. Returning here would stop
+    -- the live view updating for the rest of the session without saying so, so
+    -- the reconcile runs once, scheduled, exactly as the debounced path does.
+    st.timer = nil
+    vim.schedule(function()
+      if api.nvim_buf_is_valid(bufnr) then pcall(M.reconcile, bufnr, { silent = true }) end
+    end)
+    return
+  end
   st.timer = timer
   timer:start(delay, 0, function()
     timer:stop()

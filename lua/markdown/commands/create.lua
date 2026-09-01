@@ -120,7 +120,9 @@ function M.run(argv, ctx)
 
   local l1, l2
   if ctx and ctx.range and ctx.range > 0 then
-    l1, l2 = ctx.line1, ctx.line2
+    -- A range means Neovim filled both bounds; the ctx types them optional
+    -- because a call without `-range` carries neither.
+    l1, l2 = assert(ctx.line1), assert(ctx.line2)
   else
     l1, l2 = 1, vim.api.nvim_buf_line_count(bufnr)
   end

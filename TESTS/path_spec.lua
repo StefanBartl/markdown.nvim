@@ -52,6 +52,7 @@ return function(H)
       os_native(root .. "/sub/deep/file.md"),
       "resolve: falls back to cwd base when buffer base misses"
     )
+    ---@cast resolved -nil
     ok(vim.uv.fs_stat(resolved), "resolve: returned path exists on disk")
 
     -- Backslash-authored relative link resolves identically.
@@ -72,7 +73,9 @@ return function(H)
   end)
 
   -- Teardown (always).
-  pcall(vim.cmd, "cd " .. vim.fn.fnameescape(prev_cwd))
+  -- `vim.cmd` is a callable table, not a function: the closure form is what
+  -- `pcall` takes.
+  pcall(function() vim.cmd("cd " .. vim.fn.fnameescape(prev_cwd)) end)
   pcall(vim.fn.delete, root, "rf")
   package.loaded["markdown.util.path"] = nil
 

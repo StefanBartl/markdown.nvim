@@ -58,6 +58,7 @@ return function(H)
 
     local b = scope.detect(buf, 0) -- title, outside
     ok(b and b.kind == "buffer", "cursor outside -> buffer scope")
+    ---@cast b -nil
     ok(scope.is_excluded(b, 8), "buffer scope excludes inner heading line")
     ok(not scope.is_excluded(b, 3), "buffer scope keeps outer heading line")
   end

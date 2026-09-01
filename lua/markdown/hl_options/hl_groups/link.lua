@@ -33,9 +33,17 @@ function M.apply(opts)
     local base = vim.api.nvim_get_hl(0, { name = base_name, link = false })
     if type(base) ~= "table" then base = {} end
 
-    base.underline = want_underline
-    base.undercurl = false
-    vim.api.nvim_set_hl(0, group, base)
+    -- Built rather than mutated. `nvim_get_hl` answers with the *read* side of
+    -- a highlight (each attribute is `true?` there, because it only reports the
+    -- ones that are set), `nvim_set_hl` takes the *write* side, which can also
+    -- unset them -- two classes for one table, and LuaLS refuses to cast
+    -- between them. Copying into a fresh table says which of the two this is
+    -- and keeps every attribute the colourscheme set, without listing them.
+    local hl = vim.tbl_extend("force", {}, base, {
+      underline = want_underline,
+      undercurl = false,
+    })
+    vim.api.nvim_set_hl(0, group, hl)
   end
 end
 

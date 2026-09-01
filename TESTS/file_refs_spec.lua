@@ -152,7 +152,7 @@ return function(H)
     eq(#(async_refs or {}), 4, "find_references_async: same 4 refs as the sync path")
   end)
 
-  pcall(vim.cmd, "cd " .. vim.fn.fnameescape(prev_cwd))
+  pcall(function() vim.cmd("cd " .. vim.fn.fnameescape(prev_cwd)) end)
   pcall(vim.fn.delete, root2, "rf")
   package.loaded["markdown.util.path"] = nil
   package.loaded["markdown.core.file_refs"] = nil

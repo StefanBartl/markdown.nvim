@@ -522,6 +522,9 @@ function M.from_csv(bufnr, path)
       notify.warn("Clipboard is empty; pass a PATH or copy CSV first")
       return false
     end
+    -- One-argument `getreg` answers with the string form; the `string[]` half
+    -- of its type needs the third argument, which this call does not pass.
+    ---@cast reg string
     csv_lines = vim.split(reg, "\n", { trimempty = true })
   end
 
@@ -743,7 +746,11 @@ function M.fold_row_at_cursor(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   vim.b[bufnr].mdtable_fold_continuations = true
   refresh_folds(bufnr)
-  api.nvim_buf_call(bufnr, function() pcall(vim.cmd, "silent! normal! zc") end)
+  -- `vim.cmd` is a callable table, not a function, so it does not satisfy
+  -- `pcall`'s first parameter -- the closure form does.
+  api.nvim_buf_call(bufnr, function()
+    pcall(function() vim.cmd("silent! normal! zc") end)
+  end)
 end
 
 ---`:MDTableFoldAll` — folds every continuation block in the buffer.
@@ -756,7 +763,7 @@ function M.fold_all(bufnr)
     local n = api.nvim_buf_line_count(bufnr)
     for l = 1, n do
       if vim.fn.foldlevel(l) > 0 and vim.fn.foldclosed(l) == -1 then
-        pcall(vim.cmd, l .. "foldclose")
+        pcall(function() vim.cmd(l .. "foldclose") end)
       end
     end
   end)

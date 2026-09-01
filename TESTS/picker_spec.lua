@@ -11,6 +11,9 @@ return function(H)
   -- Stub vim.ui.select so the fallback path never blocks on real input.
   local orig_select = vim.ui.select
   local last_select_items = nil
+  -- A test double over typed `vim.ui` surface: replacing the field is the
+  -- point of the case, not a second definition of it.
+  ---@diagnostic disable-next-line: duplicate-set-field
   vim.ui.select = function(select_items, _opts, on_choice)
     last_select_items = select_items
     on_choice(select_items[1])

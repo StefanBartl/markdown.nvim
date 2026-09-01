@@ -27,6 +27,9 @@ return function(H)
     reset()
     local system_opened = nil
     local orig_ui_open = vim.ui.open
+    -- A test double over typed `vim.ui` surface: replacing the field is the
+    -- point of the case, not a second definition of it.
+    ---@diagnostic disable-next-line: duplicate-set-field
     vim.ui.open = function(p)
       system_opened = p
       return true, nil
@@ -65,6 +68,7 @@ return function(H)
     file.open_pdf("C:/docs/report.pdf")
 
     eq(type(pdfport_opened), "table", "pdfport.open called")
+    ---@cast pdfport_opened table
     eq(pdfport_opened.path, "C:/docs/report.pdf", "pdfport.open gets the resolved path")
     eq(pdfport_opened.mode, "buffer", "pdfport renders into a new buffer (its own fallback chain)")
   end
@@ -81,6 +85,9 @@ return function(H)
 
     local system_opened = nil
     local orig_ui_open = vim.ui.open
+    -- A test double over typed `vim.ui` surface: replacing the field is the
+    -- point of the case, not a second definition of it.
+    ---@diagnostic disable-next-line: duplicate-set-field
     vim.ui.open = function(p)
       system_opened = p
       return true, nil

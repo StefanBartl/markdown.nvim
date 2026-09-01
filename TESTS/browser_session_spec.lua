@@ -19,6 +19,9 @@ return function(H)
   -- Stub the system opener so no real browser launches; count invocations.
   local orig_ui_open = vim.ui and vim.ui.open
   local opens = 0
+  -- A test double over typed `vim.ui` surface: replacing the field is the
+  -- point of the case, not a second definition of it.
+  ---@diagnostic disable-next-line: duplicate-set-field
   if vim.ui then vim.ui.open = function(_target)
     opens = opens + 1
     return true

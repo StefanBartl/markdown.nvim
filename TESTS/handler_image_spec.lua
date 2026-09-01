@@ -45,6 +45,9 @@ return function(H)
   local function with_system_opener(fn)
     local opened = nil
     local orig = vim.ui.open
+    -- A test double over typed `vim.ui` surface: replacing the field is the
+    -- point of the case, not a second definition of it.
+    ---@diagnostic disable-next-line: duplicate-set-field
     vim.ui.open = function(p)
       opened = p
       return true, nil

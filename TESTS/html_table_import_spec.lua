@@ -45,7 +45,7 @@ return function(H)
 
   -- rows_to_gfm renders a valid, parseable GFM table.
   do
-    local rows = tf.parse_html_table(HTML)
+    local rows = assert(tf.parse_html_table(HTML), "the fixture table parses")
     local gfm = tf.rows_to_gfm(rows, {})
     eq(#gfm, 4, "header + separator + 2 rows")
     ok(gfm[1]:match("^|.*Name.*|$") ~= nil, "header row has Name")

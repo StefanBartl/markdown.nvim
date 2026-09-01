@@ -262,8 +262,9 @@ return function(H)
     -- Opening again replaces rather than stacking.
     local first = float.win()
     float.open({ "second" }, { max_width = 40, max_height = 10 })
-    ok(float.win() ~= first, "float: reopening replaces the previous window")
-    ok(vim.api.nvim_win_is_valid(float.win()), "float: the new window is valid")
+    local reopened = assert(float.win(), "float: reopening produced a window")
+    ok(reopened ~= first, "float: reopening replaces the previous window")
+    ok(vim.api.nvim_win_is_valid(reopened), "float: the new window is valid")
 
     -- The hover must never take focus.
     ok(vim.api.nvim_get_current_win() ~= float.win(), "float: does not steal focus")
@@ -356,6 +357,8 @@ return function(H)
     local win, fbuf =
       float.open(c.lines, { title = c.title, canvas = c.canvas, max_width = 40, max_height = 10 })
     ok(win ~= nil, "image hover: canvas opens a float even with no lines")
+    ---@cast win -nil
+    ---@cast fbuf -nil
     eq(vim.api.nvim_win_get_width(win), 40, "image hover: float is the canvas width")
     eq(vim.api.nvim_win_get_height(win), 5, "image hover: float is the canvas height")
     eq(vim.api.nvim_win_get_config(win).title, nil, "image hover: float has no border title")
@@ -616,7 +619,8 @@ return function(H)
 
     ---@param line string
     ---@param col integer
-    ---@return table|nil
+    ---@return table|nil target The link under the cursor, or nil.
+    ---@return string path The probe buffer's own name, which `show()` classifies against.
     local function target_on(line, col)
       counter = counter + 1
       local buf = H.scratch("lua") -- deliberately NOT markdown

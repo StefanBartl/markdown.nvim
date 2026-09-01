@@ -13,6 +13,14 @@
 
 ---@alias Mkdn.LinkDiagnosticsMode "off"|"save"
 
+--- One `MARKDOWN_SUBARG` slot, as this plugin registers it: composer's own arg
+--- spec plus the subcommand it belongs to. `usrcmds.lua` attaches `subcmd` when
+--- it builds the slots and reads it back in the type's `complete` callback, to
+--- synthesize a command line when there is none to read (a direct call in a
+--- test).
+---@class Mkdn.SubargSpec : Lib.UserCmd.Composer.ArgSpec
+---@field subcmd string The `:Markdown <subcmd>` this slot completes for.
+
 ---@class Mkdn.LinkDiagnosticsConfig
 ---@field mode Mkdn.LinkDiagnosticsMode # "off" (manual `:Markdown links check` only) | "save" (also rerun on BufWritePost). Default "off".
 
