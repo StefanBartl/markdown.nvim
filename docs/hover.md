@@ -282,8 +282,16 @@ require("markdown").hover()       -- preview the link under the cursor now
 require("markdown").hover_hide()  -- close it
 ```
 
-`hover()` ignores the `enabled` flag, so it works as a keymap even with the
-automatic hover switched off:
+`hover()` asks with `force`, which opens every *volume* switch — a web link
+previews even with `url.hover = false`. (Not the cost switches: `url.fetch`
+stays off, because a keypress is not consent to disclose the link to its
+host.)
+
+It does **not** override the mode. With `hover = { enabled = false }` — which
+hover.nvim reads as `mode = "off"` — or with `vim.g.hover_disable` set,
+nothing opens, deliberately: a veto that a keypress can defeat is not a veto.
+The setting for "no automatic hover, but the key still works" is
+`hover = { mode = "manual" }`, which is the mode built for exactly this:
 
 ```lua
 vim.keymap.set("n", "K", require("markdown").hover, { buffer = true })
