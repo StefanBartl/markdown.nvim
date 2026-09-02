@@ -4,10 +4,16 @@
 
 | Key | Mode | Action |
 |-----|------|--------|
-| `<C-p>` / `[[` | n / v / x | Previous H2+ heading |
-| `<C-f>` / `]]` | n / v / x | Next H2+ heading |
-| `{count}<leader><C-p>` | n | Previous heading of level `count` |
-| `{count}<leader><C-f>` | n | Next heading of level `count` |
+| `<C-p>` / `[[` | n / v / x | Previous heading **or fenced-code delimiter** |
+| `<C-f>` / `]]` | n / v / x | Next heading **or fenced-code delimiter** |
+| `{count}<leader><C-p>` | n | Previous heading of level `count` (headings only) |
+| `{count}<leader><C-f>` | n | Next heading of level `count` (headings only) |
+
+`<C-p>`/`<C-f>` stop on a fenced block's opening ` ```lang ` line and on its
+closing ` ``` ` line as well as on headings — a code block is the other
+landmark of a markdown file, and it used to take a separate motion to reach.
+Set `nav = { fences = false }` for the old headings-only behavior; the
+`<leader>` variants are headings-only either way.
 
 ## Heading level shift
 
@@ -55,6 +61,7 @@ in your config, or let the plugin handle it via the FileType autocmd.
 | Key | Mode | Action |
 |-----|------|--------|
 | `**` | v | Toggle `**bold**` on selection |
+| `**` | V | Toggle `**bold**` on every selected line |
 | `<leader>[` | n | Wrap word under cursor in a Markdown link |
 | `<leader>[` | v | Wrap selection in a Markdown link |
 

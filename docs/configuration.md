@@ -23,6 +23,11 @@ require("markdown").setup({
   -- Protect H1 from being shifted down
   protect_h1             = false,
 
+  -- Heading navigation. fences = true: <C-p>/<C-f>/[[/]] also stop on a
+  -- fenced block's opening and closing delimiter line. The by-level hops
+  -- (<leader><C-p>/<leader><C-f>) stay headings-only either way.
+  nav                    = { fences = true },
+
   -- Override zf to fold under cursor (instead of Vim's operator)
   use_zf_override        = true,
 

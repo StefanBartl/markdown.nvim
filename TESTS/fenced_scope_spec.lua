@@ -34,7 +34,14 @@ return function(H)
   }
 
   local function fresh()
-    config.setup({ fenced_scope = { provider = "builtin" } })
+    -- nav.fences = false so the nav assertions below stay about *scope*.
+    -- A fenced block's delimiter lines are landmarks for <C-p>/<C-f> by
+    -- default (see nav_fences_spec.lua); leaving that on here would have
+    -- every hop stop at a ``` line before reaching the heading under test.
+    config.setup({
+      fenced_scope = { provider = "builtin" },
+      nav = { fences = false },
+    })
     scope._reset_backend()
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, vim.deepcopy(DOC))
@@ -109,7 +116,7 @@ return function(H)
 
   -- ---- disabled = legacy (enters the fence) --------------------------------
   do
-    config.setup({ fenced_scope = { enable = false } })
+    config.setup({ fenced_scope = { enable = false }, nav = { fences = false } })
     scope._reset_backend()
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, vim.deepcopy(DOC))

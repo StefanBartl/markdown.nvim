@@ -37,10 +37,10 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `toggle_bold` | `**` | v | `toggle_bold_visual` | `map_double_asterisk` | Toggle bold |
 | `wrap_link_n` | `<leader>[` | n | `wrap_link_normal` | `map_wrap_link` | Wrap word in link |
 | `wrap_link_v` | `<leader>[` | v | `wrap_link_visual` | `map_wrap_link` | Wrap selection in link |
-| `prev_heading` | `<C-p>` | n, v, x | `prev_heading` | | Prev heading |
-| `prev_heading_bracket` | `[[` | n | `prev_heading` | | Prev heading |
-| `next_heading` | `<C-f>` | n, v, x | `next_heading` | | Next heading |
-| `next_heading_bracket` | `]]` | n | `next_heading` | | Next heading |
+| `prev_heading` | `<C-p>` | n, v, x | `prev_heading` | | Prev heading / fence |
+| `prev_heading_bracket` | `[[` | n | `prev_heading` | | Prev heading / fence |
+| `next_heading` | `<C-f>` | n, v, x | `next_heading` | | Next heading / fence |
+| `next_heading_bracket` | `]]` | n | `next_heading` | | Next heading / fence |
 | `prev_heading_level` | `<leader><C-p>` | n | `prev_heading_level` | | Prev heading of level |
 | `next_heading_level` | `<leader><C-f>` | n | `next_heading_level` | | Next heading of level |
 | `fold_toggle_zf` | `zf` | n | `fold_toggle` | `use_zf_override` | Fold toggle |

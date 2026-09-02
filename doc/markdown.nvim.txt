@@ -145,6 +145,7 @@ GitHub-only, not duplicated into this helpfile.
     map_wrap_link          = true,
     keep_inner_selection   = true,
     protect_h1             = false,
+    nav = { fences = true },  -- <C-p>/<C-f> also stop on fence delimiters
     use_zf_override        = true,
     enable_autocmds        = true,
     enable_keymaps         = true,
@@ -192,6 +193,15 @@ GitHub-only, not duplicated into this helpfile.
 `protect_h1`
   When `true`, heading shift operations refuse to move H1 further up (i.e.,
   H1 cannot become plain text via `<C-Left>`). H2+ shifting is unaffected.
+
+`nav.fences`
+  When `true` (default), `<C-p>`/`<C-f>` and `[[`/`]]` stop on a fenced
+  block's opening ```lang line and on its closing ``` line as well as on
+  headings — a code block is the other landmark of a markdown file, and it
+  used to take a separate motion to reach. Set to `false` for the previous
+  headings-only behaviour. The by-level hops `{N}<leader><C-p>` /
+  `{N}<leader><C-f>` are headings-only either way, so heading-only
+  navigation is always available. See |markdown.nvim-keymaps-nav|.
 
 `use_zf_override`
   When `true`, `zf` is remapped to "toggle fold under cursor + center" in
@@ -617,16 +627,22 @@ is installed, the `<leader>t` prefix is labelled "Markdown" automatically.
 6.1 Navigation                              *markdown.nvim-keymaps-nav*
 
   Key                 Mode   Action~
-  <C-p>              n/v/x  Jump to previous H2+ heading
-  [[                 n      Jump to previous H2+ heading
-  <C-f>              n/v/x  Jump to next H2+ heading
-  ]]                 n      Jump to next H2+ heading
+  <C-p>              n/v/x  Jump to previous heading or fence delimiter
+  [[                 n      Jump to previous heading or fence delimiter
+  <C-f>              n/v/x  Jump to next heading or fence delimiter
+  ]]                 n      Jump to next heading or fence delimiter
   {N}<leader><C-p>   n      Jump to previous heading of level N
   {N}<leader><C-f>   n      Jump to next heading of level N
 
 With a count, the plain variants repeat N times (e.g., `3<C-f>` skips three
-headings forward). With the `<leader>` variants, the count sets the heading
+landmarks forward). With the `<leader>` variants, the count sets the heading
 level to match (e.g., `2<leader><C-f>` finds the next `##` heading).
+
+The plain variants stop on a fenced block's opening ```lang line and on its
+closing ``` line as well as on headings; set `nav = { fences = false }` for
+headings only (see |markdown.nvim-config-general|). The `<leader>` variants
+are headings-only regardless, which is what keeps heading-only navigation
+available when fence stops are on.
 
 ------------------------------------------------------------------------------
 6.2 Heading shift                           *markdown.nvim-keymaps-shift*
@@ -757,6 +773,7 @@ Image preview (`mi`)~
 
   Key          Mode  Action~
   **           v     Toggle **bold** on visual selection
+  **           V     Toggle **bold** on every selected line
   <leader>[    n     Wrap word under cursor in a Markdown link
   <leader>[    v     Wrap visual selection in a Markdown link
 
@@ -766,6 +783,13 @@ Bold (`**`):
   or the full wrapped text is re-selected is controlled by
   `keep_inner_selection` (see |markdown.nvim-config-general|).
   Requires `map_double_asterisk = true` (default).
+
+  Charwise (`v`) wraps exactly what is selected. Linewise (`V`) wraps the
+  whole line, one span per selected line, since that is what selecting a
+  line means. Indent, a blockquote's `>`, a list bullet or number, a
+  task-list checkbox, an ATX heading's hashes and trailing hard-break
+  spaces stay outside the wrap — `**- item**` is no longer a list item.
+  A range whose every non-blank line is already bold unwraps instead.
 
 Link (`<leader>[`):
   The inner text is auto-classified:

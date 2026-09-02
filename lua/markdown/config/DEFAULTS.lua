@@ -42,6 +42,19 @@ local DEFAULTS = {
     refs = true, -- Sync References
   },
 
+  -- Heading navigation (`<C-p>`/`<C-f>`, `[[`/`]]`).
+  --   fences = true  -> those keys also stop on a fenced block's opening and
+  --                     closing delimiter line, the way they stop on a
+  --                     heading; a code block is the other landmark of a
+  --                     markdown file, and it took a separate motion to reach.
+  --   fences = false -> headings only (the pre-2026-09-02 behaviour).
+  -- `{count}<leader><C-p>`/`<leader><C-f>` are unaffected either way: the
+  -- by-level hops stay headings-only, so heading-only navigation is always
+  -- available.
+  nav = {
+    fences = true,
+  },
+
   -- Per-binding keymap control, keyed by the stable ids in
   -- markdown.bindings.keymaps.defaults(). Each value may be:
   --   false                         -> disable this binding

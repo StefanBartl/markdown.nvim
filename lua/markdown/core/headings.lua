@@ -9,6 +9,31 @@ local cfg = require("markdown.config").get
 -- goto_*_heading could never reach a level-1 heading.
 local ANY_HEADING = "^#\\+\\s\\+.*$"
 
+-- A fenced-code delimiter line: three-or-more backticks or tildes at the start
+-- of the line, indent allowed, info string optional -- so both the opening
+-- ```lang and its bare closing ``` match. `~` is escaped because in Vim's magic
+-- mode a bare `~` means "the last substitute string", not a tilde character.
+local FENCE_DELIM = "^\\s*\\%(`\\{3,}\\|\\~\\{3,}\\)"
+
+-- Headings *or* fence delimiters, for the prev/next-heading keys.
+local HEADING_OR_FENCE = "\\%(" .. ANY_HEADING .. "\\)\\|\\%(" .. FENCE_DELIM .. "\\)"
+
+--- The pattern one prev/next-heading hop searches for: headings alone, or
+--- headings plus fenced-code delimiters when `nav.fences` is on (the default).
+---
+--- A code block's two delimiter lines are the landmarks of a markdown file that
+--- headings do not cover, and reaching one with the key that already walks
+--- headings is the point. The by-level hops (`<leader><C-p>`/`<leader><C-f>`)
+--- deliberately stay headings-only, so heading-only navigation is still one
+--- keystroke away.
+---@internal
+---@return string
+local function nav_pattern()
+  local nav = cfg().nav
+  if nav and nav.fences == false then return ANY_HEADING end
+  return HEADING_OR_FENCE
+end
+
 ---@internal
 ---@param level integer
 ---@return string
@@ -60,15 +85,17 @@ local function scoped_search(pattern, backward, scope)
   end
 end
 
----Moves to the previous heading, `vim.v.count1` times.
+---Moves to the previous heading -- or fenced-code delimiter, unless
+---`nav.fences = false` -- `vim.v.count1` times.
 ---@return nil
 function M.goto_prev_heading()
+  local pattern = nav_pattern()
   local scope = op_scope("nav")
   if not scope then
     local col = fn.col(".")
     local moved = false
     for _ = 1, vim.v.count1 do
-      if fn.search(ANY_HEADING, "bWs") == 0 then break end
+      if fn.search(pattern, "bWs") == 0 then break end
       moved = true
     end
     if moved then restore_col(fn.line("."), col) end
@@ -79,22 +106,24 @@ function M.goto_prev_heading()
   local col = fn.col(".")
   local moved = false
   for _ = 1, vim.v.count1 do
-    if scoped_search(ANY_HEADING, true, scope) == 0 then break end
+    if scoped_search(pattern, true, scope) == 0 then break end
     moved = true
   end
   if moved then restore_col(fn.line("."), col) end
   vim.cmd("nohlsearch")
 end
 
----Moves to the next heading, `vim.v.count1` times.
+---Moves to the next heading -- or fenced-code delimiter, unless
+---`nav.fences = false` -- `vim.v.count1` times.
 ---@return nil
 function M.goto_next_heading()
+  local pattern = nav_pattern()
   local scope = op_scope("nav")
   if not scope then
     local col = fn.col(".")
     local moved = false
     for _ = 1, vim.v.count1 do
-      if fn.search(ANY_HEADING, "Ws") == 0 then break end
+      if fn.search(pattern, "Ws") == 0 then break end
       moved = true
     end
     if moved then restore_col(fn.line("."), col) end
@@ -105,7 +134,7 @@ function M.goto_next_heading()
   local col = fn.col(".")
   local moved = false
   for _ = 1, vim.v.count1 do
-    if scoped_search(ANY_HEADING, false, scope) == 0 then break end
+    if scoped_search(pattern, false, scope) == 0 then break end
     moved = true
   end
   if moved then restore_col(fn.line("."), col) end

@@ -8,7 +8,8 @@ of the plugin writes).
 
 ## Navigation
 
-Move to the previous/next heading, or to a specific level, count-aware.
+Move to the previous/next heading — or fenced-code delimiter — or to a
+specific level, count-aware.
 
 - **Module:** `core/headings.lua` (`goto_prev_heading`, `goto_next_heading`,
   `goto_prev_heading_level`, `goto_next_heading_level`)
@@ -16,6 +17,10 @@ Move to the previous/next heading, or to a specific level, count-aware.
   `{count}<leader><C-f>` (prev/next at level `count`) — ids `prev_heading`,
   `prev_heading_bracket`, `next_heading`, `next_heading_bracket`,
   `prev_heading_level`, `next_heading_level` (see [keymaps.md](../keymaps.md#navigation))
+- **Config:** `nav.fences` (default `true`) — `<C-p>`/`<C-f>`/`[[`/`]]` also
+  stop on a fenced block's opening and closing delimiter line. The by-level
+  hops (`<leader><C-p>`/`<leader><C-f>`) stay headings-only, so heading-only
+  navigation is always one keystroke away.
 - **Scope-aware:** when [fenced-scope](../fenced-scope.md) is enabled and the
   cursor is inside a markdown-family fenced block, navigation stays within
   the block; outside, it skips over fenced interiors.

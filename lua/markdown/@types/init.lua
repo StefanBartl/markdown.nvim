@@ -167,6 +167,9 @@
 ---@field enable? string[] # Re-enable features (applied after `disable`).
 ---@field just_enable? string[] # Hard allowlist: only these features on; wins over disable/enable.
 
+---@class Mkdn.NavConfig
+---@field fences? boolean # `<C-p>`/`<C-f>` also stop on fenced-code delimiter lines. Default true.
+
 ---@class Mkdn.Config
 ---@field features? Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
 ---@field map_double_asterisk? boolean # Map `**` in visual mode to toggle bold.
@@ -180,6 +183,7 @@
 ---@field ensure_headline_spacing? boolean # TOC refresh also ensures `[blank]---[blank]` between H2+ sections.
 ---@field underline_headings? Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field check_heading_gaps? boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
+---@field nav? Mkdn.NavConfig # Heading navigation: whether `<C-p>`/`<C-f>` also stop on fence delimiters.
 ---@field keymaps? table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links? Mkdn.LinksConfig
 ---@field list? Mkdn.ListConfig # `:Markdown list` picker backend.
