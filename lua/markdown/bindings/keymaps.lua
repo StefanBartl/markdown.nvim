@@ -173,6 +173,18 @@ local DEFAULT_KEYMAPS = {
     action = "jump_anchor",
     desc = "Jump to anchor",
   },
+  -- `DD` puts a mapping in front of the built-in `D`, which then waits
+  -- `timeoutlen` for a second key before deleting to end of line. That is the
+  -- price of the key and it is only paid in markdown buffers; anyone who would
+  -- rather not pay it sets `keymaps.delete_link_file` to another key, or to
+  -- `false`.
+  {
+    id = "delete_link_file",
+    mode = "n",
+    lhs = "DD",
+    action = "delete_link_file",
+    desc = "Delete line + linked file (asks first)",
+  },
   {
     id = "heading_inc",
     mode = "n",

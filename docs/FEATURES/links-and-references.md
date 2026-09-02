@@ -105,3 +105,25 @@ directory. URLs, `mailto:`, and `#anchors` are skipped.
 - **Module:** `commands/create.lua`
 - **Command:** `:Markdown create fs` (see
   [commands.md](../commands.md#markdown-create))
+
+## Delete a link and the file behind it
+
+`DD` on a line whose first link resolves to an existing file offers to delete
+the file along with the line. The confirmation dialog names the resolved path
+and counts the *other* links pointing at the same file, so the answer is an
+informed one rather than a reflex. On any other line — no link, a URL, a
+`mailto:`, an in-document `#anchor`, a directory, or a target that is not on
+disk — it is plain `dd`, `v:count` included.
+
+Both the reference scan and the dialog are asynchronous, so the buffer is
+re-read against the remembered line before anything is removed. Without
+lib.nvim there is no dialog, and without a dialog the key degrades to `dd`
+rather than deleting a file unasked.
+
+`DD` shadows the built-in `D` for 'timeoutlen' in Markdown buffers; that is
+the trade the key makes, and `keymaps.delete_link_file` moves or disables it.
+
+- **Module:** `core/link_delete.lua`, counting via `core/file_refs.lua`
+- **Keymap:** `DD` — id `delete_link_file` (see
+  [keymaps.md](../keymaps.md#cursor-action-handler))
+- **Dialog:** `lib.nvim`'s `ui.kit.confirm`

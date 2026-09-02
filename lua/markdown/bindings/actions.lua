@@ -85,6 +85,9 @@ function M.cursor_action_mouse() handler().handle_cursor_action({ silent = true,
 function M.open_image() image().open() end
 ---Jumps to the anchor under the cursor.
 function M.jump_anchor() anchor().jump() end
+---Deletes the line, and -- after a confirmation dialog -- the file its first
+---link points at. Plain `dd` on any line without such a link.
+function M.delete_link_file() require("markdown.core.link_delete").run() end
 
 -- Heading level shift (count = number of levels) ----------------------------
 

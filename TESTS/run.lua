@@ -68,6 +68,7 @@ local specs = {
   "html_links_spec.lua",
   "link_diagnostics_spec.lua",
   "link_sanitize_spec.lua",
+  "link_delete_spec.lua",
   "picker_spec.lua",
   "toc_config_spec.lua",
   "headings_spec.lua",

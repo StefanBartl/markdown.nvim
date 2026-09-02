@@ -55,6 +55,7 @@ in your config, or let the plugin handle it via the FileType autocmd.
 | `ma` | n | Same |
 | `mi` | n | Open image under cursor |
 | `mj` | n | Jump to anchor under cursor |
+| `DD` | n | Delete the line and the file its first link points at, after a confirmation dialog; plain `dd` otherwise |
 
 ## Bold wrap / link wrap
 

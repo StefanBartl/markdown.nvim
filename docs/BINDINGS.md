@@ -54,6 +54,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `cursor_action` | `ma` | n | `cursor_action` | | Cursor action |
 | `open_image` | `mi` | n | `open_image` | | Open image |
 | `jump_anchor` | `mj` | n | `jump_anchor` | | Jump to anchor |
+| `delete_link_file` | `DD` | n | `delete_link_file` | | Delete line + linked file (asks first) |
 | `heading_inc` | `<C-Right>` | n | `heading_inc` | | Increase heading level |
 | `heading_dec` | `<C-Left>` | n | `heading_dec` | | Decrease heading level |
 | `heading_inc_visual` | `<C-Right>` | v, x | `heading_inc_visual` | | Increase heading level (visual) |

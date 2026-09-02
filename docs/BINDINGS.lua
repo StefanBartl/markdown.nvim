@@ -90,6 +90,11 @@ return {
       desc = "Jump to anchor under cursor",
     },
     {
+      action = "delete_link_file",
+      mode = "n",
+      desc = "Delete line + the file its first link points at (asks first)",
+    },
+    {
       action = "heading_inc",
       mode = "n",
       desc = "Increase heading level ({count} levels)",
@@ -272,6 +277,13 @@ return {
         mode = "n",
         action = "jump_anchor",
         desc = "Jump to anchor",
+      },
+      {
+        id = "delete_link_file",
+        lhs = "DD",
+        mode = "n",
+        action = "delete_link_file",
+        desc = "Delete line + linked file (asks first)",
       },
       {
         id = "heading_inc",

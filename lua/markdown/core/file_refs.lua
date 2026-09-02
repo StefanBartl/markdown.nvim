@@ -4,9 +4,13 @@
 --- Project-wide reference search: finds `*.md` files whose inline links
 --- (`link_scan`) resolve (`util.path.resolve_traced`) to a given path. Used by
 --- third-party integrations (e.g. a file manager's delete/rename flow) to warn
---- before a linked-to file disappears, or to rewrite links after it moves;
---- markdown.nvim itself has no delete/rename feature and does not act on the
---- results.
+--- before a linked-to file disappears, or to rewrite links after it moves.
+---
+--- One caller is now markdown.nvim's own: `core.link_delete` (the `DD` key)
+--- asks for the count before offering to delete a file, which is what turns
+--- that dialog into a decision. It still only *reports* -- nothing here acts
+--- on the result, and `retarget` below produces a string rather than writing
+--- one.
 ---
 --- Performance: instead of reading every `*.md` file under the root, a ripgrep
 --- prefilter (`rg --files-with-matches --fixed-strings <basename>`) narrows the

@@ -24,6 +24,7 @@ CONTENTS                                           *markdown.nvim-contents*
      6.5 Cursor handler ........ |markdown.nvim-keymaps-handler|
      6.6 Bold / link wrap ...... |markdown.nvim-keymaps-bold|
      6.7 TableView ............. |markdown.nvim-keymaps-tableview|
+     6.8 Deleting a link's file  |markdown.nvim-keymaps-delete|
   7. Commands .................. |markdown.nvim-commands|
      7.1 :Markdown ............. |:Markdown|
      7.2 links ................. |:Markdown-links|
@@ -845,6 +846,38 @@ table always uses natural, unpadded widths. A table with no known source is
 skipped.
 
 See |markdown.nvim-tableview| and |:Markdown-table| for details.
+
+------------------------------------------------------------------------------
+6.8 Deleting a link's file                 *markdown.nvim-keymaps-delete*
+
+  Key   Mode  Action~
+  DD    n     Delete the line, and the file its first link points at
+
+On a line whose first link resolves to a file that exists, a confirmation
+dialog names the resolved path and says how many other links point at the
+same file (`core/file_refs.lua` scans every `*.md` under the cwd for that
+count, with a ripgrep prefilter). Answering yes deletes the file and then
+the line; answering no, or pressing <Esc>, leaves both alone.
+
+On any other line it is plain `dd`, `v:count` included -- a key that stands
+in for `dd` has to be at least `dd`. "Any other line" covers a line with no
+link, a URL, a `mailto:`, an in-document `#anchor`, a target that resolves
+to a directory, and a target that does not exist on disk (the last of those
+also says so: a dead link is worth knowing about).
+
+Two things worth knowing before binding it:
+
+  * `DD` puts a mapping in front of the built-in `D`, which then waits
+    'timeoutlen' for a second key. Only in Markdown buffers, but it is a
+    real cost. `keymaps.delete_link_file = false` drops the binding;
+    `keymaps.delete_link_file = "<leader>dl"` moves it.
+  * The dialog is `lib.nvim`'s `ui.kit.confirm`. Without lib.nvim there is
+    no way to ask, so the key falls back to plain `dd` and warns -- it never
+    deletes a file unasked.
+
+The buffer is re-read against the remembered line both after the reference
+scan and after the dialog is answered; if it moved in the meantime, nothing
+is deleted.
 
 ==============================================================================
 7. COMMANDS                                      *markdown.nvim-commands*
