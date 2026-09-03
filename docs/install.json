@@ -1,0 +1,20 @@
+{
+  "tools": [
+    {
+      "bin": "rg",
+      "required": false,
+      "why": "Speeds up the reverse file-reference search (which documents link to this one) from a full recursive glob of the project to a single indexed scan. Without it the same answer is still produced, just by walking the tree — noticeably slower on large note collections.",
+      "pkg": {
+        "apt": "ripgrep",
+        "dnf": "ripgrep",
+        "pacman": "ripgrep",
+        "zypper": "ripgrep",
+        "apk": "ripgrep",
+        "brew": "ripgrep",
+        "winget": "BurntSushi.ripgrep.MSVC",
+        "scoop": "ripgrep",
+        "choco": "ripgrep"
+      }
+    }
+  ]
+}
