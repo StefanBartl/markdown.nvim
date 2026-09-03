@@ -41,7 +41,8 @@ require("markdown").setup({
   ft_only                = true,
 
   -- Default on: TOC refresh also ensures [blank]---[blank] between H2+ sections
-  -- (including a closing separator after the last section)
+  -- that have content (including a closing separator after the last section);
+  -- a section with no text before the next heading just gets one blank line
   ensure_headline_spacing = true,
 
   -- Default on: TOC refresh also checks for skipped heading levels (e.g. an

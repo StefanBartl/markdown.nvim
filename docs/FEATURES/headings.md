@@ -75,7 +75,11 @@ Insert or refresh a TOC with GFM-like anchors and duplicate-title handling.
 ## Headline spacing
 
 Enforces a `[blank]---[blank]` separator between consecutive H2+ sections,
-including a closing separator after the final section. Idempotent.
+including a closing separator after the final section — but only for
+sections that actually have content. A section with nothing between its
+heading and the next one (or EOF, for the final section) gets a single
+blank line instead; no `---` is inserted where there's no text to
+separate. Idempotent.
 
 - **Module:** `core/headline_spacing/init.lua` (`apply_headl_separators`,
   `find_sections_needing_separator`)

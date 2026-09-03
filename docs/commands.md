@@ -226,6 +226,10 @@ URLs, `mailto:` and `#anchors` are skipped; existing paths are left untouched.
 :Markdown headline_spacing               " enforce blank-dash-blank between H2+ sections
 ```
 
+A section with actual content is closed with `[blank]---[blank]`; a section
+with nothing between its heading and the next one just gets a single blank
+line — no `---` is inserted where there's no text to separate.
+
 ## `:Markdown scope`
 
 ```vim

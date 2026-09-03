@@ -11,7 +11,9 @@ forgotten.
 `{count}<leader>toc` (or `:Markdown toc`) does two things on every run, not
 one: it inserts/refreshes the Table of Contents *and* enforces the
 `[blank]---[blank]` separator between H2+ sections (`ensure_headline_spacing`,
-default on). That combination is the reason to reach for it constantly
+default on) — only where a section actually has content; an empty section
+(nothing but the next heading) gets a single blank line instead, no `---`.
+That combination is the reason to reach for it constantly
 instead of only at the end — running it after adding a section both updates
 the TOC and fixes the spacing in one keystroke, so there is no separate
 "now go clean up the separators" pass. Override per-call with `--sep`/

@@ -1,5 +1,8 @@
 ---@module 'markdown.core.headline_spacing'
---- Ensures every H2+ section is closed with a blank/`---`/blank separator.
+--- Ensures every H2+ section is closed with a blank/`---`/blank separator —
+--- but only when the section actually has content. A section with nothing
+--- between its heading and the next one gets a single blank line instead;
+--- no `---` is inserted for an empty section.
 local notify = require("markdown.util.notify").create("[markdown.core.headline_spacing]")
 
 local api = vim.api
@@ -25,6 +28,9 @@ local function find_next_h2_heading(lines, start_idx)
   return nil
 end
 
+---Finds the last line of actual content in a section (skipping blank lines
+---and any pre-existing `---` separator). Returns `heading_idx` unchanged
+---when the section has no content at all.
 ---@internal
 ---@param lines string[]
 ---@param heading_idx integer
@@ -53,9 +59,22 @@ local function has_separator_after(lines, section_end_idx, next_heading_idx)
   return line1 == "" and line2 == "---" and line3 == ""
 end
 
----Finds every H2+ section missing its trailing separator block.
+---@internal
+--- A section with no content only needs exactly one blank line between the
+--- heading and the next one — no `---`.
 ---@param lines string[]
----@return { heading_idx: integer, section_end_idx: integer, next_heading_idx: integer }[]
+---@param heading_idx integer
+---@param next_heading_idx integer
+---@return boolean
+local function has_single_blank_gap(lines, heading_idx, next_heading_idx)
+  return next_heading_idx - heading_idx == 2 and (lines[heading_idx + 1] or "") == ""
+end
+
+---Finds every H2+ section whose closing whitespace doesn't match what it
+---should be: `[blank]---[blank]` when the section has content, or a single
+---blank line when it doesn't.
+---@param lines string[]
+---@return { heading_idx: integer, section_end_idx: integer, next_heading_idx: integer, has_content: boolean }[]
 function M.find_sections_needing_separator(lines)
   local n = #lines
   local result = {}
@@ -69,11 +88,15 @@ function M.find_sections_needing_separator(lines)
       local next_heading = find_next_h2_heading(lines, i)
       if next_heading then
         local section_end = find_section_end(lines, i, next_heading)
-        if not has_separator_after(lines, section_end, next_heading) then
+        local has_content = section_end ~= i
+        local ok = has_content and has_separator_after(lines, section_end, next_heading)
+          or (not has_content and has_single_blank_gap(lines, i, next_heading))
+        if not ok then
           table.insert(result, {
             heading_idx = i,
             section_end_idx = section_end,
             next_heading_idx = next_heading,
+            has_content = has_content,
           })
         end
       end
@@ -83,9 +106,12 @@ function M.find_sections_needing_separator(lines)
   return result
 end
 
---- Ensure the final H2+ section is also closed with a `---` separator at EOF.
---- Operates on fresh buffer lines, so it is safe to run after the between-section
---- pass. Idempotent: a no-op when the document already ends with a separator.
+--- Ensure the final H2+ section is also closed with a `---` separator at EOF
+--- — but only when that section actually has content. An empty final section
+--- (nothing but blank lines/stray `---` after the last heading) is collapsed
+--- to a single trailing blank line instead. Operates on fresh buffer lines,
+--- so it is safe to run after the between-section pass. Idempotent: a no-op
+--- when the document is already correctly formatted.
 ---@param bufnr integer
 ---@return boolean changed
 local function ensure_final_closer(bufnr)
@@ -110,6 +136,16 @@ local function ensure_final_closer(bufnr)
       section_end = i
       break
     end
+  end
+
+  if section_end == last_heading then
+    -- No content in the final section: no separator belongs here. Just
+    -- collapse whatever trails the heading (extra blanks, a stray `---`)
+    -- down to a single blank line.
+    if n == last_heading then return false end
+    if n - last_heading == 1 and lines[last_heading + 1] == "" then return false end
+    api.nvim_buf_set_lines(bufnr, last_heading, n, false, { "" })
+    return true
   end
 
   -- Already closed? A `---` anywhere after the content means it's done.
@@ -139,7 +175,6 @@ function M.apply_headl_separators(bufnr, opts)
     return #sections
   end
 
-  local separator = { "", "---", "" }
   local offset = 0
 
   for _, section in ipairs(sections) do
@@ -152,8 +187,11 @@ function M.apply_headl_separators(bufnr, opts)
       offset = offset - lines_between
     end
 
-    api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end, false, separator)
-    offset = offset + 3
+    -- A section with content gets the full `[blank]---[blank]` separator;
+    -- an empty section just gets a single blank line, no `---`.
+    local replacement = section.has_content and { "", "---", "" } or { "" }
+    api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end, false, replacement)
+    offset = offset + #replacement
   end
 
   -- Close the final section at EOF as well.
