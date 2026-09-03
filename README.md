@@ -121,6 +121,7 @@ runtime:
 - [Width-limited table wrapping](docs/table-wrap.md) — the `:MDTable*` command family (wrap/unwrap, lint, CSV, profiles, and more).
 - [Menu integration](docs/menu.md) — context-aware entries for nvzone/menu.
 - [Health](docs/health.md) — what `:checkhealth markdown` reports.
+- [Declared external tools](docs/install.json) — the optional CLI tools (`rg`, which speeds up the reverse file-reference search) with why each matters. `:Lib deps show markdown.nvim` reports what's missing here, `:Lib deps install markdown.nvim` offers to install it — via [lib.nvim.deps](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md), which asks before it installs anything. A popup shows this once, the first time `setup()` runs after installing. Turn it off with `vim.g.lib_nvim_deps_disable_first_run = true` (every plugin) or `vim.g.lib_nvim_deps_disabled_plugins = { "markdown.nvim" }` (just this one).
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.
 - [Bindings cheatsheet](docs/BINDINGS.lua) — machine-readable list of every binding.
 
