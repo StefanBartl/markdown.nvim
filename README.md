@@ -109,6 +109,9 @@ runtime:
 
 ## Documentation
 
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
 - [Features](docs/FEATURES/README.md) — per-theme write-up ([headings](docs/FEATURES/headings.md), [tables](docs/FEATURES/tables.md), [links](docs/FEATURES/links-and-references.md), [editing/handlers](docs/FEATURES/editing-and-handlers.md), [highlighting/UI](docs/FEATURES/highlighting-and-ui.md), [integrations](docs/FEATURES/integrations.md)) noting each feature's keymap/command/autocmd.
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug.
 - [Configuration](docs/configuration.md) — full `setup()` reference with defaults, and feature gating.
@@ -123,6 +126,7 @@ runtime:
 - [Health](docs/health.md) — what `:checkhealth markdown` reports.
 - [Declared external tools](docs/install.json) — the optional CLI tools (`rg`, which speeds up the reverse file-reference search) with why each matters. `:Lib deps show markdown.nvim` reports what's missing here, `:Lib deps install markdown.nvim` offers to install it — via [lib.nvim.deps](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md), which asks before it installs anything. A popup shows this once, the first time `setup()` runs after installing. Turn it off with `vim.g.lib_nvim_deps_disable_first_run = true` (every plugin) or `vim.g.lib_nvim_deps_disabled_plugins = { "markdown.nvim" }` (just this one).
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.
+- [Workflow](docs/WORKFLOW.md) — how the features combine while actually writing a document, rather than what each one does.
 - [Bindings cheatsheet](docs/BINDINGS.lua) — machine-readable list of every binding.
 
 ## License
