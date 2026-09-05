@@ -91,5 +91,5 @@ rows of the same logical row. Off by default — nothing changes until a
   `bindings/autocmds.lua`
 - **Fold integration:** extends `core/fold.lua`'s heading `foldexpr` rather
   than a competing manual-fold pass — see
-  [headings.md](headings.md#folding)
+  [HEADINGS.md](HEADINGS.md#folding)
 - **API hooks:** `core.table_wrap.on("before_reflow"|"after_reflow", fn)`

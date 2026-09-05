@@ -136,5 +136,5 @@ This applies to:
 ## See also
 
 - [Link hover preview](hover.md)
-- [Links and references](FEATURES/links-and-references.md)
-- [Editing and handlers](FEATURES/editing-and-handlers.md)
+- [Links and references](FEATURES/LINKS-AND-REFERENCES.md)
+- [Editing and handlers](FEATURES/EDITING-AND-HANDLERS.md)

@@ -6,18 +6,18 @@ relevant config. For the full default-key list see
 [keymaps.md](../keymaps.md); for every `:Markdown` subcommand see
 [commands.md](../commands.md).
 
-- [Headings](headings.md) — navigation, level shift, folding, TOC, headline
+- [Headings](HEADINGS.md) — navigation, level shift, folding, TOC, headline
   spacing, Setext-underline decoration
-- [Tables](tables.md) — GFM formatter, auto-format mode, floating
+- [Tables](TABLES.md) — GFM formatter, auto-format mode, floating
   browser/export, width-limited wrapping (`:MDTable*`)
-- [Links and references](links-and-references.md) — link wrap, scan,
+- [Links and references](LINKS-AND-REFERENCES.md) — link wrap, scan,
   diagnostics, anchor sync (`refs`), filesystem creation from links
-- [Editing and handlers](editing-and-handlers.md) — bold wrap, the
+- [Editing and handlers](EDITING-AND-HANDLERS.md) — bold wrap, the
   cursor-action dispatcher (anchors/images/URLs/files/PDFs), image
   paste/screenshot
-- [Highlighting and UI](highlighting-and-ui.md) — fenced/inline code,
+- [Highlighting and UI](HIGHLIGHTING-AND-UI.md) — fenced/inline code,
   blockquotes, link underline, fenced-block scope
-- [Integrations](integrations.md) — render-markdown.nvim,
+- [Integrations](INTEGRATIONS.md) — render-markdown.nvim,
   markdown-preview.nvim, mdview.nvim, images.nvim/snacks.nvim/image.nvim,
   pdfport.nvim, nvzone/menu, picker backends, which-key, lib.nvim
 

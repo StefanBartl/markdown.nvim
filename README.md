@@ -41,23 +41,23 @@ contributes its link scanner and `#heading` previews to.
 
 | Capability | What it does | Details |
 |---|---|---|
-| `:Markdown links` | Scan/list/open links in a picker, create files from link targets, flag dead links | [Links and references](docs/FEATURES/links-and-references.md) |
-| `:Markdown toc` | Generate/update a table of contents | [Headings](docs/FEATURES/headings.md) |
-| `:Markdown refs` | Sync reference-style link anchors | [Links and references](docs/FEATURES/links-and-references.md) |
-| `:Markdown table` | GFM table formatter, alignment, CSV import/export, linting, flavor conversion | [Tables](docs/FEATURES/tables.md) |
+| `:Markdown links` | Scan/list/open links in a picker, create files from link targets, flag dead links | [Links and references](docs/FEATURES/LINKS-AND-REFERENCES.md) |
+| `:Markdown toc` | Generate/update a table of contents | [Headings](docs/FEATURES/HEADINGS.md) |
+| `:Markdown refs` | Sync reference-style link anchors | [Links and references](docs/FEATURES/LINKS-AND-REFERENCES.md) |
+| `:Markdown table` | GFM table formatter, alignment, CSV import/export, linting, flavor conversion | [Tables](docs/FEATURES/TABLES.md) |
 | `:MDTable*` family | Width-limited table wrapping/unwrapping, row/column folding, CSV round-trip, lint (12 standalone commands) | [Width-limited table wrapping](docs/table-wrap.md) |
-| `:TableView*` family | Floating table browser/export toggle | [Tables](docs/FEATURES/tables.md) |
-| `:Markdown render` / `preview` / `mdview` | Delegate rendering/preview to render-markdown.nvim, markdown-preview.nvim, or mdview.nvim | [Integrations](docs/FEATURES/integrations.md) |
-| `:Markdown create` | Create files/directories for local link targets in the buffer or selection | [Links and references](docs/FEATURES/links-and-references.md) |
+| `:TableView*` family | Floating table browser/export toggle | [Tables](docs/FEATURES/TABLES.md) |
+| `:Markdown render` / `preview` / `mdview` | Delegate rendering/preview to render-markdown.nvim, markdown-preview.nvim, or mdview.nvim | [Integrations](docs/FEATURES/INTEGRATIONS.md) |
+| `:Markdown create` | Create files/directories for local link targets in the buffer or selection | [Links and references](docs/FEATURES/LINKS-AND-REFERENCES.md) |
 | `:Markdown scope` | Treat a fenced code block as its own sub-document | [Fenced-block scope](docs/fenced-scope.md) |
-| `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections | [Headings](docs/FEATURES/headings.md) |
-| `:Markdown image` | Paste/screenshot an image into the document (delegates to images.nvim) | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
-| `:Markdown export` | Export the buffer/file to PDF (delegates to pdfport.nvim) | [Integrations](docs/FEATURES/integrations.md) |
-| Cursor-action dispatcher | `<CR>`-style action on whatever's under the cursor: anchor, image, URL, file, PDF | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
+| `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections | [Headings](docs/FEATURES/HEADINGS.md) |
+| `:Markdown image` | Paste/screenshot an image into the document (delegates to images.nvim) | [Editing and handlers](docs/FEATURES/EDITING-AND-HANDLERS.md) |
+| `:Markdown export` | Export the buffer/file to PDF (delegates to pdfport.nvim) | [Integrations](docs/FEATURES/INTEGRATIONS.md) |
+| Cursor-action dispatcher | `<CR>`-style action on whatever's under the cursor: anchor, image, URL, file, PDF | [Editing and handlers](docs/FEATURES/EDITING-AND-HANDLERS.md) |
 | Link hover preview | Floating preview of what a link — or a bare path, in any filetype — under the cursor points to | [Link hover preview](docs/hover.md) |
 | HTML link resolution | `<img src>` / `<a href>` count as links everywhere — a captioned `<figure>` keeps its hover, `mi`, picker entry and dead-link check | [Image captions](docs/image-captions.md) |
-| `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings | [Headings](docs/FEATURES/headings.md) |
-| `:OpenWithSystemApplication` | Open the file/link target under the cursor with the OS default application | [Editing and handlers](docs/FEATURES/editing-and-handlers.md) |
+| `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings | [Headings](docs/FEATURES/HEADINGS.md) |
+| `:OpenWithSystemApplication` | Open the file/link target under the cursor with the OS default application | [Editing and handlers](docs/FEATURES/EDITING-AND-HANDLERS.md) |
 
 ---
 
@@ -112,7 +112,7 @@ runtime:
 Start at [docs/README.md](docs/README.md), which says what is where and which
 question each page answers.
 
-- [Features](docs/FEATURES/README.md) — per-theme write-up ([headings](docs/FEATURES/headings.md), [tables](docs/FEATURES/tables.md), [links](docs/FEATURES/links-and-references.md), [editing/handlers](docs/FEATURES/editing-and-handlers.md), [highlighting/UI](docs/FEATURES/highlighting-and-ui.md), [integrations](docs/FEATURES/integrations.md)) noting each feature's keymap/command/autocmd.
+- [Features](docs/FEATURES/README.md) — per-theme write-up ([headings](docs/FEATURES/HEADINGS.md), [tables](docs/FEATURES/TABLES.md), [links](docs/FEATURES/LINKS-AND-REFERENCES.md), [editing/handlers](docs/FEATURES/EDITING-AND-HANDLERS.md), [highlighting/UI](docs/FEATURES/HIGHLIGHTING-AND-UI.md), [integrations](docs/FEATURES/INTEGRATIONS.md)) noting each feature's keymap/command/autocmd.
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug.
 - [Configuration](docs/configuration.md) — full `setup()` reference with defaults, and feature gating.
 - [Config templates](docs/templates/README.md) — copy-paste `setup()` snippets for common customizations (blockquote colors, feature subsets, picker backends, image preview).

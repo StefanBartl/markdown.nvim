@@ -28,7 +28,7 @@ in-buffer, images open (system viewer or in-Neovim preview), URLs open in
 the browser, local files open via the system app (media/binary) or `:edit`
 (text-like), and a `.pdf` link gets its own choice — system app vs.
 pdfport.nvim, when installed (see
-[integrations.md](integrations.md#pdfportnvim)).
+[INTEGRATIONS.md](INTEGRATIONS.md#pdfportnvim)).
 
 - **Module:** `handler/init.lua` (`handle_cursor_action`), delegating to
   `handler/url.lua`, `handler/file.lua`, `handler/image.lua`,
@@ -44,7 +44,7 @@ pdfport.nvim, when installed (see
 - **Config:** `open.external_extensions` (which file extensions launch the
   system app instead of `:edit`); `image.preview` (`"ask"` default |
   `"preview"` | `"system"` — only meaningful with an in-Neovim image
-  provider installed, see [integrations.md](integrations.md))
+  provider installed, see [INTEGRATIONS.md](INTEGRATIONS.md))
 
 ## Image paste / screenshot
 
@@ -57,4 +57,4 @@ discoverability rather than reimplemented.
   see [commands.md](../commands.md#markdown-image))
 - **Requires:** images.nvim (optional host, soft dependency — warns instead
   of erroring when absent). See
-  [integrations.md](integrations.md#imagesnvim)
+  [INTEGRATIONS.md](INTEGRATIONS.md#imagesnvim)
