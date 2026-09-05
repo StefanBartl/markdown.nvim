@@ -21,6 +21,12 @@ jobs:
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim
+      # hover.nvim is the hover framework; markdown.hover only contributes a
+      # source, and hover_spec.lua requires hover.* modules directly.
+      - uses: actions/checkout@v4
+        with:
+          repository: StefanBartl/hover.nvim
+          path: hover.nvim
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
@@ -29,6 +35,7 @@ jobs:
         working-directory: markdown.nvim
         env:
           LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
+          HOVER_NVIM_PATH: ${{ github.workspace }}/hover.nvim
         run: nvim --headless -i NONE -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
 
   lint:
