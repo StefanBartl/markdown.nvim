@@ -147,6 +147,8 @@ buffer-local.
 | --- | --- |
 | `:Markdown links show [%\|cwd\|<file>]` | Collect links, pick one, open it |
 | `:Markdown links create [-r] [--noignore] [--root <p>] <path>` | Generate links from a dir tree to clipboard |
+| `:Markdown links check` | Flag dead relative-file links + duplicate heading anchors (`vim.diagnostic`) |
+| `:Markdown links sanitize [%\|cwd\|<file>]` | Normalize link-target paths (manual form of the on-save default) |
 | `:Markdown toc [level] [--sep\|--no-sep]` | Insert/refresh the TOC |
 | `:Markdown refs [sync\|check\|live [on\|off\|toggle]\|baseline]` | Sync `#anchor` links + TOC on heading rename |
 | `:Markdown table view [toggle\|markdown\|box\|select\|close\|browser\|browsernice] [scope]` | Render table preview; `scope=%\|cwd\|<path>` or an off-table cursor = every matching table, stacked |
@@ -203,7 +205,12 @@ Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
 | `FileType` | `MarkdownNvimKeymaps` | markdown/mdx/md/markdown.* | Install buffer-local keymaps (if `enable_keymaps`) |
 | `FileType` | `MarkdownNvimUserCommands` | markdown/mdx/md/markdown.* | Install buffer-local user commands |
 | `FileType` | `MarkdownNvimFold` | markdown/mdx/md/markdown.* | Set `foldmethod=expr` + fold options |
-| `FileType`, `BufWritePre`, `TextChanged` | `MarkdownNvimRefs` | markdown/mdx/md/markdown.* | refs sync per `config.refs.mode` (`off`/`save`/`live`) |
+| `FileType` | `MarkdownNvimTableView` | markdown/mdx/md/markdown.* | Install buffer-local TableView maps + commands (feature `tableview`) |
+| `FileType`, `BufWritePre`\*, `TextChanged`+`TextChangedI`\*, `BufWipeout` | `MarkdownNvimRefs` | markdown/mdx/md/markdown.* (`*.md`/`*.markdown`/`*.mdx` for the write/wipeout hooks) | refs sync per `config.refs.mode` (`off`/`save`/`live`, default `off`): baseline on `FileType`, reconcile on `BufWritePre` (\*save mode) or debounced `TextChanged`/`TextChangedI` (\*live mode), teardown on `BufWipeout` |
+| `BufWritePost` | `MarkdownNvimLinkDiagnostics` | `*.md`, `*.markdown`, `*.mdx` | Link diagnostics check on save (`config.links.diagnostics.mode == "save"`, default `off`) |
+| `BufWritePre` | `MarkdownNvimLinksSanitize` | `*.md`, `*.markdown`, `*.mdx` | Normalize link targets on save (`config.links.sanitize_on_save`, default **on**) |
+| `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |
+| `BufWritePre` | `MarkdownNvimTableWrapSelective` | `*.md`, `*.markdown`, `*.mdx` | Reflow only tables changed since last save (`config.table.wrap.selective_reflow`, default `off`) |
 | `ColorScheme` | (`hl_options`) | `*` | Re-apply blockquote / fenced-code highlights |
 
 ## which-key

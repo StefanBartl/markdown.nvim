@@ -49,6 +49,22 @@ require("markdown").setup({
   -- H1 followed directly by an H3) and offers to fix them immediately
   check_heading_gaps     = true,
 
+  -- `:MarkdownNvimUnderlineHeadings` (manual, buffer-local): the underline
+  -- character drawn below each ATX heading's text, matching its length.
+  underline_headings = {
+    char = "=",
+  },
+
+  -- nvzone/menu integration (opt-in on the host side; entries provided by
+  -- markdown.integrations.menu). Per-entry opt-out; enable = false provides
+  -- no entries at all.
+  menu = {
+    enable = true,
+    fold   = true, -- fold/unfold entries (only shown on a heading)
+    toc    = true, -- Insert/Refresh TOC
+    refs   = true, -- Sync References
+  },
+
   -- Per-binding keymap control by id (see docs/keymaps.md "Remapping / disabling"
   -- and docs/BINDINGS.lua). false disables; a string or { lhs, mode } remaps.
   keymaps = {},
@@ -131,6 +147,38 @@ require("markdown").setup({
       compact = { auto = false, min = 4, max = 20, pad = 0 },
       docs    = { auto = true,  min = 10, max = 40, pad = 1 },
       wide    = { auto = true,  min = 15, max = nil, pad = 1 },
+    },
+  },
+
+  -- Link/path hover preview under the cursor. See docs/hover.md for the full
+  -- write-up — this is the same config, just placed in the "full reference"
+  -- alongside everything else.
+  hover = {
+    enabled = true,
+    -- "CursorHold" follows 'updatetime'. "mouse" additionally requires
+    -- `:set mousemoveevent` (a global setting this plugin does not set for you).
+    trigger              = { "CursorHold" },
+    delay_ms             = 250,
+    placeholder_grace_ms = 250, -- how long an async preview may take before a "rendering…" placeholder shows
+    max_lines            = 20,
+    max_width            = 80,
+    border               = "rounded",
+    -- Also hover a bare path with no link syntax — in prose, a code comment,
+    -- a `:messages` dump. It must exist on disk to hover at all.
+    bare_paths           = true,
+    filetypes            = "*", -- which buffers get a hover; narrow to a filetype list to restrict it
+    inline_images        = true, -- draw images/rasterized PDF pages into the float (needs images.nvim)
+    url = {
+      hover      = false, -- off by default: most of a markdown doc IS links
+      fetch      = false, -- off by default: a hover that fetches discloses every link you brush past
+      timeout_ms = 2000,
+    },
+    -- Office documents (.docx/.xlsx/.pptx/.odt, …) convert to PDF via
+    -- pdfport.nvim + LibreOffice before previewing; off by default (LibreOffice
+    -- startup costs seconds on the first conversion).
+    office = {
+      convert    = false,
+      timeout_ms = 60000,
     },
   },
 

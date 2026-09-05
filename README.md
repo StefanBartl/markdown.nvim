@@ -12,7 +12,7 @@
 ```
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
+[![Neovim](https://img.shields.io/badge/Neovim-0.10%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-alpha-red)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
@@ -28,7 +28,7 @@ dispatcher (open whatever's under the cursor — anchor, image, URL, file,
 PDF), fenced-block scope, and delegated preview/export (render-markdown.nvim,
 mdview.nvim, image paste/screenshot via images.nvim, PDF export via
 pdfport.nvim). Pure FileType-scoped — zero side effects on non-Markdown
-buffers. Requires Neovim >= 0.9 and
+buffers. Requires Neovim >= 0.10 and
 [lib.nvim](https://github.com/StefanBartl/lib.nvim) (the `:Markdown`/
 `:TableView*` command layer, plus buffer debouncing); no external tools.
 The link/path hover lives in
