@@ -16,6 +16,7 @@ function M.check()
   local start = health.start or health.report_start
   local ok = health.ok or health.report_ok
   local warn = health.warn or health.report_warn
+  local error_ = health.error or health.report_error
   local info = health.info or health.report_info
 
   start("markdown.nvim")
@@ -24,7 +25,9 @@ function M.check()
   if vim.fn.has("nvim-0.10") == 1 then
     ok("Neovim " .. tostring(vim.version()))
   else
-    warn("markdown.nvim targets Neovim 0.10+ (vim.system, used unconditionally once rg is found)")
+    warn("markdown.nvim targets Neovim 0.10+ (vim.system, used unconditionally once rg is found)", {
+      "Upgrade Neovim to 0.10+",
+    })
   end
 
   -- System opener used by the link/file/image handlers (cross-platform path).
@@ -37,7 +40,7 @@ function M.check()
   -- Config sanity.
   local cfg_ok, config = pcall(require, "markdown.config")
   if not cfg_ok then
-    warn("config module failed to load: " .. tostring(config))
+    warn("config module failed to load: " .. tostring(config), { "Reinstall markdown.nvim" })
     return
   end
   local cfg = config.get()
@@ -46,7 +49,9 @@ function M.check()
   if picker == "hover_select" or picker == "select" then
     info("links picker: " .. picker)
   else
-    warn(('links.picker is %q — expected "hover_select" or "select"'):format(tostring(picker)))
+    warn(('links.picker is %q — expected "hover_select" or "select"'):format(tostring(picker)), {
+      'Set links.picker to "hover_select" or "select" in setup()',
+    })
   end
   info("links sanitize_on_save: " .. tostring(not cfg.links or cfg.links.sanitize_on_save ~= false))
 
@@ -83,8 +88,9 @@ function M.check()
   if pcall(require, "lib.nvim.bindings.usercmd.composer") then
     ok("lib.nvim detected (:Markdown/:TableView* command layer available)")
   else
-    warn(
-      'lib.nvim not found — :Markdown/:TableView* will fail to register; install "StefanBartl/lib.nvim"'
+    error_(
+      "lib.nvim not found — :Markdown/:TableView* will fail to register",
+      { 'Install "StefanBartl/lib.nvim"' }
     )
   end
 
@@ -133,7 +139,10 @@ function M.check()
       )
     elseif pref == "color_my_ascii" then
       warn(
-        "fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner"
+        "fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner",
+        {
+          "Install StefanBartl/color_my_ascii.nvim, or set fenced_scope.provider to 'auto' or 'builtin'",
+        }
       )
     else
       info("color_my_ascii not found — fenced_scope uses the built-in fallback scanner")
