@@ -2,7 +2,7 @@
 --- Generates markdown links from filesystem paths for `:Markdown links create`.
 local M = {}
 
-local uv = vim.uv
+local uv = vim.uv or vim.loop
 local notify = require("markdown.util.notify").create("[markdown.commands.links]")
 local clipboard = require("markdown.util.clipboard")
 local default_ignore = require("markdown.util.ignore").as_set()
