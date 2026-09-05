@@ -11,7 +11,9 @@ M.config = {
 }
 
 local api = vim.api
-local uv = vim.loop
+-- DEP-01: matches the fallback pattern every other module in this repo
+-- already uses, rather than the bare vim.loop this one had.
+local uv = vim.uv or vim.loop
 
 local function trim(s) return s:match("^%s*(.-)%s*$") or "" end
 

@@ -12,7 +12,9 @@ local is_inside_toc_block = require("markdown.anchor.is_inside_toc_block")
 local is_html_anchor_line = require("markdown.anchor.is_html_anchor_line")
 local is_html_extern_anchor_line = require("markdown.anchor.is_html_extern_anchor_line")
 
-local uv = vim.loop
+-- DEP-01: matches the fallback pattern every other module in this repo
+-- already uses, rather than the bare vim.loop this one had.
+local uv = vim.uv or vim.loop
 local cfg = require("markdown.config").get
 
 --- Decide whether a path should open in the system application (media/binary)
