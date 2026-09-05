@@ -211,7 +211,13 @@ Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
 | `BufWritePre` | `MarkdownNvimLinksSanitize` | `*.md`, `*.markdown`, `*.mdx` | Normalize link targets on save (`config.links.sanitize_on_save`, default **on**) |
 | `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |
 | `BufWritePre` | `MarkdownNvimTableWrapSelective` | `*.md`, `*.markdown`, `*.mdx` | Reflow only tables changed since last save (`config.table.wrap.selective_reflow`, default `off`) |
-| `ColorScheme` | (`hl_options`) | `*` | Re-apply blockquote / fenced-code highlights |
+| `ColorScheme` | `MarkdownNvimHL` | `*` | Re-apply blockquote/link-underline highlights (feature `hl` / `link_hl`) — blockquote itself is a decoration provider now, not a `FileType`/`BufEnter` re-apply |
+| `ColorScheme` | `MarkdownNvimFencedFix` | `*` | Re-apply fenced-code-block highlight overrides (feature `fenced_fix`, default on) — a separate group from `MarkdownNvimHL`, not the same registration |
+| `InsertLeave`, `TextChanged` | `MarkdownNvimTableMode_<bufnr>` (per buffer) | buffer-local | Debounced (120ms) re-alignment of the GFM table under the cursor, while `:Markdown table mode on`/`toggle` (or `<leader>tvm`) is active for that buffer |
+| `BufWipeout` | `MarkdownNvimTableMode_<bufnr>` (same group) | buffer-local | Cancels the debounce and deletes the group |
+| `BufDelete`, `BufWipeout` | `MarkdownNvimScopeFoldCache` | — | Invalidates the per-buffer memoized fold-block cache used by the `foldexpr` hot path |
+| `TextChanged`, `TextChangedI` | (ungrouped, per buffer) | buffer-local | Live-tracks refs while `:Markdown refs live on`/`toggle` is active — **distinct** from the config-driven `MarkdownNvimRefs` live mode above: created/removed per invocation, id tracked in `commands/refs.lua`'s own `live_au[bufnr]` |
+| `BufEnter` | `MarkdownNvimPreviewRefresh` (created once, lazily, on first `:Markdown preview ...`) | `*.md` | Re-runs `:silent! MarkdownPreview` to refresh the external `markdown-preview.nvim` host plugin, while a preview session is active and idle |
 
 ## which-key
 
