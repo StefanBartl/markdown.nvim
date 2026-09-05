@@ -46,9 +46,7 @@ function M.setup(opts)
   -- it off with `vim.g.lib_nvim_deps_disable_first_run` (or the per-plugin
   -- `vim.g.lib_nvim_deps_disabled_plugins`).
   local ok_deps, deps = pcall(require, "lib.nvim.deps")
-  if ok_deps then
-    deps.show_once("markdown.nvim")
-  end
+  if ok_deps then deps.show_once("markdown.nvim") end
 end
 
 -- Public façade -----------------------------------------------------------

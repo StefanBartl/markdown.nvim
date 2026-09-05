@@ -11,32 +11,40 @@
 local dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
 local H = dofile(dir .. "harness.lua")
 
--- markdown.nvim depends on lib.nvim at runtime (core/table_mode.lua's
--- auto-format debounce), so the suite needs it on the runtimepath.
+-- markdown.nvim leans on two sibling plugins in the suite:
+--   * lib.nvim   — hard runtime dependency (core/table_mode.lua's auto-format
+--                  debounce, the command layer).
+--   * hover.nvim — the hover framework itself; markdown.hover only contributes
+--                  a source and section previews, and hover_spec.lua requires
+--                  `hover.classify` / `hover.preview.text` / `hover.float`
+--                  directly.
 --
 -- A sibling checkout wins over the plugin-manager copy on purpose: the
 -- bootstrap clone under stdpath("data")/lazy is frequently older than the
--- working checkout, and testing against a stale lib.nvim gives misleading
--- failures. `$LIB_NVIM_PATH` overrides both (useful in CI).
-local function add_lib_nvim()
-  -- Built by appending, not as a literal: an unset $LIB_NVIM_PATH would put a
-  -- nil at index 1 and `ipairs` would stop before checking anything.
+-- working checkout, and testing against a stale copy gives misleading
+-- failures. `$<NAME>_NVIM_PATH` overrides both (useful in CI).
+---@param repo string   plugin directory name, e.g. "lib.nvim"
+---@param probe string  a path under it that proves it is a real checkout
+---@param env string    environment variable that overrides discovery
+---@return string? path  the normalized directory that was added
+local function add_sibling(repo, probe, env)
+  -- Built by appending, not as a literal: an unset override would put a nil at
+  -- index 1 and `ipairs` would stop before checking anything.
   local candidates = {}
-  if vim.env.LIB_NVIM_PATH then candidates[#candidates + 1] = vim.env.LIB_NVIM_PATH end
-  candidates[#candidates + 1] = vim.fn.getcwd() .. "/../lib.nvim"
-  candidates[#candidates + 1] = vim.fn.stdpath("data") .. "/lazy/lib.nvim"
+  if vim.env[env] then candidates[#candidates + 1] = vim.env[env] end
+  candidates[#candidates + 1] = vim.fn.getcwd() .. "/../" .. repo
+  candidates[#candidates + 1] = vim.fn.stdpath("data") .. "/lazy/" .. repo
 
   for _, path in ipairs(candidates) do
     -- Normalize first: the sibling candidate contains a ".." segment and the
     -- stdpath one mixes separators on Windows; the runtimepath module searcher
     -- does not resolve either, so an unnormalized entry silently finds nothing.
     local norm = vim.fs.normalize(path)
-    if vim.fn.isdirectory(norm .. "/lua/lib") == 1 then
+    if vim.fn.isdirectory(norm .. probe) == 1 then
       vim.opt.rtp:append(norm)
       -- rtp alone is not enough here: the runtimepath searcher does not pick
-      -- up entries appended after startup. lib.nvim's own README prescribes
-      -- registering it on package.path as well (the C require searcher is the
-      -- fallback that always applies).
+      -- up entries appended after startup. Registering on package.path as well
+      -- (the C require searcher is the fallback that always applies).
       package.path = table.concat({
         norm .. "/lua/?.lua",
         norm .. "/lua/?/init.lua",
@@ -48,10 +56,17 @@ local function add_lib_nvim()
   return nil
 end
 
-local lib_path = add_lib_nvim()
+local lib_path = add_sibling("lib.nvim", "/lua/lib", "LIB_NVIM_PATH")
 if not lib_path then
   print("FAIL  cannot locate lib.nvim (a runtime dependency of markdown.nvim).")
   print("      Set $LIB_NVIM_PATH, or check it out next to this repo.")
+  os.exit(1)
+end
+
+local hover_path = add_sibling("hover.nvim", "/lua/hover", "HOVER_NVIM_PATH")
+if not hover_path then
+  print("FAIL  cannot locate hover.nvim (markdown.hover + hover_spec.lua need it).")
+  print("      Set $HOVER_NVIM_PATH, or check it out next to this repo.")
   os.exit(1)
 end
 
