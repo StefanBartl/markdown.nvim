@@ -4,8 +4,9 @@
 
 | Tool | Required | Purpose |
 |------|----------|---------|
-| Neovim | **>= 0.9** | core |
+| Neovim | **>= 0.10** | core (`vim.system`, used unconditionally by the reverse-reference search behind `DD` once `rg` is on `$PATH`) |
 | [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.bindings.usercmd.composer`), plus buffer debouncing |
+| `rg` (ripgrep) | optional | speeds up the reverse file-reference search (`core.file_refs`); see [docs/install.json](install.json) |
 
 No other external tools required beyond lib.nvim — every other feature runs
 on built-in Neovim APIs.

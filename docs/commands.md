@@ -307,8 +307,8 @@ behaviour described under `check_heading_gaps`; `<leader>toc` /
 
 ## `:MDTable*` (width-limited table wrapping)
 
-A separate, opt-in command family (not nested under `:Markdown table`),
-mirroring the roadmap note's own naming: `:MDTableWrap`, `:MDTableUnwrap`,
+A separate, opt-in command family (not nested under `:Markdown table`):
+`:MDTableWrap`, `:MDTableUnwrap`,
 `:MDTableWrapVisual[!]`, `:MDTableWrapVisible[!]`, `:MDTableReflowHeader`,
 `:MDTableFoldRow`, `:MDTableFoldAll`, `:MDTableProfile`,
 `:MDTableCol {inc|dec} [n]`, `:MDTableAlign`, `:MDTableFlavor`,

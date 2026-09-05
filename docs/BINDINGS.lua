@@ -461,6 +461,14 @@ return {
         desc = "Generate links from a dir tree to clipboard",
       },
       {
+        name = "Markdown links check",
+        desc = "Flag dead relative-file links + duplicate heading anchors (vim.diagnostic)",
+      },
+      {
+        name = "Markdown links sanitize [%|cwd|<file>]",
+        desc = "Normalize link-target paths (manual form of the on-save default)",
+      },
+      {
         name = "Markdown toc [level] [--sep|--no-sep]",
         desc = "Insert/refresh the TOC",
       },
@@ -605,10 +613,42 @@ return {
       desc = "Set foldmethod=expr + fold options",
     },
     {
-      event = "FileType/BufWritePre/TextChanged",
-      group = "MarkdownNvimRefs",
+      event = "FileType",
+      group = "MarkdownNvimTableView",
       pattern = "markdown/mdx/md/markdown.*",
-      desc = "refs sync per config.refs.mode (off|save|live)",
+      desc = "Install buffer-local TableView maps + commands (feature 'tableview')",
+    },
+    {
+      event = "FileType/BufWritePre*/TextChanged+TextChangedI*/BufWipeout",
+      group = "MarkdownNvimRefs",
+      pattern = "markdown/mdx/md/markdown.* (*.md/*.markdown/*.mdx for the write/wipeout hooks)",
+      desc = "refs sync per config.refs.mode (off|save|live, default off): baseline on FileType, "
+        .. "reconcile on BufWritePre (*save) or debounced TextChanged/TextChangedI (*live), "
+        .. "teardown on BufWipeout",
+    },
+    {
+      event = "BufWritePost",
+      group = "MarkdownNvimLinkDiagnostics",
+      pattern = "*.md, *.markdown, *.mdx",
+      desc = "Link diagnostics check on save (config.links.diagnostics.mode == 'save', default off)",
+    },
+    {
+      event = "BufWritePre",
+      group = "MarkdownNvimLinksSanitize",
+      pattern = "*.md, *.markdown, *.mdx",
+      desc = "Normalize link targets on save (config.links.sanitize_on_save, default on)",
+    },
+    {
+      event = "VimResized/WinResized",
+      group = "MarkdownNvimTableWrapResize",
+      pattern = "(none -- all loaded buffers)",
+      desc = "Debounced reflow of auto-mode tables (config.table.wrap.auto_resize, default off)",
+    },
+    {
+      event = "BufWritePre",
+      group = "MarkdownNvimTableWrapSelective",
+      pattern = "*.md, *.markdown, *.mdx",
+      desc = "Reflow only tables changed since last save (config.table.wrap.selective_reflow, default off)",
     },
     {
       event = "ColorScheme",

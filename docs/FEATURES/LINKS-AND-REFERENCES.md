@@ -48,6 +48,23 @@ Flags dead relative-file links and duplicate heading anchors via
 - **Autocmd:** `MarkdownNvimLinkDiagnostics` augroup (`bindings/autocmds.lua`),
   `BufWritePost`, opt-in via `links.diagnostics.mode = "save"`
 
+## Link sanitize
+
+Normalizes inline-link targets: backslashes become forward slashes and a bare
+relative path gets a `./` prefix (`[t](doc.md)` → `[t](./doc.md)`). URLs,
+`mailto:`/scheme targets, `#anchor` links, absolute paths, and `~`-relative
+paths are left untouched. Runs on every save by default — this is the one
+`links.*` behavior that is on unless you turn it off, which is why a link
+written as `.\foo\bar.md` shows up normalized the next time the file is
+opened even if nothing else about the buffer's links was touched.
+
+- **Module:** `core/link_sanitize.lua`
+- **Command:** `:Markdown links sanitize [%|cwd|<file>]` — the manual, on-demand
+  form of the same pass (see [commands.md](../commands.md#markdown-links))
+- **Config:** `links.sanitize_on_save` (default `true`)
+- **Autocmd:** `MarkdownNvimLinksSanitize` augroup (`bindings/autocmds.lua`),
+  `BufWritePre`
+
 ## Links show / create
 
 Scan for links and open the chosen one through a picker (URL → browser,
