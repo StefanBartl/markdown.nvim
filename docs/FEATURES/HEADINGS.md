@@ -55,7 +55,7 @@ Custom `foldexpr` for ATX and Setext headings.
 - **Autocmd:** `MarkdownNvimFold` augroup (`bindings/autocmds.lua`) sets
   `foldmethod=expr`/`foldexpr`/`foldenable`/`foldlevel` on `FileType`.
 - **Extended by table-wrap:** when `:MDTableFoldRow`/`:MDTableFoldAll` (see
-  [tables.md](tables.md#table_wrap--width-limited-wrapping-mdtable)) have run
+  [TABLES.md](TABLES.md#table_wrap--width-limited-wrapping-mdtable)) have run
   in a buffer, `foldexpr` also nests a table's continuation rows one level
   under their heading section (`vim.b.mdtable_fold_continuations`).
 

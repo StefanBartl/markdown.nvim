@@ -59,7 +59,7 @@ Markdown links from a directory tree to the clipboard.
   create [-r] [--noignore] [--root <path>] <path>` (see
   [commands.md](../commands.md#markdown-links))
 - **Config:** `links.picker` (`"hover_select"` default | `"select"` |
-  `"telescope"` | `"fzf"` — see [integrations.md](integrations.md#picker-backends))
+  `"telescope"` | `"fzf"` — see [INTEGRATIONS.md](INTEGRATIONS.md#picker-backends))
 - **Image-aware:** when the scanned links include an image and both
   `snacks.picker` and images.nvim are installed, `show` routes through a
   `snacks.picker` with a live per-item image preview instead.
@@ -92,7 +92,7 @@ stay consistent everywhere.
   `anchor/is_inside_toc_block.lua`, `core/slug.lua`
 - **Keymap:** `mj` (see [keymaps.md](../keymaps.md#cursor-action-handler));
   also reachable via the generic cursor-action handler (double-click, `ma`)
-  — see [editing-and-handlers.md](editing-and-handlers.md)
+  — see [EDITING-AND-HANDLERS.md](EDITING-AND-HANDLERS.md)
 - **Config:** `toc.anchor_style` (`"gfm"` default | `"keep-case"`),
   `toc.anchor_separator` (default `"-"`)
 

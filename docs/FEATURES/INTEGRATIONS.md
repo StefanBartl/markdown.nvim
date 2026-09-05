@@ -28,8 +28,8 @@ markdown` reports whether each was detected.
 
 Live link-preview for image links, in-Neovim image preview for `mi`, and
 the `:Markdown image` delegator — see
-[editing-and-handlers.md](editing-and-handlers.md#image-paste--screenshot)
-and [links-and-references.md](links-and-references.md#links-show--create)
+[EDITING-AND-HANDLERS.md](EDITING-AND-HANDLERS.md#image-paste--screenshot)
+and [LINKS-AND-REFERENCES.md](LINKS-AND-REFERENCES.md#links-show--create)
 for the two call sites. Preferred in-Neovim preview provider when several
 are installed (snacks.nvim/image.nvim are Kitty-APC-only and don't draw on
 native Windows Neovim in WezTerm; images.nvim's
@@ -48,7 +48,7 @@ cursor-action handler, and `:Markdown export pdf`.
   [commands.md](../commands.md#markdown-export))
 - **Reached via:** the cursor-action handler (`ma`/double-click/`<C-LeftMouse>`)
   on a `.pdf` link — see
-  [editing-and-handlers.md](editing-and-handlers.md#cursor-action-handler)
+  [EDITING-AND-HANDLERS.md](EDITING-AND-HANDLERS.md#cursor-action-handler)
 - Following a `.pdf` link prompts "System app" vs. "pdfport (new buffer)" when
   pdfport.nvim is installed; without it, opens with the system application
   directly, no prompt. `:Markdown export pdf` exports the current buffer/file
