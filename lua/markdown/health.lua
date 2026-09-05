@@ -21,10 +21,10 @@ function M.check()
   start("markdown.nvim")
 
   -- Neovim version.
-  if vim.fn.has("nvim-0.9") == 1 then
+  if vim.fn.has("nvim-0.10") == 1 then
     ok("Neovim " .. tostring(vim.version()))
   else
-    warn("markdown.nvim targets Neovim 0.9+")
+    warn("markdown.nvim targets Neovim 0.10+ (vim.system, used unconditionally once rg is found)")
   end
 
   -- System opener used by the link/file/image handlers (cross-platform path).
