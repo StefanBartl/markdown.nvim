@@ -21,12 +21,14 @@ jobs:
         with:
           repository: StefanBartl/lib.nvim
           path: lib.nvim
+          ref: ci-verified
       # hover.nvim is the hover framework; markdown.hover only contributes a
       # source, and hover_spec.lua requires hover.* modules directly.
       - uses: actions/checkout@v5
         with:
           repository: StefanBartl/hover.nvim
           path: hover.nvim
+          ref: ci-verified
       - uses: rhysd/action-setup-vim@v1
         with:
           neovim: true
