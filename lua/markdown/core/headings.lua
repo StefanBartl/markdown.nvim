@@ -47,6 +47,24 @@ local function level_pattern(level) return "^" .. string.rep("#", level) .. "\\s
 ---@param col integer
 local function restore_col(lnum, col) fn.cursor(lnum, col) end
 
+--- Backward `fn.search` that never matches the line the cursor is already on.
+---
+--- Every nav pattern is `^`-anchored, so from any column past the first a plain
+--- backward search matches the *start of the current line* whenever the cursor
+--- sits on a heading or a fence delimiter -- and the hop then never leaves that
+--- line (a `<C-p>` on a fenced block's `` ``` `` looped in place). `search()`
+--- never accepts a match at the exact cursor position without the `c` flag, so
+--- starting from column 1 lets it skip the cursor line and reach the previous
+--- landmark. The caller restores the real column afterwards via `restore_col`.
+---@internal
+---@param pattern string
+---@param flags string `fn.search` flags -- must contain `b`
+---@return integer lnum
+local function search_back(pattern, flags)
+  fn.cursor(fn.line("."), 1)
+  return fn.search(pattern, flags)
+end
+
 --- Resolve the fenced-block scope for `op`, or nil when scoping is off for it
 --- (feature disabled or that op opted out) — callers then use the plain,
 --- whole-buffer `fn.search` path, so behavior is unchanged when disabled.
@@ -74,6 +92,11 @@ local function scoped_search(pattern, backward, scope)
   local flags = (backward and "bW" or "W") .. "s"
   local stopline = backward and scope.first or scope.last
   local view = fn.winsaveview()
+  -- Same `^`-anchor trap as `search_back`: a backward hop from a column past
+  -- the first would match the current line's own start. Step to column 1 so
+  -- `search()` skips it; the failure path below restores the view (column
+  -- included) and the success path leaves `restore_col` to the caller.
+  if backward then fn.cursor(fn.line("."), 1) end
   while true do
     local lnum = fn.search(pattern, flags, stopline)
     if lnum == 0 or lnum < scope.first or lnum > scope.last then
@@ -92,13 +115,13 @@ function M.goto_prev_heading()
   local pattern = nav_pattern()
   local scope = op_scope("nav")
   if not scope then
-    local col = fn.col(".")
+    local col, from = fn.col("."), fn.line(".")
     local moved = false
     for _ = 1, vim.v.count1 do
-      if fn.search(pattern, "bWs") == 0 then break end
+      if search_back(pattern, "bWs") == 0 then break end
       moved = true
     end
-    if moved then restore_col(fn.line("."), col) end
+    restore_col(moved and fn.line(".") or from, col)
     vim.cmd("nohlsearch")
     return
   end
@@ -146,10 +169,10 @@ end
 function M.goto_prev_heading_level()
   local count = vim.v.count
   local pattern = count > 0 and level_pattern(count) or ANY_HEADING
-  local col = fn.col(".")
+  local col, from = fn.col("."), fn.line(".")
   local scope = op_scope("nav")
   if not scope then
-    if fn.search(pattern, "bWs") ~= 0 then restore_col(fn.line("."), col) end
+    restore_col(search_back(pattern, "bWs") ~= 0 and fn.line(".") or from, col)
     vim.cmd("nohlsearch")
     return
   end
