@@ -31,7 +31,7 @@ CONTENTS                                           *markdown.nvim-contents*
      7.3 toc ................... |:Markdown-toc|
      7.4 refs .................. |:Markdown-refs|
      7.5 table ................. |:Markdown-table|
-     7.6 render / preview / mdview |:Markdown-render|
+     7.6 render / preview / mdview / export |:Markdown-render|
      7.7 create ................ |:Markdown-create|
      7.8 headline_spacing ...... |:Markdown-headline-spacing|
      7.9 scope ................. |:Markdown-scope|
@@ -911,6 +911,7 @@ is deleted.
     render             Toggle render-markdown.nvim       |:Markdown-render|
     preview            Toggle markdown-preview.nvim       |:Markdown-render|
     mdview             Open file via mdview.nvim         |:Markdown-render|
+    export             Export to PDF via pdfport.nvim    |:Markdown-export|
     create             Create files for link targets     |:Markdown-create|
     headline_spacing   Enforce section separators   |:Markdown-headline-spacing|
     scope              Toggle fenced-block scope         |:Markdown-scope|
@@ -1141,7 +1142,7 @@ is deleted.
                 current buffer (inserted below the cursor).
 
 ------------------------------------------------------------------------------
-7.6 :Markdown render / preview / mdview                   *:Markdown-render*
+7.6 :Markdown render / preview / mdview / export          *:Markdown-render*
 
 :Markdown render [on|off|toggle]
 
@@ -1163,6 +1164,16 @@ is deleted.
   when it is not installed or loaded (e.g. omitted as a dependency of
   markdown.nvim and not installed standalone). `:checkhealth markdown`
   reports whether it was detected.
+
+                                                         *:Markdown-export*
+:Markdown export [pdf] [path]
+
+  Export the current buffer/file (or `path`) to PDF by delegating to
+  pdfport.nvim's `create()` — pandoc plus a PDF engine, all owned by
+  pdfport. `pdf` is the only (and default) sub. pdfport.nvim is an optional
+  host; without it, or without an available producer, the command warns
+  instead of erroring. Following a `.pdf` link from the cursor-action
+  handler offers the same pdfport path (see |markdown.nvim-keymaps-handler|).
 
 ------------------------------------------------------------------------------
 7.7 :Markdown create                                      *:Markdown-create*

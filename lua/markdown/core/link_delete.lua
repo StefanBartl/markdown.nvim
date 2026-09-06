@@ -24,9 +24,6 @@
 --- dialog appears a moment after the key rather than blocking on the scan --
 --- and because the buffer can move in that moment, the line is re-read and
 --- compared before anything is deleted.
----
---- This is the feature `core.file_refs`'s module doc used to say markdown.nvim
---- does not have.
 
 local link_scan = require("markdown.core.link_scan")
 local path = require("markdown.util.path")

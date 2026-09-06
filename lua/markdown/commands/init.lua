@@ -90,8 +90,6 @@ local sub_complete = {
   mdview = { mod = "markdown.commands.mdview" },
   create = { mod = "markdown.commands.create" },
   scope = { mod = "markdown.commands.scope" },
-  -- Added on main after this branch was cut. Its completer took the cmdline
-  -- in the old form, which is what `nested` means here.
   list = { mod = "markdown.commands.list", nested = true },
   image = { mod = "markdown.commands.image" },
   export = { mod = "markdown.commands.export" },

@@ -35,11 +35,8 @@ local function live_on(bufnr)
   local refs = require("markdown.core.refs")
   refs.attach(bufnr)
   if live_au[bufnr] then return end
-  -- This used to stay on the raw API with a note that lib.nvim.bindings.autocmd.create
-  -- did not forward `buffer`, so routing it through the wrapper would have
-  -- turned a per-buffer live-tracking hook into one firing for every buffer.
-  -- It forwards `buffer` now. The wrapper also returns the autocmd id, which
-  -- is what `live_off()` needs for nvim_del_autocmd.
+  -- The wrapper forwards `buffer` (so this stays per-buffer) and returns the
+  -- autocmd id, which is what `live_off()` needs for nvim_del_autocmd.
   live_au[bufnr] = require("lib.nvim.bindings.autocmd").create(
     { "TextChanged", "TextChangedI" },
     function() refs.on_change(bufnr) end,

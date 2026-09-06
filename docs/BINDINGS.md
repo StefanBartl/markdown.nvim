@@ -152,12 +152,14 @@ buffer-local.
 | `:Markdown table new [cols] [rows]` | Insert an empty GFM table template |
 | `:Markdown table mode [on\|off\|toggle]` | Per-buffer table auto-format (vim-table-mode style) |
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |
+| `:Markdown table import [clipboard\|PATH]` | Parse an HTML `<table>` into a GFM table (round-trips with the browser export) |
 | `:Markdown render [on\|off\|toggle]` | render-markdown.nvim wrapper (optional host) |
 | `:Markdown preview [start\|stop\|toggle]` | markdown-preview.nvim wrapper (optional host) |
 | `:Markdown mdview [path]` | Open a file directly via mdview.nvim (optional host) |
 | `:Markdown create fs` | Create files/dirs for local link targets |
 | `:Markdown headline_spacing` | Enforce blank-dash-blank between H2+ sections |
 | `:Markdown scope [on\|off\|toggle\|status]` | Toggle fenced-block scope (TOC/nav/jump/shift/fold act on the block the cursor is in) |
+| `:Markdown list [headings] [%\|cwd\|<file>]` | List headings in a picker and jump to the chosen one |
 | `:Markdown image [paste\|screenshot]` | Delegates to images.nvim's `:Image paste/screenshot` (optional host); default sub is `paste` |
 | `:Markdown export [pdf] [path]` | Delegates to pdfport.nvim's `create()` (optional host); default sub is `pdf` |
 | `:Markdown gaps` | Check for skipped heading levels; offers to fix them |
