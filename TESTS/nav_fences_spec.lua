@@ -87,6 +87,22 @@ return function(H)
     eq(api.nvim_win_get_cursor(0)[2], 5, "column kept")
   end
 
+  -- ---- backward hop from a non-zero column keeps walking --------------------
+  -- The nav patterns are `^`-anchored: a backward search from any column past
+  -- the first matched the *start of the current line* once the cursor sat on a
+  -- heading or a fence delimiter, so `<C-p>` stalled there instead of stepping
+  -- to the previous landmark. Every earlier assertion here starts at column 0
+  -- and never saw it.
+  do
+    fresh()
+    api.nvim_win_set_cursor(0, { 20, 4 }) -- on "## Section C", mid-line
+    local expected = { 18, 16, 13, 11, 9, 7, 5, 3, 1 }
+    for _, want in ipairs(expected) do
+      head.goto_prev_heading()
+      eq(row(), want, "backward hop from column 4 lands on line " .. want)
+    end
+  end
+
   -- ---- nav.fences = false: headings only (the pre-change behaviour) -------
   do
     fresh({ fences = false })
