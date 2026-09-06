@@ -5,11 +5,18 @@
 ---   sanitize [%|cwd|<file>]   Normalize link-target paths (./, forward slashes).
 --- A bare path (no known subcommand) defaults to `create` for backwards compat.
 local notify = require("markdown.util.notify").create("[markdown.commands.links]")
+local progress = require("markdown.util.progress")
 
 local M = {}
 
 local uv = vim.uv or vim.loop
 local globbable = require("lib.nvim.fs.globbable")
+
+--- Files processed per event-loop tick once a `cwd` scope spans more than
+--- this. `collect` reads+parses each file and `sanitize` reads+writes each, so
+--- a big docs tree freezes the editor in one synchronous loop. A smaller scope
+--- stays synchronous with no indicator.
+local CHUNK = 20
 
 -- ---------------------------------------------------------------------------
 -- create (delegates to the existing filesystem-link generator)
@@ -38,16 +45,20 @@ local function resolve_against(target, base_dir)
   return vim.fn.fnamemodify(base_dir .. "/" .. target, ":p")
 end
 
---- Collect links for a scope. Returns enriched links whose `target` is already
---- resolved when they originate from a file on disk.
+--- Collect links for a scope, delivering the enriched list (targets already
+--- resolved for links from a file on disk) through `on_done`. The `%`/buffer
+--- and single-file scopes finish synchronously — `on_done` just fires within
+--- the call. A `cwd` scope over more than `CHUNK` files reads and parses them
+--- in chunks across event-loop ticks with a progress indicator.
 ---@param scope string
----@return Mkdn.Link[]
-local function collect(scope)
+---@param on_done fun(links: Mkdn.Link[])
+local function collect(scope, on_done)
   local scan = require("markdown.core.link_scan")
 
   if scope == "" or scope == "%" then
     -- Current buffer: leave targets relative (handler resolves to buffer dir).
-    return scan.from_buffer(0)
+    on_done(scan.from_buffer(0))
+    return
   end
 
   local function links_from_file(path)
@@ -62,22 +73,54 @@ local function collect(scope)
   end
 
   if scope == "cwd" then
-    local out = {}
     local md_files = vim.fn.globpath(globbable(vim.fn.getcwd()), "**/*.md", false, true)
-    for _, path in ipairs(md_files) do
-      for _, lk in ipairs(links_from_file(path)) do
-        out[#out + 1] = lk
+    local out = {}
+
+    if #md_files <= CHUNK then
+      for _, path in ipairs(md_files) do
+        for _, lk in ipairs(links_from_file(path)) do
+          out[#out + 1] = lk
+        end
       end
+      on_done(out)
+      return
     end
-    return out
+
+    local h = progress.create("scanning links…", #md_files)
+    local i = 0
+    local function step()
+      if h and h.cancelled then
+        on_done(out)
+        return
+      end
+      local last = math.min(i + CHUNK, #md_files)
+      for j = i + 1, last do
+        for _, lk in ipairs(links_from_file(md_files[j])) do
+          out[#out + 1] = lk
+        end
+      end
+      i = last
+      if h then h:update({ text = "scanning links…", current = i, total = #md_files }) end
+      if i < #md_files then
+        vim.schedule(step)
+        return
+      end
+      if h then h:finish(string.format("%d link(s) in %d file(s)", #out, #md_files)) end
+      on_done(out)
+    end
+    step()
+    return
   end
 
   -- Treat scope as a file path.
   local path = vim.fn.expand(scope)
-  if uv.fs_stat(path) then return links_from_file(path) end
+  if uv.fs_stat(path) then
+    on_done(links_from_file(path))
+    return
+  end
 
   notify.warn("links show: scope not found: " .. tostring(scope))
-  return {}
+  on_done({})
 end
 
 ---@internal
@@ -178,38 +221,39 @@ local function do_show(argv)
   local cfg = require("markdown.config").get()
   local scope = argv[1] or "%"
 
-  local links = collect(scope)
-  if #links == 0 then
-    notify.info("No links found in scope: " .. scope)
-    return
-  end
-
-  -- Live preview only pays for itself with snacks.picker + images.nvim both
-  -- present, and only when there is actually an image link to preview —
-  -- otherwise the plain cross-backend picker below is exactly as good.
-  local has_image = false
-  for _, lk in ipairs(links) do
-    if is_image_target(lk.target) then
-      has_image = true
-      break
-    end
-  end
-
-  if has_image then
-    local Picker = snacks_picker()
-    local browse = images_browse()
-    if Picker and browse then
-      do_show_snacks(links, Picker, browse)
+  collect(scope, function(links)
+    if #links == 0 then
+      notify.info("No links found in scope: " .. scope)
       return
     end
-  end
 
-  local picker = require("markdown.util.picker")
-  picker.select(links, {
-    prompt = string.format("Markdown links (%d)", #links),
-    format = format_item,
-    backend = (cfg.links and cfg.links.picker) or "hover_select",
-  }, function(lk) require("markdown.handler").open_target(lk.target) end)
+    -- Live preview only pays for itself with snacks.picker + images.nvim both
+    -- present, and only when there is actually an image link to preview —
+    -- otherwise the plain cross-backend picker below is exactly as good.
+    local has_image = false
+    for _, lk in ipairs(links) do
+      if is_image_target(lk.target) then
+        has_image = true
+        break
+      end
+    end
+
+    if has_image then
+      local Picker = snacks_picker()
+      local browse = images_browse()
+      if Picker and browse then
+        do_show_snacks(links, Picker, browse)
+        return
+      end
+    end
+
+    local picker = require("markdown.util.picker")
+    picker.select(links, {
+      prompt = string.format("Markdown links (%d)", #links),
+      format = format_item,
+      backend = (cfg.links and cfg.links.picker) or "hover_select",
+    }, function(lk) require("markdown.handler").open_target(lk.target) end)
+  end)
 end
 
 -- ---------------------------------------------------------------------------
@@ -254,20 +298,56 @@ local function do_sanitize(argv)
   if scope == "cwd" then
     local files = vim.fn.globpath(globbable(vim.fn.getcwd()), "**/*.md", false, true)
     local total, touched = 0, 0
-    for _, path in ipairs(files) do
+
+    local function done()
+      notify.info(
+        string.format(
+          "links sanitize: normalized %d link target(s) across %d file(s)",
+          total,
+          touched
+        )
+      )
+    end
+
+    local function sanitize_one(path)
       local n = sanitize.path(path)
       if n > 0 then
         total = total + n
         touched = touched + 1
       end
     end
-    notify.info(
-      string.format(
-        "links sanitize: normalized %d link target(s) across %d file(s)",
-        total,
-        touched
-      )
-    )
+
+    if #files <= CHUNK then
+      for _, path in ipairs(files) do
+        sanitize_one(path)
+      end
+      done()
+      return
+    end
+
+    -- Chunked: sanitize.path reads and writes each file, so a large tree is a
+    -- multi-second freeze done in one loop.
+    local h = progress.create("sanitizing links…", #files)
+    local i = 0
+    local function step()
+      if h and h.cancelled then
+        done()
+        return
+      end
+      local last = math.min(i + CHUNK, #files)
+      for j = i + 1, last do
+        sanitize_one(files[j])
+      end
+      i = last
+      if h then h:update({ text = "sanitizing links…", current = i, total = #files }) end
+      if i < #files then
+        vim.schedule(step)
+        return
+      end
+      if h then h:finish(string.format("%d link(s) in %d file(s)", total, touched)) end
+      done()
+    end
+    step()
     return
   end
 

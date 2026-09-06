@@ -15,6 +15,13 @@ local DEFAULTS = {
   -- just_enable wins over disable/enable. See config.features() for the names.
   features = {},
 
+  -- Indicator style for scope-wide operations that walk every *.md file under
+  -- a directory (`:Markdown links show cwd`, `:Markdown links sanitize cwd`).
+  -- Provided by lib.nvim's `lib.nvim.progress`; "statusline" feeds its
+  -- headless registry, the rest render directly. One of "auto" (default),
+  -- "notify", "statusline", "fidget", "float", "kit".
+  progress_style = "auto",
+
   map_double_asterisk = true,
   map_wrap_link = true,
   keep_inner_selection = true,

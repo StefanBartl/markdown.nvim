@@ -11,6 +11,12 @@ require("markdown").setup({
   -- Feature gating (see "Feature gating" below). Empty = everything on.
   features = {},
 
+  -- Indicator style for scope-wide *.md walks (:Markdown links show|sanitize
+  -- cwd). Provided by lib.nvim's lib.nvim.progress; "statusline" feeds its
+  -- headless registry, the rest render directly. One of "auto", "notify",
+  -- "statusline", "fidget", "float", "kit".
+  progress_style         = "auto",
+
   -- Toggle ** mapping in visual mode
   map_double_asterisk    = true,
 

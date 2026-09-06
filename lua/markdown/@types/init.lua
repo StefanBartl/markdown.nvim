@@ -172,6 +172,7 @@
 
 ---@class Mkdn.Config
 ---@field features? Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
+---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" # Indicator style for scope-wide *.md walks (`:Markdown links show|sanitize cwd`). Via lib.nvim.progress.
 ---@field map_double_asterisk? boolean # Map `**` in visual mode to toggle bold.
 ---@field map_wrap_link? boolean # Map `<leader>[` to wrap the word/selection in a link.
 ---@field keep_inner_selection? boolean # After toggling bold, keep the inner text selected.

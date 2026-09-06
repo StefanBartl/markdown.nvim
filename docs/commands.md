@@ -43,6 +43,11 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
   `~`-relative paths are left untouched. Runs automatically before every save
   unless `links.sanitize_on_save` is set to `false`.
 
+`show cwd` and `sanitize cwd` walk every `*.md` file under the directory. Once
+that is more than 20 files they scan (and, for `sanitize`, rewrite) in chunks
+across event-loop ticks with a `progress_style` indicator, so a big docs tree
+never freezes the editor; a smaller tree stays synchronous.
+
 ## `:Markdown toc`
 
 ```vim
