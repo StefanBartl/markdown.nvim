@@ -158,4 +158,82 @@ return function(H)
   package.loaded["markdown.core.file_refs"] = nil
 
   if not run_ok2 then error(err2, 0) end
+
+  -- ── rg failure falls back to the exhaustive glob scan, not to "0 refs" ──
+  -- Regression for the bug where an errored `rg` run (root vanished,
+  -- permission denied, killed mid-scan, ...) and a genuinely empty result
+  -- both collapsed to `{}`. A caller (e.g. core.link_delete's "N other links
+  -- point at it" dialog) cannot tell "confirmed nothing else links here" from
+  -- "the scan broke and we don't know" -- and would let a file be deleted out
+  -- from under links it could not see. Forcing `vim.system` to report an rg
+  -- error (exit code 2) here must still surface the real reference via the
+  -- glob fallback, both sync and async.
+  package.loaded["markdown.util.path"] = nil
+  package.loaded["markdown.core.file_refs"] = nil
+  local file_refs3 = require("markdown.core.file_refs")
+
+  local root3 = (vim.fn.fnamemodify(vim.fn.tempname(), ":h") .. "/mdnvim_filerefsspec3"):gsub(
+    "\\",
+    "/"
+  )
+
+  local run_ok3, err3 = pcall(function()
+    vim.fn.mkdir(root3 .. "/docs", "p")
+    local target = root3 .. "/docs/target.md"
+    local function write(rel, lines)
+      local fh = io.open(root3 .. "/" .. rel, "w")
+      ok(fh ~= nil, "fixture3 write: " .. rel)
+      fh:write(table.concat(lines, "\n"))
+      fh:close()
+    end
+    write("docs/target.md", { "# Target" })
+    write("docs/linker.md", { "[t](target.md)" })
+
+    ok(vim.fn.executable("rg") == 1, "this regression needs rg on PATH to exercise the rg path")
+
+    local real_system = vim.system
+    vim.system = function(_cmd, _opts, cb)
+      local fake = { code = 2, signal = 0, stdout = "", stderr = "rg: forced failure for test" }
+      if cb then
+        vim.schedule(function() cb(fake) end)
+        return { wait = function() return fake end }
+      end
+      return { wait = function() return fake end }
+    end
+
+    local refs_ok, refs = pcall(file_refs3.find_references, target, { root = root3 })
+    vim.system = real_system
+    ok(refs_ok, "find_references: survives a forced rg error")
+    eq(
+      #refs,
+      1,
+      "find_references: rg error falls back to the glob scan instead of reporting 0 refs"
+    )
+
+    vim.system = function(_cmd, _opts, cb)
+      local fake = { code = 2, signal = 0, stdout = "", stderr = "rg: forced failure for test" }
+      vim.schedule(function() cb(fake) end)
+      return { wait = function() return fake end }
+    end
+
+    local async_refs, done = nil, false
+    file_refs3.find_references_async(target, { root = root3 }, function(r)
+      async_refs = r
+      done = true
+    end)
+    vim.wait(3000, function() return done end)
+    vim.system = real_system
+    ok(done, "find_references_async: callback fired despite the forced rg error")
+    eq(
+      #(async_refs or {}),
+      1,
+      "find_references_async: rg error falls back to the glob scan instead of reporting 0 refs"
+    )
+  end)
+
+  pcall(vim.fn.delete, root3, "rf")
+  package.loaded["markdown.util.path"] = nil
+  package.loaded["markdown.core.file_refs"] = nil
+
+  if not run_ok3 then error(err3, 0) end
 end

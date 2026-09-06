@@ -79,18 +79,28 @@ local function rg_cmd(root, needle)
   }
 end
 
---- Parse `rg --files-with-matches` stdout into a file list. rg exits 0 with
---- matches, 1 with none (both fine), >1 on error (treated as "no candidates").
+--- Parse `rg --files-with-matches` stdout into a file list, and report
+--- whether rg actually completed a determination. rg exits 0 with matches, 1
+--- with none -- both are a real, trustworthy answer. Any other exit code (or
+--- none at all, e.g. the process was killed) means rg did NOT determine
+--- anything, and callers must not treat that the same as "confirmed zero
+--- references": `find_references`/`find_references_async` fall back to the
+--- exhaustive glob scan in that case rather than silently reporting an empty
+--- list. Collapsing "no matches" and "search failed" into the same `{}` is
+--- exactly the kind of ambiguity that turned a delete confirmation ("N other
+--- links point at it") into a false "0 others" when rg errored out.
 ---@param result vim.SystemCompleted
----@return string[]
+---@return string[] files
+---@return boolean determined  false when rg errored and `files` cannot be trusted
 local function rg_files(result)
   local files = {}
-  if result.code and result.code <= 1 then
+  local determined = result.code ~= nil and result.code <= 1
+  if determined then
     for line in (result.stdout or ""):gmatch("[^\r\n]+") do
       files[#files + 1] = line
     end
   end
-  return files
+  return files, determined
 end
 
 --- Pure-Lua fallback candidate list (every `*.md` under root).
@@ -149,7 +159,11 @@ function M.find_references(target_path, opts)
 
   local files
   if needle and vim.fn.executable("rg") == 1 then
-    files = rg_files(vim.system(rg_cmd(root, needle), { text = true }):wait())
+    local rg_result, determined = rg_files(vim.system(rg_cmd(root, needle), { text = true }):wait())
+    -- An errored rg run (root vanished, permission denied, killed, ...) is
+    -- "we don't know", not "zero candidates" -- fall back to the exhaustive
+    -- glob so a real answer, not a false negative, reaches the caller.
+    files = determined and rg_result or glob_files(root)
   else
     files = glob_files(root)
   end
@@ -178,8 +192,14 @@ function M.find_references_async(target_path, opts, callback)
 
   if needle and vim.fn.executable("rg") == 1 then
     vim.system(rg_cmd(root, needle), { text = true }, function(result)
-      local files = rg_files(result)
-      vim.schedule(function() callback(scan(files, wanted)) end)
+      local files, determined = rg_files(result)
+      -- glob_files uses vim.fn.*, which needs the main loop -- do the
+      -- fallback decision (and the call itself) inside vim.schedule, same as
+      -- the "rg not installed" branch below.
+      vim.schedule(function()
+        if not determined then files = glob_files(root) end
+        callback(scan(files, wanted))
+      end)
     end)
   else
     vim.schedule(function() callback(scan(glob_files(root), wanted)) end)
