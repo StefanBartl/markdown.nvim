@@ -91,5 +91,45 @@ return function(H)
   eq(written[1], "[x](./sub/dir/target.md)", "file(): target rewritten on disk")
 
   pcall(vim.fn.delete, path)
+
+  -- ── :Markdown links sanitize cwd over a wide tree: chunked, non-blocking ──
+  -- More than CHUNK (20) files: the command must sanitize them in batches
+  -- across event-loop ticks and still touch every one.
+  do
+    local dir = (vim.fn.tempname()) .. "_mdnvim_sanitize_cwd"
+    vim.fn.mkdir(dir, "p")
+    local n = 30
+    for i = 1, n do
+      local fh2 = assert(io.open(string.format("%s/doc_%02d.md", dir, i), "w"))
+      fh2:write("[x](sub/dir/target.md)\n")
+      fh2:close()
+    end
+
+    local prev_cwd = vim.fn.getcwd()
+    vim.cmd("noautocmd lcd " .. vim.fn.fnameescape(dir))
+    require("markdown.commands.links").run({ "sanitize", "cwd" })
+
+    local last = string.format("%s/doc_%02d.md", dir, n)
+    local settled = vim.wait(
+      5000,
+      function() return vim.fn.readfile(last)[1] == "[x](./sub/dir/target.md)" end
+    )
+    ok(settled, "links sanitize cwd (wide): every file settled")
+
+    local all_done = true
+    for i = 1, n do
+      if
+        vim.fn.readfile(string.format("%s/doc_%02d.md", dir, i))[1] ~= "[x](./sub/dir/target.md)"
+      then
+        all_done = false
+        break
+      end
+    end
+    ok(all_done, "links sanitize cwd (wide): every file was sanitized")
+
+    vim.cmd("noautocmd lcd " .. vim.fn.fnameescape(prev_cwd))
+    pcall(vim.fn.delete, dir, "rf")
+  end
+
   ok(true, "done")
 end

@@ -142,6 +142,7 @@ GitHub-only, not duplicated into this helpfile.
 >
   require("markdown").setup({
     features = {},  -- feature gating; see |markdown.nvim-config-features|
+    progress_style         = "auto",  -- indicator for :Markdown links show|sanitize cwd
     map_double_asterisk    = true,
     map_wrap_link          = true,
     keep_inner_selection   = true,
@@ -176,6 +177,16 @@ GitHub-only, not duplicated into this helpfile.
     open  = { external_extensions = { "png", "pdf", "mp4", ... } },
   })
 <
+`progress_style`
+  Indicator style for the scope-wide operations that walk every `*.md` file
+  under a directory — `:Markdown links show cwd` and `:Markdown links
+  sanitize cwd`. Once that is more than 20 files they scan (and, for
+  `sanitize`, rewrite) in chunks across event-loop ticks so the editor never
+  freezes; a smaller tree stays synchronous. Provided by lib.nvim's
+  `lib.nvim.progress`: "statusline" feeds its headless registry, the rest
+  render directly. One of "auto" (default), "notify", "statusline",
+  "fidget", "float", "kit".
+
 `map_double_asterisk`
   When `true`, typing `**` in visual mode toggles bold on the selection.
   Set to `false` if you use a surround plugin that provides this.
