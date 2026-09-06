@@ -1,4 +1,4 @@
--- docs/BINDINGS.md — markdown.nvim binding cheatsheet.
+-- docs/BINDINGS.lua — markdown.nvim binding cheatsheet.
 --
 -- A single, machine-readable overview of every keymap, user command and
 -- autocommand markdown.nvim defines. DOCUMENTATION only: not required at
@@ -497,6 +497,10 @@ return {
         desc = "Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…)",
       },
       {
+        name = "Markdown table import [clipboard|PATH]",
+        desc = "Parse an HTML <table> into a GFM table (round-trips with the browser export)",
+      },
+      {
         name = "Markdown render [on|off|toggle]",
         desc = "render-markdown.nvim wrapper (optional host)",
       },
@@ -519,6 +523,10 @@ return {
       {
         name = "Markdown scope [on|off|toggle|status]",
         desc = "Toggle fenced-block scope (TOC/nav/jump/shift/fold act on the block the cursor is in)",
+      },
+      {
+        name = "Markdown list [headings] [%|cwd|<file>]",
+        desc = "List headings in a picker and jump to the chosen one",
       },
       {
         name = "Markdown image [paste|screenshot]",

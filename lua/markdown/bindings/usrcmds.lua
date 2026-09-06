@@ -236,7 +236,7 @@ local function create_mdtable_commands(bufnr)
   })
 end
 
--- :Markdown's 11 subcommands, feature-gated at registration time (matches
+-- :Markdown's subcommands, feature-gated at registration time (matches
 -- create_markdown_command()'s own idempotency: :Markdown is only ever
 -- registered once per session, on the first buffer that triggers it, so a
 -- feature flag flipped after that point was never live-checked either).

@@ -79,12 +79,13 @@ prompts.
 
 ## which-key
 
-Labels the `<leader>t` keymap group as "Markdown" and `<leader>tv` as
-"Markdown TableView"; every other default key carries its own `desc`, no
-group needed. Soft-guarded — a no-op if which-key isn't installed. Handles
-both which-key v3 (`wk.add`) and v2 (`wk.register`).
+Labels the shared keymap-group prefixes: `<leader>t` as "Markdown",
+`<leader>tv` as "Markdown TableView", `<leader>mt` as "Markdown Table".
+Every other default key carries its own `desc`, no group needed.
 
-- **Module:** `bindings/which_key.lua`
+- **Module:** `bindings/init.lua`, which forwards the groups to
+  `lib.nvim.bindings.keymap.which_key` — lib.nvim owns the which-key
+  version handling and the no-op when which-key isn't installed.
 
 ## lib.nvim (required, not soft)
 

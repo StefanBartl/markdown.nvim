@@ -1,8 +1,10 @@
 ---@module 'markdown.commands.table'
 --- `:Markdown table <sub>` router.
----   view   [toggle|select|close|browser|browsernice]   TableView actions
----   format [ALIGN] [header=A] [cell=A] [skip=COL] [scope=cursor|buffer|cwd|PATH]
----   new    [cols] [rows]                                Insert an empty table
+---   view     [toggle|markdown|box|select|close|browser|browsernice]  TableView actions
+---   format   [ALIGN] [header=A] [cell=A] [skip=COL] [scope=cursor|buffer|cwd|PATH]
+---   new      [cols] [rows]                              Insert an empty table
+---   mode     [on|off|toggle]                            Per-buffer auto-format mode
+---   tableize [format]                                   Delimited text -> GFM table
 ---   import [clipboard|PATH]     Parse an HTML <table> into a GFM table (round-
 ---                               trip with the TableView "open in browser" export).
 ---                               No arg: whole buffer, or the given range if any.

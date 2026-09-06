@@ -85,26 +85,26 @@ lua/markdown/
     markdown_links.lua     directory-to-link generator (links create)
     toc.lua                :Markdown toc (TOC + separators)
     refs.lua               :Markdown refs sync|check|live|baseline (thin wrapper over core/refs.lua)
-    table.lua              :Markdown table view|format|new
+    table.lua              :Markdown table view|format|new|mode|tableize|import
     render.lua             :Markdown render (render-markdown.nvim)
     preview.lua            :Markdown preview (markdown-preview.nvim)
     mdview.lua             :Markdown mdview (mdview.nvim)
+    image.lua              :Markdown image paste|screenshot (images.nvim)
     export.lua             :Markdown export <sub> (pdfport.nvim)
     scope.lua              :Markdown scope [on|off|toggle|status]
     create.lua             :Markdown create fs
     mdtable.lua            :MDTable* operations (wrap/unwrap/lint/csv/profile/fold/...)
   bindings/                all keymaps, user commands and autocmds live here
-    init.lua               orchestrator: setup(cfg)
+    init.lua               orchestrator: setup(cfg) + which-key group labels (via lib.nvim)
     actions.lua            named editing actions (public via .actions)
     keymaps.lua            buffer-local default keys (editing + TableView)
     usrcmds.lua            :Markdown + OpenWith + TableView* + MDTable* command registration
     autocmds.lua           FileType / BufWritePost / VimResized / WinResized drivers
-    which_key.lua          optional which-key group labels (guarded)
 plugin/
   markdown.lua        guard (vim.g.loaded_markdown)
 doc/
   markdown.nvim.txt        :h markdown.nvim vim help file
 docs/
-  BINDINGS.md             machine-readable binding cheatsheet
-  TESTS/                   headless spec suite
+  BINDINGS.md             prose binding inventory (BINDINGS.lua = the same data, machine-readable)
+TESTS/                     headless spec suite
 ```
