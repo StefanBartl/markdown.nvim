@@ -1,10 +1,7 @@
 # markdown.nvim — Binding Cheatsheet
 
-Every keymap, user command and autocommand `markdown.nvim` defines, in one
-place. This file is documentation only; the source of truth is
-`lua/markdown/bindings/` (`keymaps.lua`, `usrcmds.lua`, `autocmds.lua`,
-`actions.lua`, `which_key.lua`) plus `tableview/renderer.lua` for the popup's
-own keys. A change there must be reflected here.
+Every keymap, user command, and autocommand `markdown.nvim` defines. Kept in
+sync with `lua/markdown/bindings/` and `tableview/renderer.lua`.
 
 [`docs/BINDINGS.lua`](BINDINGS.lua) carries the same data as a Lua table, for
 tools that want to read it rather than a human.
@@ -22,7 +19,6 @@ buffers (see [Autocommands](#autocommands)); only `:Markdown` itself is global.
   - [User commands — `:Markdown`](#user-commands--markdown)
   - [User commands — buffer-local](#user-commands--buffer-local)
   - [Autocommands](#autocommands)
-  - [which-key](#which-key)
 
 ---
 
@@ -218,9 +214,3 @@ Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
 | `BufDelete`, `BufWipeout` | `MarkdownNvimScopeFoldCache` | — | Invalidates the per-buffer memoized fold-block cache used by the `foldexpr` hot path |
 | `TextChanged`, `TextChangedI` | (ungrouped, per buffer) | buffer-local | Live-tracks refs while `:Markdown refs live on`/`toggle` is active — **distinct** from the config-driven `MarkdownNvimRefs` live mode above: created/removed per invocation, id tracked in `commands/refs.lua`'s own `live_au[bufnr]` |
 | `BufEnter` | `MarkdownNvimPreviewRefresh` (created once, lazily, on first `:Markdown preview ...`) | `*.md` | Re-runs `:silent! MarkdownPreview` to refresh the external `markdown-preview.nvim` host plugin, while a preview session is active and idle |
-
-## which-key
-
-`lua/markdown/bindings/which_key.lua` labels the leader groups this plugin
-occupies when which-key.nvim is installed; a no-op otherwise. Every individual
-key carries a `desc`, so which-key lists them without extra wiring.
