@@ -32,9 +32,15 @@ is the short version of all of it.
 | [table-wrap.md](table-wrap.md) | Why the formatter aligns to natural width, and what happens when that does not fit |
 | [architecture.md](architecture.md) | Which module does what |
 
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add a command or a cursor handler |
+
 ## Here, but not prose
 
 **`BINDINGS.lua`** is the same inventory as `BINDINGS.md`, machine-readable.
 **`install.json`** declares the external tools this plugin can use, for
-`:Lib deps show markdown.nvim`. **`templates/`** holds the document scaffolds
-the plugin can insert.
+`:Lib deps show markdown.nvim`. **`templates/`** holds copy-paste `setup()`
+snippets — one topic per file — for the customizations people arrive wanting.
