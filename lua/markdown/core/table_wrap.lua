@@ -197,16 +197,16 @@ end
 local function split_units(text, soft_chars)
   local escaped = soft_chars:gsub("(%W)", "%%%1")
   local class = "[" .. escaped .. "]"
-  local units, cur = {}, ""
+  local units, cur_parts = {}, {}
   for i = 1, #text do
     local ch = text:sub(i, i)
-    cur = cur .. ch
+    cur_parts[#cur_parts + 1] = ch
     if ch == " " or ch:match(class) then
-      units[#units + 1] = cur
-      cur = ""
+      units[#units + 1] = table.concat(cur_parts)
+      cur_parts = {}
     end
   end
-  if cur ~= "" then units[#units + 1] = cur end
+  if #cur_parts > 0 then units[#units + 1] = table.concat(cur_parts) end
   return units
 end
 
@@ -516,34 +516,34 @@ function M.from_csv(lines)
   local rows = {}
   for _, line in ipairs(lines) do
     if line ~= "" then
-      local cells, cur, in_quotes = {}, "", false
+      local cells, cur_parts, in_quotes = {}, {}, false
       local i, n = 1, #line
       while i <= n do
         local ch = line:sub(i, i)
         if in_quotes then
           if ch == '"' then
             if line:sub(i + 1, i + 1) == '"' then
-              cur = cur .. '"'
+              cur_parts[#cur_parts + 1] = '"'
               i = i + 1
             else
               in_quotes = false
             end
           else
-            cur = cur .. ch
+            cur_parts[#cur_parts + 1] = ch
           end
         else
           if ch == '"' then
             in_quotes = true
           elseif ch == "," then
-            cells[#cells + 1] = cur
-            cur = ""
+            cells[#cells + 1] = table.concat(cur_parts)
+            cur_parts = {}
           else
-            cur = cur .. ch
+            cur_parts[#cur_parts + 1] = ch
           end
         end
         i = i + 1
       end
-      cells[#cells + 1] = cur
+      cells[#cells + 1] = table.concat(cur_parts)
       rows[#rows + 1] = cells
     end
   end
