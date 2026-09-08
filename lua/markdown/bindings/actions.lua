@@ -106,6 +106,46 @@ function M.heading_inc_visual() head().shift_visual_selection(vim.v.count1) end
 ---Shifts every heading in the visual selection up `vim.v.count1` levels.
 function M.heading_dec_visual() head().shift_visual_selection(-vim.v.count1) end
 
+-- Shift + format (the `<C-S-…>` variants of the shift keys) ------------------
+--
+-- The plain shift keys move a heading between levels and leave its text
+-- exactly as typed. Retitling usually happens in the same breath -- a line
+-- promoted out of a bullet list arrives as `**Fix the parser**` -- so these
+-- run `core.heading_format` over the same lines right after the shift, with
+-- no second command and no reaching for the mouse. The rules, and how to turn
+-- any of them off, are `config.heading_format`.
+
+---@internal
+---@param delta integer Levels to shift by (negative shifts up).
+local function shift_format(delta)
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  head().shift_range(row, row, delta)
+  require("markdown.core.heading_format").format_range(0, row, row)
+end
+
+---@internal
+---@param delta integer
+local function shift_format_visual(delta)
+  -- Read the selection before shifting: shift_visual_selection leaves visual
+  -- mode, and `line("v")` then no longer describes the range that moved.
+  local a, b = vim.fn.line("v"), vim.fn.line(".")
+  local srow, erow = math.min(a, b), math.max(a, b)
+  head().shift_visual_selection(delta)
+  require("markdown.core.heading_format").format_range(0, srow, erow)
+end
+
+---Shifts the current line's heading down `vim.v.count1` levels, then formats its text.
+function M.heading_inc_format() shift_format(vim.v.count1) end
+---Shifts the current line's heading up `vim.v.count1` levels, then formats its text.
+function M.heading_dec_format() shift_format(-vim.v.count1) end
+---Shifts every heading in the visual selection down `vim.v.count1` levels, then formats them.
+function M.heading_inc_format_visual() shift_format_visual(vim.v.count1) end
+---Shifts every heading in the visual selection up `vim.v.count1` levels, then formats them.
+function M.heading_dec_format_visual() shift_format_visual(-vim.v.count1) end
+
+---Formats the text of every heading in the buffer (no level change).
+function M.heading_format_buffer() require("markdown.core.heading_format").format_buffer(0) end
+
 -- Whole-buffer heading shift. When the cursor is inside a markdown-family
 -- fenced block, "all" means all headings *in that block* instead.
 ---@internal

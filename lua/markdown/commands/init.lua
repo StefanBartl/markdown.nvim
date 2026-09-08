@@ -35,6 +35,7 @@ local commands = {
   list = require("markdown.commands.list").run,
   image = require("markdown.commands.image").run,
   export = require("markdown.commands.export").run,
+  headings = require("markdown.commands.headings").run,
   headline_spacing = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -93,6 +94,7 @@ local sub_complete = {
   list = { mod = "markdown.commands.list", nested = true },
   image = { mod = "markdown.commands.image" },
   export = { mod = "markdown.commands.export" },
+  headings = { mod = "markdown.commands.headings", nested = true },
 }
 
 --- Completion for `:Markdown`: subcommand names, then delegates to the

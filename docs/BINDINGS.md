@@ -55,6 +55,10 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `heading_dec` | `<C-Left>` | n | `heading_dec` | | Decrease heading level |
 | `heading_inc_visual` | `<C-Right>` | v, x | `heading_inc_visual` | | Increase heading level (visual) |
 | `heading_dec_visual` | `<C-Left>` | v, x | `heading_dec_visual` | | Decrease heading level (visual) |
+| `heading_inc_format` | `<C-S-Right>` | n | `heading_inc_format` | | Increase heading level + format its text |
+| `heading_dec_format` | `<C-S-Left>` | n | `heading_dec_format` | | Decrease heading level + format its text |
+| `heading_inc_format_visual` | `<C-S-Right>` | v, x | `heading_inc_format_visual` | | Increase heading level + format (visual) |
+| `heading_dec_format_visual` | `<C-S-Left>` | v, x | `heading_dec_format_visual` | | Decrease heading level + format (visual) |
 | `heading_inc_all` | `<S-Right>` | n | `heading_inc_all` | | Increase all headings |
 | `heading_dec_all` | `<S-Left>` | n | `heading_dec_all` | | Decrease all headings |
 | `table_next_cell` | `]\|` | n | `table_next_cell` | feature `table` | Next table cell |
@@ -132,6 +136,11 @@ remapping, if you prefer.
 | `heading_dec_visual` | v, x | Decrease heading level, selection |
 | `heading_inc_all` | n | Increase all headings in buffer |
 | `heading_dec_all` | n | Decrease all headings in buffer |
+| `heading_inc_format` | n | Increase heading level, then format its text |
+| `heading_dec_format` | n | Decrease heading level, then format its text |
+| `heading_inc_format_visual` | v, x | Increase heading level, selection, then format |
+| `heading_dec_format_visual` | v, x | Decrease heading level, selection, then format |
+| `heading_format_buffer` | n | Format every heading's text in the buffer (no level change) |
 | `table_format` | n | Format table at cursor (`:Markdown table format`) |
 
 ## User commands — `:Markdown`
@@ -163,6 +172,7 @@ buffer-local.
 | `:Markdown image [paste\|screenshot]` | Delegates to images.nvim's `:Image paste/screenshot` (optional host); default sub is `paste` |
 | `:Markdown export [pdf] [path]` | Delegates to pdfport.nvim's `create()` (optional host); default sub is `pdf` |
 | `:Markdown gaps` | Check for skipped heading levels; offers to fix them |
+| `:Markdown headings format [emphasis=\|hashes=\|whitespace=\|punctuation=\|capitalize=]` | Normalize heading text (markers, whitespace, capitalization); range-aware |
 
 ## User commands — buffer-local
 

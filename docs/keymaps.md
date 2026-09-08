@@ -28,6 +28,44 @@ A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>`).
 | `<S-Right>` | n | Increase all headings in buffer |
 | `<S-Left>`  | n | Decrease all headings in buffer |
 
+Add `Shift` to the two `<C-…>` keys and the heading's **text** is normalized
+in the same stroke — emphasis markers off, whitespace collapsed, first letter
+capitalized. See [Heading text formatting](#heading-text-formatting).
+
+| Key | Mode | Action |
+|-----|------|--------|
+| `<C-S-Right>` | n | Increase level of current line, then format its text |
+| `<C-S-Left>`  | n | Decrease level of current line, then format its text |
+| `<C-S-Right>` | v / x | Increase level of selection, then format |
+| `<C-S-Left>`  | v / x | Decrease level of selection, then format |
+
+> Not every terminal distinguishes `<C-S-Right>` from `<C-Right>`. Kitty,
+> WezTerm, foot and Neovim's GUI clients do (via the CSI-u / kitty keyboard
+> protocol); in one that does not, remap the ids `heading_inc_format` /
+> `heading_dec_format` to keys it can tell apart.
+
+## Heading text formatting
+
+`:Markdown headings format` normalizes heading **text** without touching any
+level: emphasis markers off, runs of whitespace collapsed, a closing `##`
+dropped, the first letter capitalized. With a range
+(`:'<,'>Markdown headings format`) only those lines; without one, the buffer.
+
+Emphasis inside a code span, a link's target and raw HTML are never touched —
+`## Pass `**kwargs`` keeps its asterisks, because there they are Python.
+
+| Argument | Values | Default |
+|----------|--------|---------|
+| `emphasis=` | `on` / `off` | `on` — strip `**` `*` `__` `_` `~~` |
+| `hashes=` | `on` / `off` | `on` — `## Title ##` → `## Title` |
+| `whitespace=` | `on` / `off` | `on` — collapse runs, trim the ends |
+| `punctuation=` | `on` / `off` | `off` — drop a trailing `.` `,` `;` `:` |
+| `capitalize=` | `first` / `title` / `off` | `first` |
+
+The defaults come from `config.heading_format`; an argument overrides it for
+one invocation. `_` is only stripped on a word boundary, so `foo_bar` survives
+as an identifier — GitHub does not emphasize an intra-word underscore either.
+
 ## Folding
 
 | Key | Mode | Action |

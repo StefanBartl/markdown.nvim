@@ -81,7 +81,7 @@ have.
 
 | Area | Does |
 | --- | --- |
-| **Headings** | A generated and updatable table of contents, folding by level, enforced blank-dash-blank spacing between sections, and Setext-style underline decoration |
+| **Headings** | A generated and updatable table of contents, folding by level, enforced blank-dash-blank spacing between sections, text normalization (emphasis markers, whitespace, capitalization), and Setext-style underline decoration |
 | **Tables** | The GFM formatter and aligner, width-limited wrapping and unwrapping, row and column folding, CSV round-trip, linting, flavor conversion, and a floating table browser |
 | **Links and references** | Scan, list and open in a picker; create the files a link points at; sync reference-style anchors; flag dead links. `<img src>` and `<a href>` count as links everywhere |
 | **Under the cursor** | One dispatcher over anchors, images, URLs, files and PDFs — and a hover float that previews what the target actually is |
@@ -221,6 +221,7 @@ Verify your setup any time with:
 | `:TableView*` | The floating table browser and its export toggle |
 | `:Markdown scope` | Treat the fenced code block under the cursor as its own sub-document |
 | `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections |
+| `:Markdown headings format` | Normalize heading text: emphasis markers off, whitespace collapsed, capitalized. `<C-S-Left>`/`<C-S-Right>` shift a level and apply it in one stroke |
 | `:Markdown image paste` / `screenshot` | Put an image into the document, via images.nvim |
 | `:Markdown render` / `preview` / `mdview` | Hand rendering to whichever renderer is installed |
 | `:Markdown export pdf` | The buffer or file to PDF, via pdfport.nvim |

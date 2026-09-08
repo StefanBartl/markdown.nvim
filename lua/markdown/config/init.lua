@@ -43,6 +43,7 @@ local FEATURES = {
   "underline_headings",
   "table_wrap",
   "hover",
+  "headings",
 }
 
 local FEATURE_SET = {}

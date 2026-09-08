@@ -39,6 +39,46 @@ visual selection, or the whole buffer/current fenced block.
 - **Config:** `protect_h1` (default `false`) — when `true`, H1 can't be
   shifted down into plain text.
 
+## Heading text formatting
+
+Normalize a heading's **text** without touching its level: drop emphasis
+markers (`**bold**` → `bold`), collapse runs of whitespace, remove the closing
+`##` of `## Title ##`, capitalize.
+
+Emphasis inside a code span is content rather than markup (`` `**kwargs` `` is
+Python), a link's target is not prose at all, and neither is a raw HTML tag or
+an autolink — all three are copied through untouched. `_` is only stripped on
+a word boundary, so `foo_bar` stays an identifier, which is how GFM reads it
+too.
+
+- **Module:** `core/heading_format.lua` (`format_title`, `format_line`,
+  `format_range`, `format_buffer`)
+- **Command:** `:Markdown headings format [emphasis=on|off] [hashes=on|off]
+  [whitespace=on|off] [punctuation=on|off] [capitalize=first|title|off]` —
+  range-aware (`:'<,'>Markdown headings format`), whole buffer without one.
+  Feature name `headings` (gateable).
+- **Keymaps:** `<C-S-Right>`/`<C-S-Left>` (n/v/x) — shift the level *and*
+  format the heading that moved, one stroke instead of two commands; ids
+  `heading_inc_format`/`heading_dec_format` and their `_visual` variants (see
+  [keymaps.md](../keymaps.md#heading-text-formatting)). A terminal that cannot
+  distinguish `<C-S-Right>` from `<C-Right>` needs those ids remapped.
+- **Config:** `heading_format` —
+
+  ```lua
+  heading_format = {
+    strip_emphasis = true,             -- ** * __ _ ~~ off the text
+    strip_closing_hashes = true,       -- `## Title ##` -> `## Title`
+    collapse_whitespace = true,        -- space runs -> one; ends trimmed
+    strip_trailing_punctuation = false, -- a trailing . , ; : (never ? or !)
+    capitalize = "first",              -- false | "first" | "title"
+    -- stopwords = { "a", "an", "and", ... },  -- lowercase mid-heading in title case
+  }
+  ```
+
+  A word already carrying an inner capital (`API`, `iPhone`) is left spelled
+  the way its author meant it. A heading that formats to nothing (pure
+  markers) is left exactly as it was, rather than reduced to a bare `##`.
+
 ## Folding
 
 Custom `foldexpr` for ATX and Setext headings.
