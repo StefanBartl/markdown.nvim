@@ -593,6 +593,10 @@ return {
         name = "Markdown gaps",
         desc = "Check for skipped heading levels; offers to fix them",
       },
+      {
+        name = "Markdown headings format [emphasis=|hashes=|whitespace=|punctuation=|capitalize=]",
+        desc = "Normalize heading text (emphasis markers, whitespace, closing hashes, capitalization); range-aware",
+      },
     },
 
     buffer_local = {
