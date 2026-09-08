@@ -63,7 +63,8 @@ local DEFAULTS = {
   },
 
   -- Heading TEXT normalization: what `:Markdown headings format` does, and
-  -- what `<C-S-Left>`/`<C-S-Right>` apply to the heading they just shifted.
+  -- what `<leader><C-Left>`/`<leader><C-Right>` apply to the heading they
+  -- just shifted.
   -- (`<C-Left>`/`<C-Right>` shift the level and leave the text alone.)
   --
   -- Emphasis inside a code span, a link's target, and raw HTML are never

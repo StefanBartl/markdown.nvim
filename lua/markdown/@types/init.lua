@@ -188,7 +188,7 @@
 ---@field underline_headings? Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field check_heading_gaps? boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
 ---@field nav? Mkdn.NavConfig # Heading navigation: whether `<C-p>`/`<C-f>` also stop on fence delimiters.
----@field heading_format? Mkdn.HeadingFormatConfig # Heading-text normalization for `:Markdown headings format` and the `<C-S-Left>`/`<C-S-Right>` shifts.
+---@field heading_format? Mkdn.HeadingFormatConfig # Heading-text normalization for `:Markdown headings format` and the `<leader><C-Left>`/`<leader><C-Right>` shifts.
 ---@field keymaps? table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links? Mkdn.LinksConfig
 ---@field list? Mkdn.ListConfig # `:Markdown list` picker backend.

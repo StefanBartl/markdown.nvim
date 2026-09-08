@@ -55,10 +55,10 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `heading_dec` | `<C-Left>` | n | `heading_dec` | | Decrease heading level |
 | `heading_inc_visual` | `<C-Right>` | v, x | `heading_inc_visual` | | Increase heading level (visual) |
 | `heading_dec_visual` | `<C-Left>` | v, x | `heading_dec_visual` | | Decrease heading level (visual) |
-| `heading_inc_format` | `<C-S-Right>` | n | `heading_inc_format` | | Increase heading level + format its text |
-| `heading_dec_format` | `<C-S-Left>` | n | `heading_dec_format` | | Decrease heading level + format its text |
-| `heading_inc_format_visual` | `<C-S-Right>` | v, x | `heading_inc_format_visual` | | Increase heading level + format (visual) |
-| `heading_dec_format_visual` | `<C-S-Left>` | v, x | `heading_dec_format_visual` | | Decrease heading level + format (visual) |
+| `heading_inc_format` | `<leader><C-Right>` | n | `heading_inc_format` | | Increase heading level + format its text |
+| `heading_dec_format` | `<leader><C-Left>` | n | `heading_dec_format` | | Decrease heading level + format its text |
+| `heading_inc_format_visual` | `<leader><C-Right>` | v, x | `heading_inc_format_visual` | | Increase heading level + format (visual) |
+| `heading_dec_format_visual` | `<leader><C-Left>` | v, x | `heading_dec_format_visual` | | Decrease heading level + format (visual) |
 | `heading_inc_all` | `<S-Right>` | n | `heading_inc_all` | | Increase all headings |
 | `heading_dec_all` | `<S-Left>` | n | `heading_dec_all` | | Decrease all headings |
 | `table_next_cell` | `]\|` | n | `table_next_cell` | feature `table` | Next table cell |
