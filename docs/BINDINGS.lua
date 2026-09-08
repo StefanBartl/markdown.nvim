@@ -125,6 +125,31 @@ return {
       desc = "Decrease all headings in buffer",
     },
     {
+      action = "heading_inc_format",
+      mode = "n",
+      desc = "Increase current heading's level, then format its text",
+    },
+    {
+      action = "heading_dec_format",
+      mode = "n",
+      desc = "Decrease current heading's level, then format its text",
+    },
+    {
+      action = "heading_inc_format_visual",
+      mode = { "v", "x" },
+      desc = "Increase the selection's heading levels, then format them",
+    },
+    {
+      action = "heading_dec_format_visual",
+      mode = { "v", "x" },
+      desc = "Decrease the selection's heading levels, then format them",
+    },
+    {
+      action = "heading_format_buffer",
+      mode = "n",
+      desc = "Format every heading's text in the buffer (no level change)",
+    },
+    {
       action = "table_format",
       mode = "n",
       desc = "Format table at cursor (`:Markdown table format`)",
@@ -312,6 +337,34 @@ return {
         mode = { "v", "x" },
         action = "heading_dec_visual",
         desc = "Decrease heading level (visual)",
+      },
+      {
+        id = "heading_inc_format",
+        lhs = "<C-S-Right>",
+        mode = "n",
+        action = "heading_inc_format",
+        desc = "Increase heading level + format its text",
+      },
+      {
+        id = "heading_dec_format",
+        lhs = "<C-S-Left>",
+        mode = "n",
+        action = "heading_dec_format",
+        desc = "Decrease heading level + format its text",
+      },
+      {
+        id = "heading_inc_format_visual",
+        lhs = "<C-S-Right>",
+        mode = { "v", "x" },
+        action = "heading_inc_format_visual",
+        desc = "Increase heading level + format (visual)",
+      },
+      {
+        id = "heading_dec_format_visual",
+        lhs = "<C-S-Left>",
+        mode = { "v", "x" },
+        action = "heading_dec_format_visual",
+        desc = "Decrease heading level + format (visual)",
       },
       {
         id = "heading_inc_all",

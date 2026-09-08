@@ -88,6 +88,7 @@ local specs = {
   "picker_spec.lua",
   "toc_config_spec.lua",
   "headings_spec.lua",
+  "heading_format_spec.lua",
   "nav_fences_spec.lua",
   "wrap_bold_spec.lua",
   "handler_spec.lua",

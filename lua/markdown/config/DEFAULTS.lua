@@ -62,6 +62,33 @@ local DEFAULTS = {
     fences = true,
   },
 
+  -- Heading TEXT normalization: what `:Markdown headings format` does, and
+  -- what `<C-S-Left>`/`<C-S-Right>` apply to the heading they just shifted.
+  -- (`<C-Left>`/`<C-Right>` shift the level and leave the text alone.)
+  --
+  -- Emphasis inside a code span, a link's target, and raw HTML are never
+  -- touched by any of these -- see core/heading_format.lua.
+  heading_format = {
+    -- Strip `**bold**` / `*italic*` / `__x__` / `_x_` / `~~x~~` markers from
+    -- the heading text. `_` only on a word boundary, so `foo_bar` survives.
+    strip_emphasis = true,
+    -- `## Title ##` -> `## Title`.
+    strip_closing_hashes = true,
+    -- Runs of spaces/tabs become one space; the ends are trimmed.
+    collapse_whitespace = true,
+    -- Drop a trailing `.` `,` `;` `:`. Off by default -- it is the one rule
+    -- that removes something the author may have typed deliberately. `?` and
+    -- `!` are never dropped.
+    strip_trailing_punctuation = false,
+    -- false | "first" (first letter of the heading) | "title" (every word but
+    -- the stopwords below; first and last word always). A word already
+    -- carrying an inner capital (API, iPhone, nvim-treesitter) is left alone.
+    capitalize = "first",
+    -- Words `capitalize = "title"` keeps lowercase mid-heading. Defaults to
+    -- the usual English closed-class set (see core/heading_format.lua).
+    -- stopwords = { "a", "an", "and", ... },
+  },
+
   -- Per-binding keymap control, keyed by the stable ids in
   -- markdown.bindings.keymaps.defaults(). Each value may be:
   --   false                         -> disable this binding

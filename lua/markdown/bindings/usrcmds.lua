@@ -255,6 +255,7 @@ local SUBCOMMAND_NAMES = {
   "headline_spacing",
   "image",
   "export",
+  "headings",
 }
 
 -- How many positional slots each :Markdown route declares. Completion stops at

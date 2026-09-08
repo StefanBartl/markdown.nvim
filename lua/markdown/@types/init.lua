@@ -170,6 +170,9 @@
 ---@class Mkdn.NavConfig
 ---@field fences? boolean # `<C-p>`/`<C-f>` also stop on fenced-code delimiter lines. Default true.
 
+-- Mkdn.HeadingFormatConfig is declared in core/heading_format.lua, next to the
+-- rules it names.
+
 ---@class Mkdn.Config
 ---@field features? Mkdn.FeaturesConfig # Feature gating (disable/enable/just_enable). See config.features().
 ---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit" # Indicator style for scope-wide *.md walks (`:Markdown links show|sanitize cwd`). Via lib.nvim.progress.
@@ -185,6 +188,7 @@
 ---@field underline_headings? Mkdn.UnderlineHeadingsConfig # `:MarkdownNvimUnderlineHeadings` underline character.
 ---@field check_heading_gaps? boolean # TOC refresh also reports skipped heading levels (e.g. H1 -> H3) and offers to fix them.
 ---@field nav? Mkdn.NavConfig # Heading navigation: whether `<C-p>`/`<C-f>` also stop on fence delimiters.
+---@field heading_format? Mkdn.HeadingFormatConfig # Heading-text normalization for `:Markdown headings format` and the `<C-S-Left>`/`<C-S-Right>` shifts.
 ---@field keymaps? table<string, Mkdn.KeymapOverride> # Per-binding disable/remap by id (see markdown.bindings.keymaps.defaults()).
 ---@field links? Mkdn.LinksConfig
 ---@field list? Mkdn.ListConfig # `:Markdown list` picker backend.
