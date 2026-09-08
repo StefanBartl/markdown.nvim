@@ -221,7 +221,7 @@ Verify your setup any time with:
 | `:TableView*` | The floating table browser and its export toggle |
 | `:Markdown scope` | Treat the fenced code block under the cursor as its own sub-document |
 | `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections |
-| `:Markdown headings format` | Normalize heading text: emphasis markers off, whitespace collapsed, capitalized. `<C-S-Left>`/`<C-S-Right>` shift a level and apply it in one stroke |
+| `:Markdown headings format` | Normalize heading text: emphasis markers off, whitespace collapsed, capitalized. `<leader><C-Left>`/`<leader><C-Right>` shift a level and apply it in one stroke |
 | `:Markdown image paste` / `screenshot` | Put an image into the document, via images.nvim |
 | `:Markdown render` / `preview` / `mdview` | Hand rendering to whichever renderer is installed |
 | `:Markdown export pdf` | The buffer or file to PDF, via pdfport.nvim |

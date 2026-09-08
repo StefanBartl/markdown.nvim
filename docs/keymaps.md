@@ -28,21 +28,20 @@ A `{count}` prefix shifts by that many levels (e.g. `2<C-Right>`).
 | `<S-Right>` | n | Increase all headings in buffer |
 | `<S-Left>`  | n | Decrease all headings in buffer |
 
-Add `Shift` to the two `<C-…>` keys and the heading's **text** is normalized
-in the same stroke — emphasis markers off, whitespace collapsed, first letter
+Prefix the two `<C-…>` keys with `<leader>` and the heading's **text** is
+normalized in the same stroke — emphasis markers off, whitespace collapsed, first letter
 capitalized. See [Heading text formatting](#heading-text-formatting).
 
 | Key | Mode | Action |
 |-----|------|--------|
-| `<C-S-Right>` | n | Increase level of current line, then format its text |
-| `<C-S-Left>`  | n | Decrease level of current line, then format its text |
-| `<C-S-Right>` | v / x | Increase level of selection, then format |
-| `<C-S-Left>`  | v / x | Decrease level of selection, then format |
+| `<leader><C-Right>` | n | Increase level of current line, then format its text |
+| `<leader><C-Left>`  | n | Decrease level of current line, then format its text |
+| `<leader><C-Right>` | v / x | Increase level of selection, then format |
+| `<leader><C-Left>`  | v / x | Decrease level of selection, then format |
 
-> Not every terminal distinguishes `<C-S-Right>` from `<C-Right>`. Kitty,
-> WezTerm, foot and Neovim's GUI clients do (via the CSI-u / kitty keyboard
-> protocol); in one that does not, remap the ids `heading_inc_format` /
-> `heading_dec_format` to keys it can tell apart.
+> These are a `<leader>` prefix away from the plain shifts, so every terminal
+> can send them. Remap the ids `heading_inc_format` / `heading_dec_format`
+> (and their `_visual` variants) if you want different keys.
 
 ## Heading text formatting
 

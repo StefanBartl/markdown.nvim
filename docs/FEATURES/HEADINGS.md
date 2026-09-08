@@ -57,11 +57,10 @@ too.
   [whitespace=on|off] [punctuation=on|off] [capitalize=first|title|off]` —
   range-aware (`:'<,'>Markdown headings format`), whole buffer without one.
   Feature name `headings` (gateable).
-- **Keymaps:** `<C-S-Right>`/`<C-S-Left>` (n/v/x) — shift the level *and*
-  format the heading that moved, one stroke instead of two commands; ids
+- **Keymaps:** `<leader><C-Right>`/`<leader><C-Left>` (n/v/x) — shift the level
+  *and* format the heading that moved, one stroke instead of two commands; ids
   `heading_inc_format`/`heading_dec_format` and their `_visual` variants (see
-  [keymaps.md](../keymaps.md#heading-text-formatting)). A terminal that cannot
-  distinguish `<C-S-Right>` from `<C-Right>` needs those ids remapped.
+  [keymaps.md](../keymaps.md#heading-text-formatting)).
 - **Config:** `heading_format` —
 
   ```lua

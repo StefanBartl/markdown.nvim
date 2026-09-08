@@ -4,8 +4,8 @@
 ---
 --- The level is not this module's business — `core.headings` shifts levels and
 --- never touches the text, this one rewrites the text and never touches the
---- level. `<C-S-Left>`/`<C-S-Right>` are the two composed: shift, then format
---- the line that moved.
+--- level. `<leader><C-Left>`/`<leader><C-Right>` are the two composed: shift,
+--- then format the line that moved.
 ---
 --- What is left alone, and why: emphasis inside a code span is content rather
 --- than markup, a link's target is not prose at all, and neither is a raw HTML
