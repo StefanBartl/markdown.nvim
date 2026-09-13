@@ -8,8 +8,25 @@
 | [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.bindings.usercmd.composer`), plus buffer debouncing |
 | `rg` (ripgrep) | optional | speeds up the reverse file-reference search (`core.file_refs`); see [docs/install.json](install.json) |
 
-No other external tools required beyond lib.nvim — every other feature runs
-on built-in Neovim APIs.
+No other external tools are required — every other integration below is a
+plugin, not a CLI, and every one of them is optional:
+
+| | Buys you |
+| --- | --- |
+| [hover.nvim](https://github.com/StefanBartl/hover.nvim) | The link and path preview float |
+| [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | `.pdf` targets rendered in a buffer, and `:Markdown export pdf` |
+| [images.nvim](https://github.com/StefanBartl/images.nvim), [snacks.nvim](https://github.com/folke/snacks.nvim), [image.nvim](https://github.com/3rd/image.nvim) | Image previews in a float, and `:Markdown image paste\|screenshot` |
+| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim), render-markdown.nvim, markdown-preview.nvim | The rendering and preview back ends |
+| telescope.nvim, fzf-lua, snacks.picker | Picker backends for link selection |
+| [nvzone/menu](https://github.com/nvzone/menu) | A host for the context-menu entries — see [FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md) |
+
+`rg` is declared in [install.json](install.json) and read by lib.nvim's
+[deps module](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md).
+A popup says what is missing the first time `setup()` runs after installing;
+`:Lib deps show markdown.nvim` repeats it, `:Lib deps install markdown.nvim`
+offers to install it and asks first. Turn the popup off with
+`vim.g.lib_nvim_deps_disable_first_run = true`, or for this plugin only with
+`vim.g.lib_nvim_deps_disabled_plugins = { "markdown.nvim" }`.
 
 ## Setup
 

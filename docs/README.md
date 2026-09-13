@@ -8,6 +8,8 @@ is the short version of all of it.
 | Page | Answers |
 | --- | --- |
 | [installation.md](installation.md) | What has to be there first, and a spec per plugin manager |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
+| [what-you-get.md](what-you-get.md) | The full command surface at a glance |
 | [configuration.md](configuration.md) | Every option — and it opens with the ready-to-paste snippets, because most people arrive wanting one specific thing switched on |
 | [health.md](health.md) | What `:checkhealth` reports |
 
