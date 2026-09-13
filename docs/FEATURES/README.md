@@ -1,5 +1,24 @@
 # Features
 
+Markdown work in an editor splits into two halves that are usually served by
+two different plugins: rendering it prettier, and actually operating on the
+document. This one is the second half — structure, tables, links, and the
+thing under the cursor — and delegates the first to whichever renderer you
+already have.
+
+| Area | Does |
+| --- | --- |
+| **Headings** | A generated and updatable table of contents, folding by level, enforced blank-dash-blank spacing between sections, text normalization (emphasis markers, whitespace, capitalization), and Setext-style underline decoration |
+| **Tables** | The GFM formatter and aligner, width-limited wrapping and unwrapping, row and column folding, CSV round-trip, linting, flavor conversion, and a floating table browser |
+| **Links and references** | Scan, list and open in a picker; create the files a link points at; sync reference-style anchors; flag dead links. `<img src>` and `<a href>` count as links everywhere |
+| **Under the cursor** | One dispatcher over anchors, images, URLs, files and PDFs — and a hover float that previews what the target actually is |
+| **Fenced-block scope** | A fenced code block treated as its own sub-document, so the commands above operate inside it |
+| **Delegated rendering** | Preview, render and PDF export handed to render-markdown.nvim, markdown-preview.nvim, mdview.nvim, images.nvim and pdfport.nvim — whichever are installed |
+
+Everything is installed by a `FileType` autocommand on Markdown buffers; only
+`:Markdown` itself is global. There are no external tool requirements — `rg`
+speeds up the reverse file-reference search and is the only one that exists.
+
 markdown.nvim's feature set, split by theme — one file per area, each
 feature noting the module, keymap/command/autocmd it's wired to, and the
 relevant config. For the full default-key list see
