@@ -40,6 +40,16 @@ GFM table (`tableize`), and jump between cells.
   `table_prev_cell` ids
 - Requires `lib.nvim.debounce.buffer` for its auto-format debounce (the one
   hard runtime dependency beyond `lib.nvim.bindings.usercmd.composer`).
+- `table_mode.insert_row(bufnr, row0, "below"|"above")` inserts an empty,
+  column-matched row next to a table data row, aligns the table, and lands
+  the cursor in the new row's first cell in insert mode — the table analogue
+  of a list bullet's `o`/`O` continuation. No-op (returns `false`) on the
+  separator row, or `"above"` a header row, since either would land the row
+  outside the header/separator shape; `"below"` a header inserts after the
+  separator instead of between it and the header. Not bound to a key here —
+  [cascade.nvim](https://github.com/StefanBartl/cascade.nvim) calls it as a
+  soft-dependency fallback for its own `o`/`O` when the cursor line isn't a
+  list item (see its `docs/integrations.md`).
 
 ## `tableview` — floating browser + export
 

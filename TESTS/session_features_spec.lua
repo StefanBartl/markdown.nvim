@@ -490,6 +490,40 @@ return function(H)
     actions.table_prev_cell()
     local c3 = api.nvim_win_get_cursor(0)[2]
     eq(c3, c1, "[| (table_prev_cell) returns to the previous cell's start")
+
+    -- insert_row: `o`/`O`-style row insertion, the table analogue of list
+    -- bullet continuation (cascade.nvim's soft-integrated fallback calls this).
+    local rb = H.scratch("markdown")
+    api.nvim_buf_set_lines(rb, 0, -1, false, { "| a | b |", "| --- | --- |", "| 1 | 2 |" })
+    local handled = table_mode.insert_row(rb, 2, "below") -- cursor row0=2 -> the "1 | 2" data row
+    ok(handled, "insert_row: handled a data row")
+    local rl = api.nvim_buf_get_lines(rb, 0, -1, false)
+    eq(#rl, 4, "insert_row below: one row added")
+    ok(
+      rl[4]:match("^|%s*|%s*|%s*$"),
+      "insert_row below: new row is blank and lands right after the cursor row"
+    )
+
+    local handled_above = table_mode.insert_row(rb, 3, "above") -- the newly inserted blank row
+    ok(handled_above, "insert_row: handled 'above' on a data row")
+    local rl2 = api.nvim_buf_get_lines(rb, 0, -1, false)
+    eq(#rl2, 5, "insert_row above: one more row added")
+
+    -- header row: "below" skips the separator, landing as the new first data row.
+    local hb = H.scratch("markdown")
+    api.nvim_buf_set_lines(hb, 0, -1, false, { "| a | b |", "| --- | --- |" })
+    ok(table_mode.insert_row(hb, 0, "below"), "insert_row: handled 'below' on the header row")
+    local hl = api.nvim_buf_get_lines(hb, 0, -1, false)
+    eq(#hl, 3, "insert_row below header: row added after the separator")
+    ok(not hl[3]:match("%-"), "insert_row below header: new row isn't the separator itself")
+
+    -- separator row and "above" a header both stay hands-off (native o/O apply).
+    eq(table_mode.insert_row(hb, 1, "below"), false, "insert_row: no-op on the separator row")
+    eq(
+      table_mode.insert_row(hb, 0, "above"),
+      false,
+      "insert_row: no-op for 'above' on the header row"
+    )
   end
 
   -- ===========================================================================
