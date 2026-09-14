@@ -517,8 +517,27 @@ return function(H)
     eq(#hl, 3, "insert_row below header: row added after the separator")
     ok(not hl[3]:match("%-"), "insert_row below header: new row isn't the separator itself")
 
-    -- separator row and "above" a header both stay hands-off (native o/O apply).
-    eq(table_mode.insert_row(hb, 1, "below"), false, "insert_row: no-op on the separator row")
+    -- separator row: `o`/`O` both land the new row right after it (the only
+    -- shape-preserving spot) instead of falling back to a native, pipe-less
+    -- blank line that splits the table in two.
+    local sepb = H.scratch("markdown")
+    api.nvim_buf_set_lines(sepb, 0, -1, false, { "| a | b |", "| --- | --- |", "| 1 | 2 |" })
+    ok(table_mode.insert_row(sepb, 1, "below"), "insert_row: handled 'below' on the separator row")
+    local sl = api.nvim_buf_get_lines(sepb, 0, -1, false)
+    eq(#sl, 4, "insert_row below separator: one row added")
+    ok(sl[3]:match("^|.*|%s*$"), "insert_row below separator: new row is a real table line")
+    ok(not sl[3]:match("%-"), "insert_row below separator: new row isn't the separator itself")
+    eq(sl[4], "| 1 | 2 |", "insert_row below separator: the original data row stays after it")
+
+    local sepb2 = H.scratch("markdown")
+    api.nvim_buf_set_lines(sepb2, 0, -1, false, { "| a | b |", "| --- | --- |", "| 1 | 2 |" })
+    ok(table_mode.insert_row(sepb2, 1, "above"), "insert_row: handled 'above' on the separator row")
+    local sl2 = api.nvim_buf_get_lines(sepb2, 0, -1, false)
+    eq(#sl2, 4, "insert_row above separator: one row added (same spot as 'below')")
+    ok(sl2[3]:match("^|.*|%s*$"), "insert_row above separator: new row is a real table line")
+
+    -- "above" a header row is the only remaining no-op: it would land the row
+    -- between the header and its separator, breaking the table's shape.
     eq(
       table_mode.insert_row(hb, 0, "above"),
       false,

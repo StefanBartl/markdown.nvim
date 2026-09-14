@@ -410,37 +410,15 @@ local function is_separator_line(line)
     and line:find("-", 1, true) ~= nil
 end
 
---- Insert an empty row below/above the table row at `row0` (0-indexed),
---- matching its column count, then align the table and land in the new row's
---- first cell in insert mode -- the table analogue of cascade.nvim's list
---- `o`/`O`. A header row is handled specially: "below" a header inserts after
---- the separator (the new first data row) rather than between header and
---- separator. No-op (returns false) on the separator row itself, or "above" a
---- header -- both would land the row outside the table's header/separator
---- shape. Callers (e.g. a soft-integrated `o`/`O` mapping) fall back to their
---- native behavior when this returns false.
+--- Insert a blank, `cols`-wide row at buffer line `target` (0-indexed
+--- insertion point), align the table, and land the cursor in the new row's
+--- first cell in insert mode.
+---@internal
 ---@param bufnr integer
----@param row0 integer
----@param direction "below"|"above"
----@return boolean handled
-function M.insert_row(bufnr, row0, direction)
-  local line = api.nvim_buf_get_lines(bufnr, row0, row0 + 1, false)[1]
-  if not is_table_line(line) or is_separator_line(line) then return false end
-
-  local cols = #cell_starts(line)
-  if cols == 0 then return false end
-
-  local next_line = api.nvim_buf_get_lines(bufnr, row0 + 1, row0 + 2, false)[1]
-  local is_header = is_separator_line(next_line)
-
-  local target
-  if direction == "below" then
-    target = is_header and (row0 + 2) or (row0 + 1)
-  else
-    if is_header then return false end
-    target = row0
-  end
-
+---@param target integer
+---@param cols integer
+---@return nil
+local function insert_blank_row(bufnr, target, cols)
   local cells = {}
   for i = 1, cols do
     cells[i] = ""
@@ -461,6 +439,53 @@ function M.insert_row(bufnr, row0, direction)
   local starts = cell_starts(new_line)
   pcall(api.nvim_win_set_cursor, win, { target + 1, starts[1] or 2 })
   vim.cmd("startinsert!")
+end
+
+--- Insert an empty row below/above the table row at `row0` (0-indexed),
+--- matching its column count, then align the table and land in the new row's
+--- first cell in insert mode -- the table analogue of cascade.nvim's list
+--- `o`/`O`. A header row is handled specially: "below" a header inserts after
+--- the separator (the new first data row) rather than between header and
+--- separator. On the separator row itself, both directions insert the new
+--- row right after it (the only shape-preserving spot) -- previously this
+--- was a no-op that fell through to a native `o`/`O`, which drops a bare,
+--- pipe-less blank line into the middle of the table and breaks it in two.
+--- No-op (returns false) only for "above" a header row, since that would
+--- land the row between the header and its separator.  Callers (e.g. a
+--- soft-integrated `o`/`O` mapping) fall back to their native behavior when
+--- this returns false.
+---@param bufnr integer
+---@param row0 integer
+---@param direction "below"|"above"
+---@return boolean handled
+function M.insert_row(bufnr, row0, direction)
+  local line = api.nvim_buf_get_lines(bufnr, row0, row0 + 1, false)[1]
+  if not is_table_line(line) then return false end
+
+  if is_separator_line(line) then
+    if row0 == 0 then return false end
+    local header = api.nvim_buf_get_lines(bufnr, row0 - 1, row0, false)[1]
+    local cols = #cell_starts(header or "")
+    if cols == 0 then return false end
+    insert_blank_row(bufnr, row0 + 1, cols)
+    return true
+  end
+
+  local cols = #cell_starts(line)
+  if cols == 0 then return false end
+
+  local next_line = api.nvim_buf_get_lines(bufnr, row0 + 1, row0 + 2, false)[1]
+  local is_header = is_separator_line(next_line)
+
+  local target
+  if direction == "below" then
+    target = is_header and (row0 + 2) or (row0 + 1)
+  else
+    if is_header then return false end
+    target = row0
+  end
+
+  insert_blank_row(bufnr, target, cols)
   return true
 end
 
