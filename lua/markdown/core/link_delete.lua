@@ -191,11 +191,11 @@ function M.run(bufnr)
     return
   end
 
-  local ok_confirm, confirm = pcall(require, "lib.nvim.ui.kit.confirm")
+  local ok_confirm, confirm = pcall(require, "ui.kit.confirm")
   if not ok_confirm then
     -- Without the dialog there is no way to ask, and deleting a file without
     -- asking is not a thing this key is allowed to do.
-    notify.warn("lib.nvim's ui.kit is required to confirm the file deletion")
+    notify.warn("ui.nvim's ui.kit is required to confirm the file deletion")
     vim.cmd("normal! " .. plain_dd())
     return
   end

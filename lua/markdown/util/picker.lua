@@ -1,6 +1,6 @@
 ---@module 'markdown.util.picker'
---- Thin selection abstraction. Default backend is lib.nvim's float chooser
---- (lib.nvim.ui.kit.select); falls back to vim.ui.select when lib.nvim is
+--- Thin selection abstraction. Default backend is ui.nvim's float chooser
+--- (ui.kit.select); falls back to vim.ui.select when ui.nvim is
 --- unavailable or another backend is requested. The backend name "hover_select"
 --- is kept for config compatibility. "telescope" and "fzf" are soft
 --- dependencies: each falls back to vim.ui.select with a warning when the
@@ -26,7 +26,7 @@ local function select_builtin(items, opts, format, on_choose)
 end
 
 local function select_hover(items, opts, format, on_choose)
-  local ok, kit = pcall(require, "lib.nvim.ui.kit")
+  local ok, kit = pcall(require, "ui.kit")
   if ok and kit and type(kit.select) == "function" then
     local labels = {}
     for i, it in ipairs(items) do
