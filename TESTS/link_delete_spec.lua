@@ -6,7 +6,7 @@
 --
 -- `M.candidate` is split out so the decision that precedes the dialog is
 -- testable without one. The dialog itself is stubbed through `package.loaded`
--- rather than opened: `run` requires `lib.nvim.ui.kit.confirm` at call time,
+-- rather than opened: `run` requires `ui.kit.confirm` at call time,
 -- so replacing the entry answers the question without a floating window --
 -- which is how the delete path, the one that touches the filesystem, gets
 -- covered at all. Both answers are exercised; "no" has to leave the fixture
@@ -103,7 +103,7 @@ return function(H)
     ok(vim.uv.fs_stat(root .. "/target.md") ~= nil, "no fixture file was deleted")
 
     -- ── The delete path, with the dialog stubbed ───────────────────────────
-    local real_confirm = package.loaded["lib.nvim.ui.kit.confirm"]
+    local real_confirm = package.loaded["ui.kit.confirm"]
     local asked ---@type string|nil
 
     --- Run `DD` on a one-line buffer linking to `rel`, answering the dialog
@@ -115,7 +115,7 @@ return function(H)
     local function press_DD(rel, answer)
       asked = nil
       local done = false
-      package.loaded["lib.nvim.ui.kit.confirm"] = {
+      package.loaded["ui.kit.confirm"] = {
         open = function(opts)
           asked = opts.question
           opts.on_answer(answer)
@@ -141,7 +141,7 @@ return function(H)
     eq(vim.uv.fs_stat(root .. "/target.md"), nil, "answering yes deletes the file")
     eq(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), ","), "", "and the line with it")
 
-    package.loaded["lib.nvim.ui.kit.confirm"] = real_confirm
+    package.loaded["ui.kit.confirm"] = real_confirm
   end)
 
   vim.fn.delete(root, "rf")

@@ -94,12 +94,12 @@ function M.check()
     )
   end
 
-  -- Optional lib.nvim integration on top of the above (the default float
+  -- Optional ui.nvim integration on top of the above (the default float
   -- picker backend specifically — cosmetic, falls back cleanly).
-  if pcall(require, "lib.nvim.ui.kit") then
-    ok("lib.nvim.ui.kit detected (kit.select picker backend)")
+  if pcall(require, "ui.kit") then
+    ok("ui.kit detected (kit.select picker backend)")
   else
-    info("lib.nvim.ui.kit not found — picker falls back to vim.ui.select")
+    info("ui.kit not found — picker falls back to vim.ui.select")
   end
 
   -- Optional which-key integration.

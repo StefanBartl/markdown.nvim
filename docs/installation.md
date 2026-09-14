@@ -19,6 +19,7 @@ plugin, not a CLI, and every one of them is optional:
 | [mdview.nvim](https://github.com/StefanBartl/mdview.nvim), render-markdown.nvim, markdown-preview.nvim | The rendering and preview back ends |
 | telescope.nvim, fzf-lua, snacks.picker | Picker backends for link selection |
 | [nvzone/menu](https://github.com/nvzone/menu) | A host for the context-menu entries — see [FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md) |
+| [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit.select` is the default picker backend and `ui.kit.confirm` backs the `DD` delete-linked-file confirm dialog — both fall back to `vim.ui.select`/a plain `dd` when absent |
 
 `rg` is declared in [install.json](install.json) and read by lib.nvim's
 [deps module](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md).

@@ -143,4 +143,4 @@ the trade the key makes, and `keymaps.delete_link_file` moves or disables it.
 - **Module:** `core/link_delete.lua`, counting via `core/file_refs.lua`
 - **Keymap:** `DD` — id `delete_link_file` (see
   [keymaps.md](../keymaps.md#cursor-action-handler))
-- **Dialog:** `lib.nvim`'s `ui.kit.confirm`
+- **Dialog:** `ui.nvim`'s `ui.kit.confirm`
