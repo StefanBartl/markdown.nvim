@@ -393,4 +393,75 @@ function M.prev_cell()
   if idx and idx > 1 then api.nvim_win_set_cursor(win, { cur[1], starts[idx - 1] }) end
 end
 
+-- ---------------------------------------------------------------------------
+-- Row insertion (o / O, mirrors list-bullet continuation)
+-- ---------------------------------------------------------------------------
+
+--- True when `line` is a GFM table separator row (only `-`, `:`, `|`, spaces,
+--- with at least one `-`). The dash requirement matters: a blank *data* row
+--- (an empty-cell row this very function's caller just inserted) is nothing
+--- but pipes and padding spaces, and would otherwise match the same shape.
+---@internal
+---@param line any
+---@return boolean
+local function is_separator_line(line)
+  return type(line) == "string"
+    and line:match("^%s*|[%s%-:|]+|%s*$") ~= nil
+    and line:find("-", 1, true) ~= nil
+end
+
+--- Insert an empty row below/above the table row at `row0` (0-indexed),
+--- matching its column count, then align the table and land in the new row's
+--- first cell in insert mode -- the table analogue of cascade.nvim's list
+--- `o`/`O`. A header row is handled specially: "below" a header inserts after
+--- the separator (the new first data row) rather than between header and
+--- separator. No-op (returns false) on the separator row itself, or "above" a
+--- header -- both would land the row outside the table's header/separator
+--- shape. Callers (e.g. a soft-integrated `o`/`O` mapping) fall back to their
+--- native behavior when this returns false.
+---@param bufnr integer
+---@param row0 integer
+---@param direction "below"|"above"
+---@return boolean handled
+function M.insert_row(bufnr, row0, direction)
+  local line = api.nvim_buf_get_lines(bufnr, row0, row0 + 1, false)[1]
+  if not is_table_line(line) or is_separator_line(line) then return false end
+
+  local cols = #cell_starts(line)
+  if cols == 0 then return false end
+
+  local next_line = api.nvim_buf_get_lines(bufnr, row0 + 1, row0 + 2, false)[1]
+  local is_header = is_separator_line(next_line)
+
+  local target
+  if direction == "below" then
+    target = is_header and (row0 + 2) or (row0 + 1)
+  else
+    if is_header then return false end
+    target = row0
+  end
+
+  local cells = {}
+  for i = 1, cols do
+    cells[i] = ""
+  end
+  api.nvim_buf_set_lines(
+    bufnr,
+    target,
+    target,
+    false,
+    { "| " .. table.concat(cells, " | ") .. " |" }
+  )
+
+  local win = api.nvim_get_current_win()
+  pcall(api.nvim_win_set_cursor, win, { target + 1, 0 })
+  pcall(fmt.format_table_at_cursor, bufnr, {})
+
+  local new_line = api.nvim_buf_get_lines(bufnr, target, target + 1, false)[1] or ""
+  local starts = cell_starts(new_line)
+  pcall(api.nvim_win_set_cursor, win, { target + 1, starts[1] or 2 })
+  vim.cmd("startinsert!")
+  return true
+end
+
 return M
