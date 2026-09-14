@@ -43,10 +43,12 @@ GFM table (`tableize`), and jump between cells.
 - `table_mode.insert_row(bufnr, row0, "below"|"above")` inserts an empty,
   column-matched row next to a table data row, aligns the table, and lands
   the cursor in the new row's first cell in insert mode — the table analogue
-  of a list bullet's `o`/`O` continuation. No-op (returns `false`) on the
-  separator row, or `"above"` a header row, since either would land the row
-  outside the header/separator shape; `"below"` a header inserts after the
-  separator instead of between it and the header. Not bound to a key here —
+  of a list bullet's `o`/`O` continuation. `"below"` a header inserts after
+  the separator instead of between it and the header; on the separator row
+  itself, both `"below"` and `"above"` insert right after it (the only spot
+  that keeps the header/separator shape intact). No-op (returns `false`)
+  only for `"above"` a header row, since that would land the row between the
+  header and its separator. Not bound to a key here —
   [cascade.nvim](https://github.com/StefanBartl/cascade.nvim) calls it as a
   soft-dependency fallback for its own `o`/`O` when the cursor line isn't a
   list item (see its `docs/integrations.md`).
