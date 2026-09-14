@@ -33,6 +33,11 @@ jobs:
         with:
           neovim: true
           version: stable
+      # file_refs_spec.lua exercises the rg-backed search path and hard-fails
+      # if rg isn't on PATH -- the ubuntu-latest runner image doesn't
+      # guarantee ripgrep, so install it explicitly.
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: Run TESTS suite
         working-directory: markdown.nvim
         env:
