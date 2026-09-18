@@ -152,8 +152,11 @@ function M.run(args)
   end
 
   local result = M.for_paths({ path }, opts)
-  clipboard.copy(result)
-  notify.info("Markdown links copied to clipboard")
+  if clipboard.copy(result) then
+    notify.info("Markdown links copied to clipboard")
+  else
+    notify.warn("Markdown links generated, but no clipboard provider accepted them")
+  end
 end
 
 return M
