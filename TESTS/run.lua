@@ -70,6 +70,14 @@ if not hover_path then
   os.exit(1)
 end
 
+-- color_my_ascii.nvim is a soft/optional dependency (the fenced_scope
+-- feature's preferred fence-detection backend, see markdown.scope) -- unlike
+-- lib.nvim/hover.nvim above, its absence is not fatal. When a real sibling
+-- checkout is found, scope_spec.lua exercises markdown.nvim's own side of
+-- that integration contract (the "cma" backend branch) against the genuine
+-- fence API instead of only ever exercising the built-in fallback scanner.
+add_sibling("color_my_ascii.nvim", "/lua/color_my_ascii", "COLOR_MY_ASCII_NVIM_PATH")
+
 local specs = {
   "config_spec.lua",
   "path_spec.lua",
@@ -101,8 +109,17 @@ local specs = {
   "tableview_resize_spec.lua",
   "browser_session_spec.lua",
   "fenced_scope_spec.lua",
+  "scope_spec.lua",
   "session_features_spec.lua",
   "usrcmd_complete_spec.lua",
+  "health_spec.lua",
+  "underline_headings_spec.lua",
+  "heading_gaps_spec.lua",
+  "wrap_link_spec.lua",
+  "clipboard_spec.lua",
+  "handler_url_spec.lua",
+  "fold_prev_spec.lua",
+  "fenced_fix_spec.lua",
 }
 
 local failed = 0

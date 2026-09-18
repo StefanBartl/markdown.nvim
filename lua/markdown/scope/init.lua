@@ -188,11 +188,17 @@ end
 ---@type table<integer, { tick: integer, blocks: { content_start: integer, content_end: integer, is_md: boolean }[] }>
 local fold_cache = {}
 
+-- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
+-- name WITHOUT clear=true when called with just a group name, so a second
+-- load of this module (a hot-reload via package.loaded reset, or a plugin
+-- manager's :Lazy reload) registered a second BufDelete/BufWipeout handler
+-- in the same group instead of replacing the first -- confirmed, three
+-- reloads left six live autocmds where one was intended.
 require("lib.nvim.bindings.autocmd").create(
   { "BufDelete", "BufWipeout" },
   function(ev) fold_cache[ev.buf] = nil end,
   {
-    group = "MarkdownNvimScopeFoldCache",
+    group = vim.api.nvim_create_augroup("MarkdownNvimScopeFoldCache", { clear = true }),
     desc = "[markdown.nvim] Invalidate scope fold cache on buffer delete",
   }
 )

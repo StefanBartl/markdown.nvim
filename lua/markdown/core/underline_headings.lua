@@ -47,7 +47,10 @@ function M.apply_range(bufnr, srow, erow, char)
     if not in_fence and i >= srow and i <= erow then
       local text = heading_text(line)
       if text then
-        local want = char:rep(#text)
+        -- Display width, not byte length: a multi-byte heading (e.g. "Über
+        -- uns", 8 display columns but 9 bytes) previously got a longer
+        -- underline than it visually needed, since #text counts bytes.
+        local want = char:rep(vim.fn.strdisplaywidth(text))
         local next_line = lines[i + 1]
         local adjusted = i + offset
 
