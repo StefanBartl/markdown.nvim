@@ -13,7 +13,7 @@ already have.
 | **Links and references** | Scan, list and open in a picker; create the files a link points at; sync reference-style anchors; flag dead links. `<img src>` and `<a href>` count as links everywhere |
 | **Under the cursor** | One dispatcher over anchors, images, URLs, files and PDFs — and a hover float that previews what the target actually is |
 | **Fenced-block scope** | A fenced code block treated as its own sub-document, so the commands above operate inside it |
-| **Delegated rendering** | Preview, render and PDF export handed to render-markdown.nvim, markdown-preview.nvim, mdview.nvim, images.nvim and pdfport.nvim — whichever are installed |
+| **Delegated rendering** | Preview, render and PDF export handed to render-markdown.nvim, mdview.nvim, images.nvim and pdfport.nvim — whichever are installed |
 
 Everything is installed by a `FileType` autocommand on Markdown buffers; only
 `:Markdown` itself is global. There are no external tool requirements — `rg`
@@ -36,9 +36,9 @@ relevant config. For the full default-key list see
   paste/screenshot
 - [Highlighting and UI](HIGHLIGHTING-AND-UI.md) — fenced/inline code,
   blockquotes, link underline, fenced-block scope
-- [Integrations](INTEGRATIONS.md) — render-markdown.nvim,
-  markdown-preview.nvim, mdview.nvim, images.nvim/snacks.nvim/image.nvim,
-  pdfport.nvim, nvzone/menu, picker backends, which-key, lib.nvim
+- [Integrations](INTEGRATIONS.md) — render-markdown.nvim, mdview.nvim,
+  images.nvim/snacks.nvim/image.nvim, pdfport.nvim, nvzone/menu, picker
+  backends, which-key, lib.nvim
 
 For the module-by-module source layout instead of the feature/theme view,
 see [Architecture](../architecture.md).

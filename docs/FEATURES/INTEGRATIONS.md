@@ -11,18 +11,18 @@ markdown` reports whether each was detected.
   [commands.md](../commands.md#markdown-render--markdown-preview--markdown-mdview))
 - **Health:** `:checkhealth markdown` reports detection.
 
-## markdown-preview.nvim
-
-- **Module:** `commands/preview.lua`
-- **Command:** `:Markdown preview [start|stop|toggle]` — also
-  auto-refreshes on buffer switch while active (`BufEnter` for `*.md`)
-
 ## mdview.nvim
 
-- **Module:** `commands/mdview.lua`
-- **Command:** `:Markdown mdview [path]` (default: current buffer's file) —
-  delegates to `:MDViewStart`, idempotent (starts a session, or pushes the
-  file into an already-running one)
+- **Modules:** `commands/preview.lua`, `commands/mdview.lua`
+- **Commands:**
+  - `:Markdown preview [start|stop|toggle]` — start/stop a session for the
+    current buffer via `:MDView start`/`:MDView stop`. Once running,
+    mdview.nvim follows buffer switches and drives scroll sync itself
+    (`browser.behavior`, default `"reuse"`); no auto-refresh workaround is
+    needed on this side.
+  - `:Markdown mdview [path]` (default: current buffer's file) — delegates to
+    `:MDView start`, idempotent (starts a session, or pushes the file into an
+    already-running one)
 
 ## images.nvim
 

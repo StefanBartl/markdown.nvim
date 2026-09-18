@@ -30,9 +30,9 @@ search.
   exception is the bare-path hover, which is opt-in and lives in
   [`hover.md`](hover.md).
 - **This plugin does not render.** Preview, rendering and PDF export are
-  delegated to whichever of render-markdown.nvim, markdown-preview.nvim,
-  mdview.nvim, images.nvim and pdfport.nvim is installed. Drawing a preview
-  here would duplicate four plugins and be worse than all of them.
+  delegated to whichever of render-markdown.nvim, mdview.nvim, images.nvim
+  and pdfport.nvim is installed. Drawing a preview here would duplicate four
+  plugins and be worse than all of them.
 - **Every integration is soft.** Detected at runtime, absent means one feature
   missing rather than an error. Never `require` an optional plugin at
   `setup()` time.

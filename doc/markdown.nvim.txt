@@ -909,7 +909,7 @@ is deleted.
     refs               Sync #anchor links + TOC          |:Markdown-refs|
     table              view/format/new/mode/tableize/import |:Markdown-table|
     render             Toggle render-markdown.nvim       |:Markdown-render|
-    preview            Toggle markdown-preview.nvim       |:Markdown-render|
+    preview            Start/stop mdview.nvim            |:Markdown-render|
     mdview             Open file via mdview.nvim         |:Markdown-render|
     export             Export to PDF via pdfport.nvim    |:Markdown-export|
     create             Create files for link targets     |:Markdown-create|
@@ -1152,13 +1152,15 @@ is deleted.
 
 :Markdown preview [start|stop|toggle]
 
-  Control markdown-preview.nvim. While active, the preview is refreshed on
-  buffer switch (BufEnter for `*.md`). Also an optional host dependency.
+  Start/stop mdview.nvim for the current buffer via `:MDView start`/`:MDView
+  stop`. Once running, mdview.nvim follows buffer switches and drives scroll
+  sync itself (`browser.behavior`, default "reuse"); no separate refresh step
+  is needed here. An optional host dependency.
 
 :Markdown mdview [path]
 
   Open `path` (default: the current buffer's file) directly in the browser
-  via mdview.nvim's `:MDViewStart`, which starts a session or — if one is
+  via mdview.nvim's `:MDView start`, which starts a session or — if one is
   already running — pushes the file and re-opens the preview surface for it.
   mdview.nvim is an optional host dependency; the command warns gracefully
   when it is not installed or loaded (e.g. omitted as a dependency of
@@ -1600,7 +1602,7 @@ Sub-modules can be imported individually, e.g.: >
       toc.lua                :Markdown toc (TOC + separators)
       table.lua              :Markdown table view|format|new
       render.lua             :Markdown render (render-markdown.nvim)
-      preview.lua            :Markdown preview (markdown-preview.nvim)
+      preview.lua            :Markdown preview (mdview.nvim)
       mdview.lua             :Markdown mdview (mdview.nvim)
       create.lua             :Markdown create fs
       image.lua              :Markdown image paste|screenshot (images.nvim)
