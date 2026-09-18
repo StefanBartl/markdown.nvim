@@ -7,8 +7,19 @@ on:
 
 jobs:
   test:
-    name: tests (headless)
-    runs-on: ubuntu-latest
+    name: tests (headless) (${{ matrix.os }})
+    runs-on: ${{{{ matrix.os }}}}
+    strategy:
+      # One platform failing must not cancel the others: which of the three
+      # broke is the whole information content of this job.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        # Windows runners default to PowerShell; one shell on all three keeps
+        # the run step itself from being what differs between platforms.
+        shell: bash
     steps:
       - uses: actions/checkout@v5
         with:
@@ -37,7 +48,18 @@ jobs:
       # if rg isn't on PATH -- the ubuntu-latest runner image doesn't
       # guarantee ripgrep, so install it explicitly.
       - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        run: |
+          # `rg` is a real dependency of these specs, not a convenience -- they
+          # shell out to it. The install is the one step that has to differ per
+          # runner image; everything after it is identical on all three. The
+          # `rg --version` at the end is the actual gate: if a package manager
+          # silently no-ops, the suite must not start and then fail obscurely.
+          case "${{ runner.os }}" in
+            Linux)   sudo apt-get update && sudo apt-get install -y ripgrep ;;
+            macOS)   brew install ripgrep || true ;;
+            Windows) choco install ripgrep -y --no-progress ;;
+          esac
+          rg --version
       - name: Run TESTS suite
         working-directory: markdown.nvim
         env:
