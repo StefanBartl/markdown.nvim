@@ -8,6 +8,7 @@
 local table_wrap = require("markdown.core.table_wrap")
 local table_fmt = require("markdown.core.table_fmt")
 local notify = require("markdown.util.notify").create("[markdown.commands.mdtable]")
+local clipboard = require("markdown.util.clipboard")
 
 local api = vim.api
 local M = {}
@@ -486,8 +487,13 @@ function M.to_csv(bufnr, path)
     fh:close()
     notify.info("Wrote CSV to " .. expanded)
   else
-    local ok = pcall(vim.fn.setreg, "+", table.concat(csv_lines, "\n"))
-    if ok then
+    -- `clipboard.copy`, not a bare `pcall(vim.fn.setreg, ...)`: that pcall
+    -- only proves the call didn't raise, and setreg("+", ...) never raises
+    -- for lack of a clipboard provider either -- it just silently does
+    -- nothing. clipboard.copy verifies the register actually holds what
+    -- was written (or falls back to an external tool) before reporting
+    -- success.
+    if clipboard.copy(table.concat(csv_lines, "\n")) then
       notify.info("Copied CSV to the clipboard (+ register)")
     else
       notify.error("Failed to copy CSV to the clipboard")
