@@ -1,61 +1,33 @@
 ---@module 'markdown.commands.preview'
---- `:Markdown preview [start|stop|toggle]` — control markdown-preview.nvim.
---- Tracks an "active" flag and refreshes the preview on BufEnter for *.md while
---- active. markdown-preview.nvim is an optional host dependency.
+--- `:Markdown preview [start|stop|toggle]` — control mdview.nvim.
+--- Tracks an "active" flag so `toggle` and the status messages have a single
+--- source of truth. Unlike the previous markdown-preview.nvim backend,
+--- mdview.nvim follows buffer switches and drives scroll sync itself
+--- (`browser.behavior`, default "reuse") once a session is running, so no
+--- BufEnter re-render workaround is needed here. mdview.nvim is an optional
+--- host dependency.
 local notify = require("markdown.util.notify").create("[markdown.commands.preview]")
-local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 
 local active = false
-local aug = nil
 
 ---@internal
 ---@return boolean
-local function available() return vim.fn.exists(":MarkdownPreview") == 2 end
+local function available() return vim.fn.exists(":MDView") == 2 end
 
--- Re-entrancy guard: while we drive markdown-preview ourselves, suppress the
--- BufEnter auto-refresh so focus changes triggered by opening/closing the
--- browser tab cannot spawn a second preview.
-local busy = false
-
---- Install the BufEnter auto-refresh autocmd once. Only refreshes an already
---- running preview; never starts one on its own beyond the active session.
----@internal
-local function ensure_autorefresh()
-  if aug then return end
-  -- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
-  -- name and would stop re-clearing on a second ensure_autorefresh() after a
-  -- hot-reload (which resets the local `aug` and re-enters this branch),
-  -- leaving the previous instance's autocmd registered alongside the new one.
-  aug = vim.api.nvim_create_augroup("MarkdownNvimPreviewRefresh", { clear = true })
-  autocmd.create("BufEnter", function()
-    if active and not busy and available() then vim.cmd("silent! MarkdownPreview") end
-  end, {
-    group = aug,
-    pattern = "*.md",
-    desc = "[markdown.nvim] Refresh preview on buffer switch while active",
-  })
-end
-
---- Start the preview (idempotent). Drives markdown-preview explicitly instead
---- of using its toggle, so our `active` flag stays the single source of truth.
+--- Start the preview (idempotent).
 ---@internal
 local function start_preview()
-  busy = true
   active = true
-  vim.cmd("silent! MarkdownPreview")
-  busy = false
+  vim.cmd("silent! MDView start")
 end
 
---- Stop the preview (idempotent). `active` is cleared first so the BufEnter
---- auto-refresh cannot re-open the browser tab during teardown.
+--- Stop the preview (idempotent).
 ---@internal
 local function stop_preview()
   active = false
-  busy = true
-  vim.cmd("silent! MarkdownPreviewStop")
-  busy = false
+  vim.cmd("silent! MDView stop")
 end
 
 --- Runs `:Markdown preview [start|stop|toggle]`.
@@ -64,10 +36,9 @@ end
 function M.run(argv)
   local arg = (argv[1] or "toggle"):lower()
   if not available() then
-    notify.warn("preview: markdown-preview.nvim not available")
+    notify.warn("preview: mdview.nvim not available")
     return
   end
-  ensure_autorefresh()
 
   if arg == "start" or arg == "on" then
     start_preview()

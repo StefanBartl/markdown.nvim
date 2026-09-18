@@ -16,7 +16,7 @@ plugin, not a CLI, and every one of them is optional:
 | [hover.nvim](https://github.com/StefanBartl/hover.nvim) | The link and path preview float |
 | [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | `.pdf` targets rendered in a buffer, and `:Markdown export pdf` |
 | [images.nvim](https://github.com/StefanBartl/images.nvim), [snacks.nvim](https://github.com/folke/snacks.nvim), [image.nvim](https://github.com/3rd/image.nvim) | Image previews in a float, and `:Markdown image paste\|screenshot` |
-| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim), render-markdown.nvim, markdown-preview.nvim | The rendering and preview back ends |
+| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim), render-markdown.nvim | The rendering and preview back ends |
 | telescope.nvim, fzf-lua, snacks.picker | Picker backends for link selection |
 | [nvzone/menu](https://github.com/nvzone/menu) | A host for the context-menu entries — see [FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md) |
 | [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit.select` is the default picker backend and `ui.kit.confirm` backs the `DD` delete-linked-file confirm dialog — both fall back to `vim.ui.select`/a plain `dd` when absent |

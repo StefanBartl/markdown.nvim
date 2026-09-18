@@ -202,18 +202,21 @@ Everything lives under the `table` feature, and stays available when only the
 
 ```vim
 :Markdown render  [on|off|toggle]        " render-markdown.nvim (optional host)
-:Markdown preview [start|stop|toggle]    " markdown-preview.nvim (optional host)
+:Markdown preview [start|stop|toggle]    " mdview.nvim (optional host)
 :Markdown mdview   [path]                " mdview.nvim (optional host)
 ```
 
 Thin wrappers around the optional host plugins; they warn gracefully if the
-plugin is not installed. `preview` also auto-refreshes on buffer switch while
-active. `mdview` opens `path` (default: the current buffer's file) directly in
-the browser via [mdview.nvim](https://github.com/StefanBartl/mdview.nvim)'s
-`:MDViewStart`, which starts a session or — if one is already running — pushes
-the file and re-opens the preview surface for it. It only does anything when
-mdview.nvim is actually installed and loaded; `:checkhealth markdown`
-reports whether it was detected.
+plugin is not installed. `preview` starts/stops a
+[mdview.nvim](https://github.com/StefanBartl/mdview.nvim) session for the
+current buffer via `:MDView start`/`:MDView stop`; once running, mdview.nvim
+follows buffer switches and drives scroll sync itself (`browser.behavior`,
+default `"reuse"`), so no separate refresh step is needed here. `mdview` opens
+`path` (default: the current buffer's file) directly in the browser via
+`:MDView start`, which starts a session or — if one is already running —
+pushes the file and re-opens the preview surface for it. Both only do
+anything when mdview.nvim is actually installed and loaded; `:checkhealth
+markdown` reports whether it was detected.
 
 ## `:Markdown create`
 

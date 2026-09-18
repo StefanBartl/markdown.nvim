@@ -163,7 +163,7 @@ buffer-local.
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |
 | `:Markdown table import [clipboard\|PATH]` | Parse an HTML `<table>` into a GFM table (round-trips with the browser export) |
 | `:Markdown render [on\|off\|toggle]` | render-markdown.nvim wrapper (optional host) |
-| `:Markdown preview [start\|stop\|toggle]` | markdown-preview.nvim wrapper (optional host) |
+| `:Markdown preview [start\|stop\|toggle]` | mdview.nvim wrapper (optional host) |
 | `:Markdown mdview [path]` | Open a file directly via mdview.nvim (optional host) |
 | `:Markdown create fs` | Create files/dirs for local link targets |
 | `:Markdown headline_spacing` | Enforce blank-dash-blank between H2+ sections |
@@ -225,4 +225,3 @@ Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
 | `BufWipeout` | `MarkdownNvimTableMode_<bufnr>` (same group) | buffer-local | Cancels the debounce and deletes the group |
 | `BufDelete`, `BufWipeout` | `MarkdownNvimScopeFoldCache` | — | Invalidates the per-buffer memoized fold-block cache used by the `foldexpr` hot path |
 | `TextChanged`, `TextChangedI` | (ungrouped, per buffer) | buffer-local | Live-tracks refs while `:Markdown refs live on`/`toggle` is active — **distinct** from the config-driven `MarkdownNvimRefs` live mode above: created/removed per invocation, id tracked in `commands/refs.lua`'s own `live_au[bufnr]` |
-| `BufEnter` | `MarkdownNvimPreviewRefresh` (created once, lazily, on first `:Markdown preview ...`) | `*.md` | Re-runs `:silent! MarkdownPreview` to refresh the external `markdown-preview.nvim` host plugin, while a preview session is active and idle |

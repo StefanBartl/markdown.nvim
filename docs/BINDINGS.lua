@@ -559,7 +559,7 @@ return {
       },
       {
         name = "Markdown preview [start|stop|toggle]",
-        desc = "markdown-preview.nvim wrapper (optional host)",
+        desc = "mdview.nvim wrapper (optional host)",
       },
       {
         name = "Markdown mdview [path]",

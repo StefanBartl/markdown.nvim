@@ -71,15 +71,10 @@ function M.check()
   else
     info("render-markdown.nvim not found — :Markdown render will warn if used")
   end
-  if vim.fn.exists(":MarkdownPreview") == 2 then
-    ok("markdown-preview.nvim detected (:Markdown preview available)")
+  if vim.fn.exists(":MDView") == 2 then
+    ok("mdview.nvim detected (:Markdown preview / :Markdown mdview available)")
   else
-    info("markdown-preview.nvim not found — :Markdown preview will warn if used")
-  end
-  if vim.fn.exists(":MDViewStart") == 2 then
-    ok("mdview.nvim detected (:Markdown mdview available)")
-  else
-    info("mdview.nvim not found — :Markdown mdview will warn if used")
+    info("mdview.nvim not found — :Markdown preview / :Markdown mdview will warn if used")
   end
 
   -- lib.nvim: required for the :Markdown/:TableView* command layer

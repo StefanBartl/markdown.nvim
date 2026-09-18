@@ -1,17 +1,17 @@
 ---@module 'markdown.commands.mdview'
 --- `:Markdown mdview [path]` — open a file directly via mdview.nvim.
 --- mdview.nvim is an optional host dependency; when it is not present the
---- command warns instead of erroring. `:MDViewStart` is idempotent: it starts
---- a new session, or — if one is already running — pushes `path`'s content
---- and re-opens the preview surface for it, so this works whether or not a
---- session is already up.
+--- command warns instead of erroring. `:MDView start` is idempotent: it
+--- starts a new session, or — if one is already running — pushes `path`'s
+--- content and re-opens the preview surface for it, so this works whether or
+--- not a session is already up.
 local notify = require("markdown.util.notify").create("[markdown.commands.mdview]")
 
 local M = {}
 
 ---@internal
 ---@return boolean
-local function available() return vim.fn.exists(":MDViewStart") == 2 end
+local function available() return vim.fn.exists(":MDView") == 2 end
 
 --- Runs `:Markdown mdview [path]`.
 ---@param argv string[]
@@ -29,7 +29,7 @@ function M.run(argv)
     return
   end
 
-  vim.cmd("MDViewStart " .. vim.fn.fnameescape(vim.fn.expand(path)))
+  vim.cmd("MDView start " .. vim.fn.fnameescape(vim.fn.expand(path)))
 end
 
 ---@param arglead string

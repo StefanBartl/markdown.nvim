@@ -87,7 +87,7 @@ lua/markdown/
     refs.lua               :Markdown refs sync|check|live|baseline (thin wrapper over core/refs.lua)
     table.lua              :Markdown table view|format|new|mode|tableize|import
     render.lua             :Markdown render (render-markdown.nvim)
-    preview.lua            :Markdown preview (markdown-preview.nvim)
+    preview.lua            :Markdown preview (mdview.nvim)
     mdview.lua             :Markdown mdview (mdview.nvim)
     image.lua              :Markdown image paste|screenshot (images.nvim)
     export.lua             :Markdown export <sub> (pdfport.nvim)
