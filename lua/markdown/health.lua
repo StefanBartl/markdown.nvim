@@ -80,7 +80,8 @@ function M.check()
   -- lib.nvim: required for the :Markdown/:TableView* command layer
   -- (lib.nvim.bindings.usercmd.composer) and core/table_mode.lua's buffer debouncing,
   -- both unconditional requires with no pcall.
-  if pcall(require, "lib.nvim.bindings.usercmd.composer") then
+  local composer_ok, composer = pcall(require, "lib.nvim.bindings.usercmd.composer")
+  if composer_ok then
     ok("lib.nvim detected (:Markdown/:TableView* command layer available)")
   else
     error_(
@@ -153,7 +154,11 @@ function M.check()
     deps_health.report_for("markdown.nvim")
   end
 
-  require("lib.nvim.bindings.usercmd.composer").checkhealth("Markdown")
+  -- Only hand off to the composer if it actually loaded above -- otherwise
+  -- this would re-require the exact module just reported as missing and
+  -- raise, aborting the report right after the health.error that was
+  -- supposed to explain why (see health_spec's "lib.nvim missing" case).
+  if composer_ok then composer.checkhealth("Markdown") end
 end
 
 return M

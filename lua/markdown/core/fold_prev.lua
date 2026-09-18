@@ -10,10 +10,17 @@ local function goto_prev_heading_any()
   local found = fn.search("^#\\+\\s\\+\\S", "bWs")
   if found > 0 then return true end
   local cur = fn.line(".")
-  for lnum = cur - 1, 2, -1 do
+  -- Down to 1, not 2: a Setext heading occupying the buffer's first two
+  -- lines was previously unreachable here (the loop never evaluated
+  -- lnum == 1's own next line as its underline). And both underline chars,
+  -- not just '-': this only ever matched a `---`-style (H2) underline, never
+  -- `===` (H1), contradicting this function's own doc comment claiming to
+  -- cover both -- core/fold.lua's is_underline() already uses "[-=]+" for
+  -- the identical check, so this now matches that established convention.
+  for lnum = cur - 1, 1, -1 do
     local line = fn.getline(lnum)
     local nextl = fn.getline(lnum + 1)
-    if line:match("%S") and nextl and nextl:match("^%s*%-%-+%s*$") then
+    if line:match("%S") and nextl and nextl:match("^%s*[%-=]+%s*$") then
       api.nvim_win_set_cursor(0, { lnum, 0 })
       return true
     end
