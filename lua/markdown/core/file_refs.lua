@@ -19,14 +19,61 @@
 --- read and parsed. A pure-Lua `globpath` path is kept as a fallback when
 --- ripgrep isn't installed. Both sync and async entry points share the same
 --- candidate → scan pipeline.
+---
+--- The rg probe goes through `lib.nvim.cross.executable.exists`, which
+--- memoizes per name for the whole Neovim process -- including a negative
+--- result. Nothing in this module ever installs `rg` itself, so there is no
+--- single moment to call `executable.clear("rg")` the way that API expects of
+--- its callers. `rg_available` below re-probes on a bounded interval instead:
+--- rapid repeated calls (e.g. `DD` pressed several times in a row) still hit
+--- the memoized answer, but a user who installs ripgrep mid-session is picked
+--- up again within `RECHECK_INTERVAL_NS`, not "never for the rest of the
+--- process".
 
 local link_scan = require("markdown.core.link_scan")
 local path = require("markdown.util.path")
 local globbable = require("lib.nvim.fs.globbable")
 local ignore = require("markdown.util.ignore")
 local executable = require("lib.nvim.cross.executable")
+local uv = vim.uv or vim.loop
 
 local M = {}
+
+--- How long a negative `rg` probe is trusted before `rg_available` forces a
+--- fresh look. Short enough that installing ripgrep mid-session is noticed on
+--- the next reference search a user actually runs after that (nobody presses
+--- `DD` in a tight loop for 15 real seconds), long enough that it does not
+--- erode the memoization this cache exists for.
+---@type integer nanoseconds (`uv.hrtime()` units)
+local RECHECK_INTERVAL_NS = 15 * 1e9
+
+---@type integer|nil  hrtime() of the next allowed re-probe; nil until the
+--- first negative result is observed
+local next_recheck_at = nil
+
+--- Whether `rg` is available, re-probing occasionally after a negative result
+--- instead of trusting `executable.exists`'s cache for the rest of the
+--- process. See the module doc above for why this module -- rather than
+--- `lib.nvim.cross.executable` -- owns the invalidation here.
+---@param now_fn? fun(): integer  overridable clock; defaults to `uv.hrtime` (test seam)
+---@return boolean
+local function rg_available(now_fn)
+  if executable.exists("rg") then
+    next_recheck_at = nil
+    return true
+  end
+
+  local now = (now_fn or uv.hrtime)()
+  if next_recheck_at == nil then
+    next_recheck_at = now + RECHECK_INTERVAL_NS
+    return false
+  end
+  if now < next_recheck_at then return false end
+
+  next_recheck_at = now + RECHECK_INTERVAL_NS
+  executable.clear("rg")
+  return executable.exists("rg")
+end
 
 ---@class MarkdownFileRef
 ---@field file           string   Absolute path of the markdown file containing the link.
@@ -199,7 +246,7 @@ function M.find_references(target_path, opts)
   local needle = needle_for(target_path)
 
   local files
-  if needle and executable.exists("rg") then
+  if needle and rg_available() then
     local rg_result, determined = rg_files(vim.system(rg_cmd(root, needle), { text = true }):wait())
     -- An errored rg run (root vanished, permission denied, killed, ...) is
     -- "we don't know", not "zero candidates" -- fall back to the exhaustive
@@ -238,7 +285,7 @@ function M.find_references_async(target_path, opts, callback)
   local wanted = path.normalize(comparable(target_path)):lower()
   local needle = needle_for(target_path)
 
-  if needle and executable.exists("rg") then
+  if needle and rg_available() then
     vim.system(rg_cmd(root, needle), { text = true }, function(result)
       local files, determined = rg_files(result)
       -- glob_files uses vim.fn.*, which needs the main loop -- do the
@@ -272,5 +319,9 @@ function M.retarget(ref, new_abs_path)
   if ref.had_dot_prefix and not rel:match("^%.%.?/") and rel ~= "." then rel = "./" .. rel end
   return rel
 end
+
+-- Exposed for tests only.
+M._rg_available = rg_available
+M._RG_RECHECK_INTERVAL_NS = RECHECK_INTERVAL_NS
 
 return M
