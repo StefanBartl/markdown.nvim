@@ -98,15 +98,18 @@ end
 ---@param target_path string  Absolute filesystem path to search for.
 ---@param opts? { root?: string }
 ---@return MarkdownFileRef[]
+---@return boolean determined  false when a candidate file could not be read,
+---  so the list is a lower bound, not a confirmed count.
 M.find_references = function(target_path, opts)
   return require("markdown.core.file_refs").find_references(target_path, opts)
 end
 
 ---Async variant of `find_references`: runs candidate discovery off the main
----loop; `callback` receives the ref list, scheduled on the main loop.
+---loop; `callback` receives the ref list and the same `determined` flag
+---`find_references` returns, scheduled on the main loop.
 ---@param target_path string
 ---@param opts? { root?: string }
----@param callback fun(refs: MarkdownFileRef[])
+---@param callback fun(refs: MarkdownFileRef[], determined: boolean)
 M.find_references_async = function(target_path, opts, callback)
   return require("markdown.core.file_refs").find_references_async(target_path, opts, callback)
 end

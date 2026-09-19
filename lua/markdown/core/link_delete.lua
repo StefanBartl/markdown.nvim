@@ -149,8 +149,12 @@ end
 ---@internal
 ---@param cand Mkdn.LinkDeleteCandidate
 ---@param others integer
+---@param determined boolean  false when the reference scan could not read
+---  every candidate file (ERR-11): `others` is then a lower bound, not a
+---  confirmed count, and the dialog says so rather than implying "checked,
+---  found none" when it may really be "could not check everything".
 ---@return string
-local function question(cand, others)
+local function question(cand, others, determined)
   local lines = {
     "Delete the linked file as well?",
     "",
@@ -160,6 +164,9 @@ local function question(cand, others)
     lines[#lines + 1] = "1 other link points at it."
   elseif others > 1 then
     lines[#lines + 1] = ("%d other links point at it."):format(others)
+  end
+  if not determined then
+    lines[#lines + 1] = "(some files could not be scanned -- this count may be incomplete)"
   end
   if cand.total > 1 then
     lines[#lines + 1] = ("(first of %d links on this line)"):format(cand.total)
@@ -202,7 +209,7 @@ function M.run(bufnr)
 
   local self_file = api.nvim_buf_get_name(bufnr)
 
-  file_refs.find_references_async(cand.resolved, nil, function(refs)
+  file_refs.find_references_async(cand.resolved, nil, function(refs, determined)
     if not api.nvim_buf_is_valid(bufnr) then return end
 
     -- The buffer was live while the scan ran. Deleting by remembered line
@@ -215,7 +222,7 @@ function M.run(bufnr)
 
     confirm.open({
       title = "markdown.nvim",
-      question = question(cand, count_others(refs, self_file, lnum)),
+      question = question(cand, count_others(refs, self_file, lnum), determined),
       on_answer = function(yes)
         if not yes then return end
         if not api.nvim_buf_is_valid(bufnr) then return end
