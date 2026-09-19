@@ -251,6 +251,49 @@ local function degrade_invalid_scalars(cfg, issues)
       bad("table.entry_align", cfg.table.entry_align, DEFAULTS.table.entry_align)
       cfg.table.entry_align = DEFAULTS.table.entry_align
     end
+
+    -- ERR-22: `table.wrap.{min,pad}` reach `table_wrap.plan`'s `w < mins[i]`/
+    -- `pad * 2` arithmetic unvalidated (`mins[i] = ov.min or opts.min or 1`
+    -- only guards against `nil`, not a wrong type or a nonsensical negative
+    -- width/padding); `resolve_wrap_opts`'s `math.max(opts.min or 1, 3)` for
+    -- the default "github" flavor hits the same value even earlier. `max`
+    -- reaches `w > maxs[i]` the same way, but `nil` (unlimited) is valid.
+    -- `resize_debounce_ms` reaches `vim.defer_fn(fn, ms)` -- a libuv call
+    -- that errors outright on a non-number. Every one of these is reachable
+    -- from a plain `:MDTable*` command, not just when `wrap.enabled`.
+    local wrap = cfg.table.wrap
+    if wrap then
+      if type(wrap.min) ~= "number" or wrap.min < 0 then
+        bad("table.wrap.min", wrap.min, DEFAULTS.table.wrap.min)
+        wrap.min = DEFAULTS.table.wrap.min
+      end
+      if wrap.max ~= nil and (type(wrap.max) ~= "number" or wrap.max < 0) then
+        bad("table.wrap.max", wrap.max, DEFAULTS.table.wrap.max)
+        wrap.max = DEFAULTS.table.wrap.max
+      end
+      if type(wrap.pad) ~= "number" or wrap.pad < 0 then
+        bad("table.wrap.pad", wrap.pad, DEFAULTS.table.wrap.pad)
+        wrap.pad = DEFAULTS.table.wrap.pad
+      end
+      if type(wrap.resize_debounce_ms) ~= "number" or wrap.resize_debounce_ms < 0 then
+        bad(
+          "table.wrap.resize_debounce_ms",
+          wrap.resize_debounce_ms,
+          DEFAULTS.table.wrap.resize_debounce_ms
+        )
+        wrap.resize_debounce_ms = DEFAULTS.table.wrap.resize_debounce_ms
+      end
+    end
+  end
+
+  -- ERR-22: `hover.max_lines` reaches `hover/section.lua`'s `#out >= limit`
+  -- unvalidated -- a wrong type crashes that comparison the first time an
+  -- anchor/file hover runs (the default-on path via `hover.enabled`).
+  if cfg.hover then
+    if type(cfg.hover.max_lines) ~= "number" or cfg.hover.max_lines < 1 then
+      bad("hover.max_lines", cfg.hover.max_lines, DEFAULTS.hover.max_lines)
+      cfg.hover.max_lines = DEFAULTS.hover.max_lines
+    end
   end
 
   if cfg.toc then

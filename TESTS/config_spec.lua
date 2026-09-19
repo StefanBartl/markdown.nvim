@@ -56,6 +56,41 @@ return function(H)
   eq(config.get().progress_style, "auto", "invalid progress_style degrades to default")
   ok(#config.issues() > 0, "invalid scalar recorded in issues()")
 
+  -- ERR-22: table.wrap.{min,max,pad,resize_debounce_ms} reach table_wrap.plan
+  -- / resolve_wrap_opts / a vim.defer_fn call unvalidated (`opts.min or 1`
+  -- only guards `nil`); a wrong type there used to raise instead of degrade.
+  config.setup({ table = { wrap = { min = "abc" } } })
+  eq(config.get().table.wrap.min, 3, "invalid table.wrap.min (wrong type) degrades to default")
+  config.setup({ table = { wrap = { min = -5 } } })
+  eq(config.get().table.wrap.min, 3, "negative table.wrap.min degrades to default")
+  config.setup({ table = { wrap = { min = 0 } } })
+  eq(config.get().table.wrap.min, 0, "table.wrap.min = 0 is a valid width, kept as-is")
+
+  config.setup({ table = { wrap = { max = "abc" } } })
+  eq(config.get().table.wrap.max, nil, "invalid table.wrap.max (wrong type) degrades to default")
+  config.setup({ table = { wrap = {} } })
+  eq(config.get().table.wrap.max, nil, "table.wrap.max = nil (unlimited) stays valid")
+
+  config.setup({ table = { wrap = { pad = "x" } } })
+  eq(config.get().table.wrap.pad, 1, "invalid table.wrap.pad (wrong type) degrades to default")
+  config.setup({ table = { wrap = { pad = -1 } } })
+  eq(config.get().table.wrap.pad, 1, "negative table.wrap.pad degrades to default")
+
+  config.setup({ table = { wrap = { resize_debounce_ms = "abc" } } })
+  eq(
+    config.get().table.wrap.resize_debounce_ms,
+    300,
+    "invalid table.wrap.resize_debounce_ms (wrong type) degrades to default"
+  )
+
+  -- ERR-22: hover.max_lines reaches hover/section.lua's `#out >= limit`
+  -- unvalidated; a wrong type used to raise the first time an anchor/file
+  -- hover ran (the default-on path).
+  config.setup({ hover = { max_lines = "abc" } })
+  eq(config.get().hover.max_lines, 20, "invalid hover.max_lines (wrong type) degrades to default")
+  config.setup({ hover = { max_lines = 0 } })
+  eq(config.get().hover.max_lines, 20, "hover.max_lines = 0 degrades to default")
+
   -- reset
   config.setup({})
   eq(#config.issues(), 0, "issues() clears on a clean setup()")
