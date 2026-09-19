@@ -25,7 +25,7 @@ return function(H)
 
   -- Multi-base resolution: a target authored relative to cwd (not the buffer
   -- dir) must still resolve — this is the reported double-`spickzettel` bug.
-  local root = (vim.fn.fnamemodify(vim.fn.tempname(), ":h") .. "/mdnvim_pathspec"):gsub("\\", "/")
+  local root = H.tmproot("mdnvim_pathspec")
   local prev_cwd = vim.fn.getcwd()
 
   -- Everything that changes cwd / touches the filesystem runs guarded so the

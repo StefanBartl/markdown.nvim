@@ -108,6 +108,25 @@ end
 ---@return string[]
 local function glob_files(root) return vim.fn.globpath(globbable(root), "**/*.md", false, true) end
 
+--- The target, spelled the way the scanned candidates are spelled.
+---
+--- `glob_files` puts its root through `globbable`, which rewrites an 8.3
+--- short name -- `C:/Users/RUNNER~1/...`, what `%TEMP%` and `tempname()`
+--- expand to for a profile name longer than eight characters -- into the long
+--- form, because glob reads `~` as a home-directory reference. Every
+--- candidate path, and so every link resolved against its directory, then
+--- carries the LONG form, while `wanted` was built from the caller's
+--- `target_path`, still short. Two spellings of one file never compare equal,
+--- and find_references answered "no references" for a file that has them.
+---
+--- That is this function's worst failure mode: the delete-confirm caller
+--- cannot tell "confirmed nothing links here" from "the comparison missed",
+--- and would offer to delete a file out from under live links. Putting the
+--- target through the same rewrite keeps both sides in one spelling.
+---@param target_path string
+---@return string
+local function comparable(target_path) return globbable(target_path) end
+
 --- Scan a candidate file list for links resolving to `wanted` (a normalized,
 --- lower-cased absolute path). Reads each file fully so fenced code blocks are
 --- skipped (link_scan.from_lines is fence-aware) — the same correctness the
@@ -153,8 +172,13 @@ function M.find_references(target_path, opts)
   opts = opts or {}
   if not target_path or target_path == "" then return {} end
 
-  local root = opts.root or vim.fn.getcwd()
-  local wanted = path.normalize(target_path):lower()
+  -- Canonicalize the root BEFORE it reaches either candidate source. rg is
+  -- handed this root and echoes it back in every path it reports, and
+  -- glob_files rewrites it anyway -- so resolving here once is what keeps the
+  -- candidates and `wanted` in a single spelling. Fixing only `wanted` moves
+  -- the mismatch from the glob path to the rg path instead of removing it.
+  local root = comparable(opts.root or vim.fn.getcwd())
+  local wanted = path.normalize(comparable(target_path)):lower()
   local needle = needle_for(target_path)
 
   local files
@@ -186,8 +210,13 @@ function M.find_references_async(target_path, opts, callback)
     return
   end
 
-  local root = opts.root or vim.fn.getcwd()
-  local wanted = path.normalize(target_path):lower()
+  -- Canonicalize the root BEFORE it reaches either candidate source. rg is
+  -- handed this root and echoes it back in every path it reports, and
+  -- glob_files rewrites it anyway -- so resolving here once is what keeps the
+  -- candidates and `wanted` in a single spelling. Fixing only `wanted` moves
+  -- the mismatch from the glob path to the rg path instead of removing it.
+  local root = comparable(opts.root or vim.fn.getcwd())
+  local wanted = path.normalize(comparable(target_path)):lower()
   local needle = needle_for(target_path)
 
   if needle and vim.fn.executable("rg") == 1 then

@@ -20,10 +20,7 @@ return function(H)
   local function os_native(p) return win and (p:gsub("/", "\\")) or p end
 
   -- ── Basic search (no cd): same-dir + nested, skipping unrelated/anchor/fenced/ignored ──
-  local root = (vim.fn.fnamemodify(vim.fn.tempname(), ":h") .. "/mdnvim_filerefsspec"):gsub(
-    "\\",
-    "/"
-  )
+  local root = H.tmproot("mdnvim_filerefsspec")
 
   local run_ok, err = pcall(function()
     vim.fn.mkdir(root .. "/docs/sub", "p")
@@ -82,10 +79,7 @@ return function(H)
   -- ── cwd-relative links + retarget style preservation + async (cd into root) ──
   -- Reproduces the reported bug: a link written relative to cwd (not the file's
   -- own dir) must be found, and each style must be preserved on retarget.
-  local root2 = (vim.fn.fnamemodify(vim.fn.tempname(), ":h") .. "/mdnvim_filerefsspec2"):gsub(
-    "\\",
-    "/"
-  )
+  local root2 = H.tmproot("mdnvim_filerefsspec2")
   local prev_cwd = vim.fn.getcwd()
 
   local run_ok2, err2 = pcall(function()
@@ -236,4 +230,60 @@ return function(H)
   package.loaded["markdown.core.file_refs"] = nil
 
   if not run_ok3 then error(err3, 0) end
+
+  -- ── 8.3 short-form paths (Windows) ────────────────────────────────────────
+  --
+  -- Windows gives a directory whose name is longer than eight characters a
+  -- second, "short" spelling (MDNVIM~1), and that is what %TEMP% and
+  -- tempname() expand to for a profile name over eight characters -- true of
+  -- the CI runner ("runneradmin") and of plenty of real machines.
+  --
+  -- Both spellings name one directory, so find_references has to answer the
+  -- same either way. It did not: the root reached rg in whatever spelling it
+  -- was handed and rg echoed that spelling back in every path it reported,
+  -- while the target was compared in the other one -- so a file WITH
+  -- references reported zero. To the delete-confirm caller that is
+  -- indistinguishable from "nothing links here", which is how a file gets
+  -- deleted out from under its own links.
+  --
+  -- Skipped where no short form exists (non-Windows, or a volume with 8.3
+  -- generation turned off) rather than faked: the hazard is specific to it.
+  do
+    package.loaded["markdown.core.file_refs"] = nil
+    local file_refs4 = require("markdown.core.file_refs")
+    local root4 = H.tmproot("mdnvim_filerefs_shortname_fixture")
+
+    local run_ok4, err4 = pcall(function()
+      vim.fn.mkdir(root4 .. "/docs", "p")
+      local fh = io.open(root4 .. "/docs/target.md", "w")
+      ok(fh ~= nil, "fixture4: target.md opened for writing")
+      fh:write("# Target")
+      fh:close()
+      fh = io.open(root4 .. "/docs/linker.md", "w")
+      ok(fh ~= nil, "fixture4: linker.md opened for writing")
+      fh:write("[t](target.md)")
+      fh:close()
+
+      local short
+      if vim.fn.has("win32") == 1 or vim.fn.has("win64") == 1 then
+        local out = vim.fn.system({
+          "cmd",
+          "/c",
+          'for %I in ("' .. root4:gsub("/", "\\") .. '") do @echo %~sI',
+        })
+        short = vim.trim(out or ""):gsub("\\", "/")
+      end
+
+      if not short or short == "" or not short:find("~", 1, true) then
+        return -- no short form on this host: nothing to assert
+      end
+
+      local refs = file_refs4.find_references(short .. "/docs/target.md", { root = short })
+      eq(#refs, 1, "find_references: a target spelled in 8.3 short form finds the same reference")
+    end)
+
+    pcall(vim.fn.delete, root4, "rf")
+    package.loaded["markdown.core.file_refs"] = nil
+    if not run_ok4 then error(err4, 0) end
+  end
 end
