@@ -357,4 +357,78 @@ return function(H)
     package.loaded["markdown.core.file_refs"] = nil
     if not run_ok4 then error(err4, 0) end
   end
+
+  -- ── stale-negative rg cache: a bounded re-probe, not "never again" ────────
+  -- XP-05 routed the rg probe through `lib.nvim.cross.executable.exists`,
+  -- which memoizes per name for the whole process -- including a negative
+  -- result -- and documents `clear(name)` as the caller's job once the tool
+  -- is actually installed. Nothing in this module installs rg itself, so
+  -- without its own bounded re-probe a user who starts Neovim without rg on
+  -- PATH, then installs it mid-session, would keep hitting the slow glob
+  -- fallback for the rest of the process. `_rg_available` (test-exposed)
+  -- re-checks after `_RG_RECHECK_INTERVAL_NS` instead of trusting the
+  -- negative cache forever; the executable module itself is stubbed here so
+  -- the assertions are about this module's own bookkeeping (when it calls
+  -- `clear`), not about the real presence of rg on the test host.
+  do
+    package.loaded["markdown.core.file_refs"] = nil
+    local file_refs6 = require("markdown.core.file_refs")
+    local executable = require("lib.nvim.cross.executable")
+    local real_exists, real_clear = executable.exists, executable.clear
+
+    local run_ok6, err6 = pcall(function()
+      local exists_calls, clear_calls = 0, 0
+      -- Simulates "rg absent" until `clear` runs once, then "rg now on
+      -- PATH" -- the mid-session-install scenario the finding describes.
+      local installed = false
+      executable.exists = function(name)
+        exists_calls = exists_calls + 1
+        return name == "rg" and installed
+      end
+      executable.clear = function(name)
+        clear_calls = clear_calls + 1
+        if name == "rg" then installed = true end
+      end
+
+      local interval = file_refs6._RG_RECHECK_INTERVAL_NS
+      local fake_now = 0
+      local function clock() return fake_now end
+
+      eq(file_refs6._rg_available(clock), false, "rg_available: rg absent on the first probe")
+      eq(clear_calls, 0, "rg_available: no clear() on the very first negative probe")
+
+      -- Still well inside the recheck window: cached negative, no re-probe.
+      fake_now = interval - 1
+      eq(
+        file_refs6._rg_available(clock),
+        false,
+        "rg_available: still cached negative just before the recheck window elapses"
+      )
+      eq(clear_calls, 0, "rg_available: no clear() before the recheck interval elapses")
+
+      -- The recheck window has elapsed: exactly one clear(), and the fresh
+      -- probe now finds rg (simulating the mid-session install).
+      fake_now = interval
+      eq(
+        file_refs6._rg_available(clock),
+        true,
+        "rg_available: re-probes once the recheck interval elapses and picks up the mid-session install"
+      )
+      eq(clear_calls, 1, "rg_available: exactly one clear() call when the interval elapses")
+
+      -- Once positive, no further clear() calls are needed.
+      fake_now = fake_now + interval * 3
+      eq(
+        file_refs6._rg_available(clock),
+        true,
+        "rg_available: stays true once rg is found, no further clear() needed"
+      )
+      eq(clear_calls, 1, "rg_available: a positive result does not trigger another clear()")
+      ok(exists_calls >= 4, "rg_available: exists() was actually consulted on every probe")
+    end)
+
+    executable.exists, executable.clear = real_exists, real_clear
+    package.loaded["markdown.core.file_refs"] = nil
+    if not run_ok6 then error(err6, 0) end
+  end
 end
