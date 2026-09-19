@@ -55,6 +55,229 @@ local _cfg = vim.deepcopy(DEFAULTS)
 ---@type table<string, boolean>
 local _resolved = {}
 
+--- What the last `setup()` had to reject or degrade, one human-readable line
+--- each (ERR-50/ERR-22), for `:checkhealth markdown`. Empty when every
+--- option `setup()` was called with matched a known key and a valid value.
+---@type string[]
+local _issues = {}
+
+---@type string[]  Top-level `Mkdn.Config` keys `setup()` accepts.
+local TOP_LEVEL_OPTS = {
+  "features",
+  "progress_style",
+  "map_double_asterisk",
+  "map_wrap_link",
+  "keep_inner_selection",
+  "protect_h1",
+  "use_zf_override",
+  "enable_autocmds",
+  "enable_keymaps",
+  "ft_only",
+  "ensure_headline_spacing",
+  "check_heading_gaps",
+  "underline_headings",
+  "menu",
+  "nav",
+  "heading_format",
+  "keymaps",
+  "table",
+  "tableview",
+  "links",
+  "list",
+  "hover",
+  "image",
+  "open",
+  "blockquote_hl",
+  "link_hl",
+  "toc",
+  "refs",
+  "fenced_fix",
+  "fenced_scope",
+}
+
+-- A sub-table merged wholesale by `vim.tbl_deep_extend` below would otherwise
+-- absorb a typo'd nested key silently -- ERR-50 requires the check to run
+-- before that merge, not after. Keyed by dotted path so nesting deeper than
+-- one level (`table.wrap.max`, `hover.url.fetch`) is still checked. Left
+-- deliberately absent: `keymaps` (top-level; per-binding-id overrides, not
+-- named options), `table.wrap_profiles` (profile-name-keyed presets),
+-- `table.col_overrides`/`open.external_extensions`/`fenced_scope.langs`
+-- (plain lists), and `features.disable`/`enable`/`just_enable` (lists of
+-- feature names, already value-checked by `resolve_features`'s own
+-- `warn_unknown`) -- all of those are user DATA, not a named-option shape.
+---@type table<string, string[]>
+local NESTED_OPTS = {
+  features = { "disable", "enable", "just_enable" },
+  underline_headings = { "char" },
+  menu = { "enable", "fold", "toc", "refs" },
+  nav = { "fences" },
+  heading_format = {
+    "strip_emphasis",
+    "strip_closing_hashes",
+    "collapse_whitespace",
+    "strip_trailing_punctuation",
+    "capitalize",
+    "stopwords",
+  },
+  table = { "header_align", "entry_align", "col_overrides", "wrap", "wrap_profiles" },
+  ["table.wrap"] = {
+    "enabled",
+    "auto",
+    "min",
+    "max",
+    "pad",
+    "join",
+    "soft_break_chars",
+    "continuation_marker",
+    "flavor",
+    "auto_resize",
+    "resize_debounce_ms",
+    "selective_reflow",
+  },
+  tableview = { "style" },
+  links = { "picker", "sanitize_on_save", "diagnostics" },
+  ["links.diagnostics"] = { "mode" },
+  list = { "picker" },
+  hover = {
+    "enabled",
+    "trigger",
+    "delay_ms",
+    "placeholder_grace_ms",
+    "max_lines",
+    "max_width",
+    "border",
+    "bare_paths",
+    "filetypes",
+    "inline_images",
+    "url",
+    "office",
+  },
+  ["hover.url"] = { "hover", "fetch", "timeout_ms" },
+  ["hover.office"] = { "convert", "timeout_ms" },
+  image = { "preview" },
+  open = { "external_extensions" },
+  blockquote_hl = { "marker_fg", "text_fg", "text_bg", "text_bold", "text_italic" },
+  fenced_fix = { "inline_base_hl", "inline_style", "delimiter_hl" },
+  ["fenced_fix.inline_style"] = { "italic", "bold" },
+  fenced_scope = { "enable", "langs", "provider", "operations" },
+  ["fenced_scope.operations"] = { "toc", "nav", "jump", "shift", "fold" },
+  link_hl = { "underline" },
+  toc = { "header", "marker", "min_level", "max_level", "anchor_style", "anchor_separator" },
+  refs = { "mode", "debounce_ms", "update_toc", "orphans", "toc_header" },
+}
+
+---@internal
+--- Nearest allowed key within edit distance 3, as a " (did you mean %q?)"
+--- hint, or "" when nothing is close enough to guess.
+---@param name string
+---@param allowed string[]
+---@return string
+local function did_you_mean(name, allowed)
+  local levenshtein = require("lib.lua.strings.distance").levenshtein
+  local best, best_distance = nil, nil
+  for _, known in ipairs(allowed) do
+    local d = levenshtein(name, known)
+    if d <= 3 and (best_distance == nil or d < best_distance) then
+      best, best_distance = known, d
+    end
+  end
+  return best and (" (did you mean %q?)"):format(best) or ""
+end
+
+---@internal
+--- Drop (and record) every key not in `allowed`, recursing into sub-tables
+--- named in `NESTED_OPTS` so a typo cannot hide behind the deep merge either.
+--- Returns a shallow copy; kept leaf values are the original references, not
+--- deep-copied (the merge below deep-copies DEFAULTS, not `opts`).
+---@param raw table
+---@param allowed string[]
+---@param path string  dotted prefix for a nested issue, e.g. "table.wrap."
+---@param issues string[]  appended to in place
+---@return table
+local function sanitize_level(raw, allowed, path, issues)
+  local known = {}
+  for _, k in ipairs(allowed) do
+    known[k] = true
+  end
+
+  local out = {}
+  for key, value in pairs(raw) do
+    if type(key) ~= "string" then
+      out[key] = value -- not a named option (e.g. a list entry); nothing to validate
+    elseif not known[key] then
+      issues[#issues + 1] = ("unknown config key %q%s -- ignored"):format(
+        path .. key,
+        did_you_mean(key, allowed)
+      )
+    elseif type(value) == "table" and NESTED_OPTS[path .. key] then
+      out[key] = sanitize_level(value, NESTED_OPTS[path .. key], path .. key .. ".", issues)
+    else
+      out[key] = value
+    end
+  end
+  return out
+end
+
+---@internal
+--- Degrade the handful of scalars whose valid range isn't "any value of the
+--- right Lua type" back to their default when out of range (ERR-22): a
+--- silently-accepted bad value here would otherwise only surface later, deep
+--- inside whatever reads it (e.g. `core.slug`'s gsub on `anchor_separator`).
+---@param cfg Mkdn.Config
+---@param issues string[]
+local function degrade_invalid_scalars(cfg, issues)
+  local function bad(label, got, default)
+    issues[#issues + 1] = ("invalid %s %s -- using %s"):format(
+      label,
+      vim.inspect(got),
+      vim.inspect(default)
+    )
+  end
+
+  local PROGRESS_STYLES =
+    { auto = true, notify = true, statusline = true, fidget = true, float = true, kit = true }
+  if type(cfg.progress_style) ~= "string" or not PROGRESS_STYLES[cfg.progress_style] then
+    bad("progress_style", cfg.progress_style, DEFAULTS.progress_style)
+    cfg.progress_style = DEFAULTS.progress_style
+  end
+
+  local ALIGNS = { left = true, center = true, right = true }
+  if cfg.table then
+    if type(cfg.table.header_align) ~= "string" or not ALIGNS[cfg.table.header_align] then
+      bad("table.header_align", cfg.table.header_align, DEFAULTS.table.header_align)
+      cfg.table.header_align = DEFAULTS.table.header_align
+    end
+    if type(cfg.table.entry_align) ~= "string" or not ALIGNS[cfg.table.entry_align] then
+      bad("table.entry_align", cfg.table.entry_align, DEFAULTS.table.entry_align)
+      cfg.table.entry_align = DEFAULTS.table.entry_align
+    end
+  end
+
+  if cfg.toc then
+    if type(cfg.toc.min_level) ~= "number" then
+      bad("toc.min_level", cfg.toc.min_level, DEFAULTS.toc.min_level)
+      cfg.toc.min_level = DEFAULTS.toc.min_level
+    end
+    if type(cfg.toc.max_level) ~= "number" then
+      bad("toc.max_level", cfg.toc.max_level, DEFAULTS.toc.max_level)
+      cfg.toc.max_level = DEFAULTS.toc.max_level
+    end
+    if type(cfg.toc.anchor_separator) ~= "string" then
+      bad("toc.anchor_separator", cfg.toc.anchor_separator, DEFAULTS.toc.anchor_separator)
+      cfg.toc.anchor_separator = DEFAULTS.toc.anchor_separator
+    end
+  end
+
+  local CAPITALIZE = { ["false"] = true, first = true, title = true }
+  if cfg.heading_format then
+    local cap = cfg.heading_format.capitalize
+    if not (cap == false or CAPITALIZE[tostring(cap)]) then
+      bad("heading_format.capitalize", cap, DEFAULTS.heading_format.capitalize)
+      cfg.heading_format.capitalize = DEFAULTS.heading_format.capitalize
+    end
+  end
+end
+
 --- Resolve `cfg.features` into `_resolved[name] = bool`. Precedence:
 ---   just_enable  → hard allowlist (only the listed features on; wins over all)
 ---   otherwise    → start all-on, apply `disable`, then re-apply `enable`
@@ -110,16 +333,38 @@ local function resolve_features(cfg)
   end
 end
 
---- Deep-merges `opts` over DEFAULTS and re-resolves feature gating.
+--- Validates `opts` (ERR-50: unknown keys dropped with a "did you mean" hint,
+--- before the merge, so a typo cannot vanish into `tbl_deep_extend`'s result
+--- next to the default it was meant to override), deep-merges the rest over
+--- DEFAULTS, degrades a few known-invalid scalars back to their default
+--- (ERR-22), and re-resolves feature gating. Anything rejected or degraded is
+--- collected in `M.issues()` and reported once here and again by
+--- `:checkhealth markdown`.
 ---@param opts Mkdn.Config|nil
 ---@return nil
 function M.setup(opts)
-  _cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), opts or {})
+  local issues = {}
+  local sanitized = sanitize_level(opts or {}, TOP_LEVEL_OPTS, "", issues)
+
+  _cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), sanitized)
+  degrade_invalid_scalars(_cfg, issues)
   resolve_features(_cfg)
+
+  _issues = issues
+  if #issues > 0 then
+    notify.warn("ignored/degraded config option(s):\n  " .. table.concat(issues, "\n  "))
+  end
 end
 
 ---@return Mkdn.Config
 function M.get() return _cfg end
+
+--- What the last `setup()` ignored or degraded: unknown keys and out-of-range
+--- scalar values, one human-readable line each. Empty when every option
+--- given to `setup()` matched a known key and a valid value. For
+--- `:checkhealth markdown`.
+---@return string[]
+function M.issues() return vim.list_extend({}, _issues) end
 
 --- Whether feature `name` is enabled by the resolved `features` gating.
 --- Unknown (non-gateable) names are always enabled.

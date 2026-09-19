@@ -32,6 +32,31 @@ return function(H)
   eq(n.blockquote_hl.marker_fg, "#6A9955", "marker_fg defaults to the VS Code-style green")
   eq(n.blockquote_hl.text_fg, "#7EE787", "text_fg defaults to the VS Code-style green")
 
+  -- ERR-50: an unknown key anywhere in the shape is dropped, not merged in
+  -- as a dead field next to the default it was meant to override.
+  config.setup({ tabel = { header_align = "left" } })
+  local typo_top = config.get()
+  eq(typo_top.table.header_align, "center", "unknown top-level key dropped, default kept")
+  ok(#config.issues() > 0, "unknown top-level key recorded in issues()")
+
+  config.setup({ table = { wrap = { maximum = 40 } } })
+  local typo_nested = config.get()
+  eq(typo_nested.table.wrap.max, nil, "typo'd nested key does not leak in under a new name")
+  ok(#config.issues() > 0, "unknown nested key recorded in issues()")
+
+  -- The correctly-spelled sibling of that same typo still applies (proves
+  -- the fix does not just refuse the whole `table.wrap` sub-table).
+  config.setup({ table = { wrap = { max = 40 } } })
+  eq(config.get().table.wrap.max, 40, "correctly-spelled nested key still applies")
+  eq(#config.issues(), 0, "no issues for an all-valid setup()")
+
+  -- ERR-22: an out-of-range scalar degrades to its default instead of
+  -- reaching whatever reads it with something that raises there instead.
+  config.setup({ progress_style = "not-a-style" })
+  eq(config.get().progress_style, "auto", "invalid progress_style degrades to default")
+  ok(#config.issues() > 0, "invalid scalar recorded in issues()")
+
   -- reset
   config.setup({})
+  eq(#config.issues(), 0, "issues() clears on a clean setup()")
 end
