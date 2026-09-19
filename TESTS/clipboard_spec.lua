@@ -31,13 +31,33 @@ return function(H)
 
   -- The "*" (selection) register is always set locally, regardless of the
   -- "+" outcome -- this is documented, unconditional behavior.
+  --
+  -- Asserted by recording the setreg call rather than by reading the register
+  -- back. With no OS clipboard provider -- every headless Linux runner, and
+  -- what the CI log says: "clipboard: No provider" -- setreg("*") is a silent
+  -- no-op and getreg("*") answers "" however correctly M.copy behaved. The
+  -- claim this case makes is that the write still HAPPENS when the "+" write
+  -- reported failure, so that is what it checks, and that holds on a machine
+  -- with a provider and on one without alike.
   do
     local saved = package.loaded[LIB_PATH]
     package.loaded[LIB_PATH] = function(_text) return false end
+
+    local real_setreg = vim.fn.setreg
+    local selection_writes = {}
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.fn.setreg = function(reg, value, ...)
+      if reg == "*" then selection_writes[#selection_writes + 1] = value end
+      return real_setreg(reg, value, ...)
+    end
+
     clipboard.copy("selection-probe-xyz")
+
+    vim.fn.setreg = real_setreg
     package.loaded[LIB_PATH] = saved
+
     eq(
-      vim.fn.getreg("*"),
+      selection_writes[1],
       "selection-probe-xyz",
       "copy: '*' register set even when '+' write failed"
     )
