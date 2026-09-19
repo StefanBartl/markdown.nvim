@@ -6,6 +6,7 @@
 --- content and re-opens the preview surface for it, so this works whether or
 --- not a session is already up.
 local notify = require("markdown.util.notify").create("[markdown.commands.mdview]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -29,7 +30,9 @@ function M.run(argv)
     return
   end
 
-  vim.cmd("MDView start " .. vim.fn.fnameescape(vim.fn.expand(path)))
+  -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
+  -- command argument, not a Vim cmdline special.
+  vim.cmd("MDView start " .. vim.fn.fnameescape(expand_path(path)))
 end
 
 ---@param arglead string

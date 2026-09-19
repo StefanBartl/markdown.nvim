@@ -26,6 +26,7 @@
 local notify = require("markdown.util.notify").create("[markdown.core.table_fmt]")
 local lib_table = require("lib.nvim.markdown.table")
 local collect_md_files = require("markdown.util.md_files").collect
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -250,7 +251,9 @@ function M.format_tables_in_scope(opts)
     end
     return #errors == 0, #errors > 0 and table.concat(errors, "; ") or nil
   else
-    local path = vim.fn.expand(scope)
+    -- expand_path, not vim.fn.expand (SEC-34): `scope` is a user-typed
+    -- command argument, not a Vim cmdline special.
+    local path = expand_path(scope)
     if vim.fn.filereadable(path) == 0 then
       return false, string.format("File not readable: %q", path)
     end

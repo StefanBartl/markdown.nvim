@@ -4,6 +4,7 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 local notify = require("markdown.util.notify").create("[markdown.commands.links]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 local clipboard = require("markdown.util.clipboard")
 local default_ignore = require("markdown.util.ignore").as_set()
 
@@ -28,9 +29,11 @@ end
 ---@internal
 ---@param root string?
 ---@return string?
+-- expand_path, not vim.fn.expand (SEC-34): `root` is a user-typed
+-- command argument, not a Vim cmdline special.
 local function resolve_root(root)
   if not root or root == "" then return nil end
-  return vim.fn.expand(root)
+  return expand_path(root)
 end
 
 ---@internal
@@ -121,8 +124,10 @@ function M.for_paths(paths, opts)
   }
   local lines = {}
 
+  -- expand_path, not vim.fn.expand (SEC-34): `path` entries are
+  -- user-typed command arguments, not Vim cmdline specials.
   for _, path in ipairs(paths) do
-    path = vim.fn.expand(path)
+    path = expand_path(path)
     if vim.fn.isdirectory(path) == 1 then
       local files = collect_files(path, scan_opts)
       for i = 1, #files do

@@ -8,6 +8,7 @@
 local table_wrap = require("markdown.core.table_wrap")
 local table_fmt = require("markdown.core.table_fmt")
 local notify = require("markdown.util.notify").create("[markdown.commands.mdtable]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 local clipboard = require("markdown.util.clipboard")
 
 local api = vim.api
@@ -477,7 +478,9 @@ function M.to_csv(bufnr, path)
   end
   local csv_lines = table_wrap.to_csv(parsed.rows)
   if path and path ~= "" then
-    local expanded = vim.fn.expand(path)
+    -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
+    -- command argument, not a Vim cmdline special.
+    local expanded = expand_path(path)
     local fh, err = io.open(expanded, "w")
     if not fh then
       notify.error(string.format("Cannot write %q: %s", expanded, tostring(err)))
@@ -511,7 +514,9 @@ function M.from_csv(bufnr, path)
   bufnr = bufnr or api.nvim_get_current_buf()
   local csv_lines
   if path and path ~= "" then
-    local expanded = vim.fn.expand(path)
+    -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
+    -- command argument, not a Vim cmdline special.
+    local expanded = expand_path(path)
     local fh, err = io.open(expanded, "r")
     if not fh then
       notify.error(string.format("Cannot read %q: %s", expanded, tostring(err)))

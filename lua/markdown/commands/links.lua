@@ -11,6 +11,7 @@ local M = {}
 
 local uv = vim.uv or vim.loop
 local globbable = require("lib.nvim.fs.globbable")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 --- Files processed per event-loop tick once a `cwd` scope spans more than
 --- this. `collect` reads+parses each file and `sanitize` reads+writes each, so
@@ -118,8 +119,9 @@ local function collect(scope, on_done)
     return
   end
 
-  -- Treat scope as a file path.
-  local path = vim.fn.expand(scope)
+  -- Treat scope as a file path. expand_path, not vim.fn.expand (SEC-34):
+  -- `scope` is user-typed command argument text, not a Vim cmdline special.
+  local path = expand_path(scope)
   if uv.fs_stat(path) then
     on_done(links_from_file(path))
     return
@@ -363,7 +365,9 @@ local function do_sanitize(argv)
     return
   end
 
-  local path = vim.fn.expand(scope)
+  -- expand_path, not vim.fn.expand (SEC-34): `scope` is user-typed
+  -- command argument text, not a Vim cmdline special.
+  local path = expand_path(scope)
   if not uv.fs_stat(path) then
     notify.warn("links sanitize: scope not found: " .. tostring(scope))
     return

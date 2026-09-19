@@ -6,6 +6,7 @@
 --- neither knows nor names a producer.
 
 local notify = require("markdown.util.notify").create("[markdown.commands.export]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -33,7 +34,9 @@ local function do_pdf(path)
   end
 
   local bufnr = 0
-  local file = path and vim.fn.expand(path) or vim.api.nvim_buf_get_name(bufnr)
+  -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
+  -- command argument, not a Vim cmdline special.
+  local file = path and expand_path(path) or vim.api.nvim_buf_get_name(bufnr)
   local has_file = file and file ~= "" and vim.fn.filereadable(file) == 1
 
   if has_file and not vim.bo[bufnr].modified then
