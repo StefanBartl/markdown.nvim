@@ -27,8 +27,17 @@ local api = vim.api
 
 local notify = require("markdown.util.notify").create("[markdown.hover]")
 
----@return table
-local function lib() return require("hover") end
+--- hover.nvim is a soft dependency (README/docs/installation.md document it
+--- as optional): without it, this module's public entry points degrade to a
+--- no-op instead of throwing "module 'hover' not found" -- LUA-01 requires
+--- that consistency, `register()` below already treats `hover.registry` the
+--- same way.
+---@return table|nil
+local function lib()
+  local ok, mod = pcall(require, "hover")
+  if ok then return mod end
+  return nil
+end
 
 ---@type boolean
 local _registered = false
@@ -101,7 +110,8 @@ end
 ---@return Hover.Source|nil
 function M.link_under_cursor(bufnr)
   register()
-  return lib().target_under_cursor(bufnr)
+  local h = lib()
+  return h and h.target_under_cursor(bufnr) or nil
 end
 
 --- Show the hover for whatever is under the cursor.
@@ -109,18 +119,27 @@ end
 ---@return boolean shown
 function M.show(opts)
   register()
-  return lib().show(opts)
+  local h = lib()
+  if not h then
+    notify.warn("hover.nvim not installed -- nothing to show")
+    return false
+  end
+  return h.show(opts)
 end
 
 --- Close any open hover.
 ---@return nil
-function M.hide() lib().hide() end
+function M.hide()
+  local h = lib()
+  if h then h.hide() end
+end
 
 --- Debounced entry point used by the CursorHold/mouse autocmds.
 ---@return nil
 function M.trigger()
   register()
-  lib().trigger()
+  local h = lib()
+  if h then h.trigger() end
 end
 
 --- Install the hover autocmds for `bufnr`, after registering this plugin's
@@ -129,7 +148,8 @@ end
 ---@return nil
 function M.attach(bufnr)
   register()
-  lib().attach(bufnr)
+  local h = lib()
+  if h then h.attach(bufnr) end
 end
 
 --- Push markdown.nvim's `hover` config into the framework.
@@ -137,7 +157,8 @@ end
 ---@return nil
 function M.configure(hover_cfg)
   register()
-  lib().setup(hover_cfg)
+  local h = lib()
+  if h then h.setup(hover_cfg) end
 end
 
 --- Open the *full* thing the target under the cursor points at, in whatever
@@ -153,6 +174,10 @@ end
 --- path.
 ---@return boolean handled
 function M.escalate()
+  if not lib() then
+    notify.warn("escalate: hover.nvim not installed")
+    return false
+  end
   register()
   local bufnr = api.nvim_get_current_buf()
   local found = M.link_under_cursor(bufnr)
