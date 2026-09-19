@@ -24,6 +24,7 @@ local link_scan = require("markdown.core.link_scan")
 local path = require("markdown.util.path")
 local globbable = require("lib.nvim.fs.globbable")
 local ignore = require("markdown.util.ignore")
+local executable = require("lib.nvim.cross.executable")
 
 local M = {}
 
@@ -182,7 +183,7 @@ function M.find_references(target_path, opts)
   local needle = needle_for(target_path)
 
   local files
-  if needle and vim.fn.executable("rg") == 1 then
+  if needle and executable.exists("rg") then
     local rg_result, determined = rg_files(vim.system(rg_cmd(root, needle), { text = true }):wait())
     -- An errored rg run (root vanished, permission denied, killed, ...) is
     -- "we don't know", not "zero candidates" -- fall back to the exhaustive
@@ -219,7 +220,7 @@ function M.find_references_async(target_path, opts, callback)
   local wanted = path.normalize(comparable(target_path)):lower()
   local needle = needle_for(target_path)
 
-  if needle and vim.fn.executable("rg") == 1 then
+  if needle and executable.exists("rg") then
     vim.system(rg_cmd(root, needle), { text = true }, function(result)
       local files, determined = rg_files(result)
       -- glob_files uses vim.fn.*, which needs the main loop -- do the
