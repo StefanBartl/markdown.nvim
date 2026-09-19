@@ -303,21 +303,27 @@ local function do_sanitize(argv)
 
   if scope == "cwd" then
     local files = vim.fn.globpath(globbable(vim.fn.getcwd()), "**/*.md", false, true)
-    local total, touched = 0, 0
+    local total, touched, skipped = 0, 0, 0
 
     local function done()
       notify.info(
         string.format(
-          "links sanitize: normalized %d link target(s) across %d file(s)",
+          "links sanitize: normalized %d link target(s) across %d file(s)%s",
           total,
-          touched
+          touched,
+          skipped > 0 and (", " .. skipped .. " file(s) skipped (unreadable/unwritable)") or ""
         )
       )
     end
 
+    -- ERR-11: sanitize.path's error return distinguishes "read but nothing to
+    -- normalize" (not counted) from "could not read/write this file at all"
+    -- (counted separately) -- both used to collapse into the same "0 changed".
     local function sanitize_one(path)
-      local n = sanitize.path(path)
-      if n > 0 then
+      local n, err = sanitize.path(path)
+      if err then
+        skipped = skipped + 1
+      elseif n > 0 then
         total = total + n
         touched = touched + 1
       end
@@ -362,7 +368,11 @@ local function do_sanitize(argv)
     notify.warn("links sanitize: scope not found: " .. tostring(scope))
     return
   end
-  local n = sanitize.path(path)
+  local n, err = sanitize.path(path)
+  if err then
+    notify.warn("links sanitize: " .. err .. ": " .. path)
+    return
+  end
   notify.info(
     n > 0 and string.format("links sanitize: normalized %d link target(s)", n)
       or "links sanitize: nothing to normalize"
