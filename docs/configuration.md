@@ -264,6 +264,15 @@ require("markdown").setup({
 })
 ```
 
+**Validation.** An unknown key (typically a typo, e.g. `table = { wrap = {
+maximum = 40 } } }`) is dropped before the merge and reported via
+`notify.warn`, with a "did you mean" hint when a known key is close enough —
+it never silently sits next to the real option it was meant to override. A
+recognised key with an invalid-typed or out-of-range value (`progress_style`,
+`table.header_align`/`entry_align`, `toc.min_level`/`max_level`/
+`anchor_separator`, `heading_format.capitalize`) degrades to its default the
+same way, also reported. Both kinds are repeated by `:checkhealth markdown`.
+
 ## Feature gating
 
 Reduce the plugin to a subset without unsetting each option, via `features`:

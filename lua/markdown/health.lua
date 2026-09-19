@@ -55,6 +55,18 @@ function M.check()
   end
   info("links sanitize_on_save: " .. tostring(not cfg.links or cfg.links.sanitize_on_save ~= false))
 
+  -- Unknown keys / out-of-range scalars the last setup() had to drop or
+  -- degrade (ERR-50/ERR-22) -- setup() already warned once; this repeats it
+  -- somewhere a user checking on the plugin's state will actually see it.
+  local issues = config.issues and config.issues() or {}
+  if #issues > 0 then
+    for _, msg in ipairs(issues) do
+      warn(msg)
+    end
+  else
+    ok("config: no unknown or invalid setup() options")
+  end
+
   info(
     ("autocmds: %s | keymaps: %s | ft_only: %s | headline_spacing: %s | heading_gaps: %s"):format(
       tostring(cfg.enable_autocmds ~= false),
