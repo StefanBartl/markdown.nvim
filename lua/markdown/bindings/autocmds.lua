@@ -170,7 +170,15 @@ function M.setup(cfg)
       local aug_resize = api.nvim_create_augroup("MarkdownNvimTableWrapResize", { clear = true })
       local timer = nil
       autocmd.create({ "VimResized", "WinResized" }, function()
-        if timer then pcall(function() timer:stop() end) end
+        if timer then
+          -- PERF-62: a stopped vim.defer_fn timer only closes itself from
+          -- inside its own callback -- one that never fires (because it was
+          -- stopped here) leaks its libuv handle for the rest of the session
+          -- unless it is closed explicitly too.
+          pcall(function() timer:stop() end)
+          pcall(function() timer:close() end)
+          timer = nil
+        end
         timer = vim.defer_fn(function()
           for _, bufnr in ipairs(api.nvim_list_bufs()) do
             if api.nvim_buf_is_loaded(bufnr) and is_md(vim.bo[bufnr].filetype) then
