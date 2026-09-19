@@ -80,8 +80,22 @@ function M.setup(cfg)
     -- lazy-loaded on markdown filetypes in most specs, so a session that never
     -- opens a markdown file still needs `require("hover").enable()`
     -- from somewhere that is not lazy. See lua/lib/nvim/hover/README.md.
+    --
+    -- hover.nvim is a soft dependency (LUA-01: docs/installation.md and
+    -- README.md both document it as optional) -- `configure` is soft
+    -- internally, but `enable()` is a direct require with nothing else
+    -- guarding it, and used to take the rest of setup() down with it
+    -- (keymaps, user commands, fold options, sanitize-on-save all install
+    -- AFTER this block) whenever hover.nvim just was not installed.
     require("markdown.hover").configure(cfg.hover)
-    require("hover").enable()
+    local ok_hover, hover_lib = pcall(require, "hover")
+    if ok_hover then
+      hover_lib.enable()
+    else
+      notify.warn(
+        "hover.nvim not installed -- link/path hover preview is disabled (optional dependency, see docs/installation.md)"
+      )
+    end
   end
 
   -- Reference sync automatic triggers (independent opt-in via config.refs.mode).
