@@ -296,6 +296,18 @@ local function degrade_invalid_scalars(cfg, issues)
     end
   end
 
+  -- ERR-22: `refs.debounce_ms` reaches `core.refs.on_change`'s
+  -- `timer:start(delay, 0, fn)` unguarded -- a libuv call that errors
+  -- outright on a non-number, the same failure mode as
+  -- `table.wrap.resize_debounce_ms` above. Reachable from a plain
+  -- `refs.mode = "live"` config plus any text change.
+  if cfg.refs then
+    if type(cfg.refs.debounce_ms) ~= "number" or cfg.refs.debounce_ms <= 0 then
+      bad("refs.debounce_ms", cfg.refs.debounce_ms, DEFAULTS.refs.debounce_ms)
+      cfg.refs.debounce_ms = DEFAULTS.refs.debounce_ms
+    end
+  end
+
   if cfg.toc then
     if type(cfg.toc.min_level) ~= "number" then
       bad("toc.min_level", cfg.toc.min_level, DEFAULTS.toc.min_level)

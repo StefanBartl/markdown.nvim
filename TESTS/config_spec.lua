@@ -91,6 +91,22 @@ return function(H)
   config.setup({ hover = { max_lines = 0 } })
   eq(config.get().hover.max_lines, 20, "hover.max_lines = 0 degrades to default")
 
+  -- ERR-22: refs.debounce_ms reaches core.refs.on_change's
+  -- `timer:start(delay, 0, fn)` unguarded; a wrong type used to raise
+  -- outright the first time a text change fired in `refs.mode = "live"`.
+  config.setup({ refs = { debounce_ms = "abc" } })
+  eq(
+    config.get().refs.debounce_ms,
+    2000,
+    "invalid refs.debounce_ms (wrong type) degrades to default"
+  )
+  config.setup({ refs = { debounce_ms = 0 } })
+  eq(config.get().refs.debounce_ms, 2000, "refs.debounce_ms = 0 degrades to default")
+  config.setup({ refs = { debounce_ms = -100 } })
+  eq(config.get().refs.debounce_ms, 2000, "negative refs.debounce_ms degrades to default")
+  config.setup({ refs = { debounce_ms = 500 } })
+  eq(config.get().refs.debounce_ms, 500, "valid refs.debounce_ms is kept as-is")
+
   -- reset
   config.setup({})
   eq(#config.issues(), 0, "issues() clears on a clean setup()")
