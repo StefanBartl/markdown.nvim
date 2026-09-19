@@ -810,30 +810,70 @@ end
 --- Deliberately writes NATURAL column widths (no col_overrides): widening a
 --- column in the popup is a reading aid, not something that should pad out
 --- the saved file with extra spaces the row content doesn't need.
+--- Whether `current` (the range's content right now) still matches
+--- `raw_lines` (what it was when the table was parsed). No snapshot (an `mt`
+--- built by hand, with no parser origin) is treated as unchanged -- there is
+--- nothing to have drifted from.
+---@param current string[]
+---@param raw_lines string[]|nil
+---@return boolean
+local function range_unchanged(current, raw_lines)
+  if not raw_lines then return true end
+  if #current ~= #raw_lines then return false end
+  for i, raw in ipairs(raw_lines) do
+    if current[i] ~= raw then return false end
+  end
+  return true
+end
+
 function M.write_back()
   if not state.tables then return end
 
-  local wrote_buf, wrote_file, skipped = 0, 0, 0
+  local wrote_buf, wrote_file, skipped, stale = 0, 0, 0, 0
 
   for _, mt in ipairs(state.tables) do
     local lines = build_lines_from_markdowntable(mt) -- natural widths, ignores col_overrides
 
     if mt.bufnr and api.nvim_buf_is_valid(mt.bufnr) then
-      api.nvim_buf_set_lines(mt.bufnr, mt.start_line - 1, mt.end_line, false, lines)
-      wrote_buf = wrote_buf + 1
+      -- ERR-30: the float is a normal window the user can leave; re-verify
+      -- the captured range against the buffer's CURRENT text right before
+      -- overwriting it -- editing above the table between parse and `:w`
+      -- shifts what now occupies [start_line, end_line].
+      local current = api.nvim_buf_get_lines(mt.bufnr, mt.start_line - 1, mt.end_line, false)
+      if range_unchanged(current, mt.raw_lines) then
+        api.nvim_buf_set_lines(mt.bufnr, mt.start_line - 1, mt.end_line, false, lines)
+        wrote_buf = wrote_buf + 1
+      else
+        stale = stale + 1
+      end
     elseif mt.source then
       local ok, file_lines = pcall(vim.fn.readfile, mt.source)
       if ok and file_lines then
-        local new_content = {}
-        for i = 1, mt.start_line - 1 do
-          new_content[#new_content + 1] = file_lines[i]
+        local current = {}
+        for i = mt.start_line, mt.end_line do
+          current[#current + 1] = file_lines[i]
         end
-        vim.list_extend(new_content, lines)
-        for i = mt.end_line + 1, #file_lines do
-          new_content[#new_content + 1] = file_lines[i]
+        if range_unchanged(current, mt.raw_lines) then
+          local new_content = {}
+          for i = 1, mt.start_line - 1 do
+            new_content[#new_content + 1] = file_lines[i]
+          end
+          vim.list_extend(new_content, lines)
+          for i = mt.end_line + 1, #file_lines do
+            new_content[#new_content + 1] = file_lines[i]
+          end
+          -- ERR-01: writefile raises (E482) on a read-only or vanished
+          -- target -- the read two lines above is already pcall'd, this
+          -- write must be too, or one bad file aborts every remaining table.
+          local ok_write = pcall(vim.fn.writefile, new_content, mt.source)
+          if ok_write then
+            wrote_file = wrote_file + 1
+          else
+            skipped = skipped + 1
+          end
+        else
+          stale = stale + 1
         end
-        vim.fn.writefile(new_content, mt.source)
-        wrote_file = wrote_file + 1
       else
         skipped = skipped + 1
       end
@@ -845,7 +885,16 @@ function M.write_back()
   if state.buf and api.nvim_buf_is_valid(state.buf) then vim.bo[state.buf].modified = false end
 
   if wrote_buf == 0 and wrote_file == 0 then
-    notify.warn("TableView: nothing to write back (no source buffer/file for the shown table(s))")
+    if stale > 0 then
+      notify.warn(
+        string.format(
+          "TableView: nothing written -- %d table(s) skipped (source changed underneath; close and reopen the view)",
+          stale
+        )
+      )
+    else
+      notify.warn("TableView: nothing to write back (no source buffer/file for the shown table(s))")
+    end
     return
   end
 
@@ -855,6 +904,9 @@ function M.write_back()
   local msg = "TableView: wrote back to " .. table.concat(parts, ", ")
   if skipped > 0 then
     msg = msg .. string.format(" (%d table(s) skipped: no known source)", skipped)
+  end
+  if stale > 0 then
+    msg = msg .. string.format(" (%d table(s) skipped: source changed underneath)", stale)
   end
   if wrote_file > 0 then msg = msg .. " — buffer edits are NOT auto-saved, files on disk were" end
   notify.info(msg)

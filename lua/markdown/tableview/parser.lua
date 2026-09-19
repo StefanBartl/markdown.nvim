@@ -70,6 +70,16 @@ function M.parse_table(lines, start_line)
     end
   end
 
+  -- Snapshot of the exact source lines this table was parsed from (ERR-30):
+  -- a write-back re-verifies the range still holds this same text right
+  -- before overwriting it, since edits elsewhere in the buffer/file can shift
+  -- what now occupies [start_line, end_line].
+  local raw_lines = {}
+  for idx = 1, tbl.end_line - start_line + 1 do
+    raw_lines[idx] = lines[idx]
+  end
+  tbl.raw_lines = raw_lines
+
   return tbl
 end
 
