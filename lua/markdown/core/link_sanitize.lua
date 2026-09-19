@@ -88,15 +88,24 @@ function M.buffer(bufnr)
   return total
 end
 
---- Sanitize link targets in a file on disk. Returns 0 (no-op) when the file
---- cannot be read.
+--- Sanitize link targets in a file on disk.
 ---@param path string
----@return integer changed
+---@return integer changed  0 when nothing needed normalizing OR the file
+---  could not be read/written -- check `err` to tell those apart (ERR-11).
+---@return string? err  set when the file was not readable/writable; nil on success.
 function M.file(path)
-  if vim.fn.filereadable(path) ~= 1 then return 0 end
-  local lines = vim.fn.readfile(path)
+  if vim.fn.filereadable(path) ~= 1 then return 0, "not readable" end
+
+  -- ERR-01: readfile/writefile raise (E484/E482) on a permission error or a
+  -- file that vanished between the filereadable check above and this call.
+  local ok_read, lines = pcall(vim.fn.readfile, path)
+  if not ok_read then return 0, "read failed" end
+
   local new_lines, total = M.sanitize_lines(lines)
-  if total > 0 then vim.fn.writefile(new_lines, path) end
+  if total > 0 then
+    local ok_write = pcall(vim.fn.writefile, new_lines, path)
+    if not ok_write then return 0, "write failed" end
+  end
   return total
 end
 
@@ -104,6 +113,7 @@ end
 --- unsaved edits are never clobbered.
 ---@param path string
 ---@return integer changed
+---@return string? err  see `M.file`; a buffer-backed sanitize never errors.
 function M.path(path)
   local bufnr = vim.fn.bufnr(path)
   if bufnr ~= -1 and vim.api.nvim_buf_is_loaded(bufnr) then return M.buffer(bufnr) end
