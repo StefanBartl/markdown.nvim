@@ -64,21 +64,45 @@ return function(H)
   end
 
   -- No lib.nvim: falls back to a direct setreg + round-trip verification via
-  -- getreg. In this headless suite there is no OS clipboard provider, but
-  -- Neovim's registers hold the value in memory regardless of a provider, so
-  -- the round-trip check succeeds and BUG regression (the round trip not
-  -- being checked at all) is instead exercised below by forcing a mismatch.
+  -- getreg.
+  --
+  -- The comment that used to sit here claimed "Neovim's registers hold the
+  -- value in memory regardless of a provider, so the round trip succeeds".
+  -- That is not true on a runner with no clipboard provider: setreg("+") is a
+  -- silent no-op, getreg("+") answers "", and M.copy therefore reported false
+  -- -- correctly, since nothing had been copied. The success path this case
+  -- exists to cover was unreachable there, and the spec failed for a property
+  -- of the runner rather than of the code.
+  --
+  -- Back the "+" register with a local so the round trip is real on every
+  -- machine. What is under test is M.copy's own logic -- write, read back,
+  -- report whether they agree -- not whether the host has xclip installed.
   do
     local saved = package.loaded[LIB_PATH]
     package.loaded[LIB_PATH] = nil
     package.preload[LIB_PATH] = function() error("synthetic: lib.nvim not installed") end
 
-    local ok = clipboard.copy("fallback-probe")
-    eq(ok, true, "copy: no-lib.nvim fallback reports success on a real round trip")
-    eq(vim.fn.getreg("+"), "fallback-probe", "copy: '+' register actually holds the text")
+    local plus = ""
+    local real_setreg, real_getreg = vim.fn.setreg, vim.fn.getreg
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.fn.setreg = function(reg, value, ...)
+      if reg == "+" then plus = value end
+      return real_setreg(reg, value, ...)
+    end
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.fn.getreg = function(reg, ...)
+      if reg == "+" then return plus end
+      return real_getreg(reg, ...)
+    end
 
+    local ok = clipboard.copy("fallback-probe")
+
+    vim.fn.setreg, vim.fn.getreg = real_setreg, real_getreg
     package.preload[LIB_PATH] = nil
     package.loaded[LIB_PATH] = saved
+
+    eq(ok, true, "copy: no-lib.nvim fallback reports success on a real round trip")
+    eq(plus, "fallback-probe", "copy: '+' register actually holds the text")
   end
 
   -- BUG regression: the fallback must not just trust a non-raising setreg --
