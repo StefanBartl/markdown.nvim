@@ -69,7 +69,9 @@ local function search_and_jump_to_fragment(fragment)
   local bufnr = api.nvim_get_current_buf()
   local total = api.nvim_buf_line_count(bufnr)
   local in_fence = false
-  local fence_pattern = "^%s*([`~]{3,})%S*%s*$"
+  -- 3+ backticks/tildes + optional info string. `{3,}` is not a Lua-pattern
+  -- quantifier, so three-or-more is spelled out explicitly.
+  local fence_pattern = "^%s*[`~][`~][`~]+%S*%s*$"
 
   for i = 1, total do
     local line = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
