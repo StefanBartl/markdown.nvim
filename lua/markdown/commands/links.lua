@@ -62,7 +62,13 @@ local function collect(scope, on_done)
   end
 
   local function links_from_file(path)
-    local lines = vim.fn.readfile(path)
+    -- ERR-01: readfile raises (E484) on a permission-denied file or one that
+    -- vanished between the globpath and this read. One bad file must not
+    -- abort the whole scan (below CHUNK, that would surface as a raw
+    -- scheduler error; above it, it would kill the vim.schedule(step) chain
+    -- outright and leave the progress handle unfinished for the session).
+    local ok, lines = pcall(vim.fn.readfile, path)
+    if not ok then return {} end
     local base = vim.fn.fnamemodify(path, ":p:h")
     local found = scan.from_lines(lines)
     for _, lk in ipairs(found) do
