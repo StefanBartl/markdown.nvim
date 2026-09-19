@@ -7,13 +7,16 @@ local notify = require("markdown.util.notify").create("[markdown.commands.create
 local M = {}
 
 local uv = vim.uv or vim.loop
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 --- Resolve a link target to an absolute path, relative to the buffer dir.
 ---@param target string
 ---@param base_dir string
 ---@return string
 local function resolve(target, base_dir)
-  target = vim.fn.expand(target)
+  -- expand_path, not vim.fn.expand (SEC-34): `target` is a link target
+  -- the user typed when creating the file, not a Vim cmdline special.
+  target = expand_path(target)
   if target:match("^/") or target:match("^%a:[/\\]") then
     return vim.fn.fnamemodify(target, ":p")
   end
