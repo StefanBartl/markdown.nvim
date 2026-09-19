@@ -18,6 +18,7 @@
 
 local notify = require("markdown.util.notify").create("[markdown.bindings.usrcmds]")
 local composer = require("lib.nvim.bindings.usercmd.composer")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -401,7 +402,9 @@ function M.apply_tableview(ev)
   ---@param path string
   ---@return table[]|nil
   local function tables_from_path(path)
-    local expanded = vim.fn.expand(path)
+    -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
+    -- command argument, not a Vim cmdline special.
+    local expanded = expand_path(path)
 
     if vim.fn.isdirectory(expanded) == 1 then
       local files = require("markdown.util.md_files").collect(expanded)

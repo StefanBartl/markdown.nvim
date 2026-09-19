@@ -9,6 +9,7 @@
 ---                               trip with the TableView "open in browser" export).
 ---                               No arg: whole buffer, or the given range if any.
 local notify = require("markdown.util.notify").create("[markdown.commands.table]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -173,7 +174,9 @@ local function read_html_source(source, ctx)
   if source == "clipboard" then
     return table.concat(vim.fn.getreg("+", 1, true), "\n"), nil
   elseif source and source ~= "" then
-    local path = vim.fn.expand(source)
+    -- expand_path, not vim.fn.expand (SEC-34): `source` is a user-typed
+    -- command argument, not a Vim cmdline special.
+    local path = expand_path(source)
     if vim.fn.filereadable(path) == 0 then
       return nil, string.format("File not readable: %q", path)
     end

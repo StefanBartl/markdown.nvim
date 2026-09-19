@@ -10,6 +10,7 @@
 local M = {}
 
 local notify = require("markdown.util.notify").create("[markdown.commands.list]")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local uv = vim.uv or vim.loop
 
@@ -37,7 +38,9 @@ local function collect_headings(scope)
     return out
   end
 
-  local path = vim.fn.expand(scope)
+  -- expand_path, not vim.fn.expand (SEC-34): `scope` is user-typed
+  -- command argument text, not a Vim cmdline special.
+  local path = expand_path(scope)
   if not uv.fs_stat(path) then
     notify.warn("list: scope not found: " .. tostring(scope))
     return nil
