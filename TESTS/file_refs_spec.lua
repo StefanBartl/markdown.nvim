@@ -231,6 +231,77 @@ return function(H)
 
   if not run_ok3 then error(err3, 0) end
 
+  -- ── an unreadable candidate file is "we don't know", not "no reference" ───
+  -- Regression for ERR-11: `scan()`'s per-file `pcall(vim.fn.readfile, ...)`
+  -- used to drop a file that fails to read (permission error, or it vanished
+  -- in the TOCTOU window between the rg/glob listing and this read) with no
+  -- trace at all -- indistinguishable from a file that read fine and simply
+  -- carried no matching link. Left unfixed, `link_delete`'s "N other links
+  -- point at it" dialog could tell a user "0 others" while a real reference
+  -- sat in a file it never actually managed to read. `determined = false`
+  -- now says the count may be a lower bound instead.
+  do
+    package.loaded["markdown.core.file_refs"] = nil
+    local file_refs5 = require("markdown.core.file_refs")
+    local root5 = H.tmproot("mdnvim_filerefs_unreadable_fixture")
+    local real_readfile = vim.fn.readfile
+
+    local run_ok5, err5 = pcall(function()
+      vim.fn.mkdir(root5 .. "/docs", "p")
+      local target = root5 .. "/docs/target.md"
+      local function write(rel, lines)
+        local fh = io.open(root5 .. "/" .. rel, "w")
+        ok(fh ~= nil, "fixture5 write: " .. rel)
+        fh:write(table.concat(lines, "\n"))
+        fh:close()
+      end
+      write("docs/target.md", { "# Target" })
+      write("docs/linker.md", { "[t](target.md)" }) -- carries the real reference
+
+      local blocked = vim.fs.normalize(root5 .. "/docs/linker.md")
+      local function readfile_blocking_linker(fname, ...)
+        if vim.fs.normalize(fname) == blocked then error("E484: simulated unreadable file", 0) end
+        return real_readfile(fname, ...)
+      end
+
+      vim.fn.readfile = readfile_blocking_linker
+      local refs, determined = file_refs5.find_references(target, { root = root5 })
+      vim.fn.readfile = real_readfile
+
+      eq(
+        determined,
+        false,
+        "find_references: an unreadable candidate marks the result undetermined"
+      )
+      eq(
+        #refs,
+        0,
+        "find_references: the unreadable file's real reference is not silently reported as absent"
+      )
+
+      -- Async variant carries the same flag through to its callback.
+      vim.fn.readfile = readfile_blocking_linker
+      local async_refs, async_determined, done = nil, nil, false
+      file_refs5.find_references_async(target, { root = root5 }, function(r, d)
+        async_refs, async_determined, done = r, d, true
+      end)
+      vim.wait(3000, function() return done end)
+      vim.fn.readfile = real_readfile
+      ok(done, "find_references_async: callback fired")
+      eq(#(async_refs or {}), 0, "find_references_async: same lower-bound count as the sync path")
+      eq(
+        async_determined,
+        false,
+        "find_references_async: same undetermined flag reaches the callback"
+      )
+    end)
+
+    vim.fn.readfile = real_readfile
+    pcall(vim.fn.delete, root5, "rf")
+    package.loaded["markdown.core.file_refs"] = nil
+    if not run_ok5 then error(err5, 0) end
+  end
+
   -- ── 8.3 short-form paths (Windows) ────────────────────────────────────────
   --
   -- Windows gives a directory whose name is longer than eight characters a

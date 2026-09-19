@@ -132,11 +132,23 @@ local function comparable(target_path) return globbable(target_path) end
 --- lower-cased absolute path). Reads each file fully so fenced code blocks are
 --- skipped (link_scan.from_lines is fence-aware) — the same correctness the
 --- non-prefiltered version had.
+---
+--- ERR-11: a candidate surviving the rg/glob prefilter can still fail to read
+--- here (permission error, or it vanished in the TOCTOU window between that
+--- listing and this call) -- `readfile` is pcall'd exactly because of that.
+--- A file that fails to read contributes nothing to `out`, which looks
+--- identical to a file that read fine and simply had no matching link. The
+--- second return value keeps that apart: `determined = false` means at least
+--- one candidate could not be read, so `out` is a lower bound, not a
+--- confirmed count -- the same distinction `rg_files` already draws for an
+--- errored rg run, just at the per-file read instead of the whole search.
 ---@param files string[]
 ---@param wanted string
 ---@return MarkdownFileRef[]
+---@return boolean determined  false when a candidate file could not be read
 local function scan(files, wanted)
   local out = {}
+  local determined = true
   for _, file in ipairs(files) do
     if not is_ignored(file) then
       local ok, lines = pcall(vim.fn.readfile, file)
@@ -158,10 +170,12 @@ local function scan(files, wanted)
             end
           end
         end
+      else
+        determined = false
       end
     end
   end
-  return out
+  return out, determined
 end
 
 --- Find every `*.md` file under `root` whose link(s) resolve to `target_path`.
@@ -169,9 +183,11 @@ end
 ---@param target_path string  Absolute filesystem path being searched for.
 ---@param opts? { root?: string }  `root` defaults to the current working directory.
 ---@return MarkdownFileRef[]
+---@return boolean determined  false when a candidate file could not be read,
+---  so the list above is a lower bound, not a confirmed count (ERR-11).
 function M.find_references(target_path, opts)
   opts = opts or {}
-  if not target_path or target_path == "" then return {} end
+  if not target_path or target_path == "" then return {}, true end
 
   -- Canonicalize the root BEFORE it reaches either candidate source. rg is
   -- handed this root and echoes it back in every path it reports, and
@@ -198,16 +214,18 @@ end
 
 --- Async variant: identical result to `find_references`, but the (potentially
 --- slow) candidate discovery runs off the main loop via `vim.system`. The
---- `callback` receives the ref list, scheduled on the main loop so it may touch
---- buffers/vim state freely. Falls back to a scheduled sync glob+scan when
---- ripgrep isn't installed.
+--- `callback` receives the ref list and the same `determined` flag
+--- `find_references` returns (ERR-11: false when a candidate file could not
+--- be read, so `refs` is a lower bound), scheduled on the main loop so it may
+--- touch buffers/vim state freely. Falls back to a scheduled sync glob+scan
+--- when ripgrep isn't installed.
 ---@param target_path string
 ---@param opts? { root?: string }
----@param callback fun(refs: MarkdownFileRef[])
+---@param callback fun(refs: MarkdownFileRef[], determined: boolean)
 function M.find_references_async(target_path, opts, callback)
   opts = opts or {}
   if not target_path or target_path == "" then
-    vim.schedule(function() callback({}) end)
+    vim.schedule(function() callback({}, true) end)
     return
   end
 

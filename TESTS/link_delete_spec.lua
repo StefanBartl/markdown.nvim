@@ -144,6 +144,67 @@ return function(H)
     package.loaded["ui.kit.confirm"] = real_confirm
   end)
 
+  -- ── ERR-11: an incomplete scan says so, instead of implying "0 others" ────
+  -- `core.file_refs` returns a second `determined` value -- false when a
+  -- candidate file could not be read, so the reference count is a lower
+  -- bound, not a confirmed one. The dialog must surface that instead of
+  -- silently presenting "0 other links point at it" as if it were checked.
+  do
+    local root6 = (
+      vim.fn.fnamemodify(vim.fn.tempname(), ":h") .. "/mdnvim_linkdeletespec_undetermined"
+    ):gsub("\\", "/")
+
+    local run_ok6, err6 = pcall(function()
+      vim.fn.mkdir(root6, "p")
+      local fh = io.open(root6 .. "/target.md", "w")
+      ok(fh ~= nil, "fixture6 write: target.md")
+      fh:write("# Target\n")
+      fh:close()
+
+      local buf = H.scratch("markdown")
+      vim.api.nvim_buf_set_name(buf, root6 .. "/doc.md")
+
+      local real_file_refs = package.loaded["markdown.core.file_refs"]
+      local real_confirm = package.loaded["ui.kit.confirm"]
+
+      package.loaded["markdown.core.file_refs"] = {
+        find_references_async = function(_target_path, _opts, callback)
+          -- Simulate a scan that could not read every candidate: an empty
+          -- ref list, but undetermined -- must not read as "confirmed none".
+          vim.schedule(function() callback({}, false) end)
+        end,
+      }
+      package.loaded["markdown.core.link_delete"] = nil
+      local link_delete_stubbed = require("markdown.core.link_delete")
+
+      local asked, done = nil, false
+      package.loaded["ui.kit.confirm"] = {
+        open = function(opts)
+          asked = opts.question
+          done = true
+        end,
+      }
+
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "see [T](target.md)" })
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+      link_delete_stubbed.run(buf)
+      ok(vim.wait(5000, function() return done end, 20), "the dialog was reached")
+
+      ok(
+        asked:find("may be incomplete", 1, true) ~= nil,
+        "an undetermined scan's dialog flags the count as possibly incomplete, not confirmed"
+      )
+
+      package.loaded["ui.kit.confirm"] = real_confirm
+      package.loaded["markdown.core.file_refs"] = real_file_refs
+      package.loaded["markdown.core.link_delete"] = nil
+    end)
+
+    pcall(vim.fn.delete, root6, "rf")
+    package.loaded["markdown.core.link_delete"] = nil
+    if not run_ok6 then error(err6, 0) end
+  end
+
   vim.fn.delete(root, "rf")
   if not run_ok then error(err, 0) end
 end
