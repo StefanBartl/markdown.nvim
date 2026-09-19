@@ -30,4 +30,26 @@ function H.scratch(ft)
   return buf
 end
 
+--- Create a fixture directory under $TMPDIR and answer its CANONICAL path,
+--- slash-separated.
+---
+--- Why this exists rather than `tempname() .. "/name"` inline: on macOS
+--- $TMPDIR lives under `/var`, which is a symlink to `/private/var`.
+--- `tempname()` hands back the unresolved spelling, but `:cd`, a buffer name
+--- and anything that goes through `fs_realpath` hand back the resolved one.
+--- A spec that builds its expectation from the raw path and compares it
+--- against a path the editor produced is then comparing two spellings of one
+--- directory, and fails on macOS while the code under test is correct.
+--- Resolving once, here, keeps both sides in the same spelling everywhere.
+---@param name string  fixture directory name
+---@return string root  canonical, slash-separated, guaranteed to exist
+function H.tmproot(name)
+  local uv = vim.uv or vim.loop
+  local base = vim.fn.fnamemodify(vim.fn.tempname(), ":h")
+  local root = (base .. "/" .. name):gsub("\\", "/")
+  vim.fn.mkdir(root, "p")
+  local real = uv.fs_realpath(root)
+  return (real and real:gsub("\\", "/")) or root
+end
+
 return H

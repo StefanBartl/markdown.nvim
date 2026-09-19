@@ -79,6 +79,12 @@ return function(H)
       fh:write("# target")
       fh:close()
     end
+    -- Canonicalize now that the file exists. On macOS $TMPDIR is under /var,
+    -- a symlink to /private/var: tempname() answers the unresolved spelling
+    -- while the buffer name Neovim reports after opening the file answers the
+    -- resolved one, so comparing the two below would compare two spellings of
+    -- one file and fail while the handler is doing the right thing.
+    target = ((vim.uv or vim.loop).fs_realpath(target) or target)
     local target_slash = (target:gsub("\\", "/"))
     -- Force a drive-letter-style prefix regardless of host OS so the
     -- regression (Windows-only) is exercised everywhere the suite runs.
