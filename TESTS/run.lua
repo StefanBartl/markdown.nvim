@@ -107,6 +107,7 @@ local specs = {
   "tableview_spec.lua",
   "tableview_alignment_spec.lua",
   "tableview_resize_spec.lua",
+  "tableview_group_spec.lua",
   "browser_session_spec.lua",
   "fenced_scope_spec.lua",
   "scope_spec.lua",

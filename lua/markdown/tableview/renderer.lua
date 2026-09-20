@@ -455,8 +455,13 @@ local function ensure_view(opts)
   -- `:w` in the popup writes row-order/content edits back to wherever the
   -- table(s) actually came from (source buffer or file — see M.write_back).
   -- BufWriteCmd is the standard way to give a `nofile` buffer a working `:w`.
+  --
+  -- Its own group, NOT "MarkdownNvimTableView": that one holds the FileType
+  -- autocmd `bindings/autocmds.lua` installs at setup(), and `group(name, true)`
+  -- clears the whole group -- so opening the popup used to delete that autocmd,
+  -- and every markdown buffer opened afterwards got no TableView maps/commands.
   autocmd.create("BufWriteCmd", function() M.write_back() end, {
-    group = autocmd.group("MarkdownNvimTableView", true),
+    group = autocmd.group("MarkdownNvimTableViewPopup", true),
     buffer = state.buf,
     desc = "[markdown.nvim] TableView: write row edits back to source",
   })
