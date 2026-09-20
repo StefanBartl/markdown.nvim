@@ -94,9 +94,10 @@ and propagated to every inline link and the TOC.
 - **Config:** `refs.mode` (`"off"`|`"save"` default|`"live"`),
   `refs.debounce_ms`, `refs.update_toc`, `refs.orphans`
 - **Autocmd:** `MarkdownNvimRefs` augroup (`bindings/autocmds.lua`) —
-  baseline snapshot on `FileType`, sync on `BufWritePre` (`"save"`) or
+  sync on `BufWritePre` (`"save"`) or
   debounced `TextChanged`/`TextChangedI` (`"live"`), teardown on
-  `BufWipeout`. Feature name `refs`.
+  `BufWipeout`; the baseline snapshot on `FileType` is the `refs` handler of the
+  `MarkdownNvimFileType` autocmd. Feature name `refs`.
 
 ## Anchor jump and slug
 

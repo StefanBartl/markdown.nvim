@@ -2,10 +2,12 @@
 -- the FileType autocmd that installs TableView maps/commands on markdown buffers.
 --
 -- Regression: the popup's BufWriteCmd used to be created through
--- `autocmd.group("MarkdownNvimTableView", true)` -- the very group setup() puts
+-- `autocmd.group("MarkdownNvimTableView", true)` -- the very group setup() put
 -- its FileType autocmd in, and `clear = true` empties a group. So the first
 -- popup silently removed the autocmd, and every markdown buffer opened
--- afterwards had no TableView maps or commands.
+-- afterwards had no TableView maps or commands. The FileType handlers now live
+-- in `MarkdownNvimFileType` (behind one dispatcher) and the popup has its own
+-- group; this pins that the two stay apart.
 ---@diagnostic disable: missing-fields
 
 return function(H)
@@ -14,7 +16,7 @@ return function(H)
 
   local function filetype_autocmds()
     local found, list =
-      pcall(api.nvim_get_autocmds, { group = "MarkdownNvimTableView", event = "FileType" })
+      pcall(api.nvim_get_autocmds, { group = "MarkdownNvimFileType", event = "FileType" })
     return found and #list or 0
   end
 
