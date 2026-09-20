@@ -59,13 +59,13 @@ with no side effects on any buffer that is not Markdown.
 Start at [docs/README.md](docs/README.md), which says what is where and which
 question each page answers.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/installation.md#requirements) — Neovim version, required plugins and CLI tools.
 - [Installation](docs/installation.md) — a spec per plugin manager.
 - [Quickstart](docs/quickstart.md) — the first thing to run after installing.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the full command surface at a glance.
 - [All options](docs/configuration.md) — every `setup()` option and its default, opening with the ready-to-paste snippets.
@@ -73,7 +73,7 @@ question each page answers.
 - [Command reference](docs/commands.md) — `:Markdown`, subcommand by subcommand.
 - [Keymaps](docs/keymaps.md) / [Bindings cheatsheet](docs/BINDINGS.md)
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES/README.md) — one page per area: [headings](docs/FEATURES/HEADINGS.md), [tables](docs/FEATURES/TABLES.md), [links and references](docs/FEATURES/LINKS-AND-REFERENCES.md), [editing and handlers](docs/FEATURES/EDITING-AND-HANDLERS.md), [highlighting and UI](docs/FEATURES/HIGHLIGHTING-AND-UI.md), [integrations](docs/FEATURES/INTEGRATIONS.md).
 - [Link hover preview](docs/hover.md) — the float that previews what a link or a bare path points at, and everything it can show.
