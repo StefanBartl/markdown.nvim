@@ -6,11 +6,23 @@
 --- (`browser.behavior`, default "reuse") once a session is running, so no
 --- BufEnter re-render workaround is needed here. mdview.nvim is an optional
 --- host dependency.
+---
+--- `commands/mdview.lua` can also start the same underlying mdview.nvim
+--- session (`:Markdown mdview <path>`); it calls `M.set_active(true)` after
+--- doing so, so `active` stays a true single source of truth across both
+--- commands instead of drifting out of sync with whichever one last touched
+--- the session.
 local notify = require("markdown.util.notify").create("[markdown.commands.preview]")
 
 local M = {}
 
 local active = false
+
+--- Sync the tracked active flag from outside this module — see the
+--- `commands/mdview.lua` note above.
+---@param value boolean
+---@return nil
+function M.set_active(value) active = value end
 
 ---@internal
 ---@return boolean
