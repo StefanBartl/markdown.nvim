@@ -7,6 +7,7 @@
 --- not a session is already up.
 local notify = require("markdown.util.notify").create("[markdown.commands.mdview]")
 local expand_path = require("lib.nvim.cross.fs.expand_path")
+local preview = require("markdown.commands.preview")
 
 local M = {}
 
@@ -33,6 +34,12 @@ function M.run(argv)
   -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
   -- command argument, not a Vim cmdline special.
   vim.cmd("MDView start " .. vim.fn.fnameescape(expand_path(path)))
+
+  -- This starts (or reuses) the same mdview.nvim session `:Markdown preview`
+  -- drives, so keep its "active" flag in sync — otherwise a later
+  -- `:Markdown preview toggle` doesn't know a session is already running and
+  -- re-issues `MDView start` instead of stopping it.
+  preview.set_active(true)
 end
 
 ---@param arglead string
