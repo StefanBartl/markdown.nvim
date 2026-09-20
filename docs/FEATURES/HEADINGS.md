@@ -91,8 +91,9 @@ Custom `foldexpr` for ATX and Setext headings.
   `fold_prev_heading`, `fold_h2plus` (see [keymaps.md](../keymaps.md#folding))
 - **Config:** `use_zf_override` (default `true`) — remaps built-in `zf`.
   Feature name `fold` (gateable).
-- **Autocmd:** `MarkdownNvimFold` augroup (`bindings/autocmds.lua`) sets
-  `foldmethod=expr`/`foldexpr`/`foldenable`/`foldlevel` on `FileType`.
+- **Autocmd:** the `fold` handler of the `MarkdownNvimFileType` autocmd
+  (`bindings/autocmds.lua`) sets `foldmethod=expr`/`foldexpr`/`foldenable`/`foldlevel`
+  on `FileType`.
 - **Extended by table-wrap:** when `:MDTableFoldRow`/`:MDTableFoldAll` (see
   [TABLES.md](TABLES.md#table_wrap--width-limited-wrapping-mdtable)) have run
   in a buffer, `foldexpr` also nests a table's continuation rows one level

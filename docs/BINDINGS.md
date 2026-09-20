@@ -176,7 +176,7 @@ buffer-local.
 
 ## User commands — buffer-local
 
-Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
+Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileType` autocommand.
 
 | command | desc |
 | --- | --- |
@@ -210,11 +210,8 @@ Created per markdown buffer by the `MarkdownNvimUserCommands` autocommand.
 
 | event | group | pattern | desc |
 | --- | --- | --- | --- |
-| `FileType` | `MarkdownNvimKeymaps` | markdown/mdx/md/markdown.* | Install buffer-local keymaps (if `enable_keymaps`) |
-| `FileType` | `MarkdownNvimUserCommands` | markdown/mdx/md/markdown.* | Install buffer-local user commands |
-| `FileType` | `MarkdownNvimFold` | markdown/mdx/md/markdown.* | Set `foldmethod=expr` + fold options |
-| `FileType` | `MarkdownNvimTableView` | markdown/mdx/md/markdown.* | Install buffer-local TableView maps + commands (feature `tableview`) |
-| `FileType`, `BufWritePre`\*, `TextChanged`+`TextChangedI`\*, `BufWipeout` | `MarkdownNvimRefs` | markdown/mdx/md/markdown.* (`*.md`/`*.markdown`/`*.mdx` for the write/wipeout hooks) | refs sync per `config.refs.mode` (`off`/`save`/`live`, default `off`): baseline on `FileType`, reconcile on `BufWritePre` (\*save mode) or debounced `TextChanged`/`TextChangedI` (\*live mode), teardown on `BufWipeout` |
+| `FileType` | `MarkdownNvimFileType` | markdown/mdx/md/markdown.* | **One autocmd, five handlers** (a `lib.nvim` dispatcher, `bindings/autocmds.lua`): keymaps (`keymaps`, if `enable_autocmds`), user commands (`usrcmds`, if `enable_autocmds`), `foldmethod=expr` + fold options (`fold`, if `enable_autocmds` and feature `fold`), TableView maps + commands (`tableview`, feature `tableview`), refs baseline (`refs`, when `refs.mode` is `save` or `live`). Each is gated separately, and a second `setup()` removes the handler of a feature that is now off. |
+| `BufWritePre`\*, `TextChanged`+`TextChangedI`\*, `BufWipeout` | `MarkdownNvimRefs` | `*.md`/`*.markdown`/`*.mdx` for the write/wipeout hooks, markdown/mdx/md/markdown.* for the live one | refs sync per `config.refs.mode` (`off`/`save`/`live`, default `save`): reconcile on `BufWritePre` (\*save mode) or debounced `TextChanged`/`TextChangedI` (\*live mode), teardown on `BufWipeout`. The baseline on `FileType` is the `refs` handler above. |
 | `BufWritePost` | `MarkdownNvimLinkDiagnostics` | `*.md`, `*.markdown`, `*.mdx` | Link diagnostics check on save (`config.links.diagnostics.mode == "save"`, default `off`) |
 | `BufWritePre` | `MarkdownNvimLinksSanitize` | `*.md`, `*.markdown`, `*.mdx` | Normalize link targets on save (`config.links.sanitize_on_save`, default **on**) |
 | `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |

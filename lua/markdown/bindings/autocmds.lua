@@ -6,6 +6,14 @@
 --- installed; the main editing keymaps, the :Markdown / OpenWith commands and
 --- the fold options are installed only when `enable_autocmds` is not false
 --- (mirroring the previous behavior). All augroups are cleared on every setup().
+---
+--- The five FileType handlers (TableView, refs baseline, keymaps, user commands,
+--- fold) share ONE autocmd, through `lib.nvim.bindings.autocmd.dispatcher`. They
+--- are independent of each other -- nothing depends on their order, and each is
+--- gated on its own -- so this is about what a re-`setup()` does, not speed: a
+--- handler whose feature is now off is taken back out (a plain autocmd behind a
+--- gate that is false is simply never touched again, and stays), and the
+--- registry can list what fires on a markdown FileType in one place.
 
 local notify = require("markdown.util.notify").create("[markdown.bindings.autocmds]")
 local autocmd = require("lib.nvim.bindings.autocmd")
@@ -13,6 +21,67 @@ local autocmd = require("lib.nvim.bindings.autocmd")
 local M = {}
 
 local api = vim.api
+
+--- The filetypes every markdown binding is installed for. Doubles as the
+--- dispatcher's autocmd `pattern` (a miss stays in Neovim) and its handler keys,
+--- so `ev.match` is checked against the same list twice, in C and in Lua.
+---@type string[]
+local FILETYPES = { "markdown", "mdx", "md", "markdown.*" }
+
+--- The one group the FileType handlers live in.
+local FILETYPE_GROUP = "MarkdownNvimFileType"
+
+---@type Lib.Autocmd.Dispatcher.Handle|nil
+local ft_handle = nil
+
+--- Feature names registered on the FileType dispatcher, for `reset_filetype()`.
+---@type table<string, true>
+local ft_owners = {}
+
+---@internal
+---@return Lib.Autocmd.Dispatcher.Handle
+local function ft_dispatcher()
+  if not ft_handle then
+    ft_handle = require("lib.nvim.bindings.autocmd.dispatcher").new({
+      event = "FileType",
+      name = "markdown_filetype",
+      group = FILETYPE_GROUP,
+      pattern = FILETYPES,
+      desc = "[markdown.nvim] Dispatch a markdown FileType to its binding installers",
+      key = function(ev) return ev.match end,
+    })
+  end
+  return ft_handle
+end
+
+--- Take every FileType handler back out, so a `setup()` that runs again starts
+--- from what the current config asks for, not from what the last one did.
+---@internal
+---@return nil
+local function reset_filetype()
+  if not ft_handle then return end
+  for owner in pairs(ft_owners) do
+    ft_handle.unregister(owner)
+  end
+  ft_owners = {}
+  ft_handle.detach()
+end
+
+--- Register one FileType handler for markdown buffers.
+---@internal
+---@param owner string  feature name; what `reset_filetype()` takes back out
+---@param desc string
+---@param load fun(ctx: Lib.Autocmd.Dispatcher.Ctx)
+---@return Lib.Autocmd.Dispatcher.Handle
+local function on_filetype(owner, desc, load)
+  local handle = ft_dispatcher()
+  handle.attach() -- idempotent
+  ft_owners[owner] = true
+  -- A tail call, deliberately: lib records the `register()` call site off the
+  -- stack, so a wrapper frame here would attribute every handler to this line
+  -- instead of to the `setup()` step that registered it.
+  return handle.register(FILETYPES, { load = load, desc = desc, owner = owner })
+end
 
 ---@internal
 ---@param ft string? Buffer filetype.
@@ -49,20 +118,21 @@ end
 ---@param cfg Mkdn.Config
 ---@return nil
 function M.setup(cfg)
-  local ftpat = { "markdown", "mdx", "md", "markdown.*" }
+  local ftpat = FILETYPES
   local feat = require("markdown.config").feature_enabled
+
+  reset_filetype()
 
   -- TableView buffer-local maps + commands. Gated by the "tableview" feature.
   if feat("tableview") then
-    local aug_tv = api.nvim_create_augroup("MarkdownNvimTableView", { clear = true })
-    autocmd.create("FileType", function(ev)
-      keymaps().apply_tableview(ev.buf)
-      usrcmds().apply_tableview(ev)
-    end, {
-      group = aug_tv,
-      pattern = ftpat,
-      desc = "[markdown.nvim] Install buffer-local TableView maps & commands",
-    })
+    on_filetype(
+      "tableview",
+      "[markdown.nvim] Install buffer-local TableView maps & commands",
+      function(ctx)
+        keymaps().apply_tableview(ctx.buf)
+        usrcmds().apply_tableview(ctx.ev)
+      end
+    )
   end
 
   -- Link-target hover preview. Gated by the "hover" feature AND by
@@ -106,14 +176,11 @@ function M.setup(cfg)
 
     -- Snapshot heading anchors when a markdown buffer opens, so later reconciles
     -- can detect renames relative to this baseline.
-    autocmd.create("FileType", function(ev)
-      if not is_md(vim.bo[ev.buf].filetype) then return end
-      require("markdown.core.refs").attach(ev.buf)
-    end, {
-      group = aug_refs,
-      pattern = ftpat,
-      desc = "[markdown.nvim] refs: baseline heading anchors",
-    })
+    on_filetype(
+      "refs",
+      "[markdown.nvim] refs: baseline heading anchors",
+      function(ctx) require("markdown.core.refs").attach(ctx.buf) end
+    )
 
     if refs_mode == "save" then
       autocmd.create(
@@ -223,40 +290,26 @@ function M.setup(cfg)
 
   -- Gated by enable_autocmds: main keymaps + user commands + fold options.
   if cfg.enable_autocmds ~= false then
-    local aug_keymaps = api.nvim_create_augroup("MarkdownNvimKeymaps", { clear = true })
-    autocmd.create("FileType", function(ev)
-      if not is_md(vim.bo[ev.buf].filetype) then return end
-      keymaps().apply(ev.buf)
-    end, {
-      group = aug_keymaps,
-      pattern = ftpat,
-      desc = "[markdown.nvim] Install buffer-local keymaps",
-    })
+    on_filetype(
+      "keymaps",
+      "[markdown.nvim] Install buffer-local keymaps",
+      function(ctx) keymaps().apply(ctx.buf) end
+    )
 
-    local aug_cmds = api.nvim_create_augroup("MarkdownNvimUserCommands", { clear = true })
-    autocmd.create("FileType", function(ev)
-      if not is_md(vim.bo[ev.buf].filetype) then return end
-      usrcmds().apply(ev)
-    end, {
-      group = aug_cmds,
-      pattern = ftpat,
-      desc = "[markdown.nvim] Install buffer-local user commands",
-    })
+    on_filetype(
+      "usrcmds",
+      "[markdown.nvim] Install buffer-local user commands",
+      function(ctx) usrcmds().apply(ctx.ev) end
+    )
 
-    local aug_fold = api.nvim_create_augroup("MarkdownNvimFold", { clear = true })
-    autocmd.create("FileType", function(ev)
-      if not is_md(vim.bo[ev.buf].filetype) then return end
+    on_filetype("fold", "[markdown.nvim] Set fold options for markdown buffers", function()
       if not feat("fold") then return end
       vim.opt_local.foldmethod = "expr"
       vim.opt_local.foldexpr = "v:lua.require'markdown.core.fold'.foldexpr(v:lnum)"
       vim.opt_local.foldenable = true
       vim.opt_local.foldlevel = 99
       vim.opt_local.foldlevelstart = 99
-    end, {
-      group = aug_fold,
-      pattern = ftpat,
-      desc = "[markdown.nvim] Set fold options for markdown buffers",
-    })
+    end)
   end
 
   apply_to_already_loaded(cfg)

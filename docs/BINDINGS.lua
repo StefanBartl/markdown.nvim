@@ -661,35 +661,19 @@ return {
   autocmds = {
     {
       event = "FileType",
-      group = "MarkdownNvimKeymaps",
+      group = "MarkdownNvimFileType",
       pattern = "markdown/mdx/md/markdown.*",
-      desc = "Install buffer-local keymaps (if enable_keymaps)",
+      desc = "One autocmd, five handlers (lib.nvim dispatcher): keymaps, user commands, "
+        .. "foldmethod=expr + fold options, TableView maps + commands, refs baseline. "
+        .. "Each gated on its own feature/config; a second setup() removes the handler of a feature now off",
     },
     {
-      event = "FileType",
-      group = "MarkdownNvimUserCommands",
-      pattern = "markdown/mdx/md/markdown.*",
-      desc = "Install buffer-local user commands",
-    },
-    {
-      event = "FileType",
-      group = "MarkdownNvimFold",
-      pattern = "markdown/mdx/md/markdown.*",
-      desc = "Set foldmethod=expr + fold options",
-    },
-    {
-      event = "FileType",
-      group = "MarkdownNvimTableView",
-      pattern = "markdown/mdx/md/markdown.*",
-      desc = "Install buffer-local TableView maps + commands (feature 'tableview')",
-    },
-    {
-      event = "FileType/BufWritePre*/TextChanged+TextChangedI*/BufWipeout",
+      event = "BufWritePre*/TextChanged+TextChangedI*/BufWipeout",
       group = "MarkdownNvimRefs",
-      pattern = "markdown/mdx/md/markdown.* (*.md/*.markdown/*.mdx for the write/wipeout hooks)",
-      desc = "refs sync per config.refs.mode (off|save|live, default off): baseline on FileType, "
+      pattern = "*.md/*.markdown/*.mdx (markdown/mdx/md/markdown.* for the live one)",
+      desc = "refs sync per config.refs.mode (off|save|live, default save): "
         .. "reconcile on BufWritePre (*save) or debounced TextChanged/TextChangedI (*live), "
-        .. "teardown on BufWipeout",
+        .. "teardown on BufWipeout. The FileType baseline is the refs handler of MarkdownNvimFileType",
     },
     {
       event = "BufWritePost",

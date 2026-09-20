@@ -70,9 +70,9 @@ write-back), and HTML export (basic/styled) with round-trip import.
   [keymaps.md](../keymaps.md#tableview)); inside the popup itself,
   `<M-Right>`/`<M-l>`, `<M-Left>`/`<M-h>`, `<M-Up>`/`<M-k>`,
   `<M-Down>`/`<M-j>`, `:w`
-- **Autocmd:** `MarkdownNvimTableView` augroup (`bindings/autocmds.lua`)
-  installs the buffer-local maps/commands on `FileType`, gated by the
-  `tableview` feature.
+- **Autocmd:** the `tableview` handler of the `MarkdownNvimFileType` autocmd
+  (`bindings/autocmds.lua`) installs the buffer-local maps/commands on
+  `FileType`, gated by the `tableview` feature.
 - **Config:** `tableview.style` (default `"markdown"`, or `"box"`)
 
 ## `table_wrap` — width-limited wrapping (`:MDTable*`)
