@@ -95,10 +95,10 @@ jobs:
       # Pinned like the rest of the fleet, and the version the specs were
       # cleaned against -- the apt `lua-check` is unpinned and older. PUC Lua
       # runs the binary; `std = "lua51"` in .luacheckrc decides what is checked.
-      - uses: leafo/gh-actions-lua@v10
+      - uses: leafo/gh-actions-lua@v13
         with:
           luaVersion: "5.4"
-      - uses: leafo/gh-actions-luarocks@v4
+      - uses: leafo/gh-actions-luarocks@v6
       - name: luacheck
         run: |
           luarocks install luacheck 1.2.0
