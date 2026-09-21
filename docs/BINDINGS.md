@@ -219,6 +219,6 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `ColorScheme` | `MarkdownNvimHL` | `*` | Re-apply blockquote/link-underline highlights (feature `hl` / `link_hl`) — blockquote itself is a decoration provider now, not a `FileType`/`BufEnter` re-apply |
 | `ColorScheme` | `MarkdownNvimFencedFix` | `*` | Re-apply fenced-code-block highlight overrides (feature `fenced_fix`, default on) — a separate group from `MarkdownNvimHL`, not the same registration |
 | `InsertLeave`, `TextChanged` | `MarkdownNvimTableMode_<bufnr>` (per buffer) | buffer-local | Debounced (120ms) re-alignment of the GFM table under the cursor, while `:Markdown table mode on`/`toggle` (or `<leader>tvm`) is active for that buffer |
-| `BufWipeout` | `MarkdownNvimTableMode_<bufnr>` (same group) | buffer-local | Cancels the debounce and deletes the group |
+| `BufWipeout` | `MarkdownNvimTableMode_<bufnr>` (same group) | buffer-local | Cancels the debounce and deletes the group, after `autocmd.delete(id)` on each autocmd so their records in `lib.nvim` go too (`:Markdown table mode off` does the same) |
 | `BufDelete`, `BufWipeout` | `MarkdownNvimScopeFoldCache` | — | Invalidates the per-buffer memoized fold-block cache used by the `foldexpr` hot path |
 | `TextChanged`, `TextChangedI` | (ungrouped, per buffer) | buffer-local | Live-tracks refs while `:Markdown refs live on`/`toggle` is active — **distinct** from the config-driven `MarkdownNvimRefs` live mode above: created/removed per invocation, id tracked in `commands/refs.lua`'s own `live_au[bufnr]` |
