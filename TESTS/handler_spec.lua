@@ -101,8 +101,14 @@ return function(H)
     end
 
     local run_ok, run_err = pcall(function()
-      local buf = H.scratch("markdown")
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "[Review answer](" .. drive_target .. ")" })
+      local drive_buf = H.scratch("markdown")
+      vim.api.nvim_buf_set_lines(
+        drive_buf,
+        0,
+        -1,
+        false,
+        { "[Review answer](" .. drive_target .. ")" }
+      )
       vim.api.nvim_win_set_cursor(0, { 1, 5 })
       h2.handle_cursor_action({ silent = true, mouse = true })
     end)

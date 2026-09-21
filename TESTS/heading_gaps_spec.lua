@@ -2,7 +2,7 @@
 -- fix) skipped heading levels, e.g. an H1 followed directly by an H3.
 
 return function(H)
-  local eq, ok = H.eq, H.ok
+  local eq = H.eq
   local api = vim.api
   local hg = require("markdown.core.heading_gaps")
 
@@ -105,7 +105,7 @@ return function(H)
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# One", "### Three" })
 
     local real_confirm = vim.fn.confirm
-    vim.fn.confirm = function(...) return 1 end -- "&Yes"
+    vim.fn.confirm = function() return 1 end -- "&Yes"
     local gaps = hg.check(buf)
     vim.fn.confirm = real_confirm
 
@@ -120,7 +120,7 @@ return function(H)
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# One", "### Three" })
 
     local real_confirm = vim.fn.confirm
-    vim.fn.confirm = function(...) return 2 end -- "&No"
+    vim.fn.confirm = function() return 2 end -- "&No"
     hg.check(buf)
     vim.fn.confirm = real_confirm
 

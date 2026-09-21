@@ -101,7 +101,7 @@ return function(H)
 
   -- ---- heading nav is scope-bounded ---------------------------------------
   do
-    local buf = fresh()
+    fresh()
     local head = require("markdown.core.headings")
     api.nvim_win_set_cursor(0, { 8, 0 }) -- ## Inner A
     head.goto_next_heading()
