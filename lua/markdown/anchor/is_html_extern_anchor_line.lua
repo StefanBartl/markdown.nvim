@@ -80,7 +80,7 @@ end
 ---@param s string?
 ---@return string? target
 ---@return string? fragment
-local function split_target_and_fragment(s)
+local function parse_href_target(s)
   if not s or s == "" then return nil end
   if s:match("^<.+>$") then s = s:sub(2, -2) end
   s = trim(s)
@@ -97,7 +97,7 @@ return function(line)
   if not line or line == "" then
     local near = find_attr_near_cursor(8)
     if near and looks_like_file_uri(near) then
-      local t, f = split_target_and_fragment(near)
+      local t, f = parse_href_target(near)
       if t then return { target = t, fragment = f } end
     end
     return nil
@@ -105,19 +105,19 @@ return function(line)
 
   local md_target = extract_md_paren_target(line)
   if md_target and looks_like_file_uri(md_target) then
-    local t, f = split_target_and_fragment(md_target)
+    local t, f = parse_href_target(md_target)
     if t then return { target = t, fragment = f } end
   end
 
   local html_target = extract_html_attr(line)
   if html_target and looks_like_file_uri(html_target) then
-    local t, f = split_target_and_fragment(html_target)
+    local t, f = parse_href_target(html_target)
     if t then return { target = t, fragment = f } end
   end
 
   local near = find_attr_near_cursor(12)
   if near and looks_like_file_uri(near) then
-    local t, f = split_target_and_fragment(near)
+    local t, f = parse_href_target(near)
     if t then return { target = t, fragment = f } end
   end
 
