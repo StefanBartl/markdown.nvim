@@ -479,6 +479,32 @@ return function(H)
     commands.execute({ "table", "mode", "off" })
     ok(not table_mode.is_enabled(buf), "table mode: 'off' disables auto-format tracking")
 
+    -- Turning it off (or wiping the buffer) takes back the autocmds' records in
+    -- lib.nvim's registry and the group. Deleting the group alone left the
+    -- records for good: the group name carries the buffer number, which nothing
+    -- ever asks for twice.
+    do
+      local lib_autocmd = require("lib.nvim.bindings.autocmd")
+      local function records_for(b)
+        return #lib_autocmd.registered({ group = "MarkdownNvimTableMode_" .. b })
+      end
+      ok(records_for(buf) == 0, "table mode: 'off' leaves no autocmd records behind")
+      ok(
+        not pcall(api.nvim_get_autocmds, { group = "MarkdownNvimTableMode_" .. buf }),
+        "table mode: 'off' removes the augroup"
+      )
+
+      local before = #lib_autocmd.registered()
+      for _ = 1, 10 do
+        local wb = api.nvim_create_buf(true, false)
+        table_mode.enable(wb)
+        ok(records_for(wb) > 0, "table mode: 'on' records its autocmds")
+        api.nvim_buf_delete(wb, { force = true }) -- BufWipeout runs disable()
+        ok(records_for(wb) == 0, "table mode: wiping the buffer takes them back")
+      end
+      ok(#lib_autocmd.registered() == before, "table mode: on/wipe cycles do not grow the registry")
+    end
+
     -- cell motions ]| / [|
     api.nvim_buf_set_lines(buf, 0, -1, false, { "| alpha | beta | gamma |" })
     api.nvim_win_set_cursor(0, { 1, 2 }) -- inside 'alpha'

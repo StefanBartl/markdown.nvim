@@ -24,10 +24,11 @@ local api = vim.api
 
 local M = {}
 
--- Per-buffer state: augroup id and a re-entrancy guard so the reformat's own
--- buffer write does not retrigger the TextChanged handler. The debounce timer
--- itself is shared (buffer-scoped internally) — see `_debounce` below.
----@type table<integer, { aug: integer, busy: boolean }>
+-- Per-buffer state: augroup id, the ids of its autocmds (so `disable` can drop
+-- their records too), and a re-entrancy guard so the reformat's own buffer
+-- write does not retrigger the TextChanged handler. The debounce timer itself
+-- is shared (buffer-scoped internally) — see `_debounce` below.
+---@type table<integer, { aug: integer, busy: boolean, ids: integer[] }>
 local S = {}
 
 -- ---------------------------------------------------------------------------
@@ -98,7 +99,10 @@ function M.enable(bufnr)
   if S[bufnr] then return end
 
   local aug = autocmd.group("MarkdownNvimTableMode_" .. bufnr, true)
-  S[bufnr] = { aug = aug, busy = false }
+  -- The id of every autocmd made through the wrapper, for `disable`: deleting the
+  -- group alone leaves their records in lib.nvim's registry for good (see there).
+  local ids = {}
+  S[bufnr] = { aug = aug, busy = false, ids = ids }
 
   local function schedule()
     local st = S[bufnr]
@@ -106,18 +110,25 @@ function M.enable(bufnr)
     _debounce.call(bufnr)
   end
 
-  autocmd.create({ "InsertLeave", "TextChanged" }, schedule, {
+  ids[#ids + 1] = autocmd.create({ "InsertLeave", "TextChanged" }, schedule, {
     group = aug,
     buffer = bufnr,
     desc = "[markdown.nvim] table mode: auto-format",
   })
-  autocmd.create("BufWipeout", function() M.disable(bufnr) end, {
+  ids[#ids + 1] = autocmd.create("BufWipeout", function() M.disable(bufnr) end, {
     group = aug,
     buffer = bufnr,
     desc = "[markdown.nvim] table mode: disable when the buffer is wiped",
   })
 end
 
+--- Turn auto-format off for `bufnr`: the autocmds, their records and the group.
+---
+--- `autocmd.delete(id)` for each one, not just `nvim_del_augroup_by_id`: that
+--- drops the autocmds, but their records in `lib.nvim.bindings.autocmd` stay --
+--- they are only dropped through `delete(id)` or by asking for the same group
+--- again, and this group's name carries the buffer number. So every enable/wipe
+--- cycle used to leave two records behind for the rest of the session.
 ---@param bufnr? integer
 ---@return nil
 function M.disable(bufnr)
@@ -125,6 +136,9 @@ function M.disable(bufnr)
   local st = S[bufnr]
   if not st then return end
   _debounce.cancel(bufnr)
+  for _, id in ipairs(st.ids) do
+    pcall(autocmd.delete, id)
+  end
   pcall(api.nvim_del_augroup_by_id, st.aug)
   S[bufnr] = nil
 end
