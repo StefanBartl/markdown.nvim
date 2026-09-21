@@ -60,8 +60,11 @@ local function strip_leading_hash(s)
   return s:gsub("^%s*#%s*", "")
 end
 
-local function search_and_jump_to_fragment(fragment)
-  if not fragment or fragment == "" then return false end
+---Find the line a fragment resolves to, without moving the cursor.
+---@param fragment string
+---@return integer|nil line, boolean center whether the match wants the view re-centered (heading matches)
+local function find_fragment_line(fragment)
+  if not fragment or fragment == "" then return nil, false end
 
   local frag = strip_leading_hash(fragment)
   local frag_esc = escape_lua_pattern(frag)
@@ -79,30 +82,16 @@ local function search_and_jump_to_fragment(fragment)
     if line:match(fence_pattern) then in_fence = not in_fence end
     if not in_fence then
       local id_pattern = "id%s*=%s*['\"]?#?" .. frag_esc .. "['\"]?"
-      if line:match(id_pattern) then
-        api.nvim_win_set_cursor(0, { i, 0 })
-        return true
-      end
+      if line:match(id_pattern) then return i, false end
 
-      if line:match("{#*" .. frag_esc .. "}") then
-        api.nvim_win_set_cursor(0, { i, 0 })
-        return true
-      end
+      if line:match("{#*" .. frag_esc .. "}") then return i, false end
 
       local hashes, title = line:match("^(%s*#+)%s+(.*%S)")
       if hashes and title then
         local base = slugify(title)
         if base == "" then base = "section-" .. i end
-        if base == frag then
-          api.nvim_win_set_cursor(0, { i, 0 })
-          vim.cmd("normal! zz")
-          return true
-        end
-        if frag:match("^" .. escape_lua_pattern(base) .. "%-?%d*$") then
-          api.nvim_win_set_cursor(0, { i, 0 })
-          vim.cmd("normal! zz")
-          return true
-        end
+        if base == frag then return i, true end
+        if frag:match("^" .. escape_lua_pattern(base) .. "%-?%d*$") then return i, true end
       end
     end
   end
@@ -118,8 +107,7 @@ local function search_and_jump_to_fragment(fragment)
         chunk:match("id%s*=%s*['\"]?#?" .. frag_esc .. "['\"]?")
         or chunk:match("{#*" .. frag_esc .. "}")
       then
-        api.nvim_win_set_cursor(0, { i, 0 })
-        return true
+        return i, false
       end
       if
         (
@@ -128,8 +116,7 @@ local function search_and_jump_to_fragment(fragment)
           or chunk:lower():match("<figcaption")
         ) and chunk:match(frag_esc)
       then
-        api.nvim_win_set_cursor(0, { i, 0 })
-        return true
+        return i, false
       end
     end
   end
@@ -146,13 +133,24 @@ local function search_and_jump_to_fragment(fragment)
         or line:match("src")
         or line:match("alt")
       then
-        api.nvim_win_set_cursor(0, { i, 0 })
-        return true
+        return i, false
       end
     end
   end
 
-  return false
+  return nil, false
+end
+
+---Find `fragment`'s line and jump the cursor there, re-centering for a
+---heading match.
+---@param fragment string
+---@return boolean found
+local function goto_fragment(fragment)
+  local line, center = find_fragment_line(fragment)
+  if not line then return false end
+  api.nvim_win_set_cursor(0, { line, 0 })
+  if center then vim.cmd("normal! zz") end
+  return true
 end
 
 local path = require("markdown.util.path")
@@ -193,7 +191,7 @@ function M.open_target(target)
 
   if target:match("^https?://") then return url.open(target) end
 
-  if target:match("^#") then return search_and_jump_to_fragment(target) end
+  if target:match("^#") then return goto_fragment(target) end
 
   local resolved = resolve_target_path(target)
   if not resolved then
@@ -255,7 +253,7 @@ function M.handle_cursor_action(opts)
     end
     local ok = open_file_in_current_window(resolved)
     if ok and fragment and fragment ~= "" then
-      local jumped = search_and_jump_to_fragment(fragment)
+      local jumped = goto_fragment(fragment)
       if not jumped then
         notify.info("External anchor: opened file but anchor '" .. fragment .. "' not found")
       end
