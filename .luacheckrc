@@ -14,8 +14,3 @@ ignore = {
   "212/self", -- unused self
   "122", -- setting a read-only field of a global (e.g. vim.*): common in Neovim
 }
-
--- Test specs intentionally use partial config tables.
-files["docs/TESTS/**"] = {
-  ignore = { "631", "211" },
-}
