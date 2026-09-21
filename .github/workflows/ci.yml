@@ -9,6 +9,7 @@ jobs:
   test:
     name: tests (headless) (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       # One platform failing must not cancel the others: which of the three
       # broke is the whole information content of this job.
@@ -65,11 +66,20 @@ jobs:
         env:
           LIB_NVIM_PATH: ${{ github.workspace }}/lib.nvim
           HOVER_NVIM_PATH: ${{ github.workspace }}/hover.nvim
-        run: nvim --headless -i NONE -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
+        run: |
+          exec > >(tee -a "$RUNNER_TEMP/test-output.log") 2>&1
+          nvim -n --headless -i NONE -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-output-test-${{ matrix.os }}
+          path: ${{ runner.temp }}/test-output.log
+          if-no-files-found: ignore
 
   lint:
     name: lint (stylua + luacheck)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Was advisory pending the one-time `stylua .` + luacheck cleanup. Both
     # have landed and run clean, so this is a real gate again -- otherwise the
     # formatting simply drifts back.
