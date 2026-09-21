@@ -287,9 +287,9 @@ return function(H)
   -- first bytes, so a valid header is the whole fixture. It also keeps the
   -- ImageMagick fallback out of the test -- these parse locally or not at all.
   local function write_bytes(path, bytes)
-    local f = assert(io.open(path, "wb"))
-    f:write(bytes)
-    f:close()
+    local fh = assert(io.open(path, "wb"))
+    fh:write(bytes)
+    fh:close()
   end
 
   local function be16(n) return string.char(math.floor(n / 256), n % 256) end
@@ -302,9 +302,9 @@ return function(H)
     )
   end
 
-  local png = tmp .. "/wide.png"
+  local wide_png = tmp .. "/wide.png"
   write_bytes(
-    png,
+    wide_png,
     "\137PNG\r\n\26\n" .. be32(13) .. "IHDR" .. be32(400) .. be32(100) .. "\8\6\0\0\0"
   )
 
@@ -338,7 +338,7 @@ return function(H)
     local saved = package.loaded["lib.nvim.image_preview"]
     package.loaded["lib.nvim.image_preview"] = { detect = function() return "images.nvim" end }
 
-    local c = media.image(target_for(png), preview_opts)
+    local c = media.image(target_for(wide_png), preview_opts)
     ok(c.canvas ~= nil, "image hover: drawable target yields a canvas")
     -- 400x100 is wider than the 40x10 box allows, so width is the binding
     -- limit and the height follows from it (cells being ~twice as tall as wide).
@@ -346,7 +346,7 @@ return function(H)
     eq(c.canvas.rows, 5, "image hover: canvas height follows the image ratio")
     eq(#c.lines, 0, "image hover: no metadata lines next to the picture")
     eq(c.title, nil, "image hover: no filename in the border")
-    eq(c.image_path, png, "image hover: still asks for the draw")
+    eq(c.image_path, wide_png, "image hover: still asks for the draw")
 
     -- JPEG has no fixed size offset; its segment chain has to be walked.
     local j = media.image(target_for(jpg), preview_opts)
@@ -372,7 +372,7 @@ return function(H)
     -- No provider: metadata is then the only thing the hover can say, so it
     -- says it -- including the dimensions parsed out of the header.
     package.loaded["lib.nvim.image_preview"] = { detect = function() return nil end }
-    local m = media.image(target_for(png), preview_opts)
+    local m = media.image(target_for(wide_png), preview_opts)
     eq(m.canvas, nil, "image hover: no provider means no canvas")
     eq(m.title, "wide.png", "image hover: metadata float is titled with the filename")
     eq(m.lines[1], "400 × 100 px", "image hover: dimensions parsed from the PNG header")
@@ -400,7 +400,7 @@ return function(H)
     package.loaded["pdfport"] = {
       render_page = function(_, _, _, cb)
         renders = renders + 1
-        cb(png, nil)
+        cb(wide_png, nil)
       end,
     }
 
@@ -435,7 +435,7 @@ return function(H)
     -- no provisional float at all -- there is nothing to wait for.
     local again = media.pdf({ type = "pdf", path = pdf, size = 42 }, preview_opts, function() end)
     eq(again.pending, nil, "pdf hover: a cached page needs no provisional float")
-    eq(again.image_path, png, "pdf hover: cached page is reused")
+    eq(again.image_path, wide_png, "pdf hover: cached page is reused")
     eq(renders, 1, "pdf hover: cached page does not shell out again")
 
     -- A changed PDF must not answer with the old page.
@@ -504,13 +504,12 @@ return function(H)
     do -- image -> images.zen.open(path), an explicit path -- untouched by
       -- images.nvim's own (separately in-flux) under-cursor resolution.
       local buf = H.scratch("markdown")
-      -- A dedicated fixture, not the outer `png`: that name gets
-      -- re-declared (shadowed) further up for the wide.png/wide.jpg cases,
-      -- and a test tied to "whatever `png` currently refers to" is fragile.
+      -- A dedicated fixture rather than the shared `png`/`wide_png`: a test tied
+      -- to whatever those currently hold is fragile.
       local esc_png = tmp .. "/escalate.png"
-      local f = assert(io.open(esc_png, "wb"))
-      f:write("\137PNG\r\n\26\n\0\0\0\13IHDR\0\0\0\1\0\0\0\1" .. string.rep("\0", 8))
-      f:close()
+      local fh = assert(io.open(esc_png, "wb"))
+      fh:write("\137PNG\r\n\26\n\0\0\0\13IHDR\0\0\0\1\0\0\0\1" .. string.rep("\0", 8))
+      fh:close()
 
       local captured
       local saved = package.loaded["images.zen"]

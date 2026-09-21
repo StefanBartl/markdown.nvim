@@ -4,7 +4,7 @@
 -- restore-view no-op when nothing is found.
 
 return function(H)
-  local eq, ok = H.eq, H.ok
+  local eq = H.eq
   local api = vim.api
   local fold_prev = require("markdown.core.fold_prev")
 
