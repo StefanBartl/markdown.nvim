@@ -18,6 +18,17 @@ local M = {}
 ---@return boolean
 local function on_heading() return vim.api.nvim_get_current_line():match("^%s*#+%s") ~= nil end
 
+--- Whether a host that asks first (ui.nvim's `ui.menu`) may show the
+--- Markdown fly-out: `integrations.ui_menu` is not false and the `menu` group
+--- is not switched off. `items()`/`submenu()` themselves stay governed by
+--- `menu` alone, so other hosts are unaffected by `ui_menu`.
+---@return boolean
+function M.enabled()
+  local cfg = require("markdown.config").get()
+  if (cfg.integrations or {}).ui_menu == false then return false end
+  return (cfg.menu or {}).enable ~= false
+end
+
 --- Build the markdown menu entries for the current context.
 --- Returns an empty list when the integration (or every sub-entry) is disabled,
 --- so a host can safely `vim.list_extend` it unconditionally.

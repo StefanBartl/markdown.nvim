@@ -323,6 +323,13 @@ GitHub-only, not duplicated into this helpfile.
   list) or `.submenu()` (a single fly-out), and compose into your menu, e.g.
   `require("menu").open(vim.list_extend(md.items(), require("menus.custom")))`.
 
+`integrations`                              *markdown.nvim-config-integrations*
+  Which hosts may drive this plugin. >
+    integrations = { ui_menu = true }
+<
+  `ui_menu = false` keeps ui.nvim's right-click menu (`ui.menu`) from composing
+  the Markdown fly-out; `items()`/`submenu()` still work for other hosts.
+
 `refs`                                             *markdown.nvim-config-refs*
   Keep in-document `[text](#anchor)` links and the TOC in sync when headings
   are renamed (see |:Markdown-refs|). >

@@ -49,6 +49,13 @@ local DEFAULTS = {
     refs = true, -- Sync References
   },
 
+  -- Which hosts may drive this plugin. `ui_menu = false` keeps ui.nvim's
+  -- right-click menu (ui.menu) from composing the Markdown fly-out; the
+  -- entries stay available to any other host through `menu`/`items()`.
+  integrations = {
+    ui_menu = true,
+  },
+
   -- Heading navigation (`<C-p>`/`<C-f>`, `[[`/`]]`).
   --   fences = true  -> those keys also stop on a fenced block's opening and
   --                     closing delimiter line, the way they stop on a

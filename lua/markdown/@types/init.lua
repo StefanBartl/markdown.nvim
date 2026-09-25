@@ -125,6 +125,9 @@
 ---@field toc boolean # Include the Insert/Refresh TOC entry. Default true.
 ---@field refs boolean # Include the Sync References entry. Default true.
 
+---@class Mkdn.IntegrationsConfig
+---@field ui_menu boolean # Let ui.nvim's right-click menu (`ui.menu`) compose the Markdown fly-out. Default true.
+
 ---@class Mkdn.LinkHL
 ---@field underline boolean # Keep the treesitter underline on inline-link URLs/labels. Default false.
 
@@ -200,6 +203,7 @@
 ---@field fenced_scope? Mkdn.FencedScope # Treat markdown-family fenced blocks as their own document scope.
 ---@field tableview? Mkdn.TableViewConfig # Default TableView float style ("markdown" | "box").
 ---@field menu? Mkdn.MenuConfig # nvzone/menu integration entries (opt-out).
+---@field integrations? Mkdn.IntegrationsConfig # Which hosts may drive this plugin (`ui_menu`).
 ---@field link_hl? Mkdn.LinkHL # Inline-link highlight tweaks (underline on long wrapped URLs).
 ---@field refs? Mkdn.RefsConfig # Keep `#anchor` links + TOC in sync when headings are renamed.
 ---@field toc? Mkdn.TocConfig # TOC header/marker/level defaults for `<leader>toc` / `:Markdown toc`.
