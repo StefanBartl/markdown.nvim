@@ -77,6 +77,7 @@ local TOP_LEVEL_OPTS = {
   "check_heading_gaps",
   "underline_headings",
   "menu",
+  "integrations",
   "nav",
   "heading_format",
   "keymaps",
@@ -110,6 +111,7 @@ local NESTED_OPTS = {
   features = { "disable", "enable", "just_enable" },
   underline_headings = { "char" },
   menu = { "enable", "fold", "toc", "refs" },
+  integrations = { "ui_menu" },
   nav = { "fences" },
   heading_format = {
     "strip_emphasis",

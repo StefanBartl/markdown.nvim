@@ -71,6 +71,12 @@ require("markdown").setup({
     refs   = true, -- Sync References
   },
 
+  -- Which hosts may drive this plugin. `ui_menu = false` keeps ui.nvim's
+  -- right-click menu from composing the Markdown fly-out.
+  integrations = {
+    ui_menu = true,
+  },
+
   -- Per-binding keymap control by id (see docs/keymaps.md "Remapping / disabling"
   -- and docs/BINDINGS.lua). false disables; a string or { lhs, mode } remaps.
   keymaps = {},

@@ -14,6 +14,16 @@ menu = {
 }
 ```
 
+`integrations.ui_menu = false` keeps ui.nvim's right-click menu (`ui.menu`)
+from showing the fly-out, while `items()`/`submenu()` still work for any other
+host; the module also answers `require("markdown.integrations.menu").enabled()`,
+which is what `ui.menu` asks first (`false` when either that switch or
+`menu.enable` is off).
+
+```lua
+integrations = { ui_menu = true }
+```
+
 Wire it into your menu dispatcher — get a ready entry list (or a `Markdown ▸`
 submenu) and compose it with your own menu:
 

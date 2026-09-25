@@ -228,6 +228,15 @@ return function(H)
     require("markdown.config").setup({})
     local sub = menu.submenu()
     ok(sub and sub.name and #sub.items > 0, "menu.submenu() returns a non-empty fly-out entry")
+
+    -- ui.menu asks `enabled()` first: on by default, off with either switch.
+    eq(menu.enabled(), true, "menu.enabled(): true by default")
+    require("markdown.config").setup({ integrations = { ui_menu = false } })
+    eq(menu.enabled(), false, "menu.enabled(): integrations.ui_menu=false")
+    ok(#menu.items() > 0, "integrations.ui_menu=false leaves items() to other hosts")
+    require("markdown.config").setup({ menu = { enable = false } })
+    eq(menu.enabled(), false, "menu.enabled(): menu.enable=false")
+    require("markdown.config").setup({})
   end
 
   -- ===========================================================================
