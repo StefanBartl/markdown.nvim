@@ -52,7 +52,9 @@ end
 local function run_on_files(resolved, ops, dry_run)
   local total_changed, files_touched, errors = 0, 0, {}
   for _, path in ipairs(resolved.paths) do
-    local changed, err = body_format.format_file(path, ops, { dry_run = dry_run })
+    -- format_path, not format_file directly: a matched path may already be
+    -- open in a buffer with unsaved edits, and those must win over disk.
+    local changed, err = body_format.format_path(path, ops, { dry_run = dry_run })
     if changed == nil then
       errors[#errors + 1] = err
     else

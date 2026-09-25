@@ -72,6 +72,34 @@ return function(H)
     ok(res.paths[1]:match("target%.md$") ~= nil, "resolve('cfile'): the file under the cursor")
   end
 
+  -- A file-scope run (cwd/cfile/explicit path) must prefer an already-loaded
+  -- buffer over the file on disk: reading stale disk content and writing it
+  -- back would silently clobber whatever unsaved edits sit in that buffer.
+  do
+    local root = H.tmproot("mdnvim_format_bufpref_spec")
+    local path = root .. "/target.md"
+    vim.fn.writefile({ "plain saved content" }, path)
+
+    local bufnr = vim.fn.bufadd(path)
+    vim.fn.bufload(bufnr)
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "**unsaved bold**" })
+
+    commands.execute({ "format", "strip-bold", "scope=" .. root })
+
+    eq(
+      vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)[1],
+      "unsaved bold",
+      "the open buffer's unsaved content was formatted"
+    )
+    eq(
+      vim.fn.readfile(path)[1],
+      "plain saved content",
+      "the stale on-disk copy was never read or written"
+    )
+
+    vim.api.nvim_buf_delete(bufnr, { force = true })
+  end
+
   -- ── :Markdown format, end to end through the command dispatcher ──────────
 
   -- Default scope (buffer), via commands.execute (feature-gated dispatch).

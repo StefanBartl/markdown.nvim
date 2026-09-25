@@ -142,6 +142,42 @@ return function(H)
     eq(out[5], "1. ordered stays", "ordered marker untouched")
   end
 
+  -- A thematic break (`* * *`, `***`) must never be reparsed as a bullet
+  -- item -- turning it into `- * *` would swap a horizontal rule for a
+  -- completely different line.
+  do
+    local buf = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "* * *",
+      "***",
+      "* * * *",
+      "* real item",
+    })
+    body_format.format_buffer(buf, { "normalize-list-markers" })
+    local out = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    eq(out[1], "* * *", "spaced thematic break untouched")
+    eq(out[2], "***", "bare thematic break untouched")
+    eq(out[3], "* * * *", "longer spaced thematic break untouched")
+    eq(out[4], "- real item", "a genuine bullet item is still normalized")
+  end
+
+  -- ── FENCE_PAT: a fence needs 3+ of the *same* character ───────────────────
+
+  do
+    local buf = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "`~~", -- not a real fence: mixed characters
+      "**bold**",
+    })
+    local changed = body_format.format_buffer(buf, { "strip-bold" })
+    eq(changed, 1, "a mixed backtick/tilde run does not open a fence")
+    eq(
+      vim.api.nvim_buf_get_lines(buf, 0, -1, false)[2],
+      "bold",
+      "the following prose line was still processed"
+    )
+  end
+
   -- ── dry-run: reports the count, writes nothing ────────────────────────────
 
   do
