@@ -44,6 +44,7 @@ local FEATURES = {
   "table_wrap",
   "hover",
   "headings",
+  "format",
 }
 
 local FEATURE_SET = {}

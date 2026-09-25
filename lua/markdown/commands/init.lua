@@ -36,6 +36,7 @@ local commands = {
   image = require("markdown.commands.image").run,
   export = require("markdown.commands.export").run,
   headings = require("markdown.commands.headings").run,
+  format = require("markdown.commands.format").run,
   headline_spacing = function()
     local bufnr = vim.api.nvim_get_current_buf()
     require("markdown.core.headline_spacing").apply_headl_separators(bufnr, { notify = true })
@@ -95,6 +96,10 @@ local sub_complete = {
   image = { mod = "markdown.commands.image" },
   export = { mod = "markdown.commands.export" },
   headings = { mod = "markdown.commands.headings", nested = true },
+  -- `nested = true`: `format` takes an open-ended run of ops/flags, so every
+  -- slot after the first should keep offering the same candidate set (like
+  -- `table format`'s own multi-slot completion, one level up).
+  format = { mod = "markdown.commands.format", nested = true },
 }
 
 --- Completion for `:Markdown`: subcommand names, then delegates to the

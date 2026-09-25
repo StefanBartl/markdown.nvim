@@ -97,6 +97,8 @@ local specs = {
   "toc_config_spec.lua",
   "headings_spec.lua",
   "heading_format_spec.lua",
+  "body_format_spec.lua",
+  "format_command_spec.lua",
   "nav_fences_spec.lua",
   "wrap_bold_spec.lua",
   "handler_spec.lua",

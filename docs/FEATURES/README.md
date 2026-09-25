@@ -11,6 +11,7 @@ already have.
 | **Headings** | A generated and updatable table of contents, folding by level, enforced blank-dash-blank spacing between sections, text normalization (emphasis markers, whitespace, capitalization), and Setext-style underline decoration |
 | **Tables** | The GFM formatter and aligner, width-limited wrapping and unwrapping, row and column folding, CSV round-trip, linting, flavor conversion, and a floating table browser |
 | **Links and references** | Scan, list and open in a picker; create the files a link points at; sync reference-style anchors; flag dead links. `<img src>` and `<a href>` count as links everywhere |
+| **Body-text formatting** | Strip bold/strikethrough/all-emphasis markers, collapse blank-line runs, trim trailing whitespace, normalize bullet markers — over a buffer, a file, or every `*.md` below a directory |
 | **Under the cursor** | One dispatcher over anchors, images, URLs, files and PDFs — and a hover float that previews what the target actually is |
 | **Fenced-block scope** | A fenced code block treated as its own sub-document, so the commands above operate inside it |
 | **Delegated rendering** | Preview, render and PDF export handed to render-markdown.nvim, mdview.nvim, images.nvim and pdfport.nvim — whichever are installed |
@@ -31,9 +32,9 @@ relevant config. For the full default-key list see
   browser/export, width-limited wrapping (`:MDTable*`)
 - [Links and references](LINKS-AND-REFERENCES.md) — link wrap, scan,
   diagnostics, anchor sync (`refs`), filesystem creation from links
-- [Editing and handlers](EDITING-AND-HANDLERS.md) — bold wrap, the
-  cursor-action dispatcher (anchors/images/URLs/files/PDFs), image
-  paste/screenshot
+- [Editing and handlers](EDITING-AND-HANDLERS.md) — body-text formatting
+  (`:Markdown format`), bold wrap, the cursor-action dispatcher
+  (anchors/images/URLs/files/PDFs), image paste/screenshot
 - [Highlighting and UI](HIGHLIGHTING-AND-UI.md) — fenced/inline code,
   blockquotes, link underline, fenced-block scope
 - [Integrations](INTEGRATIONS.md) — render-markdown.nvim, mdview.nvim,

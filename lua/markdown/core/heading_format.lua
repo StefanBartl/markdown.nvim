@@ -17,6 +17,8 @@
 local M = {}
 
 local api = vim.api
+local inline_segment = require("markdown.core.inline_segment")
+local emphasis = require("markdown.core.emphasis")
 
 ---@class Mkdn.HeadingFormatConfig
 ---@field strip_emphasis? boolean # Drop `**`/`*`/`__`/`_`/`~~` markers from the text. Default true.
@@ -86,61 +88,12 @@ end
 
 --- Split heading text into alternating plain and protected segments.
 ---
---- Protected: code spans (a backtick run and its matching close), the `](…)`
---- target of an inline link or image, and `<…>` autolinks / raw HTML tags. A
---- segment is never split or merged afterwards, so every later rule can be
---- written as a plain string transform over one segment.
+--- Delegates to core.inline_segment (shared with core.body_format); see that
+--- module for what counts as protected (code spans, link/image targets,
+--- autolinks/raw HTML).
 ---@param s string
 ---@return Mkdn.HeadingFormat.Segment[]
-local function segment(s)
-  ---@type Mkdn.HeadingFormat.Segment[]
-  local segs = {}
-  local plain = {}
-  local i, n = 1, #s
-
-  local function flush()
-    if #plain > 0 then
-      segs[#segs + 1] = { text = table.concat(plain), verbatim = false }
-      plain = {}
-    end
-  end
-
-  local function take(text)
-    flush()
-    segs[#segs + 1] = { text = text, verbatim = true }
-    i = i + #text
-  end
-
-  while i <= n do
-    local c = s:sub(i, i)
-    local before = i
-
-    if c == "`" then
-      local _, run_end = s:find("^`+", i)
-      local fence = s:sub(i, run_end)
-      -- `true` for a plain find: a backtick run is not a pattern, and the
-      -- closing run must match the opening one exactly.
-      local close_start = s:find(fence, run_end + 1, true)
-      if close_start then take(s:sub(i, close_start + #fence - 1)) end
-    elseif c == "]" and s:sub(i + 1, i + 1) == "(" then
-      -- `%b()` so a target with nested parens (a Wikipedia URL, say) is taken
-      -- whole rather than cut at the first `)`.
-      local target = s:match("^%b()", i + 1)
-      if target then take("]" .. target) end
-    elseif c == "<" then
-      local tag = s:match("^<[^<>%s][^<>]*>", i)
-      if tag then take(tag) end
-    end
-
-    if i == before then
-      plain[#plain + 1] = c
-      i = i + 1
-    end
-  end
-
-  flush()
-  return segs
-end
+local function segment(s) return inline_segment.segment(s) end
 
 -- ---------------------------------------------------------------------------
 -- rules
@@ -153,30 +106,12 @@ end
 --- `~/path`) is left alone. `_` is the opposite case —
 --- `foo_bar` is an identifier, and GitHub does not emphasize an intra-word
 --- underscore either — so only runs sitting on a word boundary are dropped.
+---
+--- Delegates to core.emphasis.strip_all (shared with core.body_format's
+--- `strip-emphasis` op).
 ---@param s string
 ---@return string
-local function strip_emphasis(s)
-  s = (s:gsub("%*+", ""))
-  s = (s:gsub("~~+", ""))
-
-  local src = s
-  s = (
-    src:gsub("()(_+)()", function(a, run, b)
-      local before = a > 1 and src:sub(a - 1, a - 1) or ""
-      local after = src:sub(b, b)
-      local opens = (before == "" or before:match("[%s%p]"))
-        and after ~= ""
-        and not after:match("%s")
-      local closes = (after == "" or after:match("[%s%p]"))
-        and before ~= ""
-        and not before:match("%s")
-      if opens or closes then return "" end
-      return run
-    end)
-  )
-
-  return s
-end
+local function strip_emphasis(s) return emphasis.strip_all(s) end
 
 --- Uppercase the first letter of `word`, unless it already carries an
 --- uppercase letter past the first: `API`, `iPhone`, `GitHub` are spelled the

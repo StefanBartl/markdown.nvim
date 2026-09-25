@@ -313,6 +313,56 @@ heading is renumbered to close the gap). This is the on-demand form of the
 behaviour described under `check_heading_gaps`; `<leader>toc` /
 `:Markdown toc` also run it automatically unless disabled.
 
+## `:Markdown format`
+
+```vim
+:Markdown format strip-bold                          " current buffer
+:Markdown format strip-bold strip-strikethrough       " compose several ops
+:Markdown format strip-emphasis scope=cfile           " the file under the cursor
+:Markdown format collapse-blank-lines scope=cwd       " every *.md below the cwd
+:Markdown format trim-trailing-space scope=docs       " every *.md under a directory
+:Markdown format normalize-list-markers scope=cwd dry-run   " report, don't write
+```
+
+Body-text normalization: ops compose (list several, applied in the order
+given) and every one skips a fenced code block whole, a leading YAML
+front-matter block, and — inside a line — a code span, a link/image's
+`](target)`, and a `<...>` autolink/raw HTML tag.
+
+| Op | Effect |
+| --- | --- |
+| `strip-bold` | Drop `**bold**` / boundary-safe `__bold__` markers; a bare `*italic*` is left alone |
+| `strip-strikethrough` | Drop `~~struck~~` markers |
+| `strip-emphasis` | Drop every `*`/`_`/`~~` marker (bold, italic, and `***both***` together) — see the note below |
+| `collapse-blank-lines` | Runs of 2+ blank lines become 1 |
+| `trim-trailing-space` | Strip trailing whitespace; a genuine two-space hard break is normalized to exactly two spaces, never stripped to zero |
+| `normalize-list-markers` | `*`/`+` bullet markers become `-` |
+
+There is deliberately no standalone `strip-italic`: telling a lone `*x*` apart
+from `**x**` or `***x***` needs a full CommonMark emphasis-run parse, which
+`strip-bold` and `strip-strikethrough` avoid by only ever matching a literal
+doubled delimiter. `strip-emphasis` is the blunt alternative when italic needs
+to go too — it removes everything in one pass rather than guessing.
+
+`scope=` takes the same vocabulary as `links show`/`sanitize` and `list`,
+plus `cfile`:
+
+- `%` / `buffer` (default) — the current buffer
+- `cfile` — the file named under the cursor (like `gf`)
+- `cwd` — every `*.md` file below the working directory
+- any other value — an explicit file, or a directory (recurses the same way
+  `cwd` does)
+
+`dry-run` reports how many lines would change without writing anything —
+worth doing once before a `scope=cwd`/directory run, since (like
+`:Markdown table format scope=cwd`) files are rewritten on disk directly, no
+confirmation prompt.
+
+Distinct from `:Markdown headings format` (heading *text* normalization —
+capitalization, closing hashes) and `:Markdown table format` (the GFM table
+formatter): this command is for body prose and doesn't touch headings or
+tables.
+
 ## `:MDTable*` (width-limited table wrapping)
 
 A separate, opt-in command family (not nested under `:Markdown table`):

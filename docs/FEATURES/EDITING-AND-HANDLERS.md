@@ -1,7 +1,25 @@
 # Editing and cursor-action handlers
 
-Bold-toggling, and the "what does the thing under my cursor mean" dispatcher
-that opens anchors, images, URLs, and files.
+Bold-toggling, body-text normalization, and the "what does the thing under my
+cursor mean" dispatcher that opens anchors, images, URLs, and files.
+
+## Body-text formatting
+
+`:Markdown format` composes ops over a buffer, the file under the cursor, an
+explicit path, or every `*.md` file below a directory: strip bold /
+strikethrough / all-emphasis markers, collapse blank-line runs, trim trailing
+whitespace, normalize bullet markers. A fenced code block, a leading YAML
+front-matter block, and (inside a line) a code span / link target / raw HTML
+tag are always left alone — the same protection `heading_format` gives
+heading text, shared via `core/inline_segment.lua` and `core/emphasis.lua`.
+
+- **Modules:** `core/body_format.lua`, `util/scope.lua`, `commands/format.lua`
+- **Command:** `:Markdown format <op>... [scope=%|cfile|cwd|PATH] [dry-run]`
+  (see [commands.md](../commands.md#markdown-format) for the op table and
+  every scope value)
+- Distinct from heading TEXT normalization (`:Markdown headings format`,
+  below `heading_format`) and the GFM table formatter (`:Markdown table
+  format`, [TABLES.md](TABLES.md)) — this one is body prose only.
 
 ## Bold wrap
 
