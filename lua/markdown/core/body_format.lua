@@ -19,7 +19,50 @@ local emphasis = require("markdown.core.emphasis")
 
 local M = {}
 
-local FENCE_PAT = "^%s*[`~][`~][`~]+%S*%s*$"
+-- A run of 3+ of the same fence character (`` ` `` or `~`), optionally
+-- indented, optionally followed by an info string. A plain `[`~][`~][`~]+`
+-- character-class pattern would also match a nonsense mixed run like "`~~"
+-- as a fence -- Lua patterns can't express "N times the same captured char"
+-- with a quantified back-reference (`%1+` is not valid repetition; only a
+-- fixed count of literal `%1`s is), so the run is captured as one blob and
+-- checked for uniformity in code instead.
+local FENCE_RUN_PAT = "^%s*([`~]+)%S*%s*$"
+
+--- Whether `line` opens/closes a fenced code block: 3+ of the *same*
+--- backtick or tilde character.
+---@param line string
+---@return boolean
+local function is_fence_line(line)
+  local run = line:match(FENCE_RUN_PAT)
+  if not run or #run < 3 then return false end
+  local first = run:sub(1, 1)
+  for i = 2, #run do
+    if run:sub(i, i) ~= first then return false end
+  end
+  return true
+end
+
+--- Whether `line` is a thematic break (`***`, `- - -`, `___`, ...): 3+ of the
+--- same `*`/`-`/`_` character, optionally spaced out, and nothing else.
+--- `normalize-list-markers` must not treat `* * *` as a bullet item -- it
+--- would rewrite a horizontal rule into `- * *`, an entirely different line.
+---@param line string
+---@return boolean
+local function is_thematic_break(line)
+  local body = line:match("^%s*(.-)%s*$")
+  if body == "" then return false end
+  local char = body:sub(1, 1)
+  if char ~= "*" and char ~= "-" and char ~= "_" then return false end
+  local count = 0
+  for c in body:gmatch(".") do
+    if c == char then
+      count = count + 1
+    elseif c ~= " " and c ~= "\t" then
+      return false
+    end
+  end
+  return count >= 3
+end
 
 --- Apply `fn` to every plain (non-protected) segment of `line`.
 ---@param line string
@@ -66,6 +109,7 @@ local LINE_OPS = {
     return out, out ~= line
   end,
   ["normalize-list-markers"] = function(line)
+    if is_thematic_break(line) then return line, false end
     local indent, marker, rest = line:match("^(%s*)([*+])(%s+%S.*)$")
     if not marker then return line, false end
     return indent .. "-" .. rest, true
@@ -93,7 +137,7 @@ M.OPS = {
 local function collapse_blank_lines(lines)
   local out, removed, prev_blank, in_fence = {}, 0, false, false
   for _, line in ipairs(lines) do
-    if line:match(FENCE_PAT) then
+    if is_fence_line(line) then
       in_fence = not in_fence
       out[#out + 1] = line
       prev_blank = false
@@ -132,7 +176,7 @@ local function apply_line_ops(lines, ops)
     if in_front_matter then
       out[idx] = line
       if idx > 1 and line == "---" then in_front_matter = false end
-    elseif line:match(FENCE_PAT) then
+    elseif is_fence_line(line) then
       in_fence = not in_fence
       out[idx] = line
     elseif in_fence then
@@ -204,14 +248,39 @@ function M.format_file(path, ops, opts)
     return nil, string.format("File not readable: %q", path)
   end
 
-  local lines = vim.fn.readfile(path)
+  -- ERR-01: readfile/writefile raise (E484/E482) on a permission error or a
+  -- file that vanished between the filereadable check above and this call
+  -- (mirrors core.link_sanitize.M.file) -- letting that escape here would
+  -- abort a whole `scope=cwd` batch on the first bad file instead of
+  -- reporting it and continuing with the rest.
+  local ok_read, lines = pcall(vim.fn.readfile, path)
+  if not ok_read then return nil, string.format("Failed to read %q", path) end
+
   local out, changed = format_lines(lines, ops)
   if changed > 0 and not opts.dry_run then
-    if vim.fn.writefile(out, path) == -1 then
-      return nil, string.format("Failed to write %q", path)
-    end
+    local ok_write = pcall(vim.fn.writefile, out, path)
+    if not ok_write then return nil, string.format("Failed to write %q", path) end
   end
   return changed, nil
+end
+
+--- Format `path`, preferring an already-loaded buffer over raw file I/O
+--- (mirrors core.link_sanitize.M.path) -- a `scope=cwd`/`cfile`/explicit-path
+--- run must not read stale content off disk and overwrite unsaved edits sitting
+--- in an open buffer for that same file. Never writes the buffer to disk
+--- itself; the modified buffer is left for the user to save, same as
+--- `link_sanitize` does.
+---@param path string
+---@param ops string[]
+---@param opts? { dry_run?: boolean }
+---@return integer|nil changed
+---@return string|nil err
+function M.format_path(path, ops, opts)
+  local bufnr = vim.fn.bufnr(path)
+  if bufnr ~= -1 and api.nvim_buf_is_loaded(bufnr) then
+    return M.format_buffer(bufnr, ops, opts), nil
+  end
+  return M.format_file(path, ops, opts)
 end
 
 return M

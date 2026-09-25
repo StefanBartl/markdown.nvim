@@ -20,6 +20,25 @@ local api = vim.api
 local inline_segment = require("markdown.core.inline_segment")
 local emphasis = require("markdown.core.emphasis")
 
+-- A run of 3+ of the same fence character (`` ` `` or `~`), optionally
+-- indented, optionally followed by an info string. A plain `[`~][`~][`~]+`
+-- character-class pattern would also match a nonsense mixed run like "`~~"
+-- as a fence -- Lua patterns can't express "N times the same captured char"
+-- with a quantified back-reference (`%1+` is not valid repetition; only a
+-- fixed count of literal `%1`s is), so the run is captured as one blob and
+-- checked for uniformity in code instead. Mirrored in core/body_format.lua.
+---@param line string
+---@return boolean
+local function is_fence_line(line)
+  local run = line:match("^%s*([`~]+)%S*%s*$")
+  if not run or #run < 3 then return false end
+  local first = run:sub(1, 1)
+  for i = 2, #run do
+    if run:sub(i, i) ~= first then return false end
+  end
+  return true
+end
+
 ---@class Mkdn.HeadingFormatConfig
 ---@field strip_emphasis? boolean # Drop `**`/`*`/`__`/`_`/`~~` markers from the text. Default true.
 ---@field strip_closing_hashes? boolean # `## Title ##` -> `## Title`. Default true.
@@ -280,15 +299,14 @@ function M.format_range(bufnr, srow, erow, opts)
   -- Fence state has to be read from the top of the buffer: a range starting
   -- inside a fenced block would otherwise look like ordinary prose.
   local in_fence = false
-  local fence_pat = "^%s*[`~][`~][`~]+%S*%s*$"
   for _, line in ipairs(api.nvim_buf_get_lines(bufnr, 0, srow - 1, false)) do
-    if line:match(fence_pat) then in_fence = not in_fence end
+    if is_fence_line(line) then in_fence = not in_fence end
   end
 
   local lines = api.nvim_buf_get_lines(bufnr, srow - 1, erow, false)
   local changed = 0
   for i, line in ipairs(lines) do
-    if line:match(fence_pat) then
+    if is_fence_line(line) then
       in_fence = not in_fence
     elseif not in_fence then
       local out, did = M.format_line(line, opts)

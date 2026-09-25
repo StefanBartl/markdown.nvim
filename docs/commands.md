@@ -355,8 +355,11 @@ plus `cfile`:
 
 `dry-run` reports how many lines would change without writing anything —
 worth doing once before a `scope=cwd`/directory run, since (like
-`:Markdown table format scope=cwd`) files are rewritten on disk directly, no
-confirmation prompt.
+`:Markdown table format scope=cwd`) a matched file is otherwise rewritten
+directly, no confirmation prompt. A matched path already open in a buffer
+with unsaved changes is formatted *in that buffer* instead of on disk (same
+as `links sanitize`) — the edit is never lost, but it also isn't written out
+until you save the buffer yourself.
 
 Distinct from `:Markdown headings format` (heading *text* normalization —
 capitalization, closing hashes) and `:Markdown table format` (the GFM table
