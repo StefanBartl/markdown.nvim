@@ -14,7 +14,7 @@ local M = {}
 function M.create(prefix)
   local ok, lib = pcall(require, "lib.nvim.notify")
   if ok and type(lib) == "table" and type(lib.create) == "function" then
-    local n = lib.create(prefix)
+    local n = lib.create(prefix, { popup = true, source = "markdown" })
     -- Keep markdown.nvim's gated debug (lib's debug always emits).
     local lib_debug = n.debug
     n.debug = function(msg)
