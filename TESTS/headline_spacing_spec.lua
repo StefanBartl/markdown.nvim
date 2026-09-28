@@ -127,4 +127,28 @@ return function(H)
     local lines = get(buf)
     ok(not vim.tbl_contains(lines, "---"), "empty final section: no --- inserted at EOF")
   end
+
+  -- A window scrolled INTO the gap that gets replaced keeps its view: the
+  -- separator replaces the gap in one edit (delete-then-insert clamped the
+  -- topline to the start of the gap, so the text jumped on save).
+  do
+    local buf = H.scratch("markdown")
+    local lines = { "# Title", "", "## One", "" }
+    for i = 1, 30 do
+      lines[#lines + 1] = "content " .. i
+    end
+    vim.list_extend(lines, { "", "", "", "", "", "## Two", "", "Body." }) -- 5 blank lines: too many
+    set(buf, lines)
+    local gap_first = #lines - 7 -- first of the five blank lines
+    local topline = gap_first + 2 -- inside the gap
+    vim.fn.winrestview({ topline = topline, lnum = topline + 3 })
+    eq(vim.fn.getline("."), "## Two", "fixture: cursor on the next heading")
+    eq(vim.fn.winsaveview().topline, topline, "fixture: topline inside the gap")
+
+    hs.apply_headl_separators(buf, { notify = false })
+
+    local v = vim.fn.winsaveview()
+    eq(v.topline, topline, "gap replaced: topline keeps its number")
+    eq(vim.fn.getline("."), "## Two", "gap replaced: cursor stays on its heading")
+  end
 end

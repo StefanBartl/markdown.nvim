@@ -85,36 +85,137 @@ return function(H)
   -- (explicit style="gfm" call bypasses config.toc entirely).
   eq(slug.gfm("Hello World!"), "hello-world", "slug.gfm unaffected by config overrides")
 
-  -- Refreshing an existing TOC must not scroll the window. A TOC sits near the
-  -- top of the file, so a scrolled window's `topline` often lies INSIDE the
-  -- block: the old delete-then-insert clamped it into the deleted range and the
-  -- text jumped on every save (refs.reconcile updates the TOC on BufWritePre).
+  -- Refreshing a TOC must not move the window's view. A TOC sits near the top of
+  -- the file, so a scrolled window's `topline` often lies INSIDE the block: the
+  -- old delete-then-insert clamped it into the deleted range and the text jumped
+  -- on every save (refs.reconcile updates the TOC on BufWritePre). Checked
+  -- against the text under the cursor, not just line numbers.
   config.setup({})
   do
-    local buf = H.scratch("markdown")
-    local lines = { "# Title", "" }
-    for i = 1, 16 do
-      vim.list_extend(lines, { "## Section " .. i, "text", "" })
+    --- Scratch markdown buffer: title + `n` sections, then a generated TOC
+    --- (block at rows 3..3+n+4, sections after it).
+    local function fresh(n)
+      local buf = H.scratch("markdown")
+      local lines = { "# Title", "" }
+      for i = 1, n do
+        vim.list_extend(lines, { "## Section " .. i, "text", "" })
+      end
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+      toc_cmd.update(nil, { separators = false })
+      return buf
     end
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    toc_cmd.update(nil, { separators = false }) -- first call creates the TOC (lines 3..~22)
+    local function find(buf, text)
+      for i, l in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+        if l == text then return i end
+      end
+      error("fixture line not found: " .. text)
+    end
+    local function update() toc_cmd.update(nil, { separators = false }) end
 
-    vim.fn.winrestview({ topline = 10, lnum = 25 })
-    local before = vim.fn.winsaveview()
-    eq(before.topline, 10, "fixture: topline lies inside the TOC block")
+    -- Unchanged TOC: not written at all (no changedtick bump, no undo step) and
+    -- the view stays exactly where it was.
+    do
+      local buf = fresh(16)
+      vim.fn.winrestview({ topline = 10, lnum = 25 })
+      eq(vim.fn.winsaveview().topline, 10, "fixture: topline lies inside the TOC block")
+      local tick = vim.api.nvim_buf_get_changedtick(buf)
+      local seq = vim.fn.undotree().seq_last
+      update()
+      eq(vim.api.nvim_buf_get_changedtick(buf), tick, "unchanged TOC: buffer not written")
+      eq(vim.fn.undotree().seq_last, seq, "unchanged TOC: no undo step")
+      local v = vim.fn.winsaveview()
+      eq(v.topline, 10, "unchanged TOC: topline kept")
+      eq(v.lnum, 25, "unchanged TOC: cursor line kept")
+    end
 
-    -- Same headings: the rewritten block has the same length.
-    toc_cmd.update(nil, { separators = false })
-    local after = vim.fn.winsaveview()
-    eq(after.topline, 10, "TOC refresh keeps topline (same length)")
-    eq(after.lnum, 25, "TOC refresh keeps the cursor line (same length)")
+    -- Block grows by one line: topline inside the block keeps its number, a
+    -- cursor below the block follows its text.
+    do
+      local buf = fresh(16)
+      vim.fn.winrestview({ topline = 10, lnum = 25 })
+      local text = vim.fn.getline(25)
+      vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "## Section 17", "text" })
+      update()
+      local v = vim.fn.winsaveview()
+      eq(v.topline, 10, "block grew: topline inside the block kept")
+      eq(vim.fn.getline("."), text, "block grew: cursor keeps its text")
+      eq(v.lnum, 26, "block grew: cursor moved down by the added line")
+    end
 
-    -- One more heading below the view: the block grows by one line.
-    vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "## Section 17", "text" })
-    toc_cmd.update(nil, { separators = false })
-    after = vim.fn.winsaveview()
-    eq(after.topline, 10, "TOC refresh keeps topline (block grew)")
-    eq(after.lnum, 26, "cursor line below the TOC moves with the inserted line")
+    -- Block shrinks; the view sits entirely below it.
+    do
+      local buf = fresh(16)
+      local at = find(buf, "## Section 3")
+      vim.api.nvim_buf_set_lines(buf, at - 1, at + 2, false, {}) -- drop section 3
+      local row = find(buf, "## Section 12")
+      vim.fn.winrestview({ topline = row - 8, lnum = row })
+      local top = vim.fn.winsaveview().topline
+      local n0 = vim.api.nvim_buf_line_count(buf)
+      update()
+      local v = vim.fn.winsaveview()
+      eq(vim.fn.getline("."), "## Section 12", "block shrank: cursor keeps its text")
+      eq(v.topline, top + (vim.api.nvim_buf_line_count(buf) - n0), "block shrank: topline follows")
+    end
+
+    -- Cursor INSIDE the block: keeps its row when the block changes length.
+    do
+      local buf = fresh(16)
+      vim.fn.winrestview({ topline = 5, lnum = 8 })
+      vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "## Section 17", "text" })
+      update()
+      local v = vim.fn.winsaveview()
+      eq(v.topline, 5, "cursor inside block: topline kept")
+      eq(v.lnum, 8, "cursor inside block: lnum kept")
+    end
+
+    -- A missing blank line above the header is repaired ABOVE the block; a view
+    -- inside the block moves with it.
+    do
+      local buf = fresh(16)
+      vim.api.nvim_buf_set_lines(buf, 1, 2, false, {}) -- remove the blank above the header
+      eq(vim.fn.getline(2), "## Table of content", "fixture: header directly under the title")
+      vim.fn.winrestview({ topline = 3, lnum = 8 })
+      local text = vim.fn.getline(8)
+      update()
+      eq(vim.fn.getline(2), "", "spacing: blank line restored above the header")
+      eq(vim.fn.getline("."), text, "spacing: cursor inside the block keeps its text")
+    end
+
+    -- No TOC yet: inserting one moves everything below it.
+    do
+      local buf = H.scratch("markdown")
+      local lines = { "# Title", "" }
+      for i = 1, 16 do
+        vim.list_extend(lines, { "## Section " .. i, "text", "" })
+      end
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+      local row = find(buf, "## Section 8")
+      vim.fn.winrestview({ topline = row - 5, lnum = row })
+      update()
+      eq(vim.fn.getline("."), "## Section 8", "fresh insert: cursor keeps its text")
+    end
+
+    -- Two windows on one buffer, both restored. (After a split each window is
+    -- only ~10 rows tall, so cursor and topline stay close together.)
+    do
+      local buf = fresh(16)
+      vim.cmd("split")
+      local w2 = vim.api.nvim_get_current_win()
+      vim.fn.winrestview({ topline = 30, lnum = 34 }) -- below the block
+      local text2 = vim.fn.getline(34)
+      vim.cmd("wincmd p")
+      vim.fn.winrestview({ topline = 10, lnum = 14 }) -- inside the block
+      vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "## Section 17", "text" })
+      update()
+      local v1 = vim.fn.winsaveview()
+      eq(v1.topline, 10, "window 1: topline kept")
+      eq(v1.lnum, 14, "window 1: lnum kept")
+      local v2 = vim.api.nvim_win_call(w2, vim.fn.winsaveview)
+      eq(v2.topline, 31, "window 2: topline follows the added line")
+      local now2 = vim.api.nvim_win_call(w2, function() return vim.fn.getline(".") end)
+      eq(now2, text2, "window 2: cursor keeps its text")
+      vim.cmd("only")
+    end
   end
 
   config.setup({})

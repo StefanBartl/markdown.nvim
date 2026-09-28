@@ -33,6 +33,7 @@ local FENCE_LINE = "^%s*[`~][`~][`~]+%S*%s*$"
 
 -- Shared with core.refs so generated anchors and repaired links never drift.
 local slug_mod = require("markdown.core.slug")
+local view_track = require("markdown.util.view_track")
 
 ---@internal
 ---@param line string?
@@ -43,7 +44,8 @@ local function is_empty_line(line) return not line or line:match("^%s*$") ~= nil
 ---@param bufnr integer
 ---@param toc_header_line integer
 ---@param separator_line integer
-local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
+---@param track Mkdn.ViewTrack  edits go through it so windows keep their view
+local function ensure_proper_spacing(bufnr, toc_header_line, separator_line, track)
   local total = vim.api.nvim_buf_line_count(bufnr)
 
   if toc_header_line > 1 then
@@ -61,11 +63,11 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
       local remove_count = empty_before - 1
       local delete_start = toc_header_line - empty_before
       local delete_end = toc_header_line - 2
-      vim.api.nvim_buf_set_lines(bufnr, delete_start, delete_end + 1, false, {})
+      track.set_lines(delete_start, delete_end + 1, {})
       separator_line = separator_line - remove_count
       total = vim.api.nvim_buf_line_count(bufnr)
     elseif empty_before == 0 and toc_header_line > 1 then
-      vim.api.nvim_buf_set_lines(bufnr, toc_header_line - 1, toc_header_line - 1, false, { "" })
+      track.set_lines(toc_header_line - 1, toc_header_line - 1, { "" })
       separator_line = separator_line + 1
       total = vim.api.nvim_buf_line_count(bufnr)
     end
@@ -88,13 +90,13 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
     end
 
     if empty_before_sep == 0 then
-      vim.api.nvim_buf_set_lines(bufnr, before_sep, before_sep, false, { "" })
+      track.set_lines(before_sep, before_sep, { "" })
       separator_line = separator_line + 1
       total = vim.api.nvim_buf_line_count(bufnr)
     elseif extra > 0 then
       local delete_start = before_sep - extra
       local delete_end = before_sep - 1
-      vim.api.nvim_buf_set_lines(bufnr, delete_start, delete_end + 1, false, {})
+      track.set_lines(delete_start, delete_end + 1, {})
       separator_line = separator_line - extra
       total = vim.api.nvim_buf_line_count(bufnr)
     end
@@ -112,49 +114,9 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
     end
 
     if empty_after > 1 then
-      vim.api.nvim_buf_set_lines(bufnr, separator_line + 1, separator_line + empty_after, false, {})
+      track.set_lines(separator_line + 1, separator_line + empty_after, {})
     elseif empty_after == 0 and separator_line < total then
-      vim.api.nvim_buf_set_lines(bufnr, separator_line, separator_line, false, { "" })
-    end
-  end
-end
-
----@internal
---- Snapshot every window showing `bufnr`, for `restore_views`.
----@param bufnr integer
----@return { win: integer, view: table }[]
-local function save_views(bufnr)
-  local saved = {}
-  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
-    saved[#saved + 1] = { win = win, view = vim.api.nvim_win_call(win, vim.fn.winsaveview) }
-  end
-  return saved
-end
-
----@internal
---- Put every window back where `save_views` found it, after the buffer text
---- changed. Lines below `boundary` moved by `delta`; lines at or above it did not.
----
---- Neovim alone cannot do this. A TOC sits near the top of the file, and a
---- window scrolled a few lines down very often has its `topline` *inside* the
---- block being rewritten: deleting the block clamps `topline` to the start of
---- the deleted range and re-inserting it does not restore the old offset, so the
---- text visibly jumps on every save (`refs.reconcile` refreshes the TOC on
---- BufWritePre).
----@param saved { win: integer, view: table }[]
----@param boundary integer  last line (1-based) that was NOT shifted by the edit
----@param delta integer     net change in the buffer's line count
----@return nil
-local function restore_views(saved, boundary, delta)
-  for _, s in ipairs(saved) do
-    if vim.api.nvim_win_is_valid(s.win) then
-      local last = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(s.win))
-      local view = s.view
-      for _, key in ipairs({ "lnum", "topline" }) do
-        if view[key] > boundary then view[key] = view[key] + delta end
-        view[key] = math.max(1, math.min(view[key], last))
-      end
-      pcall(vim.api.nvim_win_call, s.win, function() vim.fn.winrestview(view) end)
+      track.set_lines(separator_line, separator_line, { "" })
     end
   end
 end
@@ -276,9 +238,9 @@ function M.update_markdown_toc(header_line, opts)
     return
   end
 
-  -- With an existing TOC the block is replaced by ONE `nvim_buf_set_lines`
-  -- (below), not deleted and re-inserted: two edits would clamp the window's
-  -- `topline` into the deleted range (see `restore_views`).
+  -- With an existing TOC the block is replaced by ONE `set_lines` (below), not
+  -- deleted and re-inserted, and every edit goes through `view_track`: see that
+  -- module for why the window's `topline` would otherwise slip.
   local insert_at
   if existing_start then
     insert_at = existing_start
@@ -315,21 +277,24 @@ function M.update_markdown_toc(header_line, opts)
   block[#block + 1] = "---"
   block[#block + 1] = ""
 
-  local views = save_views(bufnr)
-  local lines_before = vim.api.nvim_buf_line_count(bufnr)
+  local track = view_track.begin(bufnr)
 
-  -- Replace the old block in place, or insert at `insert_at` when there is none.
-  vim.api.nvim_buf_set_lines(bufnr, insert_at - 1, existing_end or (insert_at - 1), false, block)
+  -- Replace the old block in place, or insert at `insert_at` when there is
+  -- none. An unchanged block is not written at all: `refs.reconcile` refreshes
+  -- the TOC on every save, and a byte-identical rewrite still bumps
+  -- 'changedtick', adds an undo step and lets the window's view slip.
+  local old_block = existing_start
+      and vim.api.nvim_buf_get_lines(bufnr, existing_start - 1, existing_end, false)
+    or nil
+  if not (old_block and vim.deep_equal(old_block, block)) then
+    track.set_lines(insert_at - 1, existing_end or (insert_at - 1), block)
+  end
 
   local toc_header_line = insert_at
   local separator_line = insert_at + #block - 2
-  ensure_proper_spacing(bufnr, toc_header_line, separator_line)
+  ensure_proper_spacing(bufnr, toc_header_line, separator_line, track)
 
-  restore_views(
-    views,
-    existing_end or (insert_at - 1),
-    vim.api.nvim_buf_line_count(bufnr) - lines_before
-  )
+  track.restore()
 end
 
 return M
