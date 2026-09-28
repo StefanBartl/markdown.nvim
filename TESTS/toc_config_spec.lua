@@ -85,5 +85,37 @@ return function(H)
   -- (explicit style="gfm" call bypasses config.toc entirely).
   eq(slug.gfm("Hello World!"), "hello-world", "slug.gfm unaffected by config overrides")
 
+  -- Refreshing an existing TOC must not scroll the window. A TOC sits near the
+  -- top of the file, so a scrolled window's `topline` often lies INSIDE the
+  -- block: the old delete-then-insert clamped it into the deleted range and the
+  -- text jumped on every save (refs.reconcile updates the TOC on BufWritePre).
+  config.setup({})
+  do
+    local buf = H.scratch("markdown")
+    local lines = { "# Title", "" }
+    for i = 1, 16 do
+      vim.list_extend(lines, { "## Section " .. i, "text", "" })
+    end
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    toc_cmd.update(nil, { separators = false }) -- first call creates the TOC (lines 3..~22)
+
+    vim.fn.winrestview({ topline = 10, lnum = 25 })
+    local before = vim.fn.winsaveview()
+    eq(before.topline, 10, "fixture: topline lies inside the TOC block")
+
+    -- Same headings: the rewritten block has the same length.
+    toc_cmd.update(nil, { separators = false })
+    local after = vim.fn.winsaveview()
+    eq(after.topline, 10, "TOC refresh keeps topline (same length)")
+    eq(after.lnum, 25, "TOC refresh keeps the cursor line (same length)")
+
+    -- One more heading below the view: the block grows by one line.
+    vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "## Section 17", "text" })
+    toc_cmd.update(nil, { separators = false })
+    after = vim.fn.winsaveview()
+    eq(after.topline, 10, "TOC refresh keeps topline (block grew)")
+    eq(after.lnum, 26, "cursor line below the TOC moves with the inserted line")
+  end
+
   config.setup({})
 end
