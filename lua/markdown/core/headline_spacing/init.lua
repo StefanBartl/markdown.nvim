@@ -5,6 +5,7 @@
 --- no `---` is inserted for an empty section.
 local notify = require("markdown.util.notify").create("[markdown.core.headline_spacing]")
 
+local view_track = require("markdown.util.view_track")
 local api = vim.api
 local M = {}
 
@@ -113,8 +114,9 @@ end
 --- so it is safe to run after the between-section pass. Idempotent: a no-op
 --- when the document is already correctly formatted.
 ---@param bufnr integer
+---@param track Mkdn.ViewTrack  edits go through it so windows keep their view
 ---@return boolean changed
-local function ensure_final_closer(bufnr)
+local function ensure_final_closer(bufnr, track)
   local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local n = #lines
 
@@ -144,7 +146,7 @@ local function ensure_final_closer(bufnr)
     -- down to a single blank line.
     if n == last_heading then return false end
     if n - last_heading == 1 and lines[last_heading + 1] == "" then return false end
-    api.nvim_buf_set_lines(bufnr, last_heading, n, false, { "" })
+    track.set_lines(last_heading, n, { "" })
     return true
   end
 
@@ -154,7 +156,7 @@ local function ensure_final_closer(bufnr)
   end
 
   -- Replace any trailing blank lines after the content with the separator block.
-  api.nvim_buf_set_lines(bufnr, section_end, n, false, { "", "---", "" })
+  track.set_lines(section_end, n, { "", "---", "" })
   return true
 end
 
@@ -176,26 +178,28 @@ function M.apply_headl_separators(bufnr, opts)
   end
 
   local offset = 0
+  local track = view_track.begin(bufnr)
 
   for _, section in ipairs(sections) do
     local adjusted_end = section.section_end_idx + offset
     local adjusted_next = section.next_heading_idx + offset
 
-    local lines_between = adjusted_next - adjusted_end - 1
-    if lines_between > 0 then
-      api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end + lines_between, false, {})
-      offset = offset - lines_between
-    end
+    -- Whatever sits between the section's content and the next heading is
+    -- replaced by the separator in ONE edit. Deleting it first and inserting
+    -- afterwards would clamp the topline of a window scrolled into that gap.
+    local lines_between = math.max(0, adjusted_next - adjusted_end - 1)
 
     -- A section with content gets the full `[blank]---[blank]` separator;
     -- an empty section just gets a single blank line, no `---`.
     local replacement = section.has_content and { "", "---", "" } or { "" }
-    api.nvim_buf_set_lines(bufnr, adjusted_end, adjusted_end, false, replacement)
-    offset = offset + #replacement
+    track.set_lines(adjusted_end, adjusted_end + lines_between, replacement)
+    offset = offset + #replacement - lines_between
   end
 
   -- Close the final section at EOF as well.
-  local final_changed = ensure_final_closer(bufnr)
+  local final_changed = ensure_final_closer(bufnr, track)
+
+  track.restore()
 
   local fixed = #sections + (final_changed and 1 or 0)
   if notify_enabled then

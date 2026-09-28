@@ -89,6 +89,7 @@ local specs = {
   "link_scan_spec.lua",
   "heading_scan_spec.lua",
   "headline_spacing_spec.lua",
+  "view_track_spec.lua",
   "html_links_spec.lua",
   "link_diagnostics_spec.lua",
   "link_sanitize_spec.lua",
