@@ -107,6 +107,19 @@ return function(H)
     vim.cmd("only")
   end
 
+  -- A big shrink whose range ends between topline and lnum: topline is inside
+  -- the range (kept as-is) while lnum is below it (shifted down by `delta`).
+  -- Remapped independently, that pushed topline below lnum -- an impossible
+  -- view (cursor above the window top). topline must not end up past lnum.
+  do
+    local buf = fixture(60, 15, 52)
+    local track = view_track.begin(buf)
+    track.set_lines(9, 50, { "new" }) -- replaces lines 10..50 (41 lines) by 1
+    track.restore()
+    local v = vim.fn.winsaveview()
+    eq(v.topline <= v.lnum, true, "big shrink across the gap: topline never passes lnum")
+  end
+
   -- A buffer that shrinks below the saved view clamps instead of erroring.
   do
     local buf = fixture(100, 90, 95)

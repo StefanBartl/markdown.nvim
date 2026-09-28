@@ -73,7 +73,12 @@ function M.begin(bufnr)
           local last = api.nvim_buf_line_count(api.nvim_win_get_buf(s.win))
           local view = s.view
           view.lnum = math.max(1, math.min(remap(edits, view.lnum), last))
-          view.topline = math.max(1, math.min(remap(edits, view.topline), last))
+          -- topline and lnum are remapped independently, and a range that
+          -- shrinks by more than the (topline, lnum) gap can push a topline
+          -- that was inside the range (kept as-is) below an lnum that was
+          -- outside it (shifted down): without this, `topline > lnum` is an
+          -- invalid view (cursor above the window top).
+          view.topline = math.max(1, math.min(remap(edits, view.topline), view.lnum, last))
           pcall(api.nvim_win_call, s.win, function() vim.fn.winrestview(view) end)
         end
       end
