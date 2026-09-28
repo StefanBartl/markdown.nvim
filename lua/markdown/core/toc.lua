@@ -119,6 +119,46 @@ local function ensure_proper_spacing(bufnr, toc_header_line, separator_line)
   end
 end
 
+---@internal
+--- Snapshot every window showing `bufnr`, for `restore_views`.
+---@param bufnr integer
+---@return { win: integer, view: table }[]
+local function save_views(bufnr)
+  local saved = {}
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    saved[#saved + 1] = { win = win, view = vim.api.nvim_win_call(win, vim.fn.winsaveview) }
+  end
+  return saved
+end
+
+---@internal
+--- Put every window back where `save_views` found it, after the buffer text
+--- changed. Lines below `boundary` moved by `delta`; lines at or above it did not.
+---
+--- Neovim alone cannot do this. A TOC sits near the top of the file, and a
+--- window scrolled a few lines down very often has its `topline` *inside* the
+--- block being rewritten: deleting the block clamps `topline` to the start of
+--- the deleted range and re-inserting it does not restore the old offset, so the
+--- text visibly jumps on every save (`refs.reconcile` refreshes the TOC on
+--- BufWritePre).
+---@param saved { win: integer, view: table }[]
+---@param boundary integer  last line (1-based) that was NOT shifted by the edit
+---@param delta integer     net change in the buffer's line count
+---@return nil
+local function restore_views(saved, boundary, delta)
+  for _, s in ipairs(saved) do
+    if vim.api.nvim_win_is_valid(s.win) then
+      local last = vim.api.nvim_buf_line_count(vim.api.nvim_win_get_buf(s.win))
+      local view = s.view
+      for _, key in ipairs({ "lnum", "topline" }) do
+        if view[key] > boundary then view[key] = view[key] + delta end
+        view[key] = math.max(1, math.min(view[key], last))
+      end
+      pcall(vim.api.nvim_win_call, s.win, function() vim.fn.winrestview(view) end)
+    end
+  end
+end
+
 ---Inserts or refreshes the TOC block for `header_line`.
 ---@param header_line string?
 ---@param opts? { min_level?: integer, max_level?: integer, marker?: string, anchor_style?: string, anchor_separator?: string, scan_first?: integer, scan_last?: integer, no_frontmatter?: boolean, exclude?: { first: integer, last: integer }[] }
@@ -236,10 +276,12 @@ function M.update_markdown_toc(header_line, opts)
     return
   end
 
+  -- With an existing TOC the block is replaced by ONE `nvim_buf_set_lines`
+  -- (below), not deleted and re-inserted: two edits would clamp the window's
+  -- `topline` into the deleted range (see `restore_views`).
   local insert_at
   if existing_start then
     insert_at = existing_start
-    vim.api.nvim_buf_set_lines(bufnr, existing_start - 1, existing_end, false, {})
   else
     local first_level1_idx = nil
     for i = scan_start, scan_upper do
@@ -273,11 +315,21 @@ function M.update_markdown_toc(header_line, opts)
   block[#block + 1] = "---"
   block[#block + 1] = ""
 
-  vim.api.nvim_buf_set_lines(bufnr, insert_at - 1, insert_at - 1, false, block)
+  local views = save_views(bufnr)
+  local lines_before = vim.api.nvim_buf_line_count(bufnr)
+
+  -- Replace the old block in place, or insert at `insert_at` when there is none.
+  vim.api.nvim_buf_set_lines(bufnr, insert_at - 1, existing_end or (insert_at - 1), false, block)
 
   local toc_header_line = insert_at
   local separator_line = insert_at + #block - 2
   ensure_proper_spacing(bufnr, toc_header_line, separator_line)
+
+  restore_views(
+    views,
+    existing_end or (insert_at - 1),
+    vim.api.nvim_buf_line_count(bufnr) - lines_before
+  )
 end
 
 return M
