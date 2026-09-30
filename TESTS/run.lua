@@ -86,6 +86,7 @@ local specs = {
   "table_fmt_config_spec.lua",
   "html_table_import_spec.lua",
   "blockquote_theme_spec.lua",
+  "blockquote_width_spec.lua",
   "link_scan_spec.lua",
   "heading_scan_spec.lua",
   "headline_spacing_spec.lua",

@@ -371,19 +371,26 @@ GitHub-only, not duplicated into this helpfile.
     text_bg     = "dimm",     -- or a hex color or nil to disable
     text_bold   = true,
     text_italic = false,
+    width       = "block",    -- "block" | "line" | "window" | <columns>
     -- link     = nil  or a highlight group name (overrides all other fields)
   },
 <
 Two separate highlight groups are created:
   `MarkdownBlockquoteMarker`   the `>` token
-  `MarkdownBlockquoteText`     everything after `> `, plus the rest of the
-                               screen line (`hl_eol`) — a VS Code-style
-                               whole-line background, not just the glyphs
+  `MarkdownBlockquoteText`     everything after `> `, plus padding up to
+                               the width set by `width` (below)
 
 Both are applied via a decoration provider (extmarks) at priority 110, which
 wins over Tree-sitter's `@punctuation.special.markdown` (priority 100). Being
 extmark-based (not `matchadd()`), the text region's background can extend
-past the last character to the window edge.
+past the last character.
+
+`width` sets how far the background reaches:
+  `"block"`   (default) as wide as the widest line of the contiguous `>`
+              block — one box per quote; a blank line starts a new block
+  `"line"`    only behind each line's own text
+  `"window"`  to the window edge (`hl_eol`, the former behavior)
+  <number>    at least that many display columns (a longer line is not cut)
 
 `marker_fg` / `text_fg` default to a fixed VS Code-style green, independent
 of the active colorscheme — some themes' `Comment` / `String` groups (the
@@ -394,7 +401,7 @@ then `Comment` / `String`, then this same hex as the last-resort fallback —
 re-derived on every |ColorScheme| event.
 
 `text_bg = "dimm"` (the default) derives a background from `marker_fg` by
-mixing 20% of its color toward black, filled to the window edge.
+mixing 20% of its color toward black, filled as far as `width` says.
 
 DON'T WANT THIS?                          *markdown.nvim-config-blockquote-off*
 This VS Code-style coloring (green marker/text + dimmed whole-line

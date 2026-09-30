@@ -19,14 +19,17 @@ inline `` `code` `` a distinct style instead of blending into prose.
 ## Blockquote highlighting
 
 Two-region blockquote coloring (the `>` marker and the text after it) via a
-decoration provider; VS Code-style dimmed line background by default.
+decoration provider; a dimmed background box behind each quote by default.
 
 - **Module:** `hl_options/hl_groups/blockquote.lua`, orchestrated by
   `hl_options/init.lua`
 - **Config:** `blockquote_hl.marker_fg`/`text_fg` (default a fixed VS
   Code-style green, independent of the active colorscheme; set to `false`
   to derive from the colorscheme instead), `text_bg` (`"dimm"` by default),
-  `text_bold`/`text_italic`. Feature name `hl`.
+  `text_bold`/`text_italic`, and `width` — how far the background reaches:
+  `"block"` (default, as wide as the widest line of the contiguous `>`
+  block), `"line"`, `"window"` (to the window edge) or a column count.
+  Feature name `hl`.
 - Re-derived on every `ColorScheme` event.
 
 ## Inline-link highlighting
