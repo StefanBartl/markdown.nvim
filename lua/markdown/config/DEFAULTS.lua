@@ -175,6 +175,14 @@ local DEFAULTS = {
     -- back to `$REPOS_DIR/x.md` on the next sanitize -- only when the
     -- variable is set, so a real folder named `$x` is left alone.
     repair_env_prefix = true,
+    -- After `wrap_link` the cursor goes where the link still needs typing --
+    -- an empty title, else the path -- and into insert mode
+    -- (lib.nvim.markdown.link_cursor).
+    cursor = {
+      enable = true, -- false: leave the cursor as it was
+      startinsert = true, -- enter insert mode after placing it
+      path_cursor = "end", -- in a filled path: "end" or "start"
+    },
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). ":Markdown links check" always works
     -- manually; mode = "save" also reruns it on BufWritePost.

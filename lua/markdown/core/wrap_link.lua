@@ -5,9 +5,32 @@
 ---   * empty / whitespace -> insert `[]()`, cursor inside `[]`
 ---   * URL or file path    -> `[](target)`, cursor inside `[]`
 ---   * plain text          -> `[text]()`, cursor inside `()`
+---
+--- The cursor placement is `lib.nvim.markdown.link_cursor`'s rule ("go where
+--- something is missing") and it then enters insert mode; `links.cursor`
+--- tunes or disables that.
 local M = {}
 
 local api = vim.api
+
+--- Put the cursor into the link that now sits at (`row`, `col`), both 0-based.
+--- `fallback` is the cursor position used when the shared helper is missing
+--- or declines (the pre-helper behavior: no insert mode).
+---@param row integer
+---@param col integer
+---@param link string
+---@param fallback integer[]  { row(1-based), col(0-based) }
+local function place_cursor(row, col, link, fallback)
+  local cfg = require("markdown.config").get()
+  local opts = cfg.links and cfg.links.cursor or nil
+  -- `enable = false` keeps what this module always did (cursor inside the
+  -- link, normal mode), not the helper's "behind the text".
+  local ok, link_cursor = pcall(require, "lib.nvim.markdown.link_cursor")
+  if ok and not (opts and opts.enable == false) then
+    if link_cursor.place(0, row, col, link, opts) then return end
+  end
+  api.nvim_win_set_cursor(0, fallback)
+end
 
 --- Heuristic: does `text` look like a URL or filesystem path (i.e. belongs in
 --- the `(target)` part) rather than display text?
@@ -57,13 +80,13 @@ function M.wrap_normal()
   -- Empty / no word under cursor: drop an empty template.
   if word == "" or word:match("^%s*$") then
     api.nvim_buf_set_text(bufnr, row - 1, col, row - 1, col, { "[]()" })
-    api.nvim_win_set_cursor(0, { row, col + 1 })
+    place_cursor(row - 1, col, "[]()", { row, col + 1 })
     return
   end
 
   local wrapped, off = build(word)
   api.nvim_buf_set_text(bufnr, row - 1, s - 1, row - 1, e, { wrapped })
-  api.nvim_win_set_cursor(0, { row, (s - 1) + off })
+  place_cursor(row - 1, s - 1, wrapped, { row, (s - 1) + off })
 end
 
 --- Visual mode: wrap the current selection. Reads the live selection bounds via
@@ -98,14 +121,14 @@ function M.wrap_visual()
 
   if trimmed == "" then
     api.nvim_buf_set_text(bufnr, srow, scol, erow, ecol_excl, { "[]()" })
-    api.nvim_win_set_cursor(0, { srow + 1, scol + 1 })
+    place_cursor(srow, scol, "[]()", { srow + 1, scol + 1 })
     return
   end
 
   local wrapped, off = build(trimmed)
   local repl = vim.split(wrapped, "\n", { plain = true })
   api.nvim_buf_set_text(bufnr, srow, scol, erow, ecol_excl, repl)
-  if #repl == 1 then api.nvim_win_set_cursor(0, { srow + 1, scol + off }) end
+  if #repl == 1 then place_cursor(srow, scol, wrapped, { srow + 1, scol + off }) end
 end
 
 return M
