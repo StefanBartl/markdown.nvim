@@ -169,6 +169,12 @@ local DEFAULTS = {
     -- absolute and ~-relative paths are left alone. `:Markdown links
     -- sanitize` runs the same pass on demand.
     sanitize_on_save = true,
+    -- A target rooted in an environment variable (`$REPOS_DIR/x.md`,
+    -- `${VAR}/x.md`, `%VAR%/x.md`) never gets a `./` prefix. With this on, a
+    -- link an older version already broke (`./$REPOS_DIR/x.md`) is repaired
+    -- back to `$REPOS_DIR/x.md` on the next sanitize -- only when the
+    -- variable is set, so a real folder named `$x` is left alone.
+    repair_env_prefix = true,
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). ":Markdown links check" always works
     -- manually; mode = "save" also reruns it on BufWritePost.

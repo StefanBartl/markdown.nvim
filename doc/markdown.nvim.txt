@@ -258,6 +258,7 @@ GitHub-only, not duplicated into this helpfile.
       picker      = "hover_select", -- "hover_select"|"select"|"telescope"|"fzf"
       diagnostics = { mode = "off" }, -- "off" | "save"
       sanitize_on_save = true,       -- normalize link targets before a write
+      repair_env_prefix = true,      -- './$VAR/x' -> '$VAR/x' (variable set)
     }
 <
   `picker`: `"hover_select"` uses lib.nvim's floating hover_select;
@@ -274,6 +275,11 @@ GitHub-only, not duplicated into this helpfile.
   `sanitize_on_save` (default `true`) runs `:Markdown links sanitize` on the
   current buffer before every write. Set to `false` to only ever sanitize
   manually.
+
+  Env-rooted targets (`$VAR/x`, `${VAR}/x`, `%VAR%/x`) never get a `./`
+  prefix. `repair_env_prefix` (default `true`) also strips the `./` an older
+  version wrote in front of one (`./$VAR/x` -> `$VAR/x`), but only when the
+  variable is set.
 
 `open`
   Controls how followed file targets open (see |markdown.nvim-keymaps-handler|
