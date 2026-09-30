@@ -136,6 +136,14 @@ require("markdown").setup({
     -- version already broke (./$REPOS_DIR/x.md) is repaired back on the next
     -- sanitize (only when the variable is set).
     repair_env_prefix = true,
+    -- After the link-wrap keymap (word/selection -> [](url) / [text]()) the
+    -- cursor goes where the link still needs typing -- an empty title, else
+    -- the path -- and into insert mode (lib.nvim.markdown.link_cursor).
+    cursor = {
+      enable = true,       -- false: cursor inside the link, but normal mode
+      startinsert = true,  -- enter insert mode after placing the cursor
+      path_cursor = "end", -- in a filled path: "end" or "start"
+    },
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). :Markdown links check always works
     -- manually; mode = "save" also reruns it on BufWritePost.

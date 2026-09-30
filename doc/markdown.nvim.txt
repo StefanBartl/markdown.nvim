@@ -259,6 +259,7 @@ GitHub-only, not duplicated into this helpfile.
       diagnostics = { mode = "off" }, -- "off" | "save"
       sanitize_on_save = true,       -- normalize link targets before a write
       repair_env_prefix = true,      -- './$VAR/x' -> '$VAR/x' (variable set)
+      cursor = { enable = true, startinsert = true, path_cursor = "end" },
     }
 <
   `picker`: `"hover_select"` uses lib.nvim's floating hover_select;
@@ -280,6 +281,11 @@ GitHub-only, not duplicated into this helpfile.
   prefix. `repair_env_prefix` (default `true`) also strips the `./` an older
   version wrote in front of one (`./$VAR/x` -> `$VAR/x`), but only when the
   variable is set.
+
+  `cursor` (after the link-wrap keymap): the cursor goes where the link still
+  needs typing -- the empty title of `[](url)`, else the path of `[text]()` --
+  and into insert mode. `startinsert = false` only skips insert mode;
+  `enable = false` leaves the cursor inside the link in normal mode.
 
 `open`
   Controls how followed file targets open (see |markdown.nvim-keymaps-handler|

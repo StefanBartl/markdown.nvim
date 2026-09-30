@@ -6,6 +6,12 @@ return function(H)
   local eq = H.eq
   local api = vim.api
   local wrap_link = require("markdown.core.wrap_link")
+  local config = require("markdown.config")
+
+  -- `:startinsert` from inside a `-c luafile` run would leak into every later
+  -- assertion, so the placement checks below run with it off; the insert-mode
+  -- behavior itself is asserted separately at the end via a stubbed vim.cmd.
+  config.setup({ links = { cursor = { startinsert = false } } })
 
   -- Normal mode: empty line under cursor -> bare template, cursor inside [].
   do
@@ -152,4 +158,53 @@ return function(H)
     local line = api.nvim_buf_get_lines(buf, 0, -1, false)[1]
     eq(line, "a[]()b", "wrap_visual: whitespace-only selection -> bare [] ()")
   end
+
+  -- Visual mode: the cursor follows the same rule as the normal-mode cases.
+  do
+    local buf = H.scratch("markdown")
+    api.nvim_buf_set_lines(buf, 0, -1, false, { "go https://x.test now" })
+    api.nvim_win_set_cursor(0, { 1, 3 })
+    vim.cmd("normal! v13l")
+    wrap_link.wrap_visual()
+    eq(api.nvim_win_get_cursor(0)[2], 4, "wrap_visual: URL -> cursor inside [ ]")
+
+    api.nvim_buf_set_lines(buf, 0, -1, false, { "pick this word" })
+    api.nvim_win_set_cursor(0, { 1, 0 })
+    vim.cmd("normal! v3l")
+    wrap_link.wrap_visual()
+    eq(api.nvim_win_get_cursor(0)[2], 7, "wrap_visual: plain text -> cursor inside ( )")
+  end
+
+  -- Insert mode: entered after the cursor is placed, switchable via
+  -- links.cursor. `vim.cmd` is stubbed -- a real `:startinsert` would only take
+  -- effect once this script returns to the main loop.
+  do
+    local issued = {}
+    local real_cmd = vim.cmd
+    local function wrap_once()
+      local buf = H.scratch("markdown")
+      api.nvim_buf_set_lines(buf, 0, -1, false, { "hello" })
+      api.nvim_win_set_cursor(0, { 1, 2 })
+      vim.cmd = function(c) issued[#issued + 1] = c end
+      wrap_link.wrap_normal()
+      vim.cmd = real_cmd
+    end
+
+    config.setup({})
+    wrap_once()
+    eq(issued[1], "startinsert", "default: wrapping a link enters insert mode")
+
+    issued = {}
+    config.setup({ links = { cursor = { startinsert = false } } })
+    wrap_once()
+    eq(#issued, 0, "links.cursor.startinsert = false: stays in normal mode")
+
+    issued = {}
+    config.setup({ links = { cursor = { enable = false } } })
+    wrap_once()
+    eq(#issued, 0, "links.cursor.enable = false: no insert mode")
+    eq(api.nvim_win_get_cursor(0)[2], 8, "…and the cursor still lands where it always did")
+  end
+
+  config.setup({})
 end
