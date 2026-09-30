@@ -240,15 +240,18 @@ require("markdown").setup({
   -- highlight group first, then Comment/String, then this same hex as the
   -- last-resort fallback; re-derived on every ColorScheme event). text_bg =
   -- "dimm" (the default) gives the whole quoted line a VS Code-style
-  -- background — 20% of marker_fg mixed toward black, filled all the way to
-  -- the window edge (not just behind the text characters) — set to a hex
-  -- color or nil to override/disable.
+  -- background — 20% of marker_fg mixed toward black, filled as far as
+  -- `width` says (below) — set to a hex color or nil to override/disable.
+  -- width: "block" (default) = as wide as the widest line of the contiguous
+  -- `>` block, "line" = only behind each line's own text, "window" = to the
+  -- window edge, <n> = at least n display columns.
   blockquote_hl = {
     marker_fg   = "#6A9955", -- color for the > token; false = colorscheme-derived
     text_fg     = "#7EE787", -- text after >; false = colorscheme-derived
     text_bg     = "dimm",
     text_bold   = true,
     text_italic = false,
+    width       = "block",
   },
 
   -- Fenced-code / inline-code highlight override

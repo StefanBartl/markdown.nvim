@@ -323,9 +323,14 @@ local DEFAULTS = {
   blockquote_hl = {
     marker_fg = "#6A9955", -- the `>` token
     text_fg = "#7EE787", -- text after `>`
-    text_bg = "dimm", -- whole line gets a dimmed bg derived from marker_fg
+    text_bg = "dimm", -- quoted text gets a dimmed bg derived from marker_fg
     text_bold = true,
     text_italic = false,
+    -- How far that background reaches: "block" = as wide as the widest line
+    -- of the contiguous `>` block (one box per quote), "line" = only behind
+    -- each line's own text, "window" = to the window edge, <n> = at least n
+    -- display columns.
+    width = "block",
   },
 
   -- Inline-link highlight tweaks. Neovim's markdown treesitter underlines link

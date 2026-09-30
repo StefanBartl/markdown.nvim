@@ -12,6 +12,20 @@ local NS = vim.api.nvim_create_namespace("MarkdownNvimBlockquote")
 -- "marker", the rest (including a second `>`) is "text".
 local PAT_MARKER = "^%s*>%s*"
 
+-- How far the text background reaches (`blockquote_hl.width`):
+--   "block"  (default) the widest line of the contiguous `>` block, so the
+--            quote reads as one box instead of a bar across the whole window
+--   "line"   only as far as each line's own text
+--   "window" to the window edge (the original VS Code-style behaviour)
+--   <n>      at least `n` display columns (a longer line is never cut)
+local DEFAULT_WIDTH = "block"
+local state = { width = DEFAULT_WIDTH }
+
+-- bufnr -> { tick = changedtick, rows = { [row] = block width in columns } }.
+-- The decoration provider asks once per visible line on every redraw; the
+-- block is only scanned on the first ask for a row after the buffer changed.
+local block_cache = {}
+
 local function dim_bg(fg)
   local r = tonumber(fg:sub(2, 3), 16) or 0x6A
   local g = tonumber(fg:sub(4, 5), 16) or 0x99
@@ -48,8 +62,59 @@ local function theme_text_fg()
   return pick_group_fg({ "@markup.quote.markdown", "@text.quote", "String" }, "#7EE787")
 end
 
+---@param v any
+---@return "block"|"line"|"window"|integer
+local function normalize_width(v)
+  if v == "block" or v == "line" or v == "window" then return v end
+  if type(v) == "number" and v >= 0 then return math.floor(v) end
+  return DEFAULT_WIDTH
+end
+
+---@param bufnr integer
+---@param row integer 0-indexed
+---@return string|nil
+local function quote_line(bufnr, row)
+  local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1]
+  if line and line:find(PAT_MARKER) then return line end
+  return nil
+end
+
+--- Display width of the widest line in the contiguous blockquote block that
+--- contains `row` (a blank line or any non-`>` line ends a block).
+---@param bufnr integer
+---@param row integer 0-indexed, must be a quote line
+---@return integer
+local function block_width(bufnr, row)
+  local tick = vim.api.nvim_buf_get_changedtick(bufnr)
+  local cache = block_cache[bufnr]
+  if not cache or cache.tick ~= tick then
+    cache = { tick = tick, rows = {} }
+    block_cache[bufnr] = cache
+  end
+  if cache.rows[row] then return cache.rows[row] end
+
+  local first, last = row, row
+  while first > 0 and quote_line(bufnr, first - 1) do
+    first = first - 1
+  end
+  local count = vim.api.nvim_buf_line_count(bufnr)
+  while last < count - 1 and quote_line(bufnr, last + 1) do
+    last = last + 1
+  end
+
+  local width = 0
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, first, last + 1, false)) do
+    width = math.max(width, vim.fn.strdisplaywidth(line))
+  end
+  for r = first, last do
+    cache.rows[r] = width
+  end
+  return width
+end
+
 local function set_hl(hl)
   local marker_fg = hl.marker_fg or hl.fg or theme_marker_fg()
+  state.width = normalize_width(hl.width)
 
   local text_bg = nil
   if hl.text_bg == "dimm" then
@@ -86,9 +151,10 @@ local function is_blockquote_ft(bufnr)
 end
 
 --- Place the marker/text extmarks for buffer line `row` (0-indexed), if it is
---- a blockquote line. The text extmark uses `hl_eol = true`, so its background
---- fills the rest of the screen line past the last character — a VS Code-style
---- whole-line background, not just a highlight behind the actual text glyphs.
+--- a blockquote line. How far the background reaches past the last character
+--- is `blockquote_hl.width`: `"window"` uses `hl_eol` (to the window edge),
+--- `"block"`/`<n>` pad with highlighted spaces up to the block's widest line /
+--- `n` columns via an end-of-line virtual text, `"line"` adds nothing.
 ---@param bufnr integer
 ---@param row integer 0-indexed
 function M.highlight_line(bufnr, row)
@@ -120,14 +186,38 @@ function M.highlight_line(bufnr, row)
     priority = PRIORITY,
     strict = false,
   })
+  local mode = state.width
+  if mode == "window" then
+    vim.api.nvim_buf_set_extmark(bufnr, NS, row, marker_end, {
+      end_row = row + 1,
+      end_col = 0,
+      hl_group = GROUP_TEXT,
+      hl_eol = true, -- extend the background past the text to the window edge
+      priority = PRIORITY,
+      strict = false,
+    })
+    return
+  end
+
   vim.api.nvim_buf_set_extmark(bufnr, NS, row, marker_end, {
-    end_row = row + 1,
-    end_col = 0,
+    end_col = #line,
     hl_group = GROUP_TEXT,
-    hl_eol = true, -- extend the background past the text to the window edge
     priority = PRIORITY,
     strict = false,
   })
+
+  local target = mode == "line" and 0
+    or (type(mode) == "number" and mode or block_width(bufnr, row))
+  local pad = target - vim.fn.strdisplaywidth(line)
+  if pad > 0 then
+    vim.api.nvim_buf_set_extmark(bufnr, NS, row, #line, {
+      virt_text = { { string.rep(" ", pad), GROUP_TEXT } },
+      virt_text_pos = "eol",
+      hl_mode = "combine",
+      priority = PRIORITY,
+      strict = false,
+    })
+  end
 end
 
 -- Registered once: highlighting itself is driven by a decoration provider
@@ -151,11 +241,17 @@ function M.apply(opts)
   ensure_decoration_provider()
 end
 
---- No-op: highlighting no longer needs per-buffer FileType/BufEnter tracking
---- (see `ensure_decoration_provider`). Kept so `hl_options/init.lua` doesn't
---- need to change its call sequence (it still passes the augroup id).
----@param _augroup integer
----@diagnostic disable-next-line: unused-local
-function M.setup_autocmds(_augroup) end
+--- Highlighting needs no per-buffer FileType/BufEnter tracking (see
+--- `ensure_decoration_provider`); the only autocmd is the wipe cleanup of the
+--- block-width cache.
+---@param augroup integer
+function M.setup_autocmds(augroup)
+  -- Only the width cache needs tracking: drop a buffer's entry when it goes away.
+  vim.api.nvim_create_autocmd("BufWipeout", {
+    group = augroup,
+    desc = "[markdown.nvim] blockquote: drop the block-width cache of a wiped buffer",
+    callback = function(ev) block_cache[ev.buf] = nil end,
+  })
+end
 
 return M

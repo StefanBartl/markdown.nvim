@@ -61,9 +61,11 @@ return function(H)
   bq.apply(config.get())
 
   -- highlight_line: per-line extmark placement (what the decoration provider
-  -- calls on every redraw). The text extmark must use hl_eol so the
-  -- background fills past the last character to the window edge, VS
-  -- Code-style, instead of stopping behind the actual text glyphs.
+  -- calls on every redraw). With `width = "window"` the text extmark must
+  -- use hl_eol so the background fills past the last character to the window
+  -- edge, VS Code-style (the default `"block"` is covered by
+  -- blockquote_width_spec.lua).
+  bq.apply({ blockquote_hl = { width = "window" } })
   local api = vim.api
   local ns = api.nvim_create_namespace("MarkdownNvimBlockquote")
   local buf = api.nvim_create_buf(false, true)
