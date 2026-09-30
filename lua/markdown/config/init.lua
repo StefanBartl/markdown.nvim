@@ -138,7 +138,7 @@ local NESTED_OPTS = {
     "selective_reflow",
   },
   tableview = { "style" },
-  links = { "picker", "sanitize_on_save", "diagnostics" },
+  links = { "picker", "sanitize_on_save", "repair_env_prefix", "diagnostics" },
   ["links.diagnostics"] = { "mode" },
   list = { "picker" },
   hover = {

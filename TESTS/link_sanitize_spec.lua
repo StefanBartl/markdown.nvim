@@ -42,6 +42,41 @@ return function(H)
     eq(c, false, "reports no change: " .. t)
   end
 
+  -- ── env-rooted targets: never get a ./ prefix ──
+  vim.env.MDNVIM_TEST_ROOT = "/some/root"
+  local env_targets = {
+    "$MDNVIM_TEST_ROOT/notes/a.md",
+    "${MDNVIM_TEST_ROOT}/notes/a.md",
+    "%MDNVIM_TEST_ROOT%/notes/a.md",
+    "$UNSET_MDNVIM_VAR/notes/a.md", -- rooted even when the variable is unset
+  }
+  for _, t in ipairs(env_targets) do
+    local g, c = sanitize.sanitize_target(t)
+    eq(g, t, "env-rooted target untouched: " .. t)
+    eq(c, false, "env-rooted target reports no change: " .. t)
+  end
+
+  -- ── repair: a ./ an older version put in front of a set variable ──
+  got, changed = sanitize.sanitize_target("./$MDNVIM_TEST_ROOT/notes/a.md")
+  eq(got, "$MDNVIM_TEST_ROOT/notes/a.md", "./$VAR repaired to $VAR")
+  ok(changed, "repair reports changed")
+  got = sanitize.sanitize_target("../${MDNVIM_TEST_ROOT}/notes/a.md")
+  eq(got, "${MDNVIM_TEST_ROOT}/notes/a.md", "../${VAR} repaired")
+  got, changed = sanitize.sanitize_target("./$UNSET_MDNVIM_VAR/a.md")
+  eq(got, "./$UNSET_MDNVIM_VAR/a.md", "unset variable: a real folder named $x is not repaired")
+  eq(changed, false, "unset variable: no change")
+  got = sanitize.sanitize_target("./real/$MDNVIM_TEST_ROOT/a.md")
+  eq(got, "./real/$MDNVIM_TEST_ROOT/a.md", "variable not at the start is left alone")
+
+  -- repair can be switched off
+  local cfg = require("markdown.config").get()
+  local prev_repair = cfg.links.repair_env_prefix
+  cfg.links.repair_env_prefix = false
+  got = sanitize.sanitize_target("./$MDNVIM_TEST_ROOT/notes/a.md")
+  eq(got, "./$MDNVIM_TEST_ROOT/notes/a.md", "repair_env_prefix = false leaves the link alone")
+  cfg.links.repair_env_prefix = prev_repair
+  vim.env.MDNVIM_TEST_ROOT = nil
+
   -- ── sanitize_line: multiple targets on one line, only the relative ones touched ──
   local line = "see [a](rel.md) and [b](https://example.com) and [c](#anchor)"
   local new_line, n = sanitize.sanitize_line(line)

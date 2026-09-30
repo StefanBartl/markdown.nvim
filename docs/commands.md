@@ -40,7 +40,9 @@ Tab-completion works for every level (`:Markdown <Tab>`, `:Markdown table <Tab>`
   become forward slashes and a bare relative path gets a `./` prefix, e.g.
   `[t](doc.md)` → `[t](./doc.md)` and `[t](.\doc\file.md)` → `[t](./doc/file.md)`.
   URLs, `mailto:`/scheme targets, `#anchor` links, absolute paths, and
-  `~`-relative paths are left untouched. Runs automatically before every save
+  `~`-relative and env-rooted (`$VAR/x`, `${VAR}/x`, `%VAR%/x`) paths are left
+  untouched; a `./` an older version put in front of one is repaired
+  (`links.repair_env_prefix`). Runs automatically before every save
   unless `links.sanitize_on_save` is set to `false`.
 
 `show cwd` and `sanitize cwd` walk every `*.md` file under the directory. Once

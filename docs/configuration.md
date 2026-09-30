@@ -128,9 +128,14 @@ require("markdown").setup({
     picker = "hover_select",
     -- Normalize inline-link targets before every write: backslashes become
     -- forward slashes, bare relative paths get a "./" prefix. URLs, anchors,
-    -- absolute and ~-relative targets are left alone. :Markdown links
+    -- absolute, ~-relative and env-rooted ($VAR/...) targets are left alone. :Markdown links
     -- sanitize runs the same pass on demand.
     sanitize_on_save = true,
+    -- A target rooted in an environment variable ($REPOS_DIR/x.md, ${VAR}/x.md,
+    -- %VAR%/x.md) never gets a "./" prefix; with this on, a link an older
+    -- version already broke (./$REPOS_DIR/x.md) is repaired back on the next
+    -- sanitize (only when the variable is set).
+    repair_env_prefix = true,
     -- Dead relative-file links / duplicate heading anchors, via vim.diagnostic
     -- (namespace "markdown_links"). :Markdown links check always works
     -- manually; mode = "save" also reruns it on BufWritePost.

@@ -28,6 +28,7 @@
 ---@field picker Mkdn.LinkPicker # `:Markdown links show` picker backend.
 ---@field diagnostics Mkdn.LinkDiagnosticsConfig # Dead-link / duplicate-anchor checking (see `core.link_diagnostics`).
 ---@field sanitize_on_save boolean # Run `:Markdown links sanitize` on the buffer before every write. Default true.
+---@field repair_env_prefix boolean # Strip a `./`/`../` an older sanitize put in front of an env-rooted target (`./$VAR/x` -> `$VAR/x`); only when the variable is set. Default true.
 
 ---@class Mkdn.ListConfig
 ---@field picker Mkdn.LinkPicker # `:Markdown list` picker backend (same vocabulary as `links.picker`).

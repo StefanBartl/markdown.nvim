@@ -3,13 +3,27 @@
 --- slashes and ensure a relative file path starts with `./` (matching the
 --- style file_refs.lua/refs.lua already produce for retargeted links). URLs,
 --- scheme targets (`mailto:`, a Windows drive letter `C:\...`), anchor-only
---- links (`#foo`), absolute paths, and `~`-relative paths are left alone.
+--- links (`#foo`), absolute paths, `~`-relative paths and env-rooted paths
+--- (`$VAR/...`, `${VAR}/...`, `%VAR%/...`) are left alone.
 --- Shared by `:Markdown links sanitize` and the save-time autocmd.
 local M = {}
 
 -- Mirrors link_scan.lua's fence detection so sanitize never touches a target
 -- written as an example inside a fenced code block.
 local FENCE = "^%s*[`~][`~][`~]"
+
+--- Whether `target` starts with an environment-variable reference: `$VAR`,
+--- `${VAR}` or `%VAR%`. Such a target is rooted by the variable, so a `./`
+--- in front of it would turn it into "a folder literally named `$VAR`" and
+--- break the expansion (`./$REPOS_DIR/x.md` never resolves).
+---@param target string
+---@return boolean
+local function starts_with_env_var(target)
+  return target:match("^%$[%a_][%w_]*") ~= nil
+    or target:match("^%${[%a_][%w_]*}") ~= nil
+    or target:match("^%%[%a_][%w_]*%%") ~= nil
+end
+M.starts_with_env_var = starts_with_env_var
 
 --- Whether `target` should be left completely untouched.
 ---@param target string
@@ -19,7 +33,34 @@ local function is_untouchable(target)
   if target:match("^#") then return true end -- in-document anchor
   if target:match("^~") then return true end -- home-relative
   if target:match("^%a[%w+.-]*:") then return true end -- URL scheme or drive letter (C:\...)
+  if starts_with_env_var(target) then return true end -- `$VAR/...` is already rooted
   return false
+end
+
+--- Name of the variable at the start of an env-rooted target, or nil.
+---@param target string
+---@return string|nil
+local function env_var_name(target)
+  return target:match("^%$([%a_][%w_]*)")
+    or target:match("^%${([%a_][%w_]*)}")
+    or target:match("^%%([%a_][%w_]*)%%")
+end
+
+--- A link broken by an earlier version of this module: `./$VAR/x` or
+--- `../$VAR/x`. The prefix is stripped -- but only when `VAR` is actually
+--- set in the environment, so a real folder that happens to be named `$x`
+--- is never "repaired" away. Opt-out via `links.repair_env_prefix`.
+---@param target string
+---@return string|nil repaired  nil when `target` is not such a link
+local function repair_env_prefix(target)
+  local ok, cfg = pcall(function() return require("markdown.config").get() end)
+  if ok and cfg and cfg.links and cfg.links.repair_env_prefix == false then return nil end
+
+  local rest = target:match("^%.%.?[/\\](.+)$")
+  if not rest or not starts_with_env_var(rest) then return nil end
+  local name = env_var_name(rest)
+  if not name or (vim.env[name] or "") == "" then return nil end
+  return rest
 end
 
 --- Normalize a single link target.
@@ -27,6 +68,11 @@ end
 ---@return string new_target
 ---@return boolean changed
 function M.sanitize_target(target)
+  local repaired = repair_env_prefix(target)
+  if repaired then
+    local fixed = (repaired:gsub("\\", "/"))
+    return fixed, fixed ~= target
+  end
   if is_untouchable(target) then return target, false end
 
   local normalized = (target:gsub("\\", "/"))
