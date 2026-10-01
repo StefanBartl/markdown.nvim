@@ -69,6 +69,23 @@ return function(H)
     "a bare `$VAR` target is env-rooted"
   )
 
+  -- Windows separators: `$VAR\x` and `%VAR%\x` are env-rooted too, `.\$VAR\x` is repaired.
+  eq(
+    sanitize.sanitize_target([[$MDNVIM_TEST_ROOT\notes\a.md]]),
+    [[$MDNVIM_TEST_ROOT\notes\a.md]],
+    "backslash after $VAR: untouched"
+  )
+  eq(
+    sanitize.sanitize_target([[%MDNVIM_TEST_ROOT%\notes\a.md]]),
+    [[%MDNVIM_TEST_ROOT%\notes\a.md]],
+    "backslash after %VAR%: untouched"
+  )
+  eq(
+    sanitize.sanitize_target([[.\$MDNVIM_TEST_ROOT\notes\a.md]]),
+    "$MDNVIM_TEST_ROOT/notes/a.md",
+    "dot-backslash-$VAR repaired, separators normalized"
+  )
+
   -- ── repair: a ./ an older version put in front of a set variable ──
   got, changed = sanitize.sanitize_target("./$MDNVIM_TEST_ROOT/notes/a.md")
   eq(got, "$MDNVIM_TEST_ROOT/notes/a.md", "./$VAR repaired to $VAR")
