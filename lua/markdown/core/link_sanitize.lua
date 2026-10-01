@@ -29,7 +29,7 @@ local function env_var_name(target)
   if not name then
     name, rest = target:match("^%%([%a_][%w_]*)%%(.*)$")
   end
-  if name and (rest == "" or rest:match("^[/]")) then return name end
+  if name and (rest == "" or rest:match("^[/\\]")) then return name end
   return nil
 end
 
@@ -59,7 +59,7 @@ end
 local function repair_env_prefix(target)
   -- Cheap shape test first: this runs for every link target on every save, the
   -- config lookup below only for the rare `./`/`../`-prefixed candidate.
-  local rest = target:match("^%.%.?[/](.+)$")
+  local rest = target:match("^%.%.?[/\\](.+)$")
   local name = rest and env_var_name(rest)
   if not name or (vim.env[name] or "") == "" then return nil end
 
