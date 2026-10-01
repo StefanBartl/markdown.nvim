@@ -157,7 +157,10 @@ end
 --- `n` columns via an end-of-line virtual text, `"line"` adds nothing.
 ---@param bufnr integer
 ---@param row integer 0-indexed
-function M.highlight_line(bufnr, row)
+---@param cap? integer widest the padding may reach, in display columns (the
+---  window's text width when it wraps): padding past it would wrap onto extra
+---  blank screen rows. nil = no cap.
+function M.highlight_line(bufnr, row, cap)
   -- Clear this row's previous extmarks first: nvim_buf_set_extmark below
   -- always creates a new mark rather than reusing one, so without this a
   -- line that stops being a blockquote (e.g. the leading `>` is deleted)
@@ -208,6 +211,7 @@ function M.highlight_line(bufnr, row)
 
   local target = mode == "line" and 0
     or (type(mode) == "number" and mode or block_width(bufnr, row))
+  if cap and target > cap then target = cap end
   local pad = target - vim.fn.strdisplaywidth(line)
   if pad > 0 then
     vim.api.nvim_buf_set_extmark(bufnr, NS, row, #line, {
@@ -229,9 +233,20 @@ local _registered = false
 local function ensure_decoration_provider()
   if _registered then return end
   _registered = true
+  -- Text width of the window being drawn, set in on_win (once per window per
+  -- redraw) and read by every on_line of that window: nil when it does not wrap.
+  local cap = nil
   vim.api.nvim_set_decoration_provider(NS, {
-    on_win = function(_, _, bufnr, _, _) return is_blockquote_ft(bufnr) end,
-    on_line = function(_, _, bufnr, row) M.highlight_line(bufnr, row) end,
+    on_win = function(_, winid, bufnr, _, _)
+      if not is_blockquote_ft(bufnr) then return false end
+      cap = nil
+      if vim.wo[winid].wrap then
+        local info = vim.fn.getwininfo(winid)[1]
+        cap = info and (info.width - info.textoff) or nil
+      end
+      return true
+    end,
+    on_line = function(_, _, bufnr, row) M.highlight_line(bufnr, row, cap) end,
   })
 end
 
