@@ -12,17 +12,30 @@ local M = {}
 -- written as an example inside a fenced code block.
 local FENCE = "^%s*[`~][`~][`~]"
 
---- Whether `target` starts with an environment-variable reference: `$VAR`,
---- `${VAR}` or `%VAR%`. Such a target is rooted by the variable, so a `./`
---- in front of it would turn it into "a folder literally named `$VAR`" and
---- break the expansion (`./$REPOS_DIR/x.md` never resolves).
+--- Name of the environment variable a target is rooted in: `$VAR/...`,
+--- `${VAR}/...` or `%VAR%/...` (nil otherwise). The reference must be the whole
+--- first path segment -- followed by a separator or the end of the target -- so
+--- `$foo.md` (a file) and percent-encoded targets such as `%E2%80%93x.md` are NOT
+--- taken for one. Such a target is rooted by the variable, so a `./` in front of it
+--- would turn it into "a folder literally named `$VAR`" and break the expansion
+--- (`./$REPOS_DIR/x.md` never resolves).
+---@param target string
+---@return string|nil
+local function env_var_name(target)
+  local name, rest = target:match("^%$([%a_][%w_]*)(.*)$")
+  if not name then
+    name, rest = target:match("^%${([%a_][%w_]*)}(.*)$")
+  end
+  if not name then
+    name, rest = target:match("^%%([%a_][%w_]*)%%(.*)$")
+  end
+  if name and (rest == "" or rest:match("^[/]")) then return name end
+  return nil
+end
+
 ---@param target string
 ---@return boolean
-local function starts_with_env_var(target)
-  return target:match("^%$[%a_][%w_]*") ~= nil
-    or target:match("^%${[%a_][%w_]*}") ~= nil
-    or target:match("^%%[%a_][%w_]*%%") ~= nil
-end
+local function starts_with_env_var(target) return env_var_name(target) ~= nil end
 M.starts_with_env_var = starts_with_env_var
 
 --- Whether `target` should be left completely untouched.
@@ -37,15 +50,6 @@ local function is_untouchable(target)
   return false
 end
 
---- Name of the variable at the start of an env-rooted target, or nil.
----@param target string
----@return string|nil
-local function env_var_name(target)
-  return target:match("^%$([%a_][%w_]*)")
-    or target:match("^%${([%a_][%w_]*)}")
-    or target:match("^%%([%a_][%w_]*)%%")
-end
-
 --- A link broken by an earlier version of this module: `./$VAR/x` or
 --- `../$VAR/x`. The prefix is stripped -- but only when `VAR` is actually
 --- set in the environment, so a real folder that happens to be named `$x`
@@ -53,13 +57,14 @@ end
 ---@param target string
 ---@return string|nil repaired  nil when `target` is not such a link
 local function repair_env_prefix(target)
+  -- Cheap shape test first: this runs for every link target on every save, the
+  -- config lookup below only for the rare `./`/`../`-prefixed candidate.
+  local rest = target:match("^%.%.?[/](.+)$")
+  local name = rest and env_var_name(rest)
+  if not name or (vim.env[name] or "") == "" then return nil end
+
   local ok, cfg = pcall(function() return require("markdown.config").get() end)
   if ok and cfg and cfg.links and cfg.links.repair_env_prefix == false then return nil end
-
-  local rest = target:match("^%.%.?[/\\](.+)$")
-  if not rest or not starts_with_env_var(rest) then return nil end
-  local name = env_var_name(rest)
-  if not name or (vim.env[name] or "") == "" then return nil end
   return rest
 end
 

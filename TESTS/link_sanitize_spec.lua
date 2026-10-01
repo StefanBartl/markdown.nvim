@@ -56,6 +56,19 @@ return function(H)
     eq(c, false, "env-rooted target reports no change: " .. t)
   end
 
+  -- The variable must be the whole first segment: a file named `$x.md` and a
+  -- percent-encoded target are plain relative paths and still get their `./`.
+  for _, t2 in ipairs({ "$MDNVIM_TEST_ROOT.md", "%E2%80%93notes.md", "%41%42/x.md" }) do
+    local g, c = sanitize.sanitize_target(t2)
+    eq(g, "./" .. t2, "not an env reference, gets ./: " .. t2)
+    ok(c, "…and reports changed: " .. t2)
+  end
+  eq(
+    sanitize.sanitize_target("$MDNVIM_TEST_ROOT"),
+    "$MDNVIM_TEST_ROOT",
+    "a bare `$VAR` target is env-rooted"
+  )
+
   -- ── repair: a ./ an older version put in front of a set variable ──
   got, changed = sanitize.sanitize_target("./$MDNVIM_TEST_ROOT/notes/a.md")
   eq(got, "$MDNVIM_TEST_ROOT/notes/a.md", "./$VAR repaired to $VAR")
