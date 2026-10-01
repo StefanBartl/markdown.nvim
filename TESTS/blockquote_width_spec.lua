@@ -82,6 +82,33 @@ return function(H)
   eq(m[0].pad, 0, "multibyte: widest line by display width")
   eq(m[1].pad, vim.fn.strdisplaywidth(wide[1]) - vim.fn.strdisplaywidth(wide[2]), "multibyte: pad")
 
+  -- cap: padding never reaches past the window's text width (a wrapping line
+  -- would otherwise spill into extra blank screen rows).
+  do
+    bq.apply({ blockquote_hl = { width = "block", text_bg = "dimm" } })
+    local cbuf = H.scratch("markdown")
+    local clines = { "> short", "> " .. string.rep("x", 60) }
+    vim.api.nvim_buf_set_lines(cbuf, 0, -1, false, clines)
+    for row = 0, 1 do
+      bq.highlight_line(cbuf, row, 30)
+    end
+    local cm = marks_by_row(cbuf)
+    eq(
+      cm[0].pad,
+      30 - vim.fn.strdisplaywidth(clines[1]),
+      "capped: the short line is padded to the cap, not to the 62-column block"
+    )
+    eq(cm[1].pad, 0, "capped: a line wider than the cap gets no padding")
+    for row = 0, 1 do
+      bq.highlight_line(cbuf, row)
+    end
+    eq(
+      marks_by_row(cbuf)[0].pad,
+      vim.fn.strdisplaywidth(clines[2]) - vim.fn.strdisplaywidth(clines[1]),
+      "no cap: back to the block width"
+    )
+  end
+
   -- an edit invalidates the cached block width; a removed `>` loses its marks.
   local _, buf = run("block", { "> aa", "> bbbbbbbb" })
   vim.api.nvim_buf_set_lines(buf, 1, 2, false, { "> b" })
