@@ -69,7 +69,7 @@
 ---@field nav boolean # Scope heading navigation (next/prev, level) to the block.
 ---@field jump boolean # Scope anchor jump to the block.
 ---@field shift boolean # Scope whole-"buffer" heading shift to the block.
----@field fold boolean # Scope folding to the block (stretch; default off).
+---@field fold boolean # Scope folding to the block (default true).
 
 ---@alias Mkdn.FencedScopeProvider "auto"|"color_my_ascii"|"builtin"
 
