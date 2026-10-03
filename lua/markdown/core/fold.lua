@@ -54,7 +54,7 @@ function M.foldexpr(lnum)
 
   local atx = line:match("^%s*(#+)%s+")
   if atx then
-    -- Fenced-scope gating (opt-in via fenced_scope.operations.fold). A `#`-line
+    -- Fenced-scope gating (on by default; gated by fenced_scope.operations.fold). A `#`-line
     -- inside a NON-markdown fenced block is code (e.g. a shell/python comment),
     -- not a heading, so it must not open a fold. Inside a markdown-family fence
     -- it stays a heading (the block is its own sub-document). Zero overhead when
