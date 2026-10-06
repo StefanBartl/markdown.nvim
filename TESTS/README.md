@@ -8,18 +8,21 @@ that is trivially testable without a UI.
 From the repo root:
 
 ```sh
-nvim --headless -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh                  # all specs
+bash scripts/test.sh --file config    # only spec files whose name contains "config"
+bash scripts/test.sh --json ir.json   # also write the machine-readable result
 ```
 
-The runner prints one line per spec and exits non-zero on the first failure
-(`MARKDOWN_TESTS_OK` on success). `run.lua` requires `lib.nvim` and
-`hover.nvim` as sibling checkouts (`../lib.nvim`, `../hover.nvim`, or
-`$LIB_NVIM_PATH`/`$HOVER_NVIM_PATH`) — both are hard runtime dependencies.
-`color_my_ascii.nvim` (`../color_my_ascii.nvim` or
-`$COLOR_MY_ASCII_NVIM_PATH`) is a soft, optional sibling: when present,
-`scope_spec.lua` additionally exercises the real `color_my_ascii` fence API
-backend; when absent, that one block is skipped with a `skip` line and
-everything else still runs.
+The suite is run by [testing.nvim](https://github.com/StefanBartl/testing.nvim)
+(configured in `.testing.lua`: the specs run on `TESTS/harness.lua`, one
+Neovim per spec file). It prints one line per spec and exits non-zero when one
+fails (`MARKDOWN_TESTS_OK` on success). `scripts/test.sh` needs `testing.nvim`,
+`lib.nvim`, `hover.nvim` and `color_my_ascii.nvim` as checkouts, found in this
+order: `$<NAME>_DIR` (for example `$LIB_NVIM_DIR`, `$COLOR_MY_ASCII_NVIM_DIR`),
+`.deps/<name>`, `../<name>`, `stdpath('data')/lazy/<name>`; a missing one is a
+hard failure. `TESTS/minimal_init.lua` puts them on the runtimepath of every
+spec process and registers the `:Markdown` command that `health_spec.lua`
+expects to exist.
 
 ## Layout
 
@@ -48,7 +51,6 @@ everything else still runs.
 | `clipboard_spec.lua` | `util.clipboard`: `M.copy()`'s return value in both the lib.nvim-present and no-lib.nvim (direct `setreg`+round-trip-verified-via-`getreg`) paths, the always-set `*` register, and the recently-fixed regression below. |
 | `fold_prev_spec.lua` | `core.fold_prev` (`zi`): non-markdown no-op, no-heading-above view-restore, ATX heading above, repeated single-hop walking, and the Setext-heading bug regressions below. |
 | `fenced_fix_spec.lua` | `fenced_fix`: the legacy + treesitter highlight-group cascade (`enable_legacy`/`enable_ts` gating, the base-highlight-plus-style override vs. plain-link branch, custom `delimiter_hl`), and `M.setup()`'s opts-merge + auto-apply. |
-| `run.lua`            | Runner: loads every spec, reports results, sets the exit code.  |
 
 ### Bugs found and fixed this round
 
@@ -163,4 +165,4 @@ them manually:
 ## Adding a spec
 
 Create `<name>_spec.lua` returning `function(H) … end` (use `H.eq` / `H.ok` /
-`H.scratch`) and add its filename to the `specs` list in `run.lua`.
+`H.scratch`) in `TESTS/`; it is discovered by name, no list to maintain.
