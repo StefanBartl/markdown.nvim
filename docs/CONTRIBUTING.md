@@ -104,15 +104,17 @@ it to a handler.
 
 ## Tests
 
-`TESTS/` is a headless spec suite over fixture documents.
+`TESTS/` is a headless spec suite over fixture documents, run by
+[testing.nvim](https://github.com/StefanBartl/testing.nvim).
 
 ```
-LIB_NVIM_PATH=/path/to/lib.nvim HOVER_NVIM_PATH=/path/to/hover.nvim \
-  nvim --headless -i NONE -u NONE -c "set rtp+=." -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh
 ```
 
-Exit 0 is a pass. The two paths are how the runner finds the dependencies; the
-hover specs need the second one. [GitHub Actions](../.github/workflows/ci.yml) runs it plus
+Exit 0 is a pass. The script finds testing.nvim, lib.nvim, hover.nvim and
+color_my_ascii.nvim via `$<NAME>_DIR` (for example `$LIB_NVIM_DIR`),
+`.deps/<name>`, a sibling checkout or the plugin manager's directory, and exits
+1 naming all four places when one is missing. [GitHub Actions](../.github/workflows/ci.yml) runs it plus
 stylua and luacheck on every push and pull request to `main`.
 
 ## Workflow
