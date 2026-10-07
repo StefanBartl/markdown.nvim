@@ -342,6 +342,12 @@ local function create_markdown_command()
   })
 end
 
+--- Register the global `:Markdown` dispatcher (idempotent) without needing a
+--- markdown buffer. `:checkhealth markdown` can run before any markdown file
+--- was opened, when the verb would otherwise not exist yet.
+---@return nil
+function M.ensure_global() create_markdown_command() end
+
 --- Create the core commands for `args.buf` (global :Markdown + buffer OpenWith).
 ---@param args table # a FileType autocmd event ({ buf = n }).
 ---@return nil
