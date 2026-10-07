@@ -1,7 +1,8 @@
 ---@module 'markdown.tableview.renderer'
 local M = {}
 
-local hl = vim.highlight
+-- vim.hl replaced vim.highlight (deprecated); older Neovim only has the latter.
+local hl = vim.hl or vim.highlight
 local api = vim.api
 local autocmd = require("lib.nvim.bindings.autocmd")
 local window = require("lib.nvim.window")

@@ -170,7 +170,12 @@ function M.check()
   -- this would re-require the exact module just reported as missing and
   -- raise, aborting the report right after the health.error that was
   -- supposed to explain why (see health_spec's "lib.nvim missing" case).
-  if composer_ok then composer.checkhealth("Markdown") end
+  if composer_ok then
+    -- :Markdown is registered lazily on the first markdown buffer; make sure
+    -- it exists so a health check run before that does not report it missing.
+    pcall(function() require("markdown.bindings.usrcmds").ensure_global() end)
+    composer.checkhealth("Markdown")
+  end
 end
 
 return M

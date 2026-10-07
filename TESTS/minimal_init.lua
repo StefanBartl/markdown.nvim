@@ -79,18 +79,4 @@ for _, name in ipairs(DEPS) do
   vim.opt.rtp:append(found[name])
 end
 
--- Bootstrap for per-file isolation: health_spec.lua asserts that the `:Markdown` verb is
--- registered but never registers it itself. The old single-process runner got it from an earlier
--- spec; a file that runs alone needs it here. Global command only: the buffer-local commands go
--- away with the scratch buffer.
-local boot_ok, boot_err = pcall(function()
-  local boot_buf = vim.api.nvim_create_buf(false, true)
-  require("markdown.config").setup({})
-  require("markdown.bindings.usrcmds").apply({ buf = boot_buf })
-  vim.api.nvim_buf_delete(boot_buf, { force = true })
-end)
-if not boot_ok then
-  io.stderr:write("TESTS/minimal_init.lua: bootstrap failed: " .. tostring(boot_err) .. "\n")
-end
-
 return { root = root, deps = found }
