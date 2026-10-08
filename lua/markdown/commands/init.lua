@@ -47,6 +47,21 @@ local commands = {
   end,
 }
 
+--- Every subcommand name the dispatcher knows, sorted. `bindings/usrcmds.lua` builds the
+--- composer routes of `:Markdown` from this, so a subcommand added to `commands` above is
+--- reachable without a second list to keep in step (`format` once was not: the dispatcher
+--- ran it, `<Tab>` completed it, the docs described it, and the composer answered
+--- "unknown subcommand" because only the route list lacked it). Feature gating is separate.
+---@return string[]
+function M.names()
+  local out = {}
+  for name in pairs(commands) do
+    out[#out + 1] = name
+  end
+  table.sort(out)
+  return out
+end
+
 --- Dispatches a `:Markdown <subcommand> ...` invocation.
 ---@param argv string[]
 ---@param ctx? table  Optional context (e.g. range info) forwarded to the subcommand

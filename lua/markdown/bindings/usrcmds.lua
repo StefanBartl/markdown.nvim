@@ -263,27 +263,10 @@ local function create_mdtable_commands(bufnr)
   })
 end
 
--- :Markdown's subcommands, feature-gated at registration time (matches
--- create_markdown_command()'s own idempotency: :Markdown is only ever
--- registered once per session, on the first buffer that triggers it, so a
+-- :Markdown's subcommands come from `markdown.commands.names()` (the dispatcher's own table) and
+-- are feature-gated at registration time (matches create_markdown_command()'s own idempotency:
+-- :Markdown is only ever registered once per session, on the first buffer that triggers it, so a
 -- feature flag flipped after that point was never live-checked either).
-local SUBCOMMAND_NAMES = {
-  "links",
-  "toc",
-  "gaps",
-  "refs",
-  "table",
-  "render",
-  "preview",
-  "mdview",
-  "create",
-  "scope",
-  "list",
-  "headline_spacing",
-  "image",
-  "export",
-  "headings",
-}
 
 -- What the positional slots of each `:Markdown <sub>` route mean, for the option float. The slots
 -- are generic (`a1`..`a6`, bound by position only; the handler re-reads ctx.raw.fargs), so the
@@ -349,6 +332,10 @@ local SUBARG_DESC = {
     "Action: format (normalize the heading text)",
     rest = "Option: emphasis=, hashes=, whitespace=, punctuation=, capitalize=",
   },
+  format = {
+    "Op to apply, e.g. strip-bold or collapse-blank-lines (Tab lists all)",
+    rest = "More ops, scope=%|cfile|cwd|PATH and dry-run (report only)",
+  },
 }
 
 ---@internal
@@ -412,7 +399,7 @@ local function create_markdown_command()
   end
 
   local routes = {}
-  for _, name in ipairs(SUBCOMMAND_NAMES) do
+  for _, name in ipairs(commands_mod.names()) do
     if enabled(name) then
       local args = {}
       for i = 1, MAX_SUBARGS do
