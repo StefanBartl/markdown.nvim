@@ -52,6 +52,7 @@ expects to exist.
 | `clipboard_spec.lua` | `util.clipboard`: `M.copy()`'s return value in both the lib.nvim-present and no-lib.nvim (direct `setreg`+round-trip-verified-via-`getreg`) paths, the always-set `*` register, and the recently-fixed regression below. |
 | `fold_prev_spec.lua` | `core.fold_prev` (`zi`): non-markdown no-op, no-heading-above view-restore, ATX heading above, repeated single-hop walking, and the Setext-heading bug regressions below. |
 | `fenced_fix_spec.lua` | `fenced_fix`: the legacy + treesitter highlight-group cascade (`enable_legacy`/`enable_ts` gating, the base-highlight-plus-style override vs. plain-link branch, custom `delimiter_hl`), and `M.setup()`'s opts-merge + auto-apply. |
+| `testing_config_spec.lua` | `.testing.lua`: the `fs`, `state`, `process_net` and `deprecation` guards all stay on `error` (the deprecation guard was left on `warn` for a deprecated call that was long gone, so a new one would only have warned), and `tableview/renderer.lua` uses `vim.highlight` only as the fallback of `vim.hl`. |
 
 ### Bugs found and fixed this round
 
