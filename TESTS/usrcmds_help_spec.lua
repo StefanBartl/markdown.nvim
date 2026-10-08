@@ -71,6 +71,35 @@ return function(H)
     end
   end
 
+  -- The six slots of a `:Markdown <sub>` route are generic, so a text has to hold for every action
+  -- typed before it. `:Markdown table view <action> <a3>`: toggle/markdown/box take a scope,
+  -- browser/browsernice take `reopen` (a scope there is ignored), select/close take nothing --
+  -- commands.table's completion is the source of that, and the text has to name both.
+  local function slot_text(sub, slot)
+    for _, route in ipairs(composer.registry().Markdown:spec().routes) do
+      if route.path[1] == sub then return route.args[slot].desc end
+    end
+  end
+  local table_slot3 = slot_text("table", 3)
+  ok(type(table_slot3) == "string", ":Markdown table has a text for its third slot")
+  if type(table_slot3) == "string" then
+    ok(table_slot3:find("scope", 1, true), "table slot 3 names the view scope: " .. table_slot3)
+    ok(
+      table_slot3:find("reopen", 1, true),
+      "table slot 3 names the browser's reopen: " .. table_slot3
+    )
+  end
+  local table_cmd = require("markdown.commands.table")
+  local function offered(action)
+    return table.concat(table_cmd.complete("", "Markdown table view " .. action .. " "), ",")
+  end
+  ok(offered("toggle"):find("%", 1, true), "the scope is offered for toggle")
+  ok(offered("box"):find("cwd", 1, true), "the scope is offered for box")
+  eq(offered("browser"), "reopen", "browser offers only reopen")
+  eq(offered("browsernice"), "reopen", "browsernice offers only reopen")
+  eq(offered("select"), "", "select takes no third argument")
+  eq(offered("close"), "", "close takes no third argument")
+
   local argtypes = require("lib.nvim.bindings.usercmd.composer.argtypes")
   local scope_text = argtypes.get("MARKDOWN_TABLEVIEW_SCOPE").desc
   ok(type(scope_text) == "string" and scope_text ~= "", "MARKDOWN_TABLEVIEW_SCOPE has a text")
