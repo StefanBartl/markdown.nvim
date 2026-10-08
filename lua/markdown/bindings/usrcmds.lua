@@ -147,7 +147,14 @@ local function create_mdtable_commands(bufnr)
     routes = {
       {
         path = {},
-        args = { { name = "name", type = "STRING", enum = { "compact", "docs", "wide" } } },
+        args = {
+          {
+            name = "name",
+            type = "STRING",
+            enum = { "compact", "docs", "wide" },
+            desc = "Width profile from config.table.wrap_profiles",
+          },
+        },
         run = function(ctx) mdtable.set_profile(bufnr, ctx.args.name) end,
       },
     },
@@ -176,7 +183,15 @@ local function create_mdtable_commands(bufnr)
     routes = {
       {
         path = {},
-        args = { { name = "mode", type = "STRING", enum = { "cycle", "left", "center", "right" } } },
+        args = {
+          {
+            name = "mode",
+            type = "STRING",
+            enum = { "cycle", "left", "center", "right" },
+            desc = "Alignment of the column under the cursor",
+            enum_desc = { cycle = "Step to the next alignment: left, center, right" },
+          },
+        },
         run = function(ctx) mdtable.align_cycle(bufnr, ctx.args.mode) end,
       },
     },
@@ -188,7 +203,18 @@ local function create_mdtable_commands(bufnr)
     routes = {
       {
         path = {},
-        args = { { name = "flavor", type = "STRING", enum = { "github", "loose" } } },
+        args = {
+          {
+            name = "flavor",
+            type = "STRING",
+            enum = { "github", "loose" },
+            desc = "How strict the table follows GFM",
+            enum_desc = {
+              github = "Strict GFM: separators of at least 3 dashes, spaced",
+              loose = "Compact separators allowed, no forced minimum",
+            },
+          },
+        },
         run = function(ctx) mdtable.set_flavor(bufnr, ctx.args.flavor) end,
       },
     },
@@ -259,6 +285,81 @@ local SUBCOMMAND_NAMES = {
   "headings",
 }
 
+-- What the positional slots of each `:Markdown <sub>` route mean, for the option float. The slots
+-- are generic (`a1`..`a6`, bound by position only; the handler re-reads ctx.raw.fargs), so the
+-- meaning is per subcommand and, past the first slot, per action typed before it. A number is
+-- the slot; `rest` covers every slot without a text of its own. A subcommand with no entry here
+-- shows up in `composer.help.undocumented(..., { args = true })` (TESTS/usrcmds_help_spec.lua).
+---@type table<string, { [integer]: string, rest: string }>
+local SUBARG_DESC = {
+  links = {
+    "Action: show, create, check or sanitize; a bare path means create",
+    "show/sanitize: scope (%, cwd or a file); create: options or a path",
+    rest = "create: more options (-r, --noignore, --root) and the path",
+  },
+  toc = { rest = "Max level, min=N, max=N, marker=X, --[no-]sep, --[no-]check-gaps" },
+  gaps = { rest = "Not used: gaps takes no arguments" },
+  refs = {
+    "Action: sync (default), check, live or baseline",
+    "live: on, off or toggle; the other actions take none",
+    rest = "Not used: refs takes an action and, for live, a switch",
+  },
+  table = {
+    "Action: view, format, new, mode, tableize or import",
+    "Per action: view mode, option, columns, on/off, separator or source",
+    "view: scope (%, cwd, a path); new: rows; format: more options",
+    rest = "format: more options (header=, cell=, skip=, scope=); else unused",
+  },
+  render = {
+    "Switch: on, off or toggle (default: toggle)",
+    rest = "Not used: render takes a single switch",
+  },
+  preview = {
+    "Action: start, stop or toggle (default: toggle)",
+    rest = "Not used: preview takes a single action",
+  },
+  mdview = {
+    "File to open in mdview; default: the current buffer",
+    rest = "Not used: mdview takes a single file",
+  },
+  create = {
+    "Kind: fs creates the files and folders the links point to",
+    rest = "Not used: create takes a single kind",
+  },
+  scope = {
+    "Switch: on, off, toggle or status (default: toggle)",
+    rest = "Not used: scope takes a single switch",
+  },
+  list = {
+    "What to list: headings (default)",
+    "Scope: % (default), cwd or a file path",
+    rest = "Not used: list takes what and scope",
+  },
+  headline_spacing = { rest = "Not used: headline_spacing takes no arguments" },
+  image = {
+    "Action: paste (default) or screenshot",
+    rest = "Not used: image takes a single action",
+  },
+  export = {
+    "Kind of export: pdf (the only one, default)",
+    "File to export; default: the current buffer",
+    rest = "Not used: export takes a kind and a file",
+  },
+  headings = {
+    "Action: format (normalize the heading text)",
+    rest = "Option: emphasis=, hashes=, whitespace=, punctuation=, capitalize=",
+  },
+}
+
+---@internal
+---@param name string  the subcommand
+---@param slot integer
+---@return string|nil
+local function subarg_desc(name, slot)
+  local texts = SUBARG_DESC[name]
+  return texts and (texts[slot] or texts.rest) or nil
+end
+
 -- How many positional slots each :Markdown route declares. Completion stops at
 -- the last declared slot (composer has no variadic arg), and the deepest
 -- surface here is `:Markdown table format <opt> <opt> ...` — an open-ended run
@@ -315,7 +416,13 @@ local function create_markdown_command()
     if enabled(name) then
       local args = {}
       for i = 1, MAX_SUBARGS do
-        args[i] = { name = "a" .. i, type = "MARKDOWN_SUBARG", optional = true, subcmd = name }
+        args[i] = {
+          name = "a" .. i,
+          type = "MARKDOWN_SUBARG",
+          optional = true,
+          subcmd = name,
+          desc = subarg_desc(name, i),
+        }
       end
       routes[#routes + 1] = {
         path = { name },
@@ -512,6 +619,7 @@ function M.apply_tableview(ev)
   end
 
   composer.register_type("MARKDOWN_TABLEVIEW_SCOPE", {
+    desc = "Tables to show: %, cwd or a path; default: the one at the cursor",
     validate = function(raw) return true, raw, nil end,
     complete = complete_scope,
   })
@@ -567,8 +675,15 @@ function M.apply_tableview(ev)
     routes = { { path = {}, run = function() ui.close() end } },
   })
 
-  local reopen_arg =
-    { { name = "reopen", type = "STRING", optional = true, values = { "reopen" } } }
+  local reopen_arg = {
+    {
+      name = "reopen",
+      type = "STRING",
+      optional = true,
+      values = { "reopen" },
+      desc = "Force a new browser tab instead of reusing the last one",
+    },
+  }
 
   composer.verb("TableViewOpenBrowser", {
     buffer = bufnr,
