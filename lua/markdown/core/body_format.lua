@@ -16,6 +16,7 @@
 local api = vim.api
 local inline_segment = require("markdown.core.inline_segment")
 local emphasis = require("markdown.core.emphasis")
+local disk_lines = require("markdown.util.disk_lines")
 
 local M = {}
 
@@ -253,13 +254,18 @@ function M.format_file(path, ops, opts)
   -- (mirrors core.link_sanitize.M.file) -- letting that escape here would
   -- abort a whole `scope=cwd` batch on the first bad file instead of
   -- reporting it and continuing with the rest.
-  local ok_read, lines = pcall(vim.fn.readfile, path)
+  --
+  -- util.disk_lines keeps the BOM, the CRLF endings and the missing final
+  -- newline of the file: a plain readfile/writefile round trip dropped all
+  -- three, which turned every changed CRLF file into a whole-file diff.
+  local ok_read, lines, meta = pcall(disk_lines.read, path)
   if not ok_read then return nil, string.format("Failed to read %q", path) end
 
   local out, changed = format_lines(lines, ops)
   if changed > 0 and not opts.dry_run then
-    local ok_write = pcall(vim.fn.writefile, out, path)
-    if not ok_write then return nil, string.format("Failed to write %q", path) end
+    if not disk_lines.write(path, out, meta) then
+      return nil, string.format("Failed to write %q", path)
+    end
   end
   return changed, nil
 end
