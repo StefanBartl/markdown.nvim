@@ -208,4 +208,91 @@ return function(H)
     eq(missing_changed, nil, "format_file: unreadable path reports nil")
     ok(missing_err ~= nil, "format_file: and an error message")
   end
+
+  -- ── format_file keeps how the file was stored (BOM, CRLF, final newline) ──
+  -- readfile/writefile in text mode dropped the BOM, turned every CRLF into LF and
+  -- added a final newline, so each changed file became a whole-file diff.
+
+  do
+    local root = H.tmproot("mdnvim_body_format_bytes_spec")
+    local BOM = "\239\187\191"
+
+    --- Write `bytes` verbatim: "\n" separates the items, nothing is added at the end.
+    ---@param name string
+    ---@param items string[]
+    ---@return string path
+    local function put(name, items)
+      local path = root .. "/" .. name
+      vim.fn.writefile(items, path, "b")
+      return path
+    end
+
+    --- The file's bytes with the line feeds spelled out, so a mismatch is readable.
+    ---@param path string
+    ---@return string
+    local function bytes(path)
+      return (table.concat(vim.fn.readfile(path, "b"), "\n"):gsub("\r", "<CR>"):gsub("\n", "<LF>"))
+    end
+
+    -- BOM + CRLF + a run of blank lines + no final newline (the original report).
+    local path = put("bom_crlf.md", {
+      BOM .. "line one\r",
+      "line two\r",
+      "\r",
+      "\r",
+      "end no newline",
+    })
+    local changed, err = body_format.format_file(path, { "collapse-blank-lines" })
+    eq(err, nil, "bom+crlf: no error")
+    eq(changed, 1, "bom+crlf: the one surplus blank line counted")
+    eq(
+      bytes(path),
+      "\239\187\191line one<CR><LF>line two<CR><LF><CR><LF>end no newline",
+      "bom+crlf: BOM and CRLF kept, still no final newline, only the blank line gone"
+    )
+
+    -- CRLF with a final newline stays CRLF with a final newline.
+    path = put("crlf_final.md", { "**a**\r", "\r", "\r", "" })
+    changed = body_format.format_file(path, { "strip-bold", "collapse-blank-lines" })
+    eq(changed, 2, "crlf+final: a stripped line and a removed blank line")
+    eq(bytes(path), "a<CR><LF><CR><LF>", "crlf+final: CRLF and the final newline kept")
+
+    -- Plain LF without a final newline does not gain one.
+    path = put("lf_nofinal.md", { "**a**", "b" })
+    body_format.format_file(path, { "strip-bold" })
+    eq(bytes(path), "a<LF>b", "lf: no final newline added")
+
+    -- Plain LF with a final newline keeps it.
+    path = put("lf_final.md", { "**a**", "" })
+    body_format.format_file(path, { "strip-bold" })
+    eq(bytes(path), "a<LF>", "lf+final: final newline kept")
+
+    -- A file that mixes the two endings is LF (like Neovim's default): the CR of the
+    -- CRLF line stays on that line, and no line gets another ending.
+    path = put("mixed.md", { "**a**\r", "b", "" })
+    body_format.format_file(path, { "strip-bold" })
+    eq(bytes(path), "a<CR><LF>b<LF>", "mixed: every line keeps the ending it had")
+
+    -- A file that is not changed is not touched, and dry-run never writes.
+    path = put("untouched.md", { BOM .. "plain\r", "text\r", "" })
+    local before = bytes(path)
+    eq(body_format.format_file(path, { "strip-bold" }), 0, "unchanged: nothing to do")
+    eq(bytes(path), before, "unchanged: bytes identical")
+    put("dry.md", { BOM .. "**x**\r", "" })
+    eq(
+      body_format.format_file(root .. "/dry.md", { "strip-bold" }, { dry_run = true }),
+      1,
+      "dry-run: reports the change"
+    )
+    eq(bytes(root .. "/dry.md"), "\239\187\191**x**<CR><LF>", "dry-run: bytes identical")
+
+    -- The BOM must not hide a leading front matter block from the ops.
+    path = put("fm.md", { BOM .. "---", "title: **x**", "---", "**b**", "" })
+    body_format.format_file(path, { "strip-bold" })
+    eq(
+      bytes(path),
+      "\239\187\191---<LF>title: **x**<LF>---<LF>b<LF>",
+      "front matter behind a BOM stays untouched"
+    )
+  end
 end

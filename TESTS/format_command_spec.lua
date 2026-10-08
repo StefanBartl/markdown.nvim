@@ -156,6 +156,33 @@ return function(H)
     eq(vim.fn.readfile(path)[1], "**bold**", "dry-run: file left untouched")
   end
 
+  -- scope=<dir> / scope=cwd rewrite a changed CRLF file in place: the BOM, the CRLF
+  -- endings and the missing final newline stay, only the surplus blank line is gone
+  -- (the disk path used to turn the whole file into LF, without BOM, plus a final newline).
+  do
+    local root = H.tmproot("mdnvim_format_crlf_spec")
+    local path = root .. "/crlf.md"
+    vim.fn.writefile(
+      { "\239\187\191line one\r", "line two\r", "\r", "\r", "end no newline" },
+      path,
+      "b"
+    )
+    vim.fn.writefile({ "keep\r", "" }, root .. "/other.md", "b")
+
+    commands.execute({ "format", "collapse-blank-lines", "trim-trailing-space", "scope=" .. root })
+
+    eq(
+      table.concat(vim.fn.readfile(path, "b"), "|"),
+      "\239\187\191line one\r|line two\r|\r|end no newline",
+      "scope=<dir>: BOM, CRLF and the missing final newline survive the rewrite"
+    )
+    eq(
+      table.concat(vim.fn.readfile(root .. "/other.md", "b"), "|"),
+      "keep\r|",
+      "scope=<dir>: a file with nothing to change keeps its bytes"
+    )
+  end
+
   -- Feature gating: `features.disable = { "format" }` skips the command
   -- entirely, the same way it does for every other :Markdown subcommand.
   do
