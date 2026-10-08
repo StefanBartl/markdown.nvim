@@ -7,6 +7,8 @@
 
 local notify = require("markdown.util.notify").create("[markdown.commands.export]")
 local expand_path = require("lib.nvim.cross.fs.expand_path")
+local to_absolute = require("lib.nvim.cross.fs.to_absolute")
+local normkey = require("lib.nvim.fs.normkey")
 
 local M = {}
 
@@ -16,11 +18,31 @@ local function pdfport()
   return ok and mod or nil
 end
 
+--- True when both paths name the same file, whatever the spelling: relative or
+--- absolute, either slash, `.`/`..` segments, a symlinked directory. A file that
+--- does not exist yet (a new, unsaved buffer) is compared by its resolved
+--- directory plus name. Windows paths ignore case.
+---@param a string
+---@param b string
+---@return boolean
+local function same_file(a, b)
+  local ka, kb = normkey(to_absolute(a)), normkey(to_absolute(b))
+  if vim.fn.has("win32") == 1 then
+    ka, kb = ka:lower(), kb:lower()
+  end
+  return ka == kb
+end
+
 ---@internal
 --- Export the current buffer (or `path`, if given) to PDF via pdfport.nvim's
---- markdown producer chain. An unmodified buffer with a file on disk exports
---- that file directly; otherwise the live buffer content is sent instead
---- (pdfport materializes it to a tmpfile itself, cleaned up after the run).
+--- markdown producer chain.
+---
+--- A `path` naming another file always exports that file from disk: the
+--- current buffer, modified or not, is not involved. Without a `path` (or with
+--- one that names the current buffer's own file), an unmodified buffer with a
+--- file on disk exports that file directly; otherwise the live buffer content is
+--- sent instead (pdfport materializes it to a tmpfile itself, cleaned up after
+--- the run).
 ---@param path string?
 local function do_pdf(path)
   local mod = pdfport()
@@ -34,10 +56,24 @@ local function do_pdf(path)
   end
 
   local bufnr = 0
+  local current = vim.api.nvim_buf_get_name(bufnr)
+  if path == "" then path = nil end
   -- expand_path, not vim.fn.expand (SEC-34): `path` is a user-typed
   -- command argument, not a Vim cmdline special.
-  local file = path and expand_path(path) or vim.api.nvim_buf_get_name(bufnr)
-  local has_file = file and file ~= "" and vim.fn.filereadable(file) == 1
+  local file = path and expand_path(path) or current
+
+  -- Another file was asked for: export it as it is on disk. Falling through to
+  -- the live buffer here would write the wrong document into `<file>.pdf`.
+  if path and not (current ~= "" and same_file(file, current)) then
+    if vim.fn.filereadable(file) ~= 1 then
+      notify.warn("export: file not readable: " .. file)
+      return
+    end
+    mod.create({ inputs = { file }, from = "markdown" })
+    return
+  end
+
+  local has_file = file ~= "" and vim.fn.filereadable(file) == 1
 
   if has_file and not vim.bo[bufnr].modified then
     mod.create({ inputs = { file }, from = "markdown" })
