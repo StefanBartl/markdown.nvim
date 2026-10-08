@@ -157,6 +157,20 @@ return function(H)
 
   pcall(vim.fn.delete, path)
 
+  -- file() keeps the BOM, the CRLF endings and the missing final newline (a text-mode
+  -- readfile/writefile round trip made the whole file an LF file with a final newline).
+  do
+    local crlf_path = (vim.fn.tempname()) .. "_mdnvim_sanitize_crlf.md"
+    vim.fn.writefile({ "\239\187\191[x](sub\\a.md)\r", "plain\r", "[y](b.md)" }, crlf_path, "b")
+    eq(sanitize.file(crlf_path), 2, "file(): two targets normalized in a BOM+CRLF file")
+    eq(
+      table.concat(vim.fn.readfile(crlf_path, "b"), "|"),
+      "\239\187\191[x](./sub/a.md)\r|plain\r|[y](./b.md)",
+      "file(): BOM, CRLF and the missing final newline survive the rewrite"
+    )
+    pcall(vim.fn.delete, crlf_path)
+  end
+
   -- ── :Markdown links sanitize cwd over a wide tree: chunked, non-blocking ──
   -- More than CHUNK (20) files: the command must sanitize them in batches
   -- across event-loop ticks and still touch every one.

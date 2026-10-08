@@ -6,6 +6,8 @@
 --- links (`#foo`), absolute paths, `~`-relative paths and env-rooted paths
 --- (`$VAR/...`, `${VAR}/...`, `%VAR%/...`) are left alone.
 --- Shared by `:Markdown links sanitize` and the save-time autocmd.
+local disk_lines = require("markdown.util.disk_lines")
+
 local M = {}
 
 -- Mirrors link_scan.lua's fence detection so sanitize never touches a target
@@ -149,13 +151,14 @@ function M.file(path)
 
   -- ERR-01: readfile/writefile raise (E484/E482) on a permission error or a
   -- file that vanished between the filereadable check above and this call.
-  local ok_read, lines = pcall(vim.fn.readfile, path)
+  -- util.disk_lines keeps the BOM, the CRLF endings and the missing final
+  -- newline: a text-mode readfile/writefile round trip dropped all three.
+  local ok_read, lines, meta = pcall(disk_lines.read, path)
   if not ok_read then return 0, "read failed" end
 
   local new_lines, total = M.sanitize_lines(lines)
   if total > 0 then
-    local ok_write = pcall(vim.fn.writefile, new_lines, path)
-    if not ok_write then return 0, "write failed" end
+    if not disk_lines.write(path, new_lines, meta) then return 0, "write failed" end
   end
   return total
 end
