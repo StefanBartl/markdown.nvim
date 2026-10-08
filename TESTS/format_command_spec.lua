@@ -201,5 +201,49 @@ return function(H)
     ok(has(second, "dry-run"), "format: dry-run offered alongside the ops")
   end
 
+  -- ── reachable through the real `:Markdown` Ex command ─────────────────────
+  -- The dispatcher ran `format`, `<Tab>` completed it and the docs described it, while the
+  -- composer route list lacked it: `:Markdown format ...` answered "unknown subcommand". The
+  -- routes now come from `commands.names()`, and this pins both that and the end-to-end run.
+
+  do
+    local okc, composer = pcall(require, "lib.nvim.bindings.usercmd.composer")
+    ok(okc, "the composer loads")
+
+    config.setup({})
+    pcall(vim.api.nvim_del_user_command, "Markdown")
+    require("markdown.bindings.usrcmds").ensure_global()
+
+    local routes = {}
+    for _, route in ipairs(composer.registry().Markdown:spec().routes) do
+      routes[route.path[1]] = true
+    end
+    local missing = {}
+    for _, name in ipairs(commands.names()) do
+      if not routes[name] then missing[#missing + 1] = name end
+    end
+    eq(
+      table.concat(missing, ", "),
+      "",
+      ":Markdown has a route for every dispatcher subcommand (format included)"
+    )
+    ok(routes.format, ":Markdown format is a route")
+
+    local buf = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "**bold** text" })
+    vim.cmd("Markdown format strip-bold dry-run")
+    eq(
+      vim.api.nvim_buf_get_lines(buf, 0, -1, false)[1],
+      "**bold** text",
+      ":Markdown format ... dry-run through the Ex command leaves the buffer alone"
+    )
+    vim.cmd("Markdown format strip-bold")
+    eq(
+      vim.api.nvim_buf_get_lines(buf, 0, -1, false)[1],
+      "bold text",
+      ":Markdown format strip-bold through the Ex command rewrites the buffer"
+    )
+  end
+
   config.setup({})
 end
