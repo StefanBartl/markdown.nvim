@@ -1198,7 +1198,9 @@ is deleted.
 
   Export the current buffer/file (or `path`) to PDF by delegating to
   pdfport.nvim's `create()` — pandoc plus a PDF engine, all owned by
-  pdfport. `pdf` is the only (and default) sub. pdfport.nvim is an optional
+  pdfport. A `path` naming another file exports that file from disk, never
+  the current buffer; an unreadable `path` warns and exports nothing.
+  `pdf` is the only (and default) sub. pdfport.nvim is an optional
   host; without it, or without an available producer, the command warns
   instead of erroring. Following a `.pdf` link from the cursor-action
   handler offers the same pdfport path (see |markdown.nvim-keymaps-handler|).
