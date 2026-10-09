@@ -3,5 +3,5 @@
   "runtime.version": "LuaJIT",
   "workspace.checkThirdParty": false,
   "workspace.ignoreDir": [".claude", ".deps"],
-  "diagnostics.globals": ["vim"]
+  "diagnostics.globals": []
 }
