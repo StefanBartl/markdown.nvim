@@ -122,7 +122,8 @@ local NESTED_OPTS = {
     "capitalize",
     "stopwords",
   },
-  table = { "header_align", "entry_align", "col_overrides", "wrap", "wrap_profiles" },
+  table = { "header_align", "entry_align", "col_overrides", "wrap", "wrap_profiles", "truncate" },
+  ["table.truncate"] = { "enabled", "max", "marker" },
   ["table.wrap"] = {
     "enabled",
     "auto",
@@ -286,6 +287,18 @@ local function degrade_invalid_scalars(cfg, issues)
           DEFAULTS.table.wrap.resize_debounce_ms
         )
         wrap.resize_debounce_ms = DEFAULTS.table.wrap.resize_debounce_ms
+      end
+    end
+
+    local trunc = cfg.table.truncate
+    if trunc then
+      if type(trunc.max) ~= "number" or trunc.max < 3 then
+        bad("table.truncate.max", trunc.max, DEFAULTS.table.truncate.max)
+        trunc.max = DEFAULTS.table.truncate.max
+      end
+      if type(trunc.marker) ~= "string" or trunc.marker == "" then
+        bad("table.truncate.marker", trunc.marker, DEFAULTS.table.truncate.marker)
+        trunc.marker = DEFAULTS.table.truncate.marker
       end
     end
   end

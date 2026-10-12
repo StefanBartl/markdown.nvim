@@ -228,6 +228,20 @@ function M.setup(cfg)
     })
   end
 
+  -- Cell truncation on for every markdown buffer (config.table.truncate.enabled).
+  if feat("table") and ((cfg.table or {}).truncate or {}).enabled then
+    local aug_trunc = api.nvim_create_augroup("MarkdownNvimTableTruncateAuto", { clear = true })
+    autocmd.create(
+      "FileType",
+      function(ev) require("markdown.core.table_truncate").enable(ev.buf) end,
+      {
+        group = aug_trunc,
+        pattern = { "markdown", "mdx" },
+        desc = "[markdown.nvim] table truncate: enable (table.truncate.enabled)",
+      }
+    )
+  end
+
   -- Table-wrap resize hook + selective on-save reflow (independent opt-in via
   -- config.table.wrap.auto_resize / .selective_reflow; both default off).
   if feat("table_wrap") then

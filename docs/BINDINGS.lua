@@ -404,6 +404,14 @@ return {
         feature = "table",
         desc = "Format table at cursor",
       },
+      {
+        id = "table_truncate_toggle",
+        lhs = "<leader>mtu",
+        mode = "n",
+        action = "table_truncate_toggle",
+        feature = "table",
+        desc = "Toggle table cell truncation",
+      },
     },
 
     tableview = {

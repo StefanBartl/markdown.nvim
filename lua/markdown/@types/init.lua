@@ -113,12 +113,18 @@
 ---@field resize_debounce_ms integer # Default 300.
 ---@field selective_reflow boolean # BufWritePre: only reflow tables that actually changed. Default false.
 
+---@class Mkdn.TableTruncateConfig
+---@field enabled boolean # On for every markdown buffer. Default false.
+---@field max integer # Widest column shown (display columns). Default 40.
+---@field marker string # One-character marker for the cut tail. Default "…".
+
 ---@class Mkdn.TableConfig
 ---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
 ---@field entry_align Mkdn.TableAlign # Default body-row alignment.
 ---@field col_overrides? Mkdn.TableColOverride[] # Per-column alignment overrides applied on every format.
 ---@field wrap Mkdn.TableWrapConfig # Width-limited wrapping (`:MDTable*` commands).
 ---@field wrap_profiles table<string, table> # Named wrap-opt presets for `:MDTableProfile`.
+---@field truncate Mkdn.TableTruncateConfig # Display-only cell truncation (`:Markdown table truncate`).
 
 ---@class Mkdn.TableViewConfig
 ---@field style "markdown"|"box" # Default float style for `view toggle` / <leader>tvt.

@@ -288,7 +288,7 @@ local SUBARG_DESC = {
     rest = "Not used: refs takes an action and, for live, a switch",
   },
   table = {
-    "Action: view, format, new, mode, tableize or import",
+    "Action: view, format, new, mode, truncate, tableize or import",
     "Per action: view mode, option, columns, on/off, separator or source",
     "toggle/markdown/box: scope; browser(nice): reopen; new: rows; format: options",
     rest = "format: more options (header=, cell=, skip=, scope=); else unused",

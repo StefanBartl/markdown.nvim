@@ -138,6 +138,15 @@ local DEFAULTS = {
     },
 
     -- `:MDTableProfile {name}` loads one of these as this table's wrap opts.
+    -- Display-only truncation of over-wide cells (`core.table_truncate`): the
+    -- text stays in the file, the tail is concealed behind `marker`. Needs
+    -- `conceallevel` >= 2 (set while on). Toggle: `:Markdown table truncate`.
+    truncate = {
+      enabled = false, -- true: on for every markdown buffer
+      max = 40, -- widest column shown, in display columns
+      marker = "…", -- one character
+    },
+
     wrap_profiles = {
       compact = { auto = false, min = 4, max = 20, pad = 0 },
       docs = { auto = true, min = 10, max = 40, pad = 1 },
