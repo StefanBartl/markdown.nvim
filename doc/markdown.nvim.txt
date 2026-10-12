@@ -169,7 +169,7 @@ GitHub-only, not duplicated into this helpfile.
       min_level = 2, max_level = 4,
       anchor_style = "gfm", anchor_separator = "-",
     },
-    table = { header_align = "center", entry_align = "center" }, -- + col_overrides
+    table = { header_align = "left", entry_align = "left" }, -- + col_overrides
     links = {
       picker = "hover_select", -- "hover_select"|"select"|"telescope"|"fzf"
       diagnostics = { mode = "off" }, -- "off" | "save"
@@ -521,8 +521,8 @@ overrides (in addition to the legacy bare-number shorthand for `max=N`).
 5.6 table                                      *markdown.nvim-config-table*
 >
   table = {
-    header_align = "center",   -- "left" | "center" | "right"
-    entry_align  = "center",
+    header_align = "left",     -- "left" | "center" | "right"
+    entry_align  = "left",
     -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
   },
 <
