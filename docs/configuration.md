@@ -165,7 +165,7 @@ require("markdown").setup({
   table = {
     -- popup = true, -- CursorHold in a table cell: float with its content (false = off)
     -- truncate = { enabled = false, max = 40, marker = "…", popup = true }, -- display-only cell cut + full-text popup
-    header_align = "left"  , -- "left" | "center" | "right"
+    header_align = "left", -- "left" | "center" | "right"
     entry_align  = "left",
     -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },
     -- Width-limited table wrapping (:MDTable* commands); off by default.
