@@ -60,16 +60,31 @@ end
 function M.reformat(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   if not api.nvim_buf_is_valid(bufnr) then return end
+  -- The debounce can fire after a window or buffer switch: the cursor under
+  -- `cursor_in_table` and the one restored below must be this buffer's.
+  if api.nvim_win_get_buf(0) ~= bufnr then return end
+  -- Never re-pad under a typing user: in insert mode the cursor may sit after the
+  -- last character, which a normal-mode restore would pull one character left.
+  -- InsertLeave schedules the reformat again, so nothing is lost.
+  if api.nvim_get_mode().mode:find("^[iR]") then return end
   if not cursor_in_table(bufnr) then return end
 
   local st = S[bufnr]
   local win = api.nvim_get_current_win()
   local cur = api.nvim_win_get_cursor(win)
 
-  if st then st.busy = true end
   local mdtable = require("markdown.commands.mdtable")
   local wrapped = mdtable.wants_wrap()
-  local snap = not wrapped and mdtable.snapshot_cursor(bufnr) or nil
+  -- Before `busy`: an error here must not leave the guard set, which would drop
+  -- every later TextChanged and silently kill table mode for this buffer.
+  local snap = nil
+  if not wrapped then
+    local ok_snap, s = pcall(mdtable.snapshot_cursor, bufnr)
+    snap = ok_snap and s or nil
+  end
+  local tick = api.nvim_buf_get_changedtick(bufnr)
+
+  if st then st.busy = true end
   if wrapped then
     pcall(mdtable.format_at_cursor, bufnr, {})
   else
@@ -80,10 +95,13 @@ function M.reformat(bufnr)
   -- may have gained or lost continuation lines); the physical restore below
   -- would put it back on the old line number.
   if wrapped then return end
+  -- Nothing was written (already aligned, not a table, format failed): the
+  -- cursor is where the user put it, even on a pipe or in the padding.
+  if api.nvim_buf_get_changedtick(bufnr) == tick then return end
   -- Natural widths: re-padding (centered cells) moves the text, so put the cursor
   -- back on the same character of the same cell, not on the same byte column.
   if snap then
-    mdtable.restore_cursor(bufnr, snap)
+    pcall(mdtable.restore_cursor, bufnr, snap)
     return
   end
 
