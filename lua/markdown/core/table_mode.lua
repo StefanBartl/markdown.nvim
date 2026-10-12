@@ -68,12 +68,17 @@ function M.reformat(bufnr)
 
   if st then st.busy = true end
   local mdtable = require("markdown.commands.mdtable")
-  if mdtable.wants_wrap() then
+  local wrapped = mdtable.wants_wrap()
+  if wrapped then
     pcall(mdtable.format_at_cursor, bufnr, {})
   else
     pcall(fmt.format_table_at_cursor, bufnr, {})
   end
   if st then st.busy = false end
+  -- The wrapping path restored the cursor to its logical cell itself (rows above
+  -- may have gained or lost continuation lines); the physical restore below
+  -- would put it back on the old line number.
+  if wrapped then return end
 
   -- Clamp the saved cursor back into the (possibly reshaped) buffer.
   local lc = api.nvim_buf_line_count(bufnr)

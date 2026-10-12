@@ -298,7 +298,11 @@ function M.render(parsed, opts)
   local function wrap_row(row_cells, logical_index)
     local wrapped, max_lines = {}, 1
     for ci = 1, parsed.col_count do
-      local lines = M.wrap_cell(row_cells[ci] or "", colplan.widths[ci], opts)
+      -- The header row stays one physical line: a wrapped header would put a
+      -- second line above the separator, which is no longer a GFM table (and
+      -- a second format would move the tail into the body).
+      local lines = logical_index == 1 and { row_cells[ci] or "" }
+        or M.wrap_cell(row_cells[ci] or "", colplan.widths[ci], opts)
       wrapped[ci] = lines
       if #lines > max_lines then max_lines = #lines end
       for _, l in ipairs(lines) do
@@ -379,7 +383,9 @@ function M.unwrap_rows(rows, join)
   join = join or " "
   local merged = {}
   for _, row in ipairs(rows) do
-    local is_continuation = #merged > 0 and nonempty_count(row) <= 1
+    -- Row 1 is the header and row 2 the first data row: neither can continue the
+    -- row above (the header is never wrapped). A row with no text at all is data.
+    local is_continuation = #merged > 1 and nonempty_count(row) == 1
     if is_continuation then
       local prev = merged[#merged]
       for ci, c in ipairs(row) do

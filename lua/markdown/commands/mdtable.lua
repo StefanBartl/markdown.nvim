@@ -75,17 +75,18 @@ function M.resolve_wrap_opts(bufnr, table_start, overrides, lines)
   local profile_name = bufnr and vim.b[bufnr] and vim.b[bufnr].mdtable_profile
   local profile = profile_name and (cfg.wrap_profiles or {})[profile_name]
 
-  local opts = vim.tbl_deep_extend("force", {}, base, profile or {}, overrides or {})
-
+  local directive
   if table_start then
-    local directive
     if lines then
       directive = table_start > 1 and M.parse_directive(lines[table_start - 1]) or nil
     elseif bufnr then
       directive = find_directive(bufnr, table_start)
     end
-    if directive then opts = vim.tbl_deep_extend("force", opts, directive) end
   end
+  -- Later wins: config -> profile -> per-table directive -> explicit overrides
+  -- (`max=` on the command line beats a directive comment).
+  local opts =
+    vim.tbl_deep_extend("force", {}, base, profile or {}, directive or {}, overrides or {})
 
   if opts.flavor == "github" then
     opts.min = math.max(opts.min or 1, 3)
@@ -99,7 +100,11 @@ function M.resolve_wrap_opts(bufnr, table_start, overrides, lines)
     opts.win_width = ok and width or nil
   end
 
-  opts.col_overrides = (overrides and overrides.col_overrides) or cfg.col_overrides
+  -- Configured overrides first, then the call's (`skip=`): per column the later
+  -- entry wins field by field, so `skip=1` no longer drops a configured `max`.
+  local col_overrides = vim.list_slice(cfg.col_overrides or {})
+  vim.list_extend(col_overrides, (overrides and overrides.col_overrides) or {})
+  opts.col_overrides = #col_overrides > 0 and col_overrides or nil
   opts.header_align = opts.header_align or cfg.header_align
   opts.entry_align = opts.entry_align or cfg.entry_align
   return opts
@@ -235,6 +240,7 @@ end
 ---@param opts table
 ---@return table
 local function unwrapped(parsed, opts)
+  if parsed.col_count < 2 then return parsed end
   return vim.tbl_extend(
     "force",
     parsed,
@@ -257,7 +263,10 @@ local function apply_wrap(bufnr, parsed, opts)
 
   local rendered, layout =
     table_wrap.render(opts.reflow and unwrapped(parsed, opts) or parsed, opts)
-  api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
+  local current = api.nvim_buf_get_lines(bufnr, parsed.start_line - 1, parsed.end_line, false)
+  if not vim.deep_equal(current, rendered) then
+    api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
+  end
   place_signs(bufnr, parsed.start_line, layout, opts)
 
   local new_bounds =
@@ -279,8 +288,8 @@ local function apply_unwrap(bufnr, parsed, opts)
   local merged_parsed =
     { rows = merged, col_count = parsed.col_count, separator_style = parsed.separator_style }
   -- No wrapping on the write-back: natural widths only.
-  local flat_opts =
-    vim.tbl_extend("force", opts, { auto = false, max = nil, min = 1, win_width = nil })
+  local flat_opts = vim.tbl_extend("force", opts, { auto = false, min = 1 })
+  flat_opts.max, flat_opts.win_width = nil, nil
   local rendered = table_wrap.render(merged_parsed, flat_opts)
   api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
   clear_signs(bufnr, parsed.start_line, parsed.start_line + #rendered)
@@ -819,16 +828,30 @@ end
 ---@return integer count
 function M.format_lines(lines, overrides)
   local tables = table_fmt.parse_all_tables(lines)
-  table.sort(tables, function(a, b) return a.start_line > b.start_line end)
-  local out = vim.list_slice(lines)
+  local out, from = {}, 1
   for _, t in ipairs(tables) do
+    for ln = from, t.start_line - 1 do
+      out[#out + 1] = lines[ln]
+    end
     local opts = M.resolve_wrap_opts(nil, t.start_line, overrides, lines)
     if not opts.max and not opts.auto then opts.max = M.DEFAULT_FORMAT_MAX end
     local rendered = table_wrap.render(opts.reflow and unwrapped(t, opts) or t, opts)
-    local new = vim.list_slice(out, 1, t.start_line - 1)
-    vim.list_extend(new, rendered)
-    vim.list_extend(new, vim.list_slice(out, t.end_line + 1))
-    out = new
+    -- A block whose every line ends in a CR (CRLF block of a mixed-ending file)
+    -- keeps it: the parser trims the CR, the renderer never writes it.
+    local cr = true
+    for ln = t.start_line, t.end_line do
+      if lines[ln]:sub(-1) ~= "\r" then
+        cr = false
+        break
+      end
+    end
+    for _, l in ipairs(rendered) do
+      out[#out + 1] = cr and (l .. "\r") or l
+    end
+    from = t.end_line + 1
+  end
+  for ln = from, #lines do
+    out[#out + 1] = lines[ln]
   end
   return out, #tables
 end

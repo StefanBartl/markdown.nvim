@@ -111,14 +111,17 @@ function M.show(bufnr, opts)
 
   M.close()
   local width = math.max(20, math.min(80, vim.o.columns - 8))
-  local lines = M.body(cell.text, width)
+  local text = cell.text
+  local cap = width * 15
+  if vim.fn.strchars(text) > cap then text = vim.fn.strcharpart(text, 0, cap) .. "…" end
+  local lines = M.body(text, width)
   local used = 0
   for _, l in ipairs(lines) do
     used = math.max(used, vim.fn.strdisplaywidth(l))
   end
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  local win = api.nvim_open_win(buf, false, {
+  local opened, win = pcall(api.nvim_open_win, buf, false, {
     relative = "cursor",
     row = 1,
     col = 0,
@@ -129,7 +132,11 @@ function M.show(bufnr, opts)
     focusable = false,
     noautocmd = true,
   })
-  vim.wo[win].wrap = true
+  if not opened then
+    pcall(api.nvim_buf_delete, buf, { force = true })
+    return false
+  end
+  api.nvim_set_option_value("wrap", true, { scope = "local", win = win })
   local group = api.nvim_create_augroup("MarkdownNvimTablePopup", { clear = true })
   current = { win = win, buf = buf, group = group }
   api.nvim_create_autocmd(

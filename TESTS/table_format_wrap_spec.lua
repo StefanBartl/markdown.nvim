@@ -131,4 +131,109 @@ return function(H)
     "reflow at max=20 equals wrapping the original at 20"
   )
   eq(tf.parse_args({ "reflow" }).reflow, true, "reflow flag parsed")
+
+  -- review fixes ----------------------------------------------------------------------
+
+  -- the header row is never wrapped: line 2 must stay the separator, and a second
+  -- format must not move the header's tail into the body
+  local HDR = {
+    "| A very long header that is wider than the cap | B |",
+    "|---|---|",
+    "| x | y |",
+  }
+  buf = open(HDR)
+  tcmd.run({ "format", "max=12" })
+  local h1 = get(buf)
+  ok(h1[2]:match("^|[%s%-]+|[%s%-]+|$") ~= nil, "line 2 is still the separator row")
+  eq(#h1, 3, "the header did not add rows")
+  tcmd.run({ "format", "max=12" })
+  eq(table.concat(get(buf), "\n"), table.concat(h1, "\n"), "formatting again is stable")
+
+  -- an unchanged table is not rewritten (a TextChanged-driven caller would loop)
+  local tick = vim.api.nvim_buf_get_changedtick(buf)
+  tcmd.run({ "format", "max=12" })
+  eq(vim.api.nvim_buf_get_changedtick(buf), tick, "no write when nothing changes")
+  tcmd.run({ "format" })
+  tcmd.run({ "format" })
+  local tick2 = vim.api.nvim_buf_get_changedtick(buf)
+  tcmd.run({ "format" })
+  eq(vim.api.nvim_buf_get_changedtick(buf), tick2, "natural format does not rewrite either")
+
+  -- reflow: a single-column table, the header and the first data row are never merged
+  buf = open({ "| Item |", "|---|", "| apple |", "| pear |" })
+  tcmd.run({ "format", "reflow", "max=30" })
+  eq(#get(buf), 4, "reflow leaves a single-column table alone")
+  buf = open({ "| A | B |", "|---|---|", "| only first |  |", "| x | y |" })
+  tcmd.run({ "format", "reflow", "max=30" })
+  eq(#get(buf), 4, "the first data row is not merged into the header")
+
+  -- explicit max= beats a directive comment; skip= keeps a configured max
+  local dlines = { "<!-- mdwrap: max=60 -->", "| a | b |", "|---|---|", "| c | d |" }
+  eq(mdtable.resolve_wrap_opts(nil, 2, { max = 20 }, dlines).max, 20, "override beats directive")
+  eq(mdtable.resolve_wrap_opts(nil, 2, nil, dlines).max, 60, "the directive still beats config")
+  require("markdown.config").setup({ table = { col_overrides = { { col = 1, max = 15 } } } })
+  local merged =
+    mdtable.resolve_wrap_opts(nil, nil, { col_overrides = { { col = 2, align = "left" } } })
+  eq(#merged.col_overrides, 2, "skip= adds to the configured col_overrides")
+  eq(merged.col_overrides[1].max, 15, "and the configured max survives")
+  require("markdown.config").setup({})
+
+  -- :MDTableUnwrap works with a configured max
+  require("markdown.config").setup({ table = { wrap = { max = 20 } } })
+  buf = open(SRC)
+  mdtable.wrap_at_cursor(buf)
+  ok(#get(buf) > 4, "wrapped with wrap.max = 20")
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  mdtable.unwrap_at_cursor(buf)
+  eq(#get(buf), 4, "unwrap merges the continuation rows although wrap.max is set")
+  require("markdown.config").setup({})
+
+  -- mixed endings in a file: a CRLF block keeps its CRs and an already formatted one is unchanged
+  local cr = string.char(13)
+  local plain = mdtable.format_lines({ "| A | B |", "|---|---|", "| xxxx | y |" }, { max = 40 })
+  local mixed = { "intro" }
+  for _, l in ipairs(plain) do
+    mixed[#mixed + 1] = l .. cr
+  end
+  mixed[#mixed + 1] = "outro"
+  local messy = vim.deepcopy(mixed)
+  messy[2], messy[3], messy[4] = "|A|B|" .. cr, "|-|-|" .. cr, "|xxxx|y|" .. cr
+  local mout = mdtable.format_lines(mixed, { max = 40 })
+  eq(
+    table.concat(mout, "\n"),
+    table.concat(mixed, "\n"),
+    "a formatted CRLF block in an LF file is unchanged"
+  )
+  eq(
+    table.concat(mdtable.format_lines(messy, { max = 40 }), "\n"),
+    table.concat(mixed, "\n"),
+    "a misaligned CRLF block is rewritten with its CRs, the LF lines stay"
+  )
+
+  -- format_lines with two tables, the first one growing
+  local two = {
+    "| A | B |",
+    "|---|---|",
+    "| " .. string.rep("w ", 30) .. "| x |",
+    "",
+    "| C | D |",
+    "|---|---|",
+    "| e | f |",
+  }
+  local tout, tcount = mdtable.format_lines(two, { max = 12 })
+  eq(tcount, 2, "both tables are formatted")
+  ok(
+    tout[#tout - 2]:find("C", 1, true) ~= nil,
+    "the second table follows the grown first one intact"
+  )
+
+  -- completion: show belongs to truncate only
+  local function has(list, item)
+    for _, v in ipairs(list) do
+      if v == item then return true end
+    end
+    return false
+  end
+  eq(has(tcmd.complete("", "Markdown table mode "), "show"), false, "mode does not offer show")
+  eq(has(tcmd.complete("", "Markdown table truncate "), "show"), true, "truncate offers show")
 end

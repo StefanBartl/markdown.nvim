@@ -49,10 +49,15 @@ end
 ---@param budget integer
 ---@return integer bytes
 local function prefix_bytes(content, budget)
+  if budget <= 0 then return 0 end
+  -- Plain ASCII (the usual cell): one byte is one column, no per-character calls.
+  if not content:find("[\128-\255]") then return math.min(#content, budget) end
   local used, bytes = 0, 0
-  local n = vim.fn.strchars(content)
+  -- skipcc: a base character and its composing marks are one unit, so a cut can
+  -- not fall between them and the marks do not use up budget of their own.
+  local n = vim.fn.strchars(content, true)
   for i = 0, n - 1 do
-    local ch = vim.fn.strcharpart(content, i, 1)
+    local ch = vim.fn.strcharpart(content, i, 1, true)
     local w = vim.fn.strdisplaywidth(ch)
     if used + w > budget then break end
     used = used + w
@@ -126,6 +131,11 @@ function M.compute(lines, opts)
                   local from = s + lead + keep
                   local to = trail >= 1 and (e - 1) or e
                   if to >= from then marks[#marks + 1] = { s = from, e = to, text = marker } end
+                  -- Centered / right-aligned column: a cut cell that is not the widest
+                  -- also has padding in front; keep one margin space, hide the rest.
+                  if lead > 1 then
+                    marks[#marks + 1] = { s = s + 1, e = s + lead - 1, text = "" }
+                  end
                 elseif excess > 0 then
                   local rt = math.min(excess, math.max(trail - 1, 0))
                   if rt > 0 then marks[#marks + 1] = { s = e - rt, e = e - 1, text = "" } end
@@ -150,8 +160,12 @@ end
 ---@type table<integer, { pending: boolean, group: integer }>
 local S = {}
 
+---@type table<integer, string>  # last rendered "changedtick:max:marker" per buffer
+local rendered_at = {}
+
 ---@param bufnr integer
 function M.clear(bufnr)
+  rendered_at[bufnr] = nil
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end
 end
 
@@ -160,7 +174,12 @@ end
 ---@return integer count  # ranges concealed
 function M.render(bufnr)
   if not api.nvim_buf_is_valid(bufnr) then return 0 end
+  -- InsertLeave / BufWinEnter fire without an edit: nothing to redo then.
+  local d = cfg()
+  local stamp = ("%d:%d:%s"):format(api.nvim_buf_get_changedtick(bufnr), d.max, d.marker)
+  if rendered_at[bufnr] == stamp then return 0 end
   M.clear(bufnr)
+  rendered_at[bufnr] = stamp
   local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local count = 0
   for ln, marks in pairs(M.compute(lines)) do
@@ -181,12 +200,17 @@ end
 local function set_conceallevel(bufnr, on)
   for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
     if on then
-      if vim.w[win].mkdn_truncate_cl == nil then
-        vim.w[win].mkdn_truncate_cl = vim.wo[win].conceallevel
+      local cl = api.nvim_get_option_value("conceallevel", { win = win })
+      if vim.w[win].mkdn_truncate_cl == nil then vim.w[win].mkdn_truncate_cl = cl end
+      if cl < 2 then
+        api.nvim_set_option_value("conceallevel", 2, { scope = "local", win = win })
       end
-      if vim.wo[win].conceallevel < 2 then vim.wo[win].conceallevel = 2 end
     elseif vim.w[win].mkdn_truncate_cl ~= nil then
-      vim.wo[win].conceallevel = vim.w[win].mkdn_truncate_cl
+      api.nvim_set_option_value(
+        "conceallevel",
+        vim.w[win].mkdn_truncate_cl,
+        { scope = "local", win = win }
+      )
       vim.w[win].mkdn_truncate_cl = nil
     end
   end
@@ -237,11 +261,21 @@ function M.enable(bufnr)
     end,
     desc = "[markdown.nvim] table truncate: conceallevel for a new window",
   })
-  api.nvim_create_autocmd("BufUnload", {
+  api.nvim_create_autocmd("BufReadPost", {
+    group = group,
+    buffer = bufnr,
+    callback = function()
+      rendered_at[bufnr] = nil
+      schedule()
+    end,
+    desc = "[markdown.nvim] table truncate: re-render after :edit!",
+  })
+  api.nvim_create_autocmd("BufWipeout", {
     group = group,
     buffer = bufnr,
     callback = function()
       S[bufnr] = nil
+      rendered_at[bufnr] = nil
       pcall(api.nvim_del_augroup_by_id, group)
     end,
   })
