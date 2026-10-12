@@ -105,6 +105,22 @@ return function(H)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "| A | B |", "|---|---|", "| ok | x |" })
   vim.api.nvim_win_set_cursor(0, { 3, 3 })
 
+  -- a NUL byte in the cell does not make the popup throw
+  vim.api.nvim_buf_set_lines(
+    buf,
+    0,
+    -1,
+    false,
+    { "| A | B |", "|---|---|", "| x" .. string.char(0) .. "y long | z |" }
+  )
+  vim.api.nvim_win_set_cursor(0, { 3, 3 })
+  local okn = pcall(hold)
+  ok(okn, "NUL in a cell: no error")
+  ok(tp.is_open(), "NUL in a cell: popup still opens")
+  tp.close()
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "| A | B |", "|---|---|", "| ok | x |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 3 })
+
   -- feature off and a non-boolean value
   require("markdown.config").setup({ table = { popup = "off" } })
   eq(

@@ -144,7 +144,8 @@ function M.show(bufnr, opts)
 
   M.close()
   local width = math.max(20, math.min(80, vim.o.columns - 8))
-  local text = cell.text
+  -- NUL (and other control bytes) would make the vim.fn.str* calls below throw E976
+  local text = (cell.text:gsub("[%z\1-\8\11-\31\127]", " "))
   local cap = width * 15
   if vim.fn.strchars(text) > cap then text = vim.fn.strcharpart(text, 0, cap) .. "…" end
   local lines = M.body(text, width)
