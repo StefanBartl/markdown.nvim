@@ -741,7 +741,8 @@ function M.align_cycle(bufnr, mode)
   local col_index = column_at(bufnr, cursor[1], cursor[2], parsed.col_count)
 
   local key = "mdtable_align_" .. col_index
-  local current = (vim.b[bufnr] and vim.b[bufnr][key]) or "left"
+  local configured = (require("markdown.config").get().table or {}).entry_align
+  local current = (vim.b[bufnr] and vim.b[bufnr][key]) or configured or "left"
   local next_align = (mode == "left" or mode == "center" or mode == "right") and mode
     or (ALIGN_CYCLE[current] or "left")
   vim.b[bufnr][key] = next_align
