@@ -306,9 +306,21 @@ function M.parse_args(args)
         end
       elseif key == "scope" then
         opts.scope = val
+      elseif key == "max" then
+        local n = tonumber(val)
+        if not n or n < 1 or n ~= math.floor(n) then
+          return opts, string.format("Invalid width for max=: %q", val)
+        end
+        opts.max = n
       else
         return opts, string.format("Unknown option: %q", raw)
       end
+    elseif raw:lower() == "wrap" then
+      opts.wrap = true
+    elseif raw:lower() == "nowrap" then
+      opts.wrap = false
+    elseif raw:lower() == "auto" then
+      opts.auto = true
     elseif VALID_ALIGN[raw:lower()] then
       positional[#positional + 1] = raw:lower()
     else
@@ -339,6 +351,10 @@ function M.complete(arg_lead)
     "cell=center",
     "cell=right",
     "skip=",
+    "max=",
+    "wrap",
+    "nowrap",
+    "auto",
     "scope=cursor",
     "scope=buffer",
     "scope=cwd",

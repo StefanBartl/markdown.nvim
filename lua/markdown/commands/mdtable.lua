@@ -93,8 +93,25 @@ function M.resolve_wrap_opts(bufnr, table_start, overrides)
     opts.win_width = ok and width or nil
   end
 
-  opts.col_overrides = cfg.col_overrides
+  opts.col_overrides = (overrides and overrides.col_overrides) or cfg.col_overrides
+  opts.header_align = opts.header_align or cfg.header_align
+  opts.entry_align = opts.entry_align or cfg.entry_align
   return opts
+end
+
+--- Column width `:Markdown table format` caps at when it wraps and neither a
+--- `max` nor `auto` is configured ("a fixed maximum").
+M.DEFAULT_FORMAT_MAX = 40
+
+---Whether a `:Markdown table format` call wraps: an explicit `wrap` flag wins,
+---then a given `max`/`auto`, then `table.wrap.enabled`.
+---@param overrides table?
+---@return boolean
+function M.wants_wrap(overrides)
+  overrides = overrides or {}
+  if overrides.wrap ~= nil then return overrides.wrap and true or false end
+  if overrides.max or overrides.auto then return true end
+  return (table_cfg().wrap or {}).enabled == true
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -735,6 +752,42 @@ function M.selective_reflow_on_save(bufnr)
     end
   end
   return count
+end
+
+---Formats the table at the cursor like `:Markdown table format`, but capped at a
+---maximum column width (cells wrap onto shared continuation rows). Already
+---wrapped tables are not unwrapped first -- the continuation heuristic would
+---merge genuine sparse rows -- run `:MDTableUnwrap` before changing `max`.
+---@param bufnr integer?
+---@param overrides table?  # { max?, auto?, min?, pad?, header_align?, entry_align?, col_overrides? }
+---@return boolean ok
+---@return string? err
+function M.format_at_cursor(bufnr, overrides)
+  bufnr = bufnr or api.nvim_get_current_buf()
+  local parsed = table_at_cursor(bufnr)
+  if not parsed then return false, "No table at cursor" end
+  local opts = M.resolve_wrap_opts(bufnr, parsed.start_line, overrides)
+  if not opts.max and not opts.auto then opts.max = M.DEFAULT_FORMAT_MAX end
+  apply_wrap(bufnr, parsed, opts)
+  return true, nil
+end
+
+---Same as `format_at_cursor` for every table in the buffer.
+---@param bufnr integer?
+---@param overrides table?
+---@return boolean ok
+---@return string? err
+---@return integer count
+function M.format_buffer(bufnr, overrides)
+  bufnr = bufnr or api.nvim_get_current_buf()
+  local tables = all_tables(bufnr)
+  table.sort(tables, function(a, b) return a.start_line > b.start_line end)
+  for _, t in ipairs(tables) do
+    local opts = M.resolve_wrap_opts(bufnr, t.start_line, overrides)
+    if not opts.max and not opts.auto then opts.max = M.DEFAULT_FORMAT_MAX end
+    apply_wrap(bufnr, t, opts)
+  end
+  return true, nil, #tables
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────

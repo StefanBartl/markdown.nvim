@@ -285,7 +285,10 @@ function M.render(parsed, opts)
   -- misaligns against every other row.
   local effective = {}
   for i = 1, parsed.col_count do
-    effective[i] = colplan.widths[i]
+    -- Floor at the column minimum, not the planned width: a column capped at
+    -- `max` whose wrapped lines are all narrower must shrink to them, or a
+    -- second format measures the narrower text and shrinks it then.
+    effective[i] = colplan.mins[i]
   end
 
   local wrapped_rows = {}
@@ -299,7 +302,10 @@ function M.render(parsed, opts)
       wrapped[ci] = lines
       if #lines > max_lines then max_lines = #lines end
       for _, l in ipairs(lines) do
-        local w = table_fmt.display_width(l)
+        -- Trimmed: a wrapped line keeps its break space, which pad_cell drops
+        -- again, so measuring it would widen the column by a phantom column
+        -- and make a second format shrink it (not idempotent).
+        local w = table_fmt.display_width(table_fmt.trim(l))
         if w > effective[ci] then effective[ci] = w end
       end
     end

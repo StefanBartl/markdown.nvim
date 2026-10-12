@@ -68,11 +68,31 @@ local function do_format(argv)
   end
 
   local scope = opts.scope or "cursor"
+  local mdtable = require("markdown.commands.mdtable")
+  local wrap = mdtable.wants_wrap(opts)
   local ok, ferr
-  if scope == "cursor" then
+  if wrap and (scope == "cursor" or scope == "buffer") then
+    -- Width-capped format (core.table_wrap): long cells wrap onto shared
+    -- continuation rows. cwd/file scopes have no window or buffer to re-render
+    -- through, so they keep the natural-width format below.
+    local bufnr = vim.api.nvim_get_current_buf()
+    if scope == "cursor" then
+      ok, ferr = mdtable.format_at_cursor(bufnr, opts)
+      if ok then notify.info("Table formatted (wrapped)") end
+    else
+      local count
+      ok, ferr, count = mdtable.format_buffer(bufnr, opts)
+      if ok then notify.info(string.format("Formatted %d table(s) in buffer (wrapped)", count)) end
+    end
+  elseif scope == "cursor" then
     ok, ferr = fmt.format_table_at_cursor(vim.api.nvim_get_current_buf(), opts)
     if ok then notify.info("Table formatted") end
   else
+    if wrap then
+      notify.warn(
+        "table format: wrapping applies to scope cursor/buffer only; formatted at natural width"
+      )
+    end
     ok, ferr = fmt.format_tables_in_scope(opts)
   end
 

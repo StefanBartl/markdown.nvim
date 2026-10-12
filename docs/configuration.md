@@ -159,7 +159,9 @@ require("markdown").setup({
   },
 
   -- Defaults for :Markdown table format; explicit command args (header=,
-  -- cell=, skip=) always override these per call.
+  -- cell=, skip=, max=, wrap, nowrap) always override these per call.
+  -- wrap.enabled = true makes plain :Markdown table format / <leader>mtf /
+  -- table mode wrap at wrap.max (40 when unset); see docs/table-wrap.md.
   table = {
     header_align = "center", -- "left" | "center" | "right"
     entry_align  = "center",

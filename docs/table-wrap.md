@@ -5,7 +5,29 @@ cell wins, unbounded. `table_wrap` adds an opt-in width **cap**: cells that
 exceed a column's planned width are wrapped onto continuation rows of the
 same logical table row, while staying valid GFM (every physical row keeps
 the same pipe count). Off by default — nothing changes until you run a
-`:MDTable*` command or set `table.wrap.enabled = true`.
+`:MDTable*` command, pass `max=`/`wrap` to `:Markdown table format`, or set
+`table.wrap.enabled = true`.
+
+## `:Markdown table format` / `<leader>mtf` with a maximum width
+
+```vim
+:Markdown table format max=40     " cap every column at 40 columns, wrap the rest
+:Markdown table format wrap       " wrap at table.wrap.max (40 when unset) or auto
+:Markdown table format nowrap     " natural widths, even with table.wrap.enabled
+:Markdown table format auto       " fit the columns to the window width
+```
+
+Resolution: an explicit `nowrap`/`wrap` wins, then a given `max=`/`auto`, then
+`table.wrap.enabled`. `<leader>mtf` and table mode follow the same rule. Cells
+that overflow share the same continuation rows: a row takes as many physical
+rows as its longest cell needs, the other columns reuse them. A code span or
+link is never split, so an unbreakable one still overflows its column.
+
+Limits: `scope=cwd` and file scopes keep natural widths (a notice says so). A
+table that is already wrapped is *not* unwrapped first (the continuation
+heuristic below could merge a genuine sparse row), so run `:MDTableUnwrap`
+before formatting with a different `max`. In GitHub or browser rendering the
+continuation rows are real table rows; only the editor shows the `↳` sign.
 
 ```markdown
 | Name | Description                                                |
