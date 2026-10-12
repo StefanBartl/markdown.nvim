@@ -50,6 +50,19 @@ end
 
 local VALID_ALIGN = { left = true, center = true, right = true }
 
+--- Configured `col_overrides` first, the call's (`skip=`) after: per column the later
+--- entry wins field by field, so `skip=` adds to the config instead of replacing it.
+---@internal
+---@param call table[]|nil
+---@param configured table[]|nil
+---@return table[]|nil
+local function merge_overrides(call, configured)
+  if not call then return configured end
+  local out = vim.list_slice(configured or {})
+  vim.list_extend(out, call)
+  return out
+end
+
 ---@internal
 ---@param warnings string[]|nil
 local function report_warnings(warnings)
@@ -161,8 +174,11 @@ function M.rows_to_gfm(rows, opts)
     end
   end
 
-  local override_map, warnings =
-    lib_table.resolve_overrides(opts.col_overrides or dcfg.col_overrides, rows[1], col_count)
+  local override_map, warnings = lib_table.resolve_overrides(
+    merge_overrides(opts.col_overrides, dcfg.col_overrides),
+    rows[1],
+    col_count
+  )
   report_warnings(warnings)
   return lib_table.render(
     { rows = rows, col_count = col_count, separator_style = "compact" },
@@ -185,7 +201,7 @@ function M.format_table_at_cursor(bufnr, opts)
   local ok, err, warnings = lib_table.format_at_cursor(bufnr, {
     header_align = opts.header_align or dcfg.header_align,
     entry_align = opts.entry_align or dcfg.entry_align,
-    col_overrides = opts.col_overrides or dcfg.col_overrides,
+    col_overrides = merge_overrides(opts.col_overrides, dcfg.col_overrides),
   })
   report_warnings(warnings)
   return ok, err
@@ -203,7 +219,7 @@ function M.format_tables_in_buffer(bufnr, opts)
   local ok, err, count, warnings = lib_table.format_buffer(bufnr, {
     header_align = opts.header_align or dcfg.header_align,
     entry_align = opts.entry_align or dcfg.entry_align,
-    col_overrides = opts.col_overrides or dcfg.col_overrides,
+    col_overrides = merge_overrides(opts.col_overrides, dcfg.col_overrides),
   })
   report_warnings(warnings)
   return ok, err, count
@@ -220,7 +236,7 @@ function M.format_tables_in_scope(opts)
   local file_opts = {
     header_align = opts.header_align or dcfg.header_align,
     entry_align = opts.entry_align or dcfg.entry_align,
-    col_overrides = opts.col_overrides or dcfg.col_overrides,
+    col_overrides = merge_overrides(opts.col_overrides, dcfg.col_overrides),
   }
 
   if scope == "cursor" then
