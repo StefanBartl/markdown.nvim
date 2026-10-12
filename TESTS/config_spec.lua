@@ -36,7 +36,7 @@ return function(H)
   -- as a dead field next to the default it was meant to override.
   config.setup({ tabel = { header_align = "left" } })
   local typo_top = config.get()
-  eq(typo_top.table.header_align, "center", "unknown top-level key dropped, default kept")
+  eq(typo_top.table.header_align, "left", "unknown top-level key dropped, default kept")
   ok(#config.issues() > 0, "unknown top-level key recorded in issues()")
 
   config.setup({ table = { wrap = { maximum = 40 } } })

@@ -109,8 +109,8 @@ local DEFAULTS = {
   -- (core.table_fmt). Explicit command args (`header=`, `cell=`, `skip=`)
   -- always override these per call.
   table = {
-    header_align = "center", -- "left" | "center" | "right"
-    entry_align = "center",
+    header_align = "left", -- "left" | "center" | "right"
+    entry_align = "left",
     -- Per-column alignment overrides applied on every format. Unset by
     -- default; example:
     --   col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } }

@@ -511,7 +511,7 @@ function M.reflow_header(bufnr)
   for ci = 1, parsed.col_count do
     cells[ci] = parsed.rows[1][ci] or ""
   end
-  out[1] = table_fmt.format_row(cells, colplan.widths, opts.header_align or "center", {})
+  out[1] = table_fmt.format_row(cells, colplan.widths, opts.header_align or "left", {})
   out[#out + 1] =
     table_fmt.gen_separator(colplan.widths, opts.separator_style or parsed.separator_style)
 
@@ -741,7 +741,7 @@ function M.align_cycle(bufnr, mode)
   local col_index = column_at(bufnr, cursor[1], cursor[2], parsed.col_count)
 
   local key = "mdtable_align_" .. col_index
-  local current = (vim.b[bufnr] and vim.b[bufnr][key]) or "center"
+  local current = (vim.b[bufnr] and vim.b[bufnr][key]) or "left"
   local next_align = (mode == "left" or mode == "center" or mode == "right") and mode
     or (ALIGN_CYCLE[current] or "left")
   vim.b[bufnr][key] = next_align
