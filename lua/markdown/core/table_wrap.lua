@@ -384,13 +384,20 @@ end
 ---included) back into their logical row.
 ---@param rows string[][]
 ---@param join string  # separator used to join continuation text, e.g. " " or "<br>"
+---@param col_count? integer  # the table's column count; defaults to the widest row
 ---@return string[][] merged
-function M.unwrap_rows(rows, join)
+function M.unwrap_rows(rows, join, col_count)
   join = join or " "
   local merged = {}
   -- One column: every row has exactly one non-empty cell, so no row can be told
   -- from a continuation row. Nothing is merged.
-  local single = rows[1] ~= nil and #rows[1] < 2
+  local widest = col_count or 0
+  if not col_count then
+    for _, row in ipairs(rows) do
+      widest = math.max(widest, #row)
+    end
+  end
+  local single = widest < 2
   for _, row in ipairs(rows) do
     -- Row 1 is the header and row 2 the first data row: neither can continue the
     -- row above (the header is never wrapped). A row with no text at all is data.
