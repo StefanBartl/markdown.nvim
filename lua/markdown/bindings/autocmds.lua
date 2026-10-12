@@ -242,6 +242,22 @@ function M.setup(cfg)
     )
   end
 
+  -- Cell popup: CursorHold in any table cell shows its full text in a float.
+  -- On by default, opt out with `table.popup = false` (or legacy
+  -- `table.truncate.popup = false`). Read live, so no re-setup needed.
+  if feat("table") then
+    local aug_popup = api.nvim_create_augroup("MarkdownNvimTableCellPopup", { clear = true })
+    autocmd.create("CursorHold", function(ev)
+      if not is_md(vim.bo[ev.buf].filetype) then return end
+      local t = require("markdown.config").get().table or {}
+      if t.popup == false or (t.truncate or {}).popup == false then return end
+      require("markdown.core.table_popup").show(ev.buf, { force = true })
+    end, {
+      group = aug_popup,
+      desc = "[markdown.nvim] table: popup with the content of the cell under the cursor",
+    })
+  end
+
   -- Table-wrap resize hook + selective on-save reflow (independent opt-in via
   -- config.table.wrap.auto_resize / .selective_reflow; both default off).
   if feat("table_wrap") then

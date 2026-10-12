@@ -163,6 +163,7 @@ require("markdown").setup({
   -- wrap.enabled = true makes plain :Markdown table format / <leader>mtf /
   -- table mode wrap at wrap.max (40 when unset); see docs/table-wrap.md.
   table = {
+    -- popup = true, -- CursorHold in a table cell: float with its content (false = off)
     -- truncate = { enabled = false, max = 40, marker = "…", popup = true }, -- display-only cell cut + full-text popup
     header_align = "center", -- "left" | "center" | "right"
     entry_align  = "center",

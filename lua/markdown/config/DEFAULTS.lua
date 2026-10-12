@@ -145,8 +145,12 @@ local DEFAULTS = {
       enabled = false, -- true: on for every markdown buffer
       max = 40, -- widest column shown, in display columns
       marker = "…", -- one character
-      popup = true, -- CursorHold: float with the full text of a cut cell
+      popup = true, -- legacy opt-out, same as `table.popup = false` when false
     },
+
+    -- CursorHold in any table cell: float with the cell's full content.
+    -- Opt out with `popup = false`.
+    popup = true,
 
     wrap_profiles = {
       compact = { auto = false, min = 4, max = 20, pad = 0 },

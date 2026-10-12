@@ -171,10 +171,10 @@ dependency-free reimplementation of the vim-table-mode essentials.
   is concealed (extmark `conceal`), padding and separator dashes of the other
   cells are concealed so the column stays aligned. Turns `conceallevel` up to 2
   in the window while on and restores it. The cursor line shows its full text
-  unless `concealcursor` includes the current mode. While on, `CursorHold` in a
-  cut cell opens a small popup with the whole cell text (native float, no focus,
-  closes on the next move; `table.truncate.popup = false` disables it);
-  `show` / `<leader>mtp` opens it for any cell. Always-on:
+  unless `concealcursor` includes the current mode. Independently of truncation,
+  `CursorHold` in any table cell opens a small popup with the cell content
+  (native float, no focus, closes on the next move; on by default,
+  `table.popup = false` disables it); `show` / `<leader>mtp` opens it on demand. Always-on:
   `table.truncate.enabled = true`. `<leader>mtu` toggles it.
 - **tableize** converts the current line (or a `:'<,'>` visual range) of
   delimited text into a GFM table. The separator is auto-detected (tab, comma,
