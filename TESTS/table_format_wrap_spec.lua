@@ -323,6 +323,43 @@ return function(H)
     )
   end
 
+  -- table mode on the default path: nothing written -> the cursor stays where it is (even on a
+  -- pipe or in the padding); insert mode and another buffer are left alone
+  buf = open({ "| Name | Note |", "| ---- | ---- |", "| abcd | xxxx |" })
+  tcmd.run({ "format" })
+  local aligned = get(buf)
+  for _, col in ipairs({ 0, 6, 7, #aligned[3] - 1 }) do
+    vim.api.nvim_win_set_cursor(0, { 3, col })
+    require("markdown.core.table_mode").reformat(buf)
+    eq(
+      vim.api.nvim_win_get_cursor(0)[2],
+      col,
+      "an aligned table does not move the cursor (col " .. col .. ")"
+    )
+  end
+
+  local real_get_mode = vim.api.nvim_get_mode
+  vim.api.nvim_get_mode = function() return { mode = "i", blocking = false } end -- luacheck: ignore 122
+  vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "| abcd | a much longer cell here |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 4 })
+  local before_insert = table.concat(get(buf), "\n")
+  require("markdown.core.table_mode").reformat(buf)
+  vim.api.nvim_get_mode = real_get_mode -- luacheck: ignore 122
+  eq(table.concat(get(buf), "\n"), before_insert, "no reformat while in insert mode")
+  eq(vim.api.nvim_win_get_cursor(0)[2], 4, "and the insert cursor is not moved")
+
+  local other = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(other, 0, -1, false, { "| a | b |", "|---|---|", "| c | dddddd |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 5 })
+  local pos = vim.api.nvim_win_get_cursor(0)
+  require("markdown.core.table_mode").reformat(other)
+  eq(
+    vim.inspect(vim.api.nvim_win_get_cursor(0)),
+    vim.inspect(pos),
+    "a hidden buffer does not move the current cursor"
+  )
+  eq(get(other)[1], "| a | b |", "and is not re-formatted from the wrong window")
+
   -- an empty cell keeps the cursor inside it; a cursor in the indent maps to column 1
   require("markdown.config").setup({ table = { wrap = { enabled = true, max = 30 } } })
   buf = open({ "| A | B |", "| --- | --- |", "|  | y |", "| c | d |" })
