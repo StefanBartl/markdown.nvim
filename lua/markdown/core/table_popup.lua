@@ -1,8 +1,9 @@
 ---@module 'markdown.core.table_popup'
 ---@brief Popup with the full text of the table cell under the cursor.
 ---@description
---- Companion of `core.table_truncate`: a cell shown cut with `…` gets its whole
---- text in a small float next to the cursor. Native float (no dependency on
+--- Float with the full text of the table cell under the cursor (on `CursorHold`
+--- for every cell by default, see `table.popup`; also the whole text of a cell
+--- shown cut with `…` by `core.table_truncate`). Native float (no dependency on
 --- hover.nvim, which is optional for this plugin); the float never takes
 --- focus and closes on the next cursor move, mode change or buffer switch.
 ---
@@ -76,6 +77,35 @@ function M.body(text, width)
   return out
 end
 
+---Whether 1-based `row` of `bufnr` sits in a real GFM table (a run of pipe lines with a
+---separator row) outside a fenced code block, as opposed to a stray `| a |` line.
+---@param bufnr integer
+---@param row integer
+---@return boolean
+function M.in_table(bufnr, row)
+  local last = api.nvim_buf_line_count(bufnr)
+  local lo, hi = row, row
+  local function is_row(n)
+    return lib_table.is_table_line(api.nvim_buf_get_lines(bufnr, n - 1, n, false)[1] or "")
+  end
+  while lo > 1 and is_row(lo - 1) do
+    lo = lo - 1
+  end
+  while hi < last and is_row(hi + 1) do
+    hi = hi + 1
+  end
+  if hi - lo < 2 then return false end
+  local has_sep = false
+  for _, l in ipairs(api.nvim_buf_get_lines(bufnr, lo - 1, hi, false)) do
+    if lib_table.is_separator_line(l) then
+      has_sep = true
+      break
+    end
+  end
+  if not has_sep then return false end
+  return require("markdown.scope.builtin").block_at(bufnr, row - 1) == nil
+end
+
 ---@type { win: integer, buf: integer, group: integer }|nil
 local current
 
@@ -93,7 +123,7 @@ function M.is_open() return current ~= nil and api.nvim_win_is_valid(current.win
 
 ---Open the popup for the cell under the cursor.
 ---@param bufnr? integer
----@param opts? { force?: boolean, max?: integer }
+---@param opts? { force?: boolean, max?: integer, strict?: boolean } `strict`: only inside a real table (no fenced code, no special buffer)
 ---@return boolean shown
 function M.show(bufnr, opts)
   opts = opts or {}
@@ -103,6 +133,9 @@ function M.show(bufnr, opts)
   local line = api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1]
   local cell = line and M.cell_at(line, col)
   if not cell or cell.text == "" then return false end
+  if opts.strict and (vim.bo[bufnr].buftype ~= "" or not M.in_table(bufnr, row)) then
+    return false
+  end
 
   local cfg = ((require("markdown.config").get().table or {}).truncate or {})
   local limit = opts.max or cfg.max or require("markdown.core.table_truncate").DEFAULT_MAX
@@ -130,6 +163,7 @@ function M.show(bufnr, opts)
     style = "minimal",
     border = "rounded",
     focusable = false,
+    zindex = 40, -- below the link hover float, which may open on the same CursorHold
     noautocmd = true,
   })
   if not opened then

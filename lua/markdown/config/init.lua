@@ -256,6 +256,10 @@ local function degrade_invalid_scalars(cfg, issues)
 
   local ALIGNS = { left = true, center = true, right = true }
   if cfg.table then
+    if type(cfg.table.popup) ~= "boolean" then
+      bad("table.popup", cfg.table.popup, DEFAULTS.table.popup)
+      cfg.table.popup = DEFAULTS.table.popup
+    end
     if type(cfg.table.header_align) ~= "string" or not ALIGNS[cfg.table.header_align] then
       bad("table.header_align", cfg.table.header_align, DEFAULTS.table.header_align)
       cfg.table.header_align = DEFAULTS.table.header_align

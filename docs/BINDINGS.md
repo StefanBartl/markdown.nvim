@@ -218,6 +218,7 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `BufWritePost` | `MarkdownNvimLinkDiagnostics` | `*.md`, `*.markdown`, `*.mdx` | Link diagnostics check on save (`config.links.diagnostics.mode == "save"`, default `off`) |
 | `BufWritePre` | `MarkdownNvimLinksSanitize` | `*.md`, `*.markdown`, `*.mdx` | Normalize link targets on save (`config.links.sanitize_on_save`, default **on**) |
 | `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |
+| `CursorHold` | `MarkdownNvimTableCellPopup` | (none — all buffers, filtered to markdown filetypes) | Float with the content of the table cell under the cursor (feature `table`; real tables outside code fences in normal buffers only; opt out with `table.popup = false`) |
 | `BufWritePre` | `MarkdownNvimTableWrapSelective` | `*.md`, `*.markdown`, `*.mdx` | Reflow only tables changed since last save (`config.table.wrap.selective_reflow`, default `off`) |
 | `ColorScheme` | `MarkdownNvimHL` | `*` | Re-apply blockquote/link-underline highlights (feature `hl` / `link_hl`) — blockquote itself is a decoration provider now, not a `FileType`/`BufEnter` re-apply |
 | `ColorScheme` | `MarkdownNvimFencedFix` | `*` | Re-apply fenced-code-block highlight overrides (feature `fenced_fix`, default on) — a separate group from `MarkdownNvimHL`, not the same registration |

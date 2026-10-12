@@ -249,9 +249,11 @@ function M.setup(cfg)
     local aug_popup = api.nvim_create_augroup("MarkdownNvimTableCellPopup", { clear = true })
     autocmd.create("CursorHold", function(ev)
       if not is_md(vim.bo[ev.buf].filetype) then return end
-      local t = require("markdown.config").get().table or {}
+      local config = require("markdown.config")
+      if not config.feature_enabled("table") then return end
+      local t = config.get().table or {}
       if t.popup == false or (t.truncate or {}).popup == false then return end
-      require("markdown.core.table_popup").show(ev.buf, { force = true })
+      require("markdown.core.table_popup").show(ev.buf, { force = true, strict = true })
     end, {
       group = aug_popup,
       desc = "[markdown.nvim] table: popup with the content of the cell under the cursor",
