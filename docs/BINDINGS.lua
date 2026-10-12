@@ -412,6 +412,14 @@ return {
         feature = "table",
         desc = "Toggle table cell truncation",
       },
+      {
+        id = "table_cell_popup",
+        lhs = "<leader>mtp",
+        mode = "n",
+        action = "table_cell_popup",
+        feature = "table",
+        desc = "Popup with the full table cell text",
+      },
     },
 
     tableview = {

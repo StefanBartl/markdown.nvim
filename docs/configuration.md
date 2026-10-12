@@ -163,6 +163,7 @@ require("markdown").setup({
   -- wrap.enabled = true makes plain :Markdown table format / <leader>mtf /
   -- table mode wrap at wrap.max (40 when unset); see docs/table-wrap.md.
   table = {
+    -- truncate = { enabled = false, max = 40, marker = "…", popup = true }, -- display-only cell cut + full-text popup
     header_align = "center", -- "left" | "center" | "right"
     entry_align  = "center",
     -- col_overrides = { { col = 1, align = "left" }, { col = "Name", align = "left" } },

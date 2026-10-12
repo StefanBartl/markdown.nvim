@@ -287,8 +287,13 @@ local function do_truncate(argv)
     notify.info("Table truncate: off")
   elseif action == "toggle" then
     notify.info("Table truncate: " .. (tt.toggle(bufnr) and "on" or "off"))
+  elseif action == "show" then
+    -- Full text of the cell under the cursor, whether or not it is cut.
+    if not require("markdown.core.table_popup").show(bufnr, { force = true }) then
+      notify.info("Table truncate: no table cell with text under the cursor")
+    end
   else
-    notify.warn("table truncate: expected on|off|toggle")
+    notify.warn("table truncate: expected on|off|toggle|show")
   end
 end
 
@@ -361,7 +366,7 @@ function M.complete(arglead, cmdline)
   end
   if (sub == "mode" or sub == "truncate") and slot == 4 then
     local out = {}
-    for _, name in ipairs({ "on", "off", "toggle" }) do
+    for _, name in ipairs({ "on", "off", "toggle", "show" }) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     return out

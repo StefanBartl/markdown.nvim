@@ -145,6 +145,7 @@ local DEFAULTS = {
       enabled = false, -- true: on for every markdown buffer
       max = 40, -- widest column shown, in display columns
       marker = "…", -- one character
+      popup = true, -- CursorHold: float with the full text of a cut cell
     },
 
     wrap_profiles = {
