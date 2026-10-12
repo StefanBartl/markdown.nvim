@@ -65,6 +65,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `table_prev_cell` | `[\|` | n | `table_prev_cell` | feature `table` | Prev table cell |
 | `table_format` | `<leader>mtf` | n | `table_format` | feature `table` | Format table at cursor |
 | `table_truncate_toggle` | `<leader>mtu` | n | `table_truncate_toggle` | feature `table` | Toggle table cell truncation |
+| `table_cell_popup` | `<leader>mtp` | n | `table_cell_popup` | feature `table` | Popup with the full table cell text |
 
 `zf` is an override of a builtin. It only takes effect with
 `use_zf_override = true`; `<localleader>f` does the same thing without touching

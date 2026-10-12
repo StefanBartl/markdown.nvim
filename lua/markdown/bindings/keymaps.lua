@@ -287,6 +287,14 @@ local DEFAULT_KEYMAPS = {
     feature = "table",
     desc = "Toggle table cell truncation",
   },
+  {
+    id = "table_cell_popup",
+    mode = "n",
+    lhs = "<leader>mtp",
+    action = "table_cell_popup",
+    feature = "table",
+    desc = "Popup with the full table cell text",
+  },
 }
 
 --- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.

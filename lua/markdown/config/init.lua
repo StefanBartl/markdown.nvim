@@ -123,7 +123,7 @@ local NESTED_OPTS = {
     "stopwords",
   },
   table = { "header_align", "entry_align", "col_overrides", "wrap", "wrap_profiles", "truncate" },
-  ["table.truncate"] = { "enabled", "max", "marker" },
+  ["table.truncate"] = { "enabled", "max", "marker", "popup" },
   ["table.wrap"] = {
     "enabled",
     "auto",

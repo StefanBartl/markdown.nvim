@@ -192,6 +192,8 @@ function M.table_prev_cell() repeat_cell_move(require("markdown.core.table_mode"
 function M.table_mode_toggle() require("markdown.core.table_mode").toggle() end
 ---Toggles display-only truncation of over-wide table cells for the current buffer.
 function M.table_truncate_toggle() require("markdown.core.table_truncate").toggle() end
+---Shows the full text of the table cell under the cursor in a popup.
+function M.table_cell_popup() require("markdown.core.table_popup").show(nil, { force = true }) end
 
 -- Routed through the command instead of `table_fmt` directly so the key and
 -- `:Markdown table format` stay one behaviour: same default scope (cursor),
