@@ -141,6 +141,16 @@ function M.rows_to_gfm(rows, opts)
   local header_align = opts.header_align or dcfg.header_align
   local entry_align = opts.entry_align or dcfg.entry_align
 
+  -- A literal pipe in cell text (HTML/CSV import) must be written as `\|`, or
+  -- the row gains a column; one already escaped is left alone.
+  for _, r in ipairs(rows) do
+    for ci, cell in ipairs(r) do
+      r[ci] = (
+        cell:gsub("(\\*)|", function(bs) return #bs % 2 == 1 and (bs .. "|") or (bs .. "\\|") end)
+      )
+    end
+  end
+
   local col_count = 0
   for _, r in ipairs(rows) do
     col_count = math.max(col_count, #r)

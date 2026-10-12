@@ -58,4 +58,32 @@ return function(H)
   for i = 1, #out do
     eq(out2[i], out[i], "idempotent row " .. i)
   end
+  -- escaped pipe: the Shells.md table must stay three columns and keep its `\|`
+  do
+    local bs = string.char(92)
+    local lines = {
+      "| Syntax | Meaning | Example |",
+      "|---|---|---|",
+      "| `a " .. bs .. "| b` | Pipe | `npx vitest run " .. bs .. "| more` |",
+      "| `>` | redirect | |",
+    }
+    local fmt_out = require("lib.nvim.markdown.table").format_lines(lines)
+    for i, l in ipairs(fmt_out) do
+      eq(#tf.parse_row(l), 3, "escaped-pipe table keeps 3 columns in row " .. i)
+    end
+    ok(fmt_out[3]:find(bs .. "|", 1, true) ~= nil, "the escaped pipe survives formatting")
+
+    local tv = require("markdown.tableview.parser").get_tables_from_lines(lines)
+    eq(#tv, 1, "tableview parses the table")
+    eq(#tv[1].rows[1].cells, 3, "tableview keeps 3 cells (escaped pipe)")
+    eq(#tv[1].rows[2].cells, 3, "tableview keeps the empty trailing cell")
+  end
+  -- import writers escape a literal pipe in cell text
+  do
+    local bs = string.char(92)
+    local g = tf.rows_to_gfm({ { "H1", "H2" }, { "a|b", "c" .. bs .. "|d" } })
+    eq(#tf.parse_row(g[3]), 2, "an unescaped pipe in cell text is escaped on import")
+    ok(g[3]:find("a" .. bs .. "|b", 1, true) ~= nil, "a|b becomes a|b")
+    ok(not g[3]:find(bs .. bs .. "|", 1, true), "an already escaped pipe is not escaped twice")
+  end
 end

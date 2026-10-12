@@ -20,11 +20,15 @@ local function parse_alignment(token)
   end
 end
 
+-- Splits like `lib.nvim.markdown.table` (an escaped pipe stays in its cell, an
+-- empty cell is kept); rows written without the outer pipes are still accepted.
 local function parse_row(line)
+  local s = trim(line)
+  if s:sub(1, 1) ~= "|" then s = "|" .. s end
+  if s:sub(-1) ~= "|" then s = s .. "|" end
   local cells = {}
-  line = line:gsub("^%s*|", ""):gsub("|%s*$", "")
-  for cell in line:gmatch("([^|]+)") do
-    table.insert(cells, { content = trim(cell) })
+  for _, content in ipairs((require("lib.nvim.markdown.table").split_cells(s))) do
+    table.insert(cells, { content = content })
   end
   return cells
 end
