@@ -99,8 +99,11 @@ local function usrcmds() return require("markdown.bindings.usrcmds") end
 ---@internal
 ---@param cfg Mkdn.Config
 local function apply_to_already_loaded(cfg)
+  local truncate = ((cfg.table or {}).truncate or {}).enabled
+    and require("markdown.config").feature_enabled("table")
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if api.nvim_buf_is_loaded(bufnr) and is_md(vim.bo[bufnr].filetype) then
+      if truncate then pcall(require("markdown.core.table_truncate").enable, bufnr) end
       local ok, err = pcall(function()
         if cfg.enable_autocmds ~= false then
           keymaps().apply(bufnr)
@@ -230,15 +233,12 @@ function M.setup(cfg)
 
   -- Cell truncation on for every markdown buffer (config.table.truncate.enabled).
   if feat("table") and ((cfg.table or {}).truncate or {}).enabled then
-    local aug_trunc = api.nvim_create_augroup("MarkdownNvimTableTruncateAuto", { clear = true })
-    autocmd.create(
-      "FileType",
-      function(ev) require("markdown.core.table_truncate").enable(ev.buf) end,
-      {
-        group = aug_trunc,
-        pattern = { "markdown", "mdx" },
-        desc = "[markdown.nvim] table truncate: enable (table.truncate.enabled)",
-      }
+    -- Through the FileType dispatcher like every other feature: it covers
+    -- `markdown.*`/`md`, and a `setup()` that runs again takes it back out.
+    on_filetype(
+      "table_truncate",
+      "[markdown.nvim] table truncate: enable (table.truncate.enabled)",
+      function(ctx) require("markdown.core.table_truncate").enable(ctx.buf) end
     )
   end
 

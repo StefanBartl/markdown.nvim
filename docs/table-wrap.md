@@ -21,7 +21,13 @@ Resolution: an explicit `nowrap`/`wrap` wins, then a given `max=`/`auto`, then
 `table.wrap.enabled`. `<leader>mtf` and table mode follow the same rule. Cells
 that overflow share the same continuation rows: a row takes as many physical
 rows as its longest cell needs, the other columns reuse them. A code span or
-link is never split, so an unbreakable one still overflows its column.
+link is never split, so an unbreakable one still overflows its column. The header
+row is never wrapped either (a second header line above the separator would no
+longer be a GFM table), so a header wider than the cap widens its column.
+
+Precedence, last wins: `table.wrap` config, the active profile, the per-table
+`<!-- mdwrap: ... -->` directive, then the call's own `max=`/`auto`. `skip=` adds to
+the configured `col_overrides` instead of replacing them.
 
 `scope=cwd` and `scope=<file>` wrap too (the BOM, CRLF endings and a missing final
 newline of the file are kept; an unchanged file is not rewritten). `auto` uses the

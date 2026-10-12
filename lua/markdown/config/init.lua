@@ -290,6 +290,15 @@ local function degrade_invalid_scalars(cfg, issues)
       end
     end
 
+    if type(cfg.table.truncate) ~= "table" then
+      -- `truncate = true` is the natural shorthand for "on"
+      local on = cfg.table.truncate == true
+      if cfg.table.truncate ~= nil and type(cfg.table.truncate) ~= "boolean" then
+        bad("table.truncate", cfg.table.truncate, "a table")
+      end
+      cfg.table.truncate = vim.deepcopy(DEFAULTS.table.truncate)
+      cfg.table.truncate.enabled = on
+    end
     local trunc = cfg.table.truncate
     if trunc then
       if type(trunc.max) ~= "number" or trunc.max < 3 then

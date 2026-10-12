@@ -312,7 +312,7 @@ function M.run(argv, ctx)
   local sub = argv[1]
   local fn = sub and subcommands[sub]
   if not fn then
-    notify.info("Usage: :Markdown table <view|format|new|mode|tableize|import> ...")
+    notify.info("Usage: :Markdown table <view|format|new|mode|truncate|tableize|import> ...")
     return
   end
   table.remove(argv, 1)
@@ -362,7 +362,9 @@ function M.complete(arglead, cmdline)
   end
   if (sub == "mode" or sub == "truncate") and slot == 4 then
     local out = {}
-    for _, name in ipairs({ "on", "off", "toggle", "show" }) do
+    local names = { "on", "off", "toggle" }
+    if sub == "truncate" then names[#names + 1] = "show" end
+    for _, name in ipairs(names) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
     end
     return out

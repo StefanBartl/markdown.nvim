@@ -92,5 +92,53 @@ return function(H)
   eq(tt.toggle(buf), false, "toggle turns off")
   eq(vim.wo.conceallevel, 0, "conceallevel restored")
   eq(#vim.api.nvim_buf_get_extmarks(buf, ns, 0, -1, {}), 0, "extmarks cleared")
+
+  -- centered columns: a cut cell that is not the widest also loses its leading padding
+  local centered = lib.format_lines(SRC, { header_align = "center", entry_align = "center" })
+  local cm = tt.compute(centered, { max = 20, marker = "…" })
+  local cwidth = vim.fn.strdisplaywidth(shown(centered[1], cm[1]))
+  for i = 1, #centered do
+    eq(
+      vim.fn.strdisplaywidth(shown(centered[i], cm[i])),
+      cwidth,
+      "centered: row " .. i .. " has the common width"
+    )
+  end
+
+  -- conceallevel is window-local: neither the global value nor a new window changes
+  vim.go.conceallevel = 0
+  vim.wo.conceallevel = 0
+  tt.enable(buf)
+  eq(vim.go.conceallevel, 0, "the global conceallevel is untouched")
+  vim.cmd("new")
+  eq(vim.wo.conceallevel, 0, "a window opened later starts at the global value")
+  vim.cmd("close")
+  tt.disable(buf)
+
+  -- a re-render without an edit is skipped (stamp = changedtick + settings)
+  tt.enable(buf)
+  eq(tt.render(buf), 0, "nothing to redo while the text and the settings are unchanged")
+  vim.api.nvim_buf_set_lines(buf, -1, -1, false, { "" })
+  ok(tt.render(buf) > 0, "an edit renders again")
+  tt.disable(buf)
+
+  -- composing marks are not split from their base character
+  local nfd = "e" .. string.char(204, 129) -- e + U+0301
+  local text = string.rep(nfd, 12)
+  local keep = select(
+    2,
+    next(
+      tt.compute(
+        { "| A |", "|---|", "| " .. text .. " |", "| " .. string.rep("w", 30) .. " |" },
+        { max = 6 }
+      )
+    )
+  )
+  ok(keep ~= nil, "a line with composing marks is truncated")
+
+  -- `truncate = true` is accepted as "on"
+  require("markdown.config").setup({ table = { truncate = true } })
+  eq(require("markdown.config").get().table.truncate.enabled, true, "truncate = true turns it on")
+  eq(require("markdown.config").get().table.truncate.max, 40, "and keeps the default max")
   require("markdown.config").setup({})
 end
