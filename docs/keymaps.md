@@ -153,6 +153,7 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>tvm` | n | Toggle table mode (auto-format) |
 | `]\|` / `[\|` | n | Next / previous table cell |
 | `<leader>mtf` | n | Format the table at the cursor (`:Markdown table format`) |
+| `<leader>mtu` | n | Toggle display-only truncation of over-wide cells (`:Markdown table truncate`) |
 
 Inside the floating preview itself (buffer-local to the popup, Normal mode
 only — not active anywhere else):

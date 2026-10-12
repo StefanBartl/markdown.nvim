@@ -279,6 +279,14 @@ local DEFAULT_KEYMAPS = {
     feature = "table",
     desc = "Format table at cursor",
   },
+  {
+    id = "table_truncate_toggle",
+    mode = "n",
+    lhs = "<leader>mtu",
+    action = "table_truncate_toggle",
+    feature = "table",
+    desc = "Toggle table cell truncation",
+  },
 }
 
 --- The default keymap specs (id/mode/lhs/action/desc), exposed for docs/tooling.

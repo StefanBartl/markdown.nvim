@@ -64,6 +64,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `table_next_cell` | `]\|` | n | `table_next_cell` | feature `table` | Next table cell |
 | `table_prev_cell` | `[\|` | n | `table_prev_cell` | feature `table` | Prev table cell |
 | `table_format` | `<leader>mtf` | n | `table_format` | feature `table` | Format table at cursor |
+| `table_truncate_toggle` | `<leader>mtu` | n | `table_truncate_toggle` | feature `table` | Toggle table cell truncation |
 
 `zf` is an override of a builtin. It only takes effect with
 `use_zf_override = true`; `<localleader>f` does the same thing without touching
@@ -160,6 +161,7 @@ buffer-local.
 | `:Markdown table format [options]` | GFM table formatter at cursor/in scope |
 | `:Markdown table new [cols] [rows]` | Insert an empty GFM table template |
 | `:Markdown table mode [on\|off\|toggle]` | Per-buffer table auto-format (vim-table-mode style) |
+| `:Markdown table truncate [on\|off\|toggle]` | Per-buffer display-only truncation of over-wide cells |
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |
 | `:Markdown table import [clipboard\|PATH]` | Parse an HTML `<table>` into a GFM table (round-trips with the browser export) |
 | `:Markdown render [on\|off\|toggle]` | render-markdown.nvim wrapper (optional host) |

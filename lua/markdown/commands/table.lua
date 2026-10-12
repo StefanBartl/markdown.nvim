@@ -273,16 +273,36 @@ end
 -- dispatch
 -- ---------------------------------------------------------------------------
 
+---@internal
+---@param argv string[]
+local function do_truncate(argv)
+  local tt = require("markdown.core.table_truncate")
+  local action = (argv[1] or "toggle"):lower()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if action == "on" then
+    tt.enable(bufnr)
+    notify.info("Table truncate: on")
+  elseif action == "off" then
+    tt.disable(bufnr)
+    notify.info("Table truncate: off")
+  elseif action == "toggle" then
+    notify.info("Table truncate: " .. (tt.toggle(bufnr) and "on" or "off"))
+  else
+    notify.warn("table truncate: expected on|off|toggle")
+  end
+end
+
 local subcommands = {
   view = do_view,
   format = do_format,
   new = do_new,
   mode = do_mode,
+  truncate = do_truncate,
   tableize = do_tableize,
   import = do_import,
 }
 
---- Runs `:Markdown table <view|format|new|mode|tableize|import> ...`.
+--- Runs `:Markdown table <view|format|new|mode|truncate|tableize|import> ...`.
 ---@param argv string[]
 ---@param ctx? table  forwarded command context (range/line1/line2)
 ---@return nil
@@ -339,7 +359,7 @@ function M.complete(arglead, cmdline)
       return out
     end
   end
-  if sub == "mode" and slot == 4 then
+  if (sub == "mode" or sub == "truncate") and slot == 4 then
     local out = {}
     for _, name in ipairs({ "on", "off", "toggle" }) do
       if vim.startswith(name, arglead) then out[#out + 1] = name end
