@@ -64,20 +64,26 @@ end
 
 ---Resolves the effective wrap opts for the table starting at `table_start`
 ---(config defaults -> active profile -> per-table directive -> `overrides`).
----@param bufnr integer
+---@param bufnr integer|nil  # nil: no buffer (file scopes), no profile
 ---@param table_start integer?
 ---@param overrides table?
+---@param lines string[]|nil  # the text the table is in, when there is no buffer to read the directive from
 ---@return table
-function M.resolve_wrap_opts(bufnr, table_start, overrides)
+function M.resolve_wrap_opts(bufnr, table_start, overrides, lines)
   local cfg = table_cfg()
   local base = cfg.wrap or {}
-  local profile_name = vim.b[bufnr] and vim.b[bufnr].mdtable_profile
+  local profile_name = bufnr and vim.b[bufnr] and vim.b[bufnr].mdtable_profile
   local profile = profile_name and (cfg.wrap_profiles or {})[profile_name]
 
   local opts = vim.tbl_deep_extend("force", {}, base, profile or {}, overrides or {})
 
   if table_start then
-    local directive = find_directive(bufnr, table_start)
+    local directive
+    if lines then
+      directive = table_start > 1 and M.parse_directive(lines[table_start - 1]) or nil
+    elseif bufnr then
+      directive = find_directive(bufnr, table_start)
+    end
     if directive then opts = vim.tbl_deep_extend("force", opts, directive) end
   end
 
@@ -223,6 +229,20 @@ end
 ---@param bufnr integer
 ---@param parsed table
 ---@param opts table
+---@internal
+---Copy of `parsed` with its continuation rows merged back (`reflow`).
+---@param parsed table
+---@param opts table
+---@return table
+local function unwrapped(parsed, opts)
+  return vim.tbl_extend(
+    "force",
+    parsed,
+    { rows = table_wrap.unwrap_rows(parsed.rows, opts.join or " ") }
+  )
+end
+
+---@internal
 local function apply_wrap(bufnr, parsed, opts)
   local win = api.nvim_get_current_win()
   local ok_cur, cur = pcall(api.nvim_win_get_cursor, win)
@@ -235,7 +255,8 @@ local function apply_wrap(bufnr, parsed, opts)
   local bounds = { start_line = parsed.start_line, end_line = parsed.end_line }
   table_wrap._fire("before_reflow", bounds, opts)
 
-  local rendered, layout = table_wrap.render(parsed, opts)
+  local rendered, layout =
+    table_wrap.render(opts.reflow and unwrapped(parsed, opts) or parsed, opts)
   api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
   place_signs(bufnr, parsed.start_line, layout, opts)
 
@@ -788,6 +809,79 @@ function M.format_buffer(bufnr, overrides)
     apply_wrap(bufnr, t, opts)
   end
   return true, nil, #tables
+end
+
+---Same as `format_buffer` on plain lines (no buffer, no window): used by the file
+---scopes. Returns the new lines and the number of tables rendered.
+---@param lines string[]
+---@param overrides table?
+---@return string[] out
+---@return integer count
+function M.format_lines(lines, overrides)
+  local tables = table_fmt.parse_all_tables(lines)
+  table.sort(tables, function(a, b) return a.start_line > b.start_line end)
+  local out = vim.list_slice(lines)
+  for _, t in ipairs(tables) do
+    local opts = M.resolve_wrap_opts(nil, t.start_line, overrides, lines)
+    if not opts.max and not opts.auto then opts.max = M.DEFAULT_FORMAT_MAX end
+    local rendered = table_wrap.render(opts.reflow and unwrapped(t, opts) or t, opts)
+    local new = vim.list_slice(out, 1, t.start_line - 1)
+    vim.list_extend(new, rendered)
+    vim.list_extend(new, vim.list_slice(out, t.end_line + 1))
+    out = new
+  end
+  return out, #tables
+end
+
+---Width-capped format of the tables in the file at `path`, in place. Keeps the BOM,
+---the CRLF endings and a missing final newline, and writes only when something changed.
+---@param path string
+---@param overrides table?
+---@return boolean ok
+---@return string? err
+---@return integer count
+function M.format_file(path, overrides)
+  local disk = require("markdown.util.disk_lines")
+  local read_ok, lines, meta = pcall(disk.read, path)
+  if not read_ok then return false, string.format("Cannot read %q", path), 0 end
+  local out, count = M.format_lines(lines, overrides)
+  if count == 0 or table.concat(out, "\n") == table.concat(lines, "\n") then
+    return true, nil, count
+  end
+  if not disk.write(path, out, meta) then
+    return false, string.format("Cannot write %q", path), 0
+  end
+  return true, nil, count
+end
+
+---`scope=cwd` or a file path for the width-capped format.
+---@param scope string
+---@param overrides table?
+---@return boolean ok
+---@return string? err
+function M.format_scope(scope, overrides)
+  local files
+  if scope == "cwd" then
+    files = require("markdown.util.md_files").collect(vim.fn.getcwd())
+  else
+    local path = expand_path(scope)
+    if vim.fn.filereadable(path) == 0 then
+      return false, string.format("File not readable: %q", path)
+    end
+    files = { path }
+  end
+  local errors, done = {}, 0
+  for _, path in ipairs(files) do
+    local ok, err = M.format_file(path, overrides)
+    if ok then
+      done = done + 1
+    else
+      errors[#errors + 1] = err
+    end
+  end
+  notify.info(string.format("Formatted tables in %d file(s) (wrapped)", done))
+  if #errors > 0 then return false, table.concat(errors, "; ") end
+  return true, nil
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────

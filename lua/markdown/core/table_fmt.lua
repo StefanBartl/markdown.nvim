@@ -319,6 +319,9 @@ function M.parse_args(args)
       opts.wrap = true
     elseif raw:lower() == "nowrap" then
       opts.wrap = false
+    elseif raw:lower() == "reflow" then
+      opts.wrap = true
+      opts.reflow = true
     elseif raw:lower() == "auto" then
       opts.auto = true
     elseif VALID_ALIGN[raw:lower()] then
@@ -354,6 +357,7 @@ function M.complete(arg_lead)
     "max=",
     "wrap",
     "nowrap",
+    "reflow",
     "auto",
     "scope=cursor",
     "scope=buffer",

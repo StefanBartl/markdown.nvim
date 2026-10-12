@@ -23,10 +23,14 @@ that overflow share the same continuation rows: a row takes as many physical
 rows as its longest cell needs, the other columns reuse them. A code span or
 link is never split, so an unbreakable one still overflows its column.
 
-Limits: `scope=cwd` and file scopes keep natural widths (a notice says so). A
-table that is already wrapped is *not* unwrapped first (the continuation
-heuristic below could merge a genuine sparse row), so run `:MDTableUnwrap`
-before formatting with a different `max`. In GitHub or browser rendering the
+`scope=cwd` and `scope=<file>` wrap too (the BOM, CRLF endings and a missing final
+newline of the file are kept; an unchanged file is not rewritten). `auto` uses the
+current window's width there.
+
+A table that is already wrapped is *not* unwrapped first (the continuation
+heuristic below could merge a genuine sparse row). To change `max` on a wrapped
+table pass `reflow`: `:Markdown table format reflow max=20` merges the continuation
+rows first, then wraps again. Without it, formatting at the same width is a no-op. In GitHub or browser rendering the
 continuation rows are real table rows; only the editor shows the `↳` sign.
 
 ```markdown
