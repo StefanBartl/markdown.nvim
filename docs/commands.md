@@ -93,7 +93,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
 :Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope|reopen]
 :Markdown table format [options]        " align columns / normalize separators
                                          " options: left|center|right, header=, cell=, skip=, scope=,
-                                         "          max=N | wrap | nowrap | auto  (cap the column width)
+                                         "          max=N | wrap | nowrap | auto | reflow  (cap the column width)
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table truncate [on|off|toggle|show] " cut over-wide cells with … (display only); show = popup

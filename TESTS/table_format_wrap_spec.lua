@@ -101,4 +101,34 @@ return function(H)
       "line within the default cap: " .. l
     )
   end
+  -- pure lines (file scopes): wrapped like the buffer path
+  local plines, pcount = mdtable.format_lines(SRC, { max = 20 })
+  eq(pcount, 1, "format_lines wraps one table")
+  eq(table.concat(plines, "\n"), table.concat(out, "\n"), "pure path equals the buffer path")
+
+  -- file scope keeps BOM, CRLF and a missing final newline
+  local path = vim.fn.tempname() .. ".md"
+  local disk = require("markdown.util.disk_lines")
+  disk.write(path, vim.deepcopy(SRC), { bom = true, crlf = true, final_newline = false })
+  tcmd.run({ "format", "max=20", "scope=" .. path })
+  local rl, meta = disk.read(path)
+  eq(meta.bom, true, "the BOM is kept")
+  eq(meta.crlf, true, "the CRLF endings are kept")
+  eq(meta.final_newline, false, "a missing final newline stays missing")
+  eq(table.concat(rl, "\n"), table.concat(out, "\n"), "the file holds the wrapped table")
+  local before = vim.uv.fs_stat(path).mtime.nsec
+  tcmd.run({ "format", "max=20", "scope=" .. path })
+  eq(vim.uv.fs_stat(path).mtime.nsec, before, "an unchanged file is not rewritten")
+  vim.fn.delete(path)
+
+  -- reflow: merge continuation rows first, so a changed max re-flows
+  buf = open(SRC)
+  tcmd.run({ "format", "max=30" })
+  tcmd.run({ "format", "reflow", "max=20" })
+  eq(
+    table.concat(get(buf), "\n"),
+    table.concat(out, "\n"),
+    "reflow at max=20 equals wrapping the original at 20"
+  )
+  eq(tf.parse_args({ "reflow" }).reflow, true, "reflow flag parsed")
 end
