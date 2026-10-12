@@ -65,6 +65,7 @@ return function(H)
     au[1].callback({ buf = buf })
   end
   vim.bo[buf].filetype = "markdown"
+  vim.bo[buf].buftype = ""
   require("markdown.config").setup({})
   require("markdown.bindings.autocmds").setup(require("markdown.config").get())
   vim.api.nvim_win_set_cursor(0, { 3, 4 })
@@ -74,5 +75,45 @@ return function(H)
   require("markdown.config").setup({ table = { popup = false } })
   hold()
   eq(tp.is_open(), false, "table.popup = false opts out")
+
+  -- only real tables in normal buffers: not a fenced block, not a lone pipe line, not nofile
+  require("markdown.config").setup({})
+  require("markdown.bindings.autocmds").setup(require("markdown.config").get())
+  vim.bo[buf].buftype = "nofile"
+  vim.api.nvim_win_set_cursor(0, { 3, 4 })
+  hold()
+  eq(tp.is_open(), false, "no popup in a nofile buffer")
+  vim.bo[buf].buftype = ""
+  hold()
+  ok(tp.is_open(), "a normal buffer gets it")
+  tp.close()
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "```",
+    "| A | B |",
+    "|---|---|",
+    "| ok | x |",
+    "```",
+    "",
+    "| lone | row |",
+  })
+  vim.api.nvim_win_set_cursor(0, { 4, 3 })
+  hold()
+  eq(tp.is_open(), false, "no popup inside a fenced code block")
+  vim.api.nvim_win_set_cursor(0, { 7, 3 })
+  hold()
+  eq(tp.is_open(), false, "no popup on a lone pipe line")
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "| A | B |", "|---|---|", "| ok | x |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 3 })
+
+  -- feature off and a non-boolean value
+  require("markdown.config").setup({ table = { popup = "off" } })
+  eq(
+    require("markdown.config").get().table.popup,
+    true,
+    "an invalid table.popup falls back to true"
+  )
+  require("markdown.config").setup({ features = { disable = { "table" } } })
+  hold()
+  eq(tp.is_open(), false, "feature table = false: the leftover autocmd does nothing")
   require("markdown.config").setup({})
 end

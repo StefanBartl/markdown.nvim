@@ -117,7 +117,7 @@
 ---@field enabled boolean # On for every markdown buffer. Default false.
 ---@field max integer # Widest column shown (display columns). Default 40.
 ---@field marker string # One-character marker for the cut tail. Default "…".
----@field popup boolean # CursorHold float with the full text of a cut cell. Default true.
+---@field popup boolean # Legacy opt-out for the cell popup (`table.popup`); false disables it. Default true.
 
 ---@class Mkdn.TableConfig
 ---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
