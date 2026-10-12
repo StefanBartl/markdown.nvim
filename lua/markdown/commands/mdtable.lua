@@ -181,7 +181,8 @@ local function column_at(bufnr, line_1idx, byte_col_0idx, col_count)
   local raw = api.nvim_buf_get_lines(bufnr, line_1idx - 1, line_1idx, false)[1] or ""
   local c1 = byte_col_0idx + 1
   local ranges = cell_ranges(raw)
-  local col_index = #ranges > 0 and #ranges or 1
+  -- Before the first pipe (indent of a table in a list item): the first column.
+  local col_index = (#ranges > 0 and c1 >= ranges[1][1] - 1) and #ranges or 1
   for i, rng in ipairs(ranges) do
     -- the pipe in front of a cell belongs to it
     if c1 >= rng[1] - 1 and c1 <= rng[2] then
@@ -213,11 +214,35 @@ end
 local function chars_into_cell(raw, byte_col_0idx, col_index)
   local rng = cell_ranges(raw)[col_index]
   if not rng then return 0 end
-  local lead = #raw:sub(rng[1], rng[2]):match("^ *")
+  local lead = #raw:sub(rng[1], rng[2]):match("^%s*")
   local content_start = rng[1] + lead
   local c1 = byte_col_0idx + 1
   if c1 <= content_start then return 0 end
-  return vim.fn.strchars(raw:sub(content_start, c1 - 1))
+  -- skipcc: `byteidx` (used to map it back) counts a base character with its
+  -- composing marks / variation selector as one character, so must this.
+  return vim.fn.strchars(raw:sub(content_start, c1 - 1), 1)
+end
+
+---@internal 0-indexed byte column of the cursor in cell `col_index` of `line`: `chars`
+---characters into the cell content, clamped to the content, always on a character start.
+---An empty cell keeps the cursor inside it (on its first byte).
+---@param line string
+---@param col_index integer
+---@param chars? integer
+---@return integer
+local function col_in_cell(line, col_index, chars)
+  local rng = cell_ranges(line)[col_index]
+  if not rng then return 0 end
+  local text = line:sub(rng[1], rng[2])
+  local lead = #text:match("^%s*")
+  if lead >= #text then return rng[1] - 1 end
+  local col = rng[1] - 1 + lead -- first content byte
+  if chars and chars > 0 then
+    local content = vim.trim(text)
+    local n = math.min(chars, math.max(vim.fn.strchars(content, 1) - 1, 0))
+    col = col + vim.fn.byteidx(content, n)
+  end
+  return col
 end
 
 ---@internal Find the physical (rendered) row/col for `logical_row`/`col_index`.
@@ -239,17 +264,32 @@ local function restore_position(rendered, layout, logical_row, col_index, chars)
   if not target_pi then return nil, nil end
   local line = rendered[target_pi]
   if not line then return nil, nil end
-  local rng = cell_ranges(line)[col_index]
-  if not rng then return target_pi, 0 end
-  local text = line:sub(rng[1], rng[2])
-  local lead = #text:match("^ *")
-  local col = rng[1] - 1 + lead -- first content byte, 0-indexed
-  if chars and chars > 0 then
-    local content = vim.trim(text)
-    local n = math.min(chars, math.max(vim.fn.strchars(content) - 1, 0))
-    col = col + vim.fn.byteidx(content, n) -- always a character boundary
-  end
-  return target_pi, col
+  return target_pi, col_in_cell(line, col_index, chars)
+end
+
+---Where the cursor is, as (row, cell, characters into the cell), for a caller that
+---re-formats a table without continuation rows (table mode, natural widths) and
+---puts the cursor back with `restore_cursor`. Nil when the current window does not
+---show `bufnr`.
+---@param bufnr integer
+---@return { row: integer, col_index: integer, chars: integer }|nil
+function M.snapshot_cursor(bufnr)
+  local win = api.nvim_get_current_win()
+  if api.nvim_win_get_buf(win) ~= bufnr then return nil end
+  local cur = api.nvim_win_get_cursor(win)
+  local raw = api.nvim_buf_get_lines(bufnr, cur[1] - 1, cur[1], false)[1] or ""
+  local col_index = column_at(bufnr, cur[1], cur[2], math.huge)
+  return { row = cur[1], col_index = col_index, chars = chars_into_cell(raw, cur[2], col_index) }
+end
+
+---@param bufnr integer
+---@param snap { row: integer, col_index: integer, chars: integer }
+function M.restore_cursor(bufnr, snap)
+  local win = api.nvim_get_current_win()
+  if api.nvim_win_get_buf(win) ~= bufnr then return end
+  local row = math.min(snap.row, api.nvim_buf_line_count(bufnr))
+  local line = api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
+  pcall(api.nvim_win_set_cursor, win, { row, col_in_cell(line, snap.col_index, snap.chars) })
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -278,6 +318,8 @@ end
 local function apply_wrap(bufnr, parsed, opts)
   local win = api.nvim_get_current_win()
   local ok_cur, cur = pcall(api.nvim_win_get_cursor, win)
+  -- A hidden buffer (resize hook over every loaded buffer) is not under this cursor.
+  if api.nvim_win_get_buf(win) ~= bufnr then ok_cur = false end
   local logical_row, col_index, cell_chars
   if ok_cur and cur[1] >= parsed.start_line and cur[1] <= parsed.end_line then
     logical_row = logical_row_at(parsed, cur[1])

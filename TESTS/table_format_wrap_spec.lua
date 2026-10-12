@@ -301,6 +301,49 @@ return function(H)
   eq(char_at(line, cur[2]), ochar, "and on the same character after the padding changed")
   require("markdown.config").setup({})
 
+  -- default path (no wrapping, centered): same character after the re-padding, also with
+  -- composing marks (NFD) and a variation-selector emoji
+  for _, cell in ipairs({
+    "größe äöü ßx",
+    "e" .. string.char(204, 129) .. "e" .. string.char(204, 129) .. "x yz",
+  }) do
+    buf = open({ "| Name | Note |", "| --- | --- |", "| a | " .. cell .. " |", "| b | x |" })
+    local l3 = get(buf)[3]
+    local target = l3:find("x", 1, true) - 1
+    vim.api.nvim_win_set_cursor(0, { 3, target })
+    local before_char = char_at(l3, target)
+    vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "| b | a considerably longer note here |" })
+    require("markdown.core.table_mode").reformat(buf)
+    local c2 = vim.api.nvim_win_get_cursor(0)
+    local l = get(buf)[c2[1]]
+    eq(
+      char_at(l, c2[2]),
+      before_char,
+      "default path keeps the character under the cursor: " .. cell
+    )
+  end
+
+  -- an empty cell keeps the cursor inside it; a cursor in the indent maps to column 1
+  require("markdown.config").setup({ table = { wrap = { enabled = true, max = 30 } } })
+  buf = open({ "| A | B |", "| --- | --- |", "|  | y |", "| c | d |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 2 })
+  vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "| cccccccc | d |" })
+  require("markdown.core.table_mode").reformat(buf)
+  local ec = vim.api.nvim_win_get_cursor(0)
+  local eline = get(buf)[ec[1]]
+  local first_pipe = eline:find("|", 1, true)
+  local second_pipe = eline:find("|", first_pipe + 1, true)
+  ok(ec[2] + 1 > first_pipe and ec[2] + 1 < second_pipe, "the cursor stays in the empty first cell")
+  require("markdown.config").setup({})
+
+  buf = open({ "  | A | B | C |", "  | --- | --- | --- |", "  | x | y | z |" })
+  vim.api.nvim_win_set_cursor(0, { 3, 0 })
+  eq(
+    require("markdown.commands.mdtable").snapshot_cursor(buf).col_index,
+    1,
+    "indent maps to column 1"
+  )
+
   -- a cursor on the separator row stays on the separator row
   require("markdown.config").setup({ table = { wrap = { enabled = true, max = 12 } } })
   buf = open({ "| Name | Note |", "|---|---|", "| a | b |" })
