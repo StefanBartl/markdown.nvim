@@ -92,6 +92,8 @@ dependency-free reimplementation of the vim-table-mode essentials.
 ```vim
 :Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope|reopen]
 :Markdown table format [options]        " align columns / normalize separators
+                                         " options: left|center|right, header=, cell=, skip=, scope=,
+                                         "          max=N | wrap | nowrap | auto  (cap the column width)
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table tableize [format]       " turn delimited text into a GFM table

@@ -67,7 +67,12 @@ function M.reformat(bufnr)
   local cur = api.nvim_win_get_cursor(win)
 
   if st then st.busy = true end
-  pcall(fmt.format_table_at_cursor, bufnr, {})
+  local mdtable = require("markdown.commands.mdtable")
+  if mdtable.wants_wrap() then
+    pcall(mdtable.format_at_cursor, bufnr, {})
+  else
+    pcall(fmt.format_table_at_cursor, bufnr, {})
+  end
   if st then st.busy = false end
 
   -- Clamp the saved cursor back into the (possibly reshaped) buffer.
