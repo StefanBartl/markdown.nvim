@@ -82,7 +82,7 @@ question each page answers.
 - [Link hover preview](docs/hover.md) — the float that previews what a link or a bare path points at, and everything it can show.
 - [Image captions](docs/image-captions.md) — implicit figures vs. an HTML `<figure>` vs. `@fig:` cross-references, and what each costs in the editor.
 - [Fenced-block scope](docs/fenced-scope.md) — why a Markdown document inside another one needs its own scope.
-- [Width-limited table wrapping](docs/table-wrap.md) — the `:MDTable*` family, and why the formatter aligns to natural width.
+- [Width-limited table wrapping](docs/table-wrap.md) — `:Markdown table format max=40`, the `:MDTable*` family, and display-only truncation with a full-text popup (`:Markdown table truncate`).
 - [Menu integration](docs/menu.md) — the context-aware entries shipped for nvzone/menu.
 - [Architecture](docs/architecture.md) — source tree layout and module responsibilities.
 - [Workflow](docs/WORKFLOW.md) — how the features combine while actually writing a document, rather than what each one does.
