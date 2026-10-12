@@ -6,6 +6,7 @@
 | `:Markdown links` | Scan, list and open links in a picker; `create` makes the files they point at; dead links are flagged |
 | `:Markdown refs` | Sync reference-style link anchors |
 | `:Markdown table` | GFM formatter, alignment, CSV import/export, linting, flavor conversion |
+| `:Markdown table truncate` | Show over-wide table cells cut with `…` (display only) and read the full text in a popup |
 | `:MDTable*` | Twelve standalone commands: width-limited wrap and unwrap, row and column folding, CSV round-trip, lint |
 | `:TableView*` | The floating table browser and its export toggle |
 | `:Markdown scope` | Treat the fenced code block under the cursor as its own sub-document |

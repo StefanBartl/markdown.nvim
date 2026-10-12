@@ -1,8 +1,9 @@
 # Tables
 
-Four layers, each usable independently: a GFM formatter, a live
-auto-format/tableize mode, a floating browser/export view, and (opt-in)
-width-limited wrapping.
+Five layers, each usable independently: a GFM formatter, a live
+auto-format/tableize mode, a floating browser/export view, (opt-in)
+width-limited wrapping, and (opt-in) display-only truncation of over-wide
+cells with a popup for the full text.
 
 ## `table_fmt` — GFM formatter
 
@@ -13,7 +14,8 @@ round-trip.
 - **Module:** `core/table_fmt.lua` (`format_table_at_cursor`,
   `format_tables_in_buffer`, `format_tables_in_scope`, `parse_html_table`,
   `rows_to_gfm`) — self-contained, no external dependency
-- **Command:** `:Markdown table format [header=|cell=|skip=|scope=]`,
+- **Command:** `:Markdown table format [header=|cell=|skip=|scope=|max=N|wrap|nowrap|auto|reflow]`
+  (the width options hand the table to `table_wrap`, see below),
   `:Markdown table import [clipboard|PATH]` (see
   [commands.md](../commands.md#markdown-table))
 - **Keymap:** `<leader>mtf` (format the table at the cursor — the
@@ -94,6 +96,10 @@ rows of the same logical row. Off by default — nothing changes until a
   `:MDTableAlign {cycle|left|center|right}`, `:MDTableFlavor {github|loose}`,
   `:MDTableLint`, `:MDTableFixMissingSeparator`, `:MDTableDebug`,
   `:MDTableToCSV [path]`, `:MDTableFromCSV [path]`
+- **Format with a width cap:** `:Markdown table format max=40` (also
+  `<leader>mtf` and table mode when `table.wrap.enabled = true`) wraps long cells
+  onto shared continuation rows, for the cursor, buffer, `scope=cwd` and file
+  scopes; `reflow` re-flows an already wrapped table.
 - **Config:** `table.wrap` (`enabled`, `auto`, `min`, `max`, `pad`, `join`,
   `soft_break_chars`, `continuation_marker`, `flavor`, `auto_resize`,
   `resize_debounce_ms`, `selective_reflow`), `table.wrap_profiles`
@@ -105,3 +111,23 @@ rows of the same logical row. Off by default — nothing changes until a
   than a competing manual-fold pass — see
   [HEADINGS.md](HEADINGS.md#folding)
 - **API hooks:** `core.table_wrap.on("before_reflow"|"after_reflow", fn)`
+
+## `table_truncate` + `table_popup` — one row per record, full text on demand
+
+Alternative to wrapping: keep every table row on one line. A cell wider than
+`table.truncate.max` (default 40 columns) is shown cut with `…`; the file text
+is never touched (extmark `conceal`, padding and separator dashes of the other
+cells are hidden too so the column stays aligned). With the cursor in a cut
+cell, a small popup shows the whole text. Off by default.
+
+- **Modules:** `core/table_truncate.lua` (pure `compute` + extmark rendering,
+  per-buffer enable/disable), `core/table_popup.lua` (`cell_at`, popup float)
+- **Commands:** `:Markdown table truncate [on|off|toggle|show]` (`show` opens the
+  popup for any cell)
+- **Keymaps:** `<leader>mtu` (toggle truncation), `<leader>mtp` (popup for the
+  cell under the cursor); ids `table_truncate_toggle`, `table_cell_popup`
+- **Config:** `table.truncate = { enabled = false, max = 40, marker = "…",
+  popup = true }` — `enabled = true` turns it on for every markdown buffer, and
+  `popup` (default true) opens the popup on `CursorHold` in a cut cell
+- **Needs:** `conceallevel >= 2` (set window-locally while on, then restored);
+  the cursor line shows its full text unless `concealcursor` includes the mode
