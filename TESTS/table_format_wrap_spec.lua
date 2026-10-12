@@ -227,6 +227,84 @@ return function(H)
     "the second table follows the grown first one intact"
   )
 
+  -- re-review fixes ------------------------------------------------------------------
+
+  -- :MDTableUnwrap on a single-column table leaves it alone
+  buf = open({ "| Item |", "| --- |", "| apple |", "| banana |", "| cherry |" })
+  mdtable.unwrap_at_cursor(buf)
+  eq(#get(buf), 5, "unwrap does not merge the rows of a single-column table")
+  eq(
+    #require("markdown.core.table_wrap").unwrap_rows(
+      { { "Item" }, { "apple" }, { "banana" }, { "cherry" } },
+      " "
+    ),
+    4,
+    "unwrap_rows guards single-column tables itself"
+  )
+
+  -- :MDTableUnwrap with a per-column max in col_overrides really unwraps
+  require("markdown.config").setup({
+    table = { wrap = { enabled = true }, col_overrides = { { col = 1, max = 10 } } },
+  })
+  buf = open({
+    "| Name | Note |",
+    "|---|---|",
+    "| the quick brown fox jumps over the lazy dog | x |",
+    "| b | y |",
+  })
+  mdtable.wrap_at_cursor(buf)
+  local wrapped_n = #get(buf)
+  ok(wrapped_n > 4, "col_overrides max wraps the first column")
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  mdtable.unwrap_at_cursor(buf)
+  eq(#get(buf), 4, "unwrap merges although a per-column max is configured")
+  require("markdown.config").setup({})
+
+  -- table mode with wrapping keeps the cursor inside its cell and does not move it when
+  -- nothing changed
+  require("markdown.config").setup({ table = { wrap = { enabled = true, max = 20 } } })
+  buf = open(SRC)
+  tcmd.run({ "format" })
+  vim.api.nvim_win_set_cursor(0, { 3, 12 })
+  local before_cursor = vim.api.nvim_win_get_cursor(0)
+  require("markdown.core.table_mode").reformat(buf)
+  eq(
+    vim.inspect(vim.api.nvim_win_get_cursor(0)),
+    vim.inspect(before_cursor),
+    "an unchanged table does not move the cursor"
+  )
+  require("markdown.config").setup({})
+
+  -- the plan never makes a column narrower than its header
+  local tw = require("markdown.core.table_wrap")
+  local plan = tw.plan({
+    col_count = 2,
+    rows = { { "A header wider than the cap", "B" }, { "x", "y" } },
+  }, { max = 8, min = 3 })
+  ok(
+    plan.widths[1] >= vim.fn.strdisplaywidth("A header wider than the cap"),
+    "plan floors at the header"
+  )
+
+  -- :MDTableReflowHeader keeps the header on one line
+  require("markdown.config").setup({ table = { wrap = { max = 12 } } })
+  buf = open({ "| Description of the thing | Count of items |", "|---|---|", "| a | b |" })
+  mdtable.reflow_header(buf)
+  eq(#get(buf), 3, "reflow_header does not add a header line")
+  require("markdown.config").setup({})
+
+  -- skip= adds to the configured col_overrides in the natural path too
+  require("markdown.config").setup({
+    table = { col_overrides = { { col = 1, align = "right" } } },
+  })
+  buf = open({ "| a | b |", "|---|---|", "| xxxx | y |" })
+  tcmd.run({ "format", "skip=2" })
+  ok(
+    get(buf)[3]:match("^|%s+xxxx |") ~= nil and get(buf)[1]:match("^|%s+a |") ~= nil,
+    "col 1 stays right-aligned"
+  )
+  require("markdown.config").setup({})
+
   -- completion: show belongs to truncate only
   local function has(list, item)
     for _, v in ipairs(list) do

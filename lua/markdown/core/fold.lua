@@ -17,7 +17,7 @@ end
 
 --- Table-wrap continuation-row detection, mirroring
 --- `core.table_wrap.unwrap_rows`'s heuristic (a non-separator table row with
---- at most one non-empty cell, directly following another table row).
+--- exactly one non-empty cell, directly following a data row of the table).
 --- Only consulted when `vim.b.mdtable_fold_continuations` is set (via
 --- `:MDTableFoldRow`/`:MDTableFoldAll`), so this is zero-overhead otherwise.
 ---@internal
@@ -30,13 +30,15 @@ local function is_table_continuation_line(bufnr, lnum)
   if not table_fmt.is_table_line(line) or table_fmt.is_separator_line(line) then return false end
   local prev = vim.api.nvim_buf_get_lines(bufnr, lnum - 2, lnum - 1, false)[1] or ""
   if not table_fmt.is_table_line(prev) then return false end
+  -- The first data row (right after the separator) never continues the header.
+  if table_fmt.is_separator_line(prev) then return false end
 
   local cells = table_fmt.parse_row(line)
   local nonempty = 0
   for _, c in ipairs(cells) do
     if table_fmt.trim(c) ~= "" then nonempty = nonempty + 1 end
   end
-  return nonempty <= 1
+  return nonempty == 1
 end
 
 ---Computes the fold level for line `lnum` (used as `foldexpr`).

@@ -102,9 +102,15 @@ function M.plan(parsed, opts)
     maxs[i] = ov.max or opts.max
     modes[i] = maxs[i] and "max" or (opts.auto and "auto" or "natural")
 
+    -- The header row is never wrapped, so the column can not be narrower than
+    -- its header: floor the minimum here, before the auto shrink budgets widths.
+    local hw = table_fmt.display_width(table_fmt.trim((parsed.rows[1] or {})[i] or ""))
+    if hw > mins[i] then mins[i] = hw end
     local w = natural[i]
     if w < mins[i] then w = mins[i] end
     if maxs[i] and w > maxs[i] then w = maxs[i] end
+    -- a header wider than `max` wins: it is never wrapped
+    if w < hw then w = hw end
     widths[i] = w
   end
 
@@ -382,10 +388,13 @@ end
 function M.unwrap_rows(rows, join)
   join = join or " "
   local merged = {}
+  -- One column: every row has exactly one non-empty cell, so no row can be told
+  -- from a continuation row. Nothing is merged.
+  local single = rows[1] ~= nil and #rows[1] < 2
   for _, row in ipairs(rows) do
     -- Row 1 is the header and row 2 the first data row: neither can continue the
     -- row above (the header is never wrapped). A row with no text at all is data.
-    local is_continuation = #merged > 1 and nonempty_count(row) == 1
+    local is_continuation = not single and #merged > 1 and nonempty_count(row) == 1
     if is_continuation then
       local prev = merged[#merged]
       for ci, c in ipairs(row) do

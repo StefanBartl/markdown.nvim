@@ -195,14 +195,27 @@ local function logical_row_at(parsed, cursor_line)
   return math.max(1, math.min(logical_row, #parsed.rows))
 end
 
+---@internal Byte distance from the pipe in front of the cursor to the cursor (0-indexed col).
+---@param raw string
+---@param byte_col_0idx integer
+---@return integer
+local function offset_in_cell(raw, byte_col_0idx)
+  local pipe0 = 0
+  for i = 1, math.min(byte_col_0idx, #raw) do
+    if raw:sub(i, i) == "|" then pipe0 = i - 1 end
+  end
+  return math.max(byte_col_0idx - pipe0, 1)
+end
+
 ---@internal Find the physical (rendered) row/col for `logical_row`/`col_index`.
 ---@param rendered string[]
 ---@param layout Mkdn.TableWrapLayoutEntry[]
 ---@param logical_row integer
 ---@param col_index integer
+---@param cell_off? integer  # offset from the cell's left pipe (see `offset_in_cell`)
 ---@return integer? physical_row  1-indexed into `rendered`
 ---@return integer? byte_col  0-indexed
-local function restore_position(rendered, layout, logical_row, col_index)
+local function restore_position(rendered, layout, logical_row, col_index, cell_off)
   local target_pi
   for i, entry in ipairs(layout) do
     if entry.logical_index == logical_row and not entry.is_continuation then
@@ -222,6 +235,12 @@ local function restore_position(rendered, layout, logical_row, col_index)
         break
       end
     end
+  end
+  if cell_off and cell_off > 1 then
+    -- keep the cursor's place inside the cell, clamped before the next pipe
+    local nxt = line:find("|", col + 1, true)
+    col = math.min(col - 1 + cell_off, (nxt or (#line + 1)) - 2)
+    col = math.max(col, 0)
   end
   return target_pi, col
 end
@@ -252,10 +271,12 @@ end
 local function apply_wrap(bufnr, parsed, opts)
   local win = api.nvim_get_current_win()
   local ok_cur, cur = pcall(api.nvim_win_get_cursor, win)
-  local logical_row, col_index
+  local logical_row, col_index, cell_off
   if ok_cur and cur[1] >= parsed.start_line and cur[1] <= parsed.end_line then
     logical_row = logical_row_at(parsed, cur[1])
     col_index = column_at(bufnr, cur[1], cur[2], parsed.col_count)
+    local raw = api.nvim_buf_get_lines(bufnr, cur[1] - 1, cur[1], false)[1] or ""
+    cell_off = offset_in_cell(raw, cur[2])
   end
 
   local bounds = { start_line = parsed.start_line, end_line = parsed.end_line }
@@ -264,7 +285,8 @@ local function apply_wrap(bufnr, parsed, opts)
   local rendered, layout =
     table_wrap.render(opts.reflow and unwrapped(parsed, opts) or parsed, opts)
   local current = api.nvim_buf_get_lines(bufnr, parsed.start_line - 1, parsed.end_line, false)
-  if not vim.deep_equal(current, rendered) then
+  local wrote = not vim.deep_equal(current, rendered)
+  if wrote then
     api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
   end
   place_signs(bufnr, parsed.start_line, layout, opts)
@@ -273,8 +295,9 @@ local function apply_wrap(bufnr, parsed, opts)
     { start_line = parsed.start_line, end_line = parsed.start_line - 1 + #rendered }
   table_wrap._fire("after_reflow", new_bounds, opts)
 
-  if logical_row and cur then
-    local pi, col = restore_position(rendered, layout, logical_row, col_index)
+  -- Unchanged table: the cursor is where it was; leave it alone.
+  if wrote and logical_row and cur then
+    local pi, col = restore_position(rendered, layout, logical_row, col_index, cell_off)
     if pi then pcall(api.nvim_win_set_cursor, win, { parsed.start_line - 1 + pi, col }) end
   end
 end
@@ -290,6 +313,14 @@ local function apply_unwrap(bufnr, parsed, opts)
   -- No wrapping on the write-back: natural widths only.
   local flat_opts = vim.tbl_extend("force", opts, { auto = false, min = 1 })
   flat_opts.max, flat_opts.win_width = nil, nil
+  -- A per-column `max` would wrap the merged cells again: keep align/min only.
+  local flat_overrides = {}
+  for _, ov in ipairs(opts.col_overrides or {}) do
+    local copy = vim.deepcopy(ov)
+    copy.max = nil
+    flat_overrides[#flat_overrides + 1] = copy
+  end
+  flat_opts.col_overrides = flat_overrides
   local rendered = table_wrap.render(merged_parsed, flat_opts)
   api.nvim_buf_set_lines(bufnr, parsed.start_line - 1, parsed.end_line, false, rendered)
   clear_signs(bufnr, parsed.start_line, parsed.start_line + #rendered)
@@ -424,21 +455,14 @@ function M.reflow_header(bufnr)
   local opts = M.resolve_wrap_opts(bufnr, parsed.start_line)
   local colplan = table_wrap.plan(parsed, opts)
 
-  local wrapped, max_lines = {}, 1
-  for ci = 1, parsed.col_count do
-    local wl = table_wrap.wrap_cell(parsed.rows[1][ci] or "", colplan.widths[ci], opts)
-    wrapped[ci] = wl
-    if #wl > max_lines then max_lines = #wl end
-  end
-
+  -- One physical header line (a wrapped header above the separator is not GFM);
+  -- the plan already floors every column at its header's width.
   local out = {}
-  for li = 1, max_lines do
-    local cells = {}
-    for ci = 1, parsed.col_count do
-      cells[ci] = wrapped[ci][li] or ""
-    end
-    out[#out + 1] = table_fmt.format_row(cells, colplan.widths, opts.header_align or "center", {})
+  local cells = {}
+  for ci = 1, parsed.col_count do
+    cells[ci] = parsed.rows[1][ci] or ""
   end
+  out[1] = table_fmt.format_row(cells, colplan.widths, opts.header_align or "center", {})
   out[#out + 1] =
     table_fmt.gen_separator(colplan.widths, opts.separator_style or parsed.separator_style)
 
