@@ -34,6 +34,8 @@ local function is_table_continuation_line(bufnr, lnum)
   if table_fmt.is_separator_line(prev) then return false end
 
   local cells = table_fmt.parse_row(line)
+  -- One column: no row can be told from a continuation (as `unwrap_rows`).
+  if #cells < 2 then return false end
   local nonempty = 0
   for _, c in ipairs(cells) do
     if table_fmt.trim(c) ~= "" then nonempty = nonempty + 1 end

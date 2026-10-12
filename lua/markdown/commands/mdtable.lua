@@ -164,6 +164,14 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ---@internal
+---@param line string
+---@return { [1]: integer, [2]: integer }[] ranges  # 1-based byte range of each raw cell (escape-aware)
+local function cell_ranges(line)
+  local _, ranges = require("lib.nvim.markdown.table").split_cells(line)
+  return ranges
+end
+
+---@internal
 ---@param bufnr integer
 ---@param line_1idx integer
 ---@param byte_col_0idx integer
@@ -171,40 +179,45 @@ end
 ---@return integer col_index  1-indexed
 local function column_at(bufnr, line_1idx, byte_col_0idx, col_count)
   local raw = api.nvim_buf_get_lines(bufnr, line_1idx - 1, line_1idx, false)[1] or ""
-  local upto = raw:sub(1, byte_col_0idx)
-  local col_index = 0
-  for _ in upto:gmatch("|") do
-    col_index = col_index + 1
+  local c1 = byte_col_0idx + 1
+  local ranges = cell_ranges(raw)
+  local col_index = #ranges > 0 and #ranges or 1
+  for i, rng in ipairs(ranges) do
+    -- the pipe in front of a cell belongs to it
+    if c1 >= rng[1] - 1 and c1 <= rng[2] then
+      col_index = i
+      break
+    end
   end
-  col_index = math.max(1, col_index)
   return math.min(col_index, math.max(col_count, 1))
 end
 
 ---@internal
 ---@param parsed table
 ---@param cursor_line integer
----@return integer logical_row
+---@return integer logical_row  # 0 = the separator row
 local function logical_row_at(parsed, cursor_line)
   local physical_idx = cursor_line - parsed.start_line + 1
-  local logical_row
-  if physical_idx <= 2 then
-    logical_row = 1 -- header or separator: snap to header
-  else
-    logical_row = physical_idx - 1
-  end
-  return math.max(1, math.min(logical_row, #parsed.rows))
+  if physical_idx <= 1 then return 1 end -- header
+  if physical_idx == 2 then return 0 end -- separator: the layout has an entry for it
+  return math.max(1, math.min(physical_idx - 1, #parsed.rows))
 end
 
----@internal Byte distance from the pipe in front of the cursor to the cursor (0-indexed col).
+---@internal Where the cursor is inside its cell, in characters from the cell's first
+---non-space character (0 when it is in the padding). Characters, not bytes: padding
+---changes on a re-format, and a byte offset can land inside a multibyte character.
 ---@param raw string
 ---@param byte_col_0idx integer
+---@param col_index integer
 ---@return integer
-local function offset_in_cell(raw, byte_col_0idx)
-  local pipe0 = 0
-  for i = 1, math.min(byte_col_0idx, #raw) do
-    if raw:sub(i, i) == "|" then pipe0 = i - 1 end
-  end
-  return math.max(byte_col_0idx - pipe0, 1)
+local function chars_into_cell(raw, byte_col_0idx, col_index)
+  local rng = cell_ranges(raw)[col_index]
+  if not rng then return 0 end
+  local lead = #raw:sub(rng[1], rng[2]):match("^ *")
+  local content_start = rng[1] + lead
+  local c1 = byte_col_0idx + 1
+  if c1 <= content_start then return 0 end
+  return vim.fn.strchars(raw:sub(content_start, c1 - 1))
 end
 
 ---@internal Find the physical (rendered) row/col for `logical_row`/`col_index`.
@@ -212,10 +225,10 @@ end
 ---@param layout Mkdn.TableWrapLayoutEntry[]
 ---@param logical_row integer
 ---@param col_index integer
----@param cell_off? integer  # offset from the cell's left pipe (see `offset_in_cell`)
+---@param chars? integer  # characters into the cell content (see `chars_into_cell`)
 ---@return integer? physical_row  1-indexed into `rendered`
 ---@return integer? byte_col  0-indexed
-local function restore_position(rendered, layout, logical_row, col_index, cell_off)
+local function restore_position(rendered, layout, logical_row, col_index, chars)
   local target_pi
   for i, entry in ipairs(layout) do
     if entry.logical_index == logical_row and not entry.is_continuation then
@@ -226,21 +239,15 @@ local function restore_position(rendered, layout, logical_row, col_index, cell_o
   if not target_pi then return nil, nil end
   local line = rendered[target_pi]
   if not line then return nil, nil end
-  local seen, col = 0, 0
-  for i = 1, #line do
-    if line:sub(i, i) == "|" then
-      seen = seen + 1
-      if seen == col_index then
-        col = i
-        break
-      end
-    end
-  end
-  if cell_off and cell_off > 1 then
-    -- keep the cursor's place inside the cell, clamped before the next pipe
-    local nxt = line:find("|", col + 1, true)
-    col = math.min(col - 1 + cell_off, (nxt or (#line + 1)) - 2)
-    col = math.max(col, 0)
+  local rng = cell_ranges(line)[col_index]
+  if not rng then return target_pi, 0 end
+  local text = line:sub(rng[1], rng[2])
+  local lead = #text:match("^ *")
+  local col = rng[1] - 1 + lead -- first content byte, 0-indexed
+  if chars and chars > 0 then
+    local content = vim.trim(text)
+    local n = math.min(chars, math.max(vim.fn.strchars(content) - 1, 0))
+    col = col + vim.fn.byteidx(content, n) -- always a character boundary
   end
   return target_pi, col
 end
@@ -263,7 +270,7 @@ local function unwrapped(parsed, opts)
   return vim.tbl_extend(
     "force",
     parsed,
-    { rows = table_wrap.unwrap_rows(parsed.rows, opts.join or " ") }
+    { rows = table_wrap.unwrap_rows(parsed.rows, opts.join or " ", parsed.col_count) }
   )
 end
 
@@ -271,12 +278,12 @@ end
 local function apply_wrap(bufnr, parsed, opts)
   local win = api.nvim_get_current_win()
   local ok_cur, cur = pcall(api.nvim_win_get_cursor, win)
-  local logical_row, col_index, cell_off
+  local logical_row, col_index, cell_chars
   if ok_cur and cur[1] >= parsed.start_line and cur[1] <= parsed.end_line then
     logical_row = logical_row_at(parsed, cur[1])
     col_index = column_at(bufnr, cur[1], cur[2], parsed.col_count)
     local raw = api.nvim_buf_get_lines(bufnr, cur[1] - 1, cur[1], false)[1] or ""
-    cell_off = offset_in_cell(raw, cur[2])
+    cell_chars = chars_into_cell(raw, cur[2], col_index)
   end
 
   local bounds = { start_line = parsed.start_line, end_line = parsed.end_line }
@@ -297,7 +304,7 @@ local function apply_wrap(bufnr, parsed, opts)
 
   -- Unchanged table: the cursor is where it was; leave it alone.
   if wrote and logical_row and cur then
-    local pi, col = restore_position(rendered, layout, logical_row, col_index, cell_off)
+    local pi, col = restore_position(rendered, layout, logical_row, col_index, cell_chars)
     if pi then pcall(api.nvim_win_set_cursor, win, { parsed.start_line - 1 + pi, col }) end
   end
 end
@@ -307,7 +314,7 @@ end
 ---@param parsed table
 ---@param opts table
 local function apply_unwrap(bufnr, parsed, opts)
-  local merged = table_wrap.unwrap_rows(parsed.rows, opts.join or " ")
+  local merged = table_wrap.unwrap_rows(parsed.rows, opts.join or " ", parsed.col_count)
   local merged_parsed =
     { rows = merged, col_count = parsed.col_count, separator_style = parsed.separator_style }
   -- No wrapping on the write-back: natural widths only.
@@ -697,14 +704,10 @@ function M.align_cycle(bufnr, mode)
     or (ALIGN_CYCLE[current] or "left")
   vim.b[bufnr][key] = next_align
 
-  local cfg = table_cfg()
-  local merged_overrides = {}
-  for _, ov in ipairs(cfg.col_overrides or {}) do
-    merged_overrides[#merged_overrides + 1] = ov
-  end
-  merged_overrides[#merged_overrides + 1] = { col = col_index, align = next_align }
-
-  local ok, err = table_fmt.format_table_at_cursor(bufnr, { col_overrides = merged_overrides })
+  local ok, err = table_fmt.format_table_at_cursor(
+    bufnr,
+    { col_overrides = { { col = col_index, align = next_align } } }
+  )
   if ok then
     notify.info(string.format("Column %d alignment: %s", col_index, next_align))
   else

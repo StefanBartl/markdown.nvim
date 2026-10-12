@@ -275,6 +275,56 @@ return function(H)
   )
   require("markdown.config").setup({})
 
+  -- cursor restore is by characters inside the cell: never inside a multibyte character,
+  -- and the same character stays under the cursor when the padding changes (centered)
+  require("markdown.config").setup({ table = { wrap = { enabled = true, max = 30 } } })
+  local function char_at(line, col0)
+    return line:sub(col0 + 1):match("^[%z\1-\127\194-\244][\128-\191]*")
+  end
+  buf = open({
+    "| Name | Note |",
+    "| --- | --- |",
+    "| äö | größe äöü ßx |",
+    "| cd | x |",
+  })
+  tcmd.run({ "format" })
+  local ln3 = get(buf)[3]
+  local ocol = ln3:find("öü", 1, true) - 1
+  vim.api.nvim_win_set_cursor(0, { 3, ocol })
+  local ochar = char_at(ln3, ocol)
+  vim.api.nvim_buf_set_lines(buf, 3, 4, false, { "| cd | a considerably longer note here |" })
+  require("markdown.core.table_mode").reformat(buf)
+  local cur = vim.api.nvim_win_get_cursor(0)
+  local line = get(buf)[cur[1]]
+  local b = line:byte(cur[2] + 1)
+  ok(b < 128 or b >= 192, "the cursor is on a character boundary, not inside a multibyte character")
+  eq(char_at(line, cur[2]), ochar, "and on the same character after the padding changed")
+  require("markdown.config").setup({})
+
+  -- a cursor on the separator row stays on the separator row
+  require("markdown.config").setup({ table = { wrap = { enabled = true, max = 12 } } })
+  buf = open({ "| Name | Note |", "|---|---|", "| a | b |" })
+  vim.api.nvim_win_set_cursor(0, { 2, 3 })
+  require("markdown.core.table_mode").reformat(buf)
+  eq(vim.api.nvim_win_get_cursor(0)[1], 2, "the separator row keeps the cursor")
+  require("markdown.config").setup({})
+
+  -- single-column fold predicate and ragged first row
+  eq(
+    #require("markdown.core.table_wrap").unwrap_rows({ { "H" }, { "a" }, { "b" }, { "c" } }, " ", 1),
+    4,
+    "col_count 1 never merges"
+  )
+  eq(
+    #require("markdown.core.table_wrap").unwrap_rows(
+      { { "H" }, { "a", "b" }, { "", "cont" }, { "c", "d" } },
+      " ",
+      2
+    ),
+    3,
+    "a ragged first row does not disable merging when col_count says 2"
+  )
+
   -- the plan never makes a column narrower than its header
   local tw = require("markdown.core.table_wrap")
   local plan = tw.plan({
