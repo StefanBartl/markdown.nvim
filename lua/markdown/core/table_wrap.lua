@@ -345,12 +345,12 @@ function M.render(parsed, opts)
     end
   end
 
-  emit(1, opts.header_align or "center")
+  emit(1, opts.header_align or "left")
   out[#out + 1] = table_fmt.gen_separator(effective, opts.separator_style or parsed.separator_style)
   layout[#layout + 1] =
     { logical_index = 0, is_continuation = false, cont_index = 0, separator = true }
   for ri = 2, #parsed.rows do
-    emit(ri, opts.entry_align or "center")
+    emit(ri, opts.entry_align or "left")
   end
 
   colplan.widths = effective

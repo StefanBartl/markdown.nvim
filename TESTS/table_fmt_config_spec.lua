@@ -18,15 +18,15 @@ return function(H)
     })
   end
 
-  -- Default (no config override, no opts): center alignment both roles.
+  -- Default (no config override, no opts): left alignment both roles.
   do
     local buf = H.scratch("markdown")
     fresh_table(buf)
     local okf, err = tf.format_table_at_cursor(buf, {})
     eq(okf, true, "format ok (" .. tostring(err) .. ")")
     local out = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    -- centered "Bob" has padding on both sides within its column width.
-    ok(out[3]:match("^| %s*Bob%s* |") ~= nil, "default center alignment")
+    -- left-aligned "Bob" has no padding in front of it.
+    ok(out[3]:match("^| Bob%s* |") ~= nil, "default left alignment")
   end
 
   -- config.table.header_align/entry_align supply defaults when opts don't override.

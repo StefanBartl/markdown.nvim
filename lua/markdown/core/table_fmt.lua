@@ -42,8 +42,8 @@ local function get_cfg()
   local ok, config = pcall(require, "markdown.config")
   local t = (ok and config.get().table) or {}
   return {
-    header_align = t.header_align or "center",
-    entry_align = t.entry_align or "center",
+    header_align = t.header_align or "left",
+    entry_align = t.entry_align or "left",
     col_overrides = t.col_overrides,
   }
 end
