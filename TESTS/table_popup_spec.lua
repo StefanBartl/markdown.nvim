@@ -56,5 +56,23 @@ return function(H)
   eq(text, vim.trim(long), "the float holds the full text")
   eq(vim.api.nvim_get_current_win() ~= float, true, "the float does not take focus")
   tp.close()
+
+  -- default CursorHold autocmd: any cell, opt-out via table.popup = false
+  local function hold()
+    local au =
+      vim.api.nvim_get_autocmds({ group = "MarkdownNvimTableCellPopup", event = "CursorHold" })
+    ok(#au > 0, "the CursorHold autocmd is registered")
+    au[1].callback({ buf = buf })
+  end
+  vim.bo[buf].filetype = "markdown"
+  require("markdown.config").setup({})
+  require("markdown.bindings.autocmds").setup(require("markdown.config").get())
+  vim.api.nvim_win_set_cursor(0, { 3, 4 })
+  hold()
+  ok(tp.is_open(), "CursorHold in a short cell opens the popup by default")
+  tp.close()
+  require("markdown.config").setup({ table = { popup = false } })
+  hold()
+  eq(tp.is_open(), false, "table.popup = false opts out")
   require("markdown.config").setup({})
 end

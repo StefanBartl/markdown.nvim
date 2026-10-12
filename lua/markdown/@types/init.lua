@@ -126,6 +126,7 @@
 ---@field wrap Mkdn.TableWrapConfig # Width-limited wrapping (`:MDTable*` commands).
 ---@field wrap_profiles table<string, table> # Named wrap-opt presets for `:MDTableProfile`.
 ---@field truncate Mkdn.TableTruncateConfig # Display-only cell truncation (`:Markdown table truncate`).
+---@field popup boolean # CursorHold float with the content of the cell under the cursor. Default true; false opts out.
 
 ---@class Mkdn.TableViewConfig
 ---@field style "markdown"|"box" # Default float style for `view toggle` / <leader>tvt.

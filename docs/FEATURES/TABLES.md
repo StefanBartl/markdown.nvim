@@ -127,7 +127,8 @@ cell, a small popup shows the whole text. Off by default.
 - **Keymaps:** `<leader>mtu` (toggle truncation), `<leader>mtp` (popup for the
   cell under the cursor); ids `table_truncate_toggle`, `table_cell_popup`
 - **Config:** `table.truncate = { enabled = false, max = 40, marker = "…",
-  popup = true }` — `enabled = true` turns it on for every markdown buffer, and
-  `popup` (default true) opens the popup on `CursorHold` in a cut cell
+  popup = true }` — `enabled = true` turns it on for every markdown buffer;
+  `table.popup` (default true, independent of truncation) opens the popup on
+  `CursorHold` in any table cell, `table.popup = false` opts out
 - **Needs:** `conceallevel >= 2` (set window-locally while on, then restored);
   the cursor line shows its full text unless `concealcursor` includes the mode

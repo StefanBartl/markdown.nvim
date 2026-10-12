@@ -243,15 +243,6 @@ function M.enable(bufnr)
     callback = schedule,
     desc = "[markdown.nvim] table truncate: re-render",
   })
-  api.nvim_create_autocmd("CursorHold", {
-    group = group,
-    buffer = bufnr,
-    callback = function()
-      local t = ((require("markdown.config").get().table or {}).truncate or {})
-      if t.popup ~= false then require("markdown.core.table_popup").show(bufnr) end
-    end,
-    desc = "[markdown.nvim] table truncate: popup with the full text of a cut cell",
-  })
   api.nvim_create_autocmd("BufWinEnter", {
     group = group,
     buffer = bufnr,
