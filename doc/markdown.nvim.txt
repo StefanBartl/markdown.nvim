@@ -1222,8 +1222,10 @@ is deleted.
   are left to the table grid while it is on; without it they get the inline
   marks. Only the rows in and around the windows are drawn (`render.margin`),
   debounced after edits and scrolling. `<leader>mrr` toggles it,
-  `render.enabled = true` turns it on for every markdown buffer. No host
-  plugin is needed (it replaces render-markdown.nvim). Needs Neovim >= 0.10.
+  `render.enabled = true` turns it on for every markdown buffer; `render = true`
+  in `setup()` is the short form of `render = { enabled = true }` (all other
+  keys keep their defaults). No host plugin is needed (it replaces
+  render-markdown.nvim). Needs Neovim >= 0.10.
   Config block `render` (per-construct switches and icons, see
   `config/DEFAULTS.lua`); highlight groups `MarkdownRender*`.
 

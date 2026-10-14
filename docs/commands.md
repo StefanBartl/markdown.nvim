@@ -173,7 +173,10 @@ dependency-free reimplementation of the vim-table-mode essentials.
   (scroll position preserved) — so re-checking a table repeatedly reuses the
   same tab instead of piling up a new one each time. Pass `reopen` if you
   closed that tab by hand and want a fresh one: `:Markdown table view browser
-  reopen`, `:TableViewOpenBrowserNice reopen`.
+  reopen`, `:TableViewOpenBrowserNice reopen`. When the system opener failed
+  (it could not start, or exited non-zero and no other opener took over; see
+  the attempt log in `:checkhealth markdown`), the next call opens again by
+  itself.
 - **format** runs the self-contained GFM formatter on the table at the cursor /
   in scope. Defaults come from `config.table` (`header_align`, `entry_align`,
   `col_overrides`) when the command args don't set them. `<leader>mtf` is the
