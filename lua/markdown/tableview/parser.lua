@@ -91,13 +91,17 @@ end
 --- I/O), so it works equally for a live buffer's lines and a file read from
 --- disk via `vim.fn.readfile`.
 ---@param lines string[]
+---@param opts? { skip_fences?: boolean }  # leave out tables inside fenced code blocks
 ---@return table[]
-function M.get_tables_from_lines(lines)
+function M.get_tables_from_lines(lines, opts)
   local tables = {}
+  local fenced = opts and opts.skip_fences and require("markdown.util.fence").mask(lines) or {}
   local i = 1
   while i <= #lines do
     local line = lines[i]
-    if line and line:match("|") and (i + 1) <= #lines and is_separator_row(lines[i + 1]) then
+    if fenced[i] then
+      i = i + 1
+    elseif line and line:match("|") and (i + 1) <= #lines and is_separator_row(lines[i + 1]) then
       local tbl_lines = { lines[i], lines[i + 1] }
       local j = i + 2
       while j <= #lines and lines[j] and lines[j]:match("|") do
@@ -125,13 +129,14 @@ end
 --- a caller that renders these into TableView write row edits back to the
 --- buffer they actually came from.
 ---@param bufnr? integer
+---@param opts? { skip_fences?: boolean }
 ---@return table[]
-function M.get_tables(bufnr)
+function M.get_tables(bufnr, opts)
   bufnr = bufnr or 0
   local ok, lines = pcall(vim.api.nvim_buf_get_lines, bufnr, 0, -1, false)
   if not ok or not lines then return {} end
   local resolved_bufnr = bufnr == 0 and vim.api.nvim_get_current_buf() or bufnr
-  local tables = M.get_tables_from_lines(lines)
+  local tables = M.get_tables_from_lines(lines, opts)
   for _, t in ipairs(tables) do
     t.bufnr = resolved_bufnr
   end
@@ -143,11 +148,12 @@ end
 --- returned table additionally carries `.source = path`, so callers can label
 --- which file a table came from when aggregating across several files.
 ---@param path string
+---@param opts? { skip_fences?: boolean }
 ---@return table[]
-function M.get_tables_from_file(path)
+function M.get_tables_from_file(path, opts)
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok or not lines then return {} end
-  local tables = M.get_tables_from_lines(lines)
+  local tables = M.get_tables_from_lines(lines, opts)
   for _, t in ipairs(tables) do
     t.source = path
   end
