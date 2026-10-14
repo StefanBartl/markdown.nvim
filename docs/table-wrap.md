@@ -102,8 +102,9 @@ rows when `wrap` is on.
 Notes: it needs Neovim >= 0.11 and `conceallevel >= 2` (raised window-locally
 while on; the value each window had is remembered per window, also for splits made
 later, and put back on `off`, when the window shows another buffer, or when the
-buffer is wiped). A table that starts on the first buffer line has no top border
-while the cursor is in its first row (Neovim draws no virtual line above line 1).
+buffer is wiped). Neovim draws no virtual line above buffer line 1, so for a table
+that starts there the window is scrolled to `topfill` to show the top border
+above the cursor row (windows at the top of the buffer only).
 Tables are indented like their source; a tab counts as what it displays as. Only
 the tables that changed are drawn again after an edit, the others keep their
 extmarks. `pad`, `min_width`, `max_width` and `debounce_ms` must be whole numbers

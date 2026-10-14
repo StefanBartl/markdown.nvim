@@ -208,7 +208,15 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `:TableViewToggle` | Toggle floating table preview (config default style) |
 | `:TableViewMarkdown` | Toggle floating table preview (aligned Markdown style) |
 | `:TableViewBox` | Toggle floating table preview (box-drawing style) |
-| `:TableViewSelect` | Pick a table from the buffer |
+| `:TableViewSelect [scope=%\|cwd\|PATH]` | Pick a table from the buffer, or of a scope (`scope=` and `buffer` are accepted like in `:Markdown table view`) |
+| `:TableViewList [scope=%\|cwd\|PATH] [style=grid\|markdown]` | Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim) |
+| `:TableViewRender [on\|off\|toggle]` | Same as `:Markdown table render`: virtual table grid fitted to the window |
+| `:TableViewTruncate [on\|off\|toggle]` | Same as `:Markdown table truncate` |
+| `:TableViewFormat [ALIGN] [scope=...]` | Same as `:Markdown table format` |
+| `:TableViewNew [cols] [rows]` | Same as `:Markdown table new` |
+| `:TableViewMode [on\|off\|toggle]` | Same as `:Markdown table mode` |
+| `:TableViewTableize [sep]` | Same as `:Markdown table tableize`; takes a range, a quoted separator such as a space survives |
+| `:TableViewImport [clipboard\|PATH]` | Same as `:Markdown table import`; takes a range |
 | `:TableViewClose` | Close floating preview |
 | `:TableViewOpenBrowser [reopen]` | Export table as basic HTML; reuses one tab across calls (auto-refreshing), `reopen` forces a new tab |
 | `:TableViewOpenBrowserNice [reopen]` | Export table as styled HTML; reuses one tab across calls (auto-refreshing), `reopen` forces a new tab |
@@ -222,6 +230,8 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `BufWritePost` | `MarkdownNvimLinkDiagnostics` | `*.md`, `*.markdown`, `*.mdx` | Link diagnostics check on save (`config.links.diagnostics.mode == "save"`, default `off`) |
 | `BufWritePre` | `MarkdownNvimLinksSanitize` | `*.md`, `*.markdown`, `*.mdx` | Normalize link targets on save (`config.links.sanitize_on_save`, default **on**) |
 | `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |
+| `TextChanged`, `TextChangedI`, `InsertLeave`, `CursorMoved`, `CursorMovedI`, `BufWinEnter`, `WinEnter`, `BufWinLeave`, `BufReadPost`, `BufWipeout` | `MarkdownNvimTableRenderBuf<bufnr>` | (buffer-local) | Table grid (`core.table_render`) while on in the buffer: re-render after edits, show the cursor row as text, keep `conceallevel` per window, clean up on wipeout |
+| `WinResized`, `VimResized`, `OptionSet`, `ColorScheme` | `MarkdownNvimTableRender` | (none; `OptionSet`: `number`, `relativenumber`, `signcolumn`, `foldcolumn`, `numberwidth`) | Table grid: re-lay-out after a resize or a change of the text area width; created on the first enable |
 | `CursorHold` | `MarkdownNvimTableCellPopup` | (none — all buffers, filtered to markdown filetypes) | Float with the content of the table cell under the cursor (feature `table`; real tables outside code fences in normal buffers only; opt out with `table.popup = false`) |
 | `BufWritePre` | `MarkdownNvimTableWrapSelective` | `*.md`, `*.markdown`, `*.mdx` | Reflow only tables changed since last save (`config.table.wrap.selective_reflow`, default `off`) |
 | `ColorScheme` | `MarkdownNvimHL` | `*` | Re-apply blockquote/link-underline highlights (feature `hl` / `link_hl`) — blockquote itself is a decoration provider now, not a `FileType`/`BufEnter` re-apply |

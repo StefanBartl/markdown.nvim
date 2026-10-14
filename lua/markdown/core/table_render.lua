@@ -588,6 +588,7 @@ end
 ---@field ids integer[]  # every extmark of the table
 ---@field probe integer  # a mark on the first line: where the table is now
 ---@field anchor? { id: integer, rel: integer }  # the grid hangs on a line outside the table
+---@field top_fill? integer  # virtual lines above buffer line 1 (the first row shows its text there)
 
 ---@internal
 ---Draws one table. `tlines` are its source lines, `first` the 1-based number of
@@ -666,7 +667,8 @@ local function draw(bufnr, first, tlines, model, raw, o)
     local id = hang(lnum, segs[0], last < nlines)
     if id then anchor = { id = id, rel = lnum - first } end
   end
-  return { ids = ids, probe = probe, anchor = anchor }
+  local top_fill = (#slots > 0 and slots[1] == 1) and #segs[0] or nil
+  return { ids = ids, probe = probe, anchor = anchor, top_fill = top_fill }
 end
 
 ---@type table<string, Mkdn.TableRenderModel|false>
@@ -734,6 +736,28 @@ local function marks_within(bufnr, ids, from, to)
     if not at or at < from or at > to then return false end
   end
   return true
+end
+
+---Neovim draws no virtual line above buffer line 1 unless the window is scrolled to
+---`topfill`. When the table starts on line 1 and its first row shows its text, the top
+---border sits there: show it in every window that is at the top of the buffer.
+---@param bufnr integer
+function M.sync_topfill(bufnr)
+  local st = S[bufnr]
+  if not st then return end
+  local want = 0
+  for _, t in ipairs(st.tables) do
+    if t.first == 1 and t.drawn.top_fill then want = t.drawn.top_fill end
+  end
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    api.nvim_win_call(win, function()
+      local v = vim.fn.winsaveview()
+      if v.topline == 1 and v.topfill ~= want then
+        v.topfill = want
+        vim.fn.winrestview(v)
+      end
+    end)
+  end
 end
 
 ---Apply the rendering for the whole buffer. A no-op while nothing changed
@@ -814,6 +838,7 @@ function M.render(bufnr, force)
     if not keep[m[1]] then pcall(api.nvim_buf_del_extmark, bufnr, NS, m[1]) end
   end
   st.tables = tables
+  M.sync_topfill(bufnr)
   return #tables
 end
 
@@ -823,6 +848,7 @@ end
 local function on_cursor(bufnr)
   local st = S[bufnr]
   if not st then return end
+  M.sync_topfill(bufnr)
   local now = cursor_rows(bufnr)
   local old = st.cursor or {}
   local same = true
@@ -851,6 +877,7 @@ local function on_cursor(bufnr)
         erase(bufnr, t)
         local tlines = api.nvim_buf_get_lines(bufnr, t.first - 1, t.last, false)
         t.drawn = draw(bufnr, t.first, tlines, t.model, raw, o)
+        M.sync_topfill(bufnr)
         t.rawkey = rawkey
       end
     end
