@@ -532,6 +532,12 @@ command args (`header=`, `cell=`, `skip=`) always override these per call.
 (case-insensitive); it also accepts `max`/`min` for width-limited wrapping
 (see below).
 
+`table.formats` is the list of embedded table formats looked for in markdown
+buffers (default { "gfm" }; "org" and "box" can be added, on an overlap the
+first one listed wins). csv / tsv are standalone and only used by `convert`.
+`table.render` configures the virtual grid (`enabled`, `border`, `cursor`,
+`pad`, `min_width`, `max_width`, `row_separator`, `debounce_ms`).
+
 `table.wrap` / `table.wrap_profiles` configure the `:MDTable*` width-limited
 wrapping command family; see |markdown.nvim-mdtable| for the full option
 list, per-table directive syntax, and API hooks.
@@ -933,8 +939,8 @@ is deleted.
     links              Show or generate Markdown links  |:Markdown-links|
     toc                Insert/refresh the TOC           |:Markdown-toc|
     refs               Sync #anchor links + TOC          |:Markdown-refs|
-    table              view/format/new/mode/tableize/import |:Markdown-table|
-    render             Toggle render-markdown.nvim       |:Markdown-render|
+    table              view/format/new/mode/tableize/import/render/list/convert |:Markdown-table|
+    render             Toggle native in-buffer rendering |:Markdown-render|
     preview            Start/stop mdview.nvim            |:Markdown-render|
     mdview             Open file via mdview.nvim         |:Markdown-render|
     export             Export to PDF via pdfport.nvim    |:Markdown-export|
@@ -1125,6 +1131,32 @@ is deleted.
   edit (debounced, on InsertLeave / TextChanged), reusing the `format`
   alignment. Also mapped to <leader>tvm.
 
+:Markdown table render [on|off|toggle]
+
+  Show every table as a compact grid that fits the window (display only, the
+  text is untouched): columns as wide as their longest cell, box borders
+  instead of pipes, cells wrapped onto virtual lines when the table is wider
+  than the window, re-laid-out on resize. The row under the cursor shows its
+  real text. Needs Neovim >= 0.11. Turning it on turns `table truncate` off.
+  `<leader>mtr`, always on with `table.render.enabled = true`.
+
+:Markdown table list [scope=...] [style=grid|markdown]
+
+  One entry per table of the scope (`%` / `buffer`, `cwd`, `cfile`, a file or
+  a directory) in a picker: `file:line  header  (n rows)`, jump to the one you
+  choose. With pickers.nvim the preview switches between the file and the
+  table alone with <M-t>. Also `:TableViewList`, <leader>mtl.
+
+:Markdown table convert [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]
+
+  Rewrite the table at the cursor (or in the range) in another format. `from`
+  `auto` tries every embedded format; csv / tsv read the range (or the whole
+  buffer) as delimited text. What the target cannot keep is reported
+  (alignment in csv/tsv, org row groups, a `#+TBLFM:` line). Embedded formats
+  found in buffers are chosen by `table.formats` (default { "gfm" }, add
+  "org" and/or "box"). TableView writes a table back in the format it was
+  read in. Also `:TableViewConvert`.
+
 :Markdown table tableize [format]
 
   Convert delimited text into a GFM table. Operates on the command's range
@@ -1172,9 +1204,19 @@ is deleted.
 
 :Markdown render [on|off|toggle]
 
-  Enable/disable render-markdown.nvim for the current buffer. The plugin is
-  an optional host dependency; the command warns gracefully when it is not
-  installed.
+  Enable/disable the native in-buffer rendering for the current buffer, plus
+  the table grid (`:Markdown table render`). Display only: everything is
+  extmarks, the text is never touched and the row under the cursor shows its
+  raw text. Drawn: headings (icon + background), bullets, checkboxes, code
+  blocks (background + language label), thematic breaks, block quotes and
+  callouts, inline code / links / images with the markup hidden. Table rows
+  are left to the table grid while it is on; without it they get the inline
+  marks. Only the rows in and around the windows are drawn (`render.margin`),
+  debounced after edits and scrolling. `<leader>mrr` toggles it,
+  `render.enabled = true` turns it on for every markdown buffer. No host
+  plugin is needed (it replaces render-markdown.nvim). Needs Neovim >= 0.10.
+  Config block `render` (per-construct switches and icons, see
+  `config/DEFAULTS.lua`); highlight groups `MarkdownRender*`.
 
 :Markdown preview [start|stop|toggle]
 
@@ -1629,7 +1671,7 @@ Sub-modules can be imported individually, e.g.: >
       markdown_links.lua     directory-to-link generator (links create)
       toc.lua                :Markdown toc (TOC + separators)
       table.lua              :Markdown table view|format|new
-      render.lua             :Markdown render (render-markdown.nvim)
+      render.lua             :Markdown render (native renderer + table grid)
       preview.lua            :Markdown preview (mdview.nvim)
       mdview.lua             :Markdown mdview (mdview.nvim)
       create.lua             :Markdown create fs

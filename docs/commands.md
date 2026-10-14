@@ -262,8 +262,19 @@ Everything lives under the `table` feature, and stays available when only the
 :Markdown mdview   [path]                " mdview.nvim (optional host)
 ```
 
-Thin wrappers around the optional host plugins; they warn gracefully if the
-plugin is not installed. `preview` starts/stops a
+`render` is built in and needs no host plugin: headings (icon + background),
+bullets, checkboxes, code blocks (background + language label), thematic
+breaks, block quotes and callouts, and inline code / links / images with the
+markup hidden, together with the table grid (`:Markdown table render`). It is
+display only, the row under the cursor shows its raw text, and only the rows
+in and around the windows are drawn. `<leader>mrr` toggles it, `render.enabled
+= true` turns it on for every markdown buffer; the `render` config block
+holds the per-construct switches and icons
+([configuration](configuration.md)). Details:
+[FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md#native-rendering-formerly-render-markdownnvim).
+
+`preview` and `mdview` are thin wrappers around the optional mdview.nvim; they
+warn gracefully if the plugin is not installed. `preview` starts/stops a
 [mdview.nvim](https://github.com/StefanBartl/mdview.nvim) session for the
 current buffer via `:MDView start`/`:MDView stop`; once running, mdview.nvim
 follows buffer switches and drives scroll sync itself (`browser.behavior`,

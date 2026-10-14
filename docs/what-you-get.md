@@ -7,6 +7,8 @@
 | `:Markdown refs` | Sync reference-style link anchors |
 | `:Markdown table` | GFM formatter, alignment, CSV import/export, linting, flavor conversion |
 | `:Markdown table render` | Show tables as a compact grid that fits the window, cells wrapped, re-laid-out on resize (display only) |
+| `:Markdown table list` | Every table of a scope in a picker, with a preview of the file or the formatted table |
+| `:Markdown table convert` | Rewrite a table between GFM, org, box-drawing, CSV and TSV and report what the target cannot keep |
 | `:Markdown table truncate` | Show over-wide table cells cut with `…` (display only) and read the full text in a popup |
 | `:MDTable*` | Twelve standalone commands: width-limited wrap and unwrap, row and column folding, CSV round-trip, lint |
 | `:TableView*` | The floating table browser and its export toggle |
@@ -14,7 +16,8 @@
 | `:Markdown headline_spacing` | Enforce blank-dash-blank spacing between H2+ sections |
 | `:Markdown headings format` | Normalize heading text: emphasis markers off, whitespace collapsed, capitalized. `<leader><C-Left>`/`<leader><C-Right>` shift a level and apply it in one stroke |
 | `:Markdown image paste` / `screenshot` | Put an image into the document, via images.nvim |
-| `:Markdown render` / `preview` / `mdview` | Hand rendering to whichever renderer is installed |
+| `:Markdown render` | Native in-buffer rendering: headings, bullets, checkboxes, code blocks, rules, quotes and callouts, inline markup (display only), plus the table grid |
+| `:Markdown preview` / `mdview` | The browser preview, via mdview.nvim |
 | `:Markdown export pdf` | The buffer or file to PDF, via pdfport.nvim |
 | `:MarkdownNvimUnderlineHeadings` | Setext-style underline decoration for headings |
 | `:OpenWithSystemApplication` | Open the target under the cursor with the OS default application |
