@@ -92,8 +92,22 @@ What it does:
   (`cursor = "table"`: the whole table). Edits re-render after `debounce_ms`.
 - Tables in fenced code blocks are skipped.
 
-Notes: it needs `conceallevel >= 2` (raised window-locally while on, restored on
-`off`), it replaces `:Markdown table truncate` in the same buffer, and it should
+How it is drawn: every table row is hidden with the extmark option
+`conceal_lines` and the grid is drawn as virtual lines. A hidden line shows no
+virtual lines of its own, so the grid hangs on a line that stays visible: the
+row under the cursor, or the line right after (before) the table. Inline virtual
+text is not used because Neovim would leave blank screen rows between the table
+rows when `wrap` is on.
+
+Notes: it needs Neovim >= 0.11 and `conceallevel >= 2` (raised window-locally
+while on; the value each window had is remembered per window, also for splits made
+later, and put back on `off`, when the window shows another buffer, or when the
+buffer is wiped). A table that starts on the first buffer line has no top border
+while the cursor is in its first row (Neovim draws no virtual line above line 1).
+Tables are indented like their source; a tab counts as what it displays as. Only
+the tables that changed are drawn again after an edit, the others keep their
+extmarks. `pad`, `min_width`, `max_width` and `debounce_ms` must be whole numbers
+(anything else falls back to the default with a warning). It replaces `:Markdown table truncate` in the same buffer, and it should
 not be combined with another plugin that also conceals table pipes (for example
 render-markdown.nvim's table component).
 

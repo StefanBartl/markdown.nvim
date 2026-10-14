@@ -197,22 +197,13 @@ end
 
 ---@internal
 ---@param bufnr integer
+---@param on boolean
 local function set_conceallevel(bufnr, on)
-  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
-    if on then
-      local cl = api.nvim_get_option_value("conceallevel", { win = win })
-      if vim.w[win].mkdn_truncate_cl == nil then vim.w[win].mkdn_truncate_cl = cl end
-      if cl < 2 then
-        api.nvim_set_option_value("conceallevel", 2, { scope = "local", win = win })
-      end
-    elseif vim.w[win].mkdn_truncate_cl ~= nil then
-      api.nvim_set_option_value(
-        "conceallevel",
-        vim.w[win].mkdn_truncate_cl,
-        { scope = "local", win = win }
-      )
-      vim.w[win].mkdn_truncate_cl = nil
-    end
+  local guard = require("markdown.core.conceal_guard")
+  if on then
+    guard.apply("truncate", bufnr)
+  else
+    guard.restore("truncate", bufnr)
   end
 end
 
@@ -246,7 +237,7 @@ function M.enable(bufnr)
     callback = schedule,
     desc = "[markdown.nvim] table truncate: re-render",
   })
-  api.nvim_create_autocmd("BufWinEnter", {
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
     group = group,
     buffer = bufnr,
     callback = function()

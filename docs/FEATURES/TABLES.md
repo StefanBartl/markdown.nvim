@@ -127,19 +127,21 @@ a `Pickers.Item.previews` feature of pickers.nvim). Details:
 ## `table_render` — virtual grid that fits the window
 
 Display-only rendering of every GFM table as a compact grid. The buffer text is
-never touched: each row is concealed (extmark `conceal`) and drawn again as
-inline virtual text, continuation lines of wrapped cells and the borders are
-virtual lines. Details and options: [table-wrap.md](../table-wrap.md#virtual-grid-rendering).
+never touched: each row is hidden (extmark `conceal_lines`, Neovim >= 0.11) and
+the grid is drawn as virtual lines hanging on the cursor row or on the line next
+to the table (no inline virtual text: it leaves blank screen rows with `wrap` on).
+Only changed tables are drawn again after an edit. Details and options: [table-wrap.md](../table-wrap.md#virtual-grid-rendering).
 
 - **Module:** `core/table_render.lua` (pure `layout` / `row_lines` / `border`,
-  extmark rendering, per-buffer enable/disable)
+  extmark rendering, per-buffer enable/disable); `core/conceal_guard.lua` saves
+  and restores `conceallevel` per window (shared with `table_truncate`)
 - **Command:** `:Markdown table render [on|off|toggle]`; **keymap**
   `<leader>mtr` (id `table_render_toggle`)
 - **Config:** `table.render` (`enabled`, `border`, `cursor`, `pad`, `min_width`,
   `max_width`, `row_separator`, `debounce_ms`); `enabled = true` turns it on for
   every markdown buffer (FileType dispatcher, like `truncate`)
 - **Autocmds:** buffer-local `TextChanged[I]` / `InsertLeave` / `CursorMoved[I]`
-  / `BufWinEnter` / `BufReadPost`; global `MarkdownNvimTableRender` group
+  / `BufWinEnter` / `WinEnter` / `BufWinLeave` / `BufReadPost`; global `MarkdownNvimTableRender` group
   (`WinResized`, `VimResized`, `OptionSet`, `ColorScheme`), created on first use
 - **Highlights:** `MarkdownTableBorder`, `MarkdownTableHead`,
   `MarkdownTableCode` (default links, override freely)

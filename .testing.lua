@@ -28,7 +28,8 @@ return {
   guard_allow = {
     -- `rg` is the real search tool of the file-refs / link-delete features; `cmd` runs the
     -- short-name probe (`cmd /c for %I`) of the path resolver on Windows.
-    spawn = { "rg", "cmd" },
+    -- `nvim` is the embedded editor of the screen spec (table_render_screen_spec.lua); `taskkill` / `powershell` are how its handle is killed and checked on Windows.
+    spawn = { "rg", "cmd", "nvim", "taskkill", "powershell" },
   },
   -- Findings the minimal conformance editor cannot avoid (docs/CONFORMANCE.md of testing.nvim); reviewed 2026-10-14.
   conformance = {

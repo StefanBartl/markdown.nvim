@@ -109,6 +109,15 @@ return function(H)
   eq(plain[#plain], "└───┴────┘", "to_lines: bottom border")
   eq(#tr.to_lines({ "no table" }), 1, "to_lines: not a table -> the source back")
 
+  -- a token no whitespace can break is split by its DISPLAY width: combining marks add none
+  local tok = string.rep("e\u{301}", 20) -- 20 columns, 40 code points
+  local m_tok = tr.layout({ "| a |", "| - |", "| " .. tok .. " |" }, { avail = 14 })
+  eq(m_tok.widths[1], 10, "the column is squeezed to the budget")
+  eq(m_tok.rows[3].height, 2, "20 columns of combining text split into two 10-column pieces")
+  for _, piece in ipairs(m_tok.rows[3].cells[1]) do
+    eq(vim.fn.strdisplaywidth(piece), 10, "each piece is 10 columns wide")
+  end
+
   -- ───────────── buffer ─────────────
   local ns = vim.api.nvim_create_namespace("markdown_table_render")
   local buf = H.scratch("markdown")
@@ -136,7 +145,7 @@ return function(H)
   local function concealed_rows()
     local rows = {}
     for _, m in ipairs(marks()) do
-      if m[4].conceal then rows[m[2] + 1] = true end
+      if m[4].conceal_lines then rows[m[2] + 1] = true end
     end
     return rows
   end
@@ -178,6 +187,128 @@ return function(H)
   ok(vline_count() > wide, "a narrower window wraps into more virtual lines")
   vim.cmd("only")
 
+  -- the events the render lives on are wired
+  local function has(event, group, pattern)
+    for _, a in ipairs(vim.api.nvim_get_autocmds({ event = event, group = group })) do
+      if pattern == nil or vim.inspect(a.pattern or ""):find(pattern, 1, true) then return true end
+    end
+    return false
+  end
+  for _, ev in ipairs({ "WinResized", "VimResized", "OptionSet", "ColorScheme" }) do
+    ok(has(ev, "MarkdownNvimTableRender"), ev .. " is wired (global group)")
+  end
+  local bufgroup = "MarkdownNvimTableRenderBuf" .. buf
+  for _, ev in ipairs({
+    "TextChanged",
+    "TextChangedI",
+    "InsertLeave",
+    "CursorMoved",
+    "CursorMovedI",
+    "BufWinEnter",
+    "WinEnter",
+    "BufWinLeave",
+    "BufReadPost",
+    "BufWipeout",
+  }) do
+    ok(has(ev, bufgroup), ev .. " is wired (buffer group)")
+  end
+  ok(has("OptionSet", "MarkdownNvimTableRender", "signcolumn"), "signcolumn changes re-lay-out")
+
+  tr.disable(buf)
+
+  -- ───────────── a re-render only draws the tables that changed ─────────────
+  local inc = H.scratch("markdown")
+  vim.api.nvim_buf_set_lines(inc, 0, -1, false, {
+    "x",
+    "",
+    "| A | B |",
+    "| - | - |",
+    "| 1 | 2 |",
+    "",
+    "y",
+    "",
+    "| C | D |",
+    "| - | - |",
+    "| 3 | 4 |",
+    "",
+    "end",
+  })
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  tr.enable(inc)
+  ---@return table<integer, boolean> ids, table<integer, integer[]> rows  # extmark ids / id lists per row
+  local function snapshot()
+    local ids, by_row = {}, {}
+    for _, m in ipairs(vim.api.nvim_buf_get_extmarks(inc, ns, 0, -1, {})) do
+      ids[m[1]] = true
+      by_row[m[2]] = by_row[m[2]] or {}
+      table.insert(by_row[m[2]], m[1])
+    end
+    return ids, by_row
+  end
+  local function same_ids(a, b_)
+    for id in pairs(a) do
+      if not b_[id] then return false end
+    end
+    return true
+  end
+  local function ids_in(by_row, from, to)
+    local found = {}
+    for r = from, to do
+      for _, id in ipairs(by_row[r] or {}) do
+        found[id] = true
+      end
+    end
+    return found
+  end
+  local _, before_rows = snapshot()
+  local first_before = ids_in(before_rows, 2, 5) -- table 1 (rows 2..4) and the line after it
+  local second_before = ids_in(before_rows, 8, 11)
+
+  -- an edit in table 2 leaves table 1 alone
+  vim.api.nvim_buf_set_text(inc, 10, 4, 10, 5, { "44" })
+  tr.render(inc)
+  local _, rows_now = snapshot()
+  ok(same_ids(first_before, ids_in(rows_now, 2, 5)), "the untouched table keeps its extmarks")
+  ok(not same_ids(second_before, ids_in(rows_now, 8, 11)), "the edited table is drawn again")
+
+  -- lines inserted above move the tables; their marks follow and are kept
+  local _, rows_a = snapshot()
+  local table1 = ids_in(rows_a, 2, 5)
+  vim.api.nvim_buf_set_lines(inc, 0, 0, false, { "new top line" })
+  tr.render(inc)
+  local _, rows_b = snapshot()
+  ok(same_ids(table1, ids_in(rows_b, 3, 6)), "a table that only moved is not drawn again")
+  local concealed_after = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(inc, ns, 0, -1, { details = true })) do
+    if m[4].conceal_lines then concealed_after[m[2] + 1] = true end
+  end
+  ok(
+    concealed_after[4] and concealed_after[5] and concealed_after[6],
+    "table 1 is on its new lines"
+  )
+
+  -- a line inserted between a table and the line its grid hangs on: the grid is drawn again
+  local rows_c = select(2, snapshot())
+  local grid_row
+  for r, list in pairs(rows_c) do
+    if r == 6 then grid_row = list end
+  end
+  vim.api.nvim_buf_set_lines(inc, 6, 6, false, { "inserted under the table" })
+  tr.render(inc)
+  local ids_d, rows_d = snapshot()
+  local still = false
+  for _, id in ipairs(grid_row or {}) do
+    if ids_d[id] and rows_d[7] then
+      for _, id2 in ipairs(rows_d[7]) do
+        if id2 == id then still = true end
+      end
+    end
+  end
+  ok(not still, "a grid whose line is no longer next to the table is not kept")
+  tr.disable(inc)
+
+  vim.api.nvim_set_current_buf(buf)
+  tr.enable(buf)
   tr.disable(buf)
   eq(#marks(), 0, "disable removes every extmark")
   ok(not tr.is_enabled(buf), "disabled")

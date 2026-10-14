@@ -1,9 +1,13 @@
 ---@module 'markdown.core.table_render'
 ---@brief Display-only grid rendering of GFM tables that fits the window.
 ---@description
---- The buffer text is never touched. Every table row is hidden with extmark
---- `conceal` (needs `conceallevel` >= 2 in the window, set while the render is
---- on and restored after) and shown again as inline virtual text:
+--- The buffer text is never touched. Every table row is hidden with the extmark
+--- option `conceal_lines` (Neovim >= 0.11; needs `conceallevel` >= 2 in the
+--- window, set while the render is on and restored after) and the grid is shown
+--- as virtual lines. A concealed line shows no virtual lines of its own, so the
+--- grid hangs on a line that stays visible: the row under the cursor, or the
+--- line right after (before) the table. (Inline virtual text would leave blank
+--- screen rows between the table rows when `wrap` is on.)
 ---
 ---   * columns are as wide as their longest cell, no more -- the padding the
 ---     formatter wrote for one huge cell in another row is gone;
@@ -132,18 +136,18 @@ end
 ---@return string[]
 local function hard_split(s, w)
   if dw(s) <= w then return { s } end
-  local out, cur, cw = {}, {}, 0
+  -- the width of the whole piece is measured, not summed per character: a
+  -- variation selector or a joiner changes the width of what came before
+  local out, cur = {}, ""
   for i = 0, vim.fn.strchars(s, true) - 1 do
     local ch = vim.fn.strcharpart(s, i, 1, true)
-    local chw = dw(ch)
-    if cw + chw > w and cw > 0 then
-      out[#out + 1] = table.concat(cur)
-      cur, cw = {}, 0
+    if cur ~= "" and dw(cur .. ch) > w and dw(ch) > 0 then
+      out[#out + 1] = cur
+      cur = ""
     end
-    cur[#cur + 1] = ch
-    cw = cw + chw
+    cur = cur .. ch
   end
-  out[#out + 1] = table.concat(cur)
+  out[#out + 1] = cur
   return out
 end
 
@@ -396,7 +400,7 @@ function M.row_lines(model, i, style)
     local out = { { ch.v, HL_BORDER } }
     for c = 1, model.n do
       local text = row.cells[c][k] or ""
-      local free = model.widths[c] - dw(text)
+      local free = math.max(0, model.widths[c] - dw(text))
       local align = model.aligns[c]
       local lpad = align == "right" and free or (align == "center" and math.floor(free / 2) or 0)
       out[#out + 1] = { (" "):rep(pad + lpad) }
@@ -412,15 +416,15 @@ end
 ---Pure: the table as plain text lines -- the same grid the buffer render
 ---draws, for places that show text (a picker preview, a float). Natural width,
 ---or fitted to `opts.avail` columns. A table that cannot be laid out comes back
----as its source lines.
+---as its source lines. Unset options come from the `table.render` config.
 ---@param src string[]
----@param opts? { avail?: integer, pad?: integer, border?: string, row_separator?: boolean|"auto" }
+---@param opts? { avail?: integer, pad?: integer, min_width?: integer, border?: string, row_separator?: boolean|"auto" }
 ---@return string[]
 function M.to_lines(src, opts)
-  opts = opts or {}
-  local model = M.layout(src, { avail = opts.avail, pad = opts.pad })
+  local o = vim.tbl_extend("force", cfg(), opts or {})
+  local model = M.layout(src, { avail = opts and opts.avail, pad = o.pad, min_width = o.min_width })
   if not model then return vim.deepcopy(src) end
-  local style = M.style({ border = opts.border, row_separator = opts.row_separator }, model)
+  local style = M.style(o, model)
   local function join(chunks)
     local t = {}
     for _, c in ipairs(chunks) do
@@ -447,6 +451,30 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ---@internal
+---Opening code fence: its character and length. A backtick fence has no
+---backtick in its info string (that would be inline code, "```code``` text").
+---@param line string
+---@return string|nil char, integer|nil len
+local function fence_open(line)
+  local m = line:match("^%s*(```+)[^`]*$")
+  if m then return "`", #m end
+  m = line:match("^%s*(~~~+)")
+  if m then return "~", #m end
+end
+
+---@internal
+---Closing fence for an opener of `c` x `n`: only fence characters (at least
+---`n`), nothing else on the line -- "```lua" does not close.
+---@param line string
+---@param c string
+---@param n integer
+---@return boolean
+local function fence_close(line, c, n)
+  local m = line:match("^%s*(" .. c .. "+)%s*$")
+  return m ~= nil and #m >= n
+end
+
+---@internal
 ---Table line ranges of `lines`, outside fenced code blocks.
 ---@param lines string[]
 ---@return { first: integer, last: integer }[]
@@ -466,27 +494,36 @@ local function find_tables(lines)
     end
   end
   for i, line in ipairs(lines) do
-    local mark = line:match("^%s*(```+)") or line:match("^%s*(~~~+)")
-    if mark then
-      if not fence then
+    if not fence then
+      local c, n = fence_open(line)
+      if c then
         flush(i - 1)
-        fence = { c = mark:sub(1, 1), n = #mark }
-      elseif mark:sub(1, 1) == fence.c and #mark >= fence.n and line:match("^%s*%S+%s*$") then
-        fence = nil
-        seg_start = i + 1
+        fence = { c = c, n = n }
       end
+    elseif fence_close(line, fence.c, fence.n) then
+      fence = nil
+      seg_start = i + 1
     end
   end
   if not fence then flush(#lines) end
   return found
 end
 
+---@class Mkdn.TableRenderTable
+---@field first integer
+---@field last integer
+---@field model Mkdn.TableRenderModel
+---@field key string  # text and width options the model was made from
+---@field rawkey string  # which rows show their text
+---@field drawn Mkdn.TableRenderDrawn
+
 ---@class Mkdn.TableRenderState
 ---@field group integer
 ---@field pending boolean
 ---@field tick integer  # changedtick of the last full render
----@field stamp string
----@field tables { first: integer, last: integer, model: Mkdn.TableRenderModel }[]
+---@field stamp string  # changedtick, width and config of the last render
+---@field look string  # width and config of the last render (without the tick)
+---@field tables Mkdn.TableRenderTable[]
 ---@field cursor table<integer, boolean>
 
 ---@type table<integer, Mkdn.TableRenderState>
@@ -520,79 +557,197 @@ local function avail_width(bufnr, o)
 end
 
 ---@internal
----Draws one table. `tlines` are its source lines, `first` the 1-based number of the first.
+---Display width of the whitespace in front of a table line (a tab counts as
+---what it displays as).
+---@param line string
+---@return integer
+local function indent_width(line) return dw(line:match("^%s*")) end
+
+---@type table<string, integer>
+local hl_ids = {}
+
+---@internal
+---@param name string
+---@return integer
+local function hl_id(name)
+  local id = hl_ids[name]
+  if not id then
+    id = api.nvim_get_hl_id_by_name(name)
+    hl_ids[name] = id
+  end
+  return id
+end
+
+---@internal
+---Which rows of a table show their real text: the cursor row (every row with
+---`cursor = "table"` and the cursor somewhere in the table). A buffer that is
+---only this table has nothing to hang the grid on, so its last row stays text.
+---@param first integer
+---@param nrows integer
+---@param nlines integer  # lines of the buffer
+---@param cursor table<integer, boolean>
+---@param o table
+---@return boolean[] raw, string key  # key: the raw row numbers, "" when none
+local function raw_rows(first, nrows, nlines, cursor, o)
+  local whole = false
+  if o.cursor == "table" then
+    for i = 1, nrows do
+      if cursor[first + i - 1] then whole = true end
+    end
+  end
+  local raw, key, any = {}, {}, false
+  for i = 1, nrows do
+    raw[i] = whole or cursor[first + i - 1] or false
+    any = any or raw[i]
+  end
+  if not any and first == 1 and first + nrows - 1 >= nlines then raw[nrows] = true end
+  for i = 1, nrows do
+    if raw[i] then key[#key + 1] = i end
+  end
+  return raw, table.concat(key, ",")
+end
+
+---@class Mkdn.TableRenderDrawn
+---@field ids integer[]  # every extmark of the table
+---@field probe integer  # a mark on the first line: where the table is now
+---@field anchor? { id: integer, rel: integer }  # the grid hangs on a line outside the table
+
+---@internal
+---Draws one table. `tlines` are its source lines, `first` the 1-based number of
+---the first, `raw[i]` says that row `i` shows its text. Rows that are not raw
+---get `conceal_lines`; the virtual lines of the stretches between the raw rows
+---hang on a raw row, or on the line after / before the table (see the module
+---header).
 ---@param bufnr integer
 ---@param first integer
 ---@param tlines string[]
 ---@param model Mkdn.TableRenderModel
----@param cursor table<integer, boolean>
+---@param raw boolean[]
 ---@param o table
-local function draw(bufnr, first, tlines, model, cursor, o)
+---@return Mkdn.TableRenderDrawn
+local function draw(bufnr, first, tlines, model, raw, o)
+  local ids = {}
+  ---@param row integer  # 0-based
+  ---@param opts table
+  ---@return integer|nil
+  local function mark(row, opts)
+    local ok, id = pcall(api.nvim_buf_set_extmark, bufnr, NS, row, 0, opts)
+    if ok then ids[#ids + 1] = id end
+    return ok and id or nil
+  end
+  local probe = mark(first - 1, {})
   local style = M.style(o, model)
   local nrows = #model.rows
-  local raw_all = false
-  if o.cursor == "table" then
-    for i = 1, nrows do
-      if cursor[first + i - 1] then raw_all = true end
+  local last = first + nrows - 1
+  local nlines = api.nvim_buf_line_count(bufnr)
+  local indent = { { (" "):rep(indent_width(tlines[1])) } }
+  if indent[1][1] == "" then indent = {} end
+
+  -- Group ids instead of names: Neovim looks a name up per chunk, which dominates
+  -- the time of a buffer with thousands of rows.
+  ---@param chunks table[]
+  local function vline(chunks)
+    local out = vim.list_slice(indent, 1, #indent)
+    for _, ch in ipairs(chunks) do
+      out[#out + 1] = ch[2] and { ch[1], hl_id(ch[2]) } or ch
     end
+    return out
   end
 
-  pcall(api.nvim_buf_set_extmark, bufnr, NS, first - 1, 0, {
-    virt_lines = { M.border(model, "top", style) },
-    virt_lines_above = true,
-  })
-
+  -- segs[0]: before the first raw row (starts with the top border); segs[k]: after the k-th
+  local segs, slots = { [0] = { vline(M.border(model, "top", style)) } }, {}
+  local cur = segs[0]
   for i = 1, nrows do
-    local lnum = first + i - 1
-    local line = tlines[i]
-    local indent = #line:match("^%s*")
-    local rendered = not raw_all and not cursor[lnum]
-    local vlines, extra = {}, {}
-    if rendered then
-      local phys = M.row_lines(model, i, style)
-      for k = 2, #phys do
-        table.insert(phys[k], 1, { (" "):rep(indent) })
-        vlines[#vlines + 1] = phys[k]
+    if raw[i] then
+      slots[#slots + 1] = first + i - 1
+      cur = {}
+      segs[#slots] = cur
+    else
+      for _, l in ipairs(M.row_lines(model, i, style)) do
+        cur[#cur + 1] = vline(l)
       end
-      extra = phys[1]
-      if style.row_separator and model.rows[i].kind == "body" and i < nrows then
-        vlines[#vlines + 1] = M.border(model, "mid", style)
-      end
+      mark(first + i - 2, { conceal_lines = "" })
     end
-    if i == nrows then vlines[#vlines + 1] = M.border(model, "bottom", style) end
-    if indent > 0 then
-      for _, vl in ipairs(vlines) do
-        if vl[1] and vl[1][1] ~= (" "):rep(indent) then
-          table.insert(vl, 1, { (" "):rep(indent) })
-        end
-      end
-    end
-
-    local mark = {}
-    if rendered then
-      mark.end_row = lnum - 1
-      mark.end_col = #line
-      mark.conceal = ""
-      mark.virt_text = extra
-      mark.virt_text_pos = "inline"
-    end
-    if #vlines > 0 then mark.virt_lines = vlines end
-    if rendered or #vlines > 0 then
-      pcall(api.nvim_buf_set_extmark, bufnr, NS, lnum - 1, rendered and indent or 0, mark)
+    if style.row_separator and model.rows[i].kind == "body" and i < nrows then
+      cur[#cur + 1] = vline(M.border(model, "mid", style))
     end
   end
+  cur[#cur + 1] = vline(M.border(model, "bottom", style))
+
+  ---@return integer|nil
+  local function hang(lnum, lines, above)
+    return mark(lnum - 1, { virt_lines = lines, virt_lines_above = above })
+  end
+  local anchor
+  if #slots > 0 then
+    hang(slots[1], segs[0], true)
+    for k = 1, #slots do
+      if #segs[k] > 0 then hang(slots[k], segs[k], false) end
+    end
+  else
+    local lnum = last < nlines and last + 1 or first - 1
+    local id = hang(lnum, segs[0], last < nlines)
+    if id then anchor = { id = id, rel = lnum - first } end
+  end
+  return { ids = ids, probe = probe, anchor = anchor }
+end
+
+---@type table<string, Mkdn.TableRenderModel|false>
+local models, n_models = {}, 0
+
+---@internal
+---`M.layout` of a table, remembered by `key` (its text and the width options):
+---an edit elsewhere in the buffer, a cursor move or a resize back to a known
+---width does not lay out every table again.
+---@param key string
+---@param tlines string[]
+---@param avail integer
+---@param o table
+---@return Mkdn.TableRenderModel|nil
+local function layout_cached(key, tlines, avail, o)
+  local hit = models[key]
+  if hit == nil then
+    if n_models >= 400 then
+      models, n_models = {}, 0
+    end
+    hit = M.layout(tlines, { avail = avail, pad = o.pad, min_width = o.min_width }) or false
+    models[key], n_models = hit, n_models + 1
+  end
+  return hit or nil
 end
 
 ---@param bufnr integer
 function M.clear(bufnr)
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end
   if S[bufnr] then
-    S[bufnr].stamp, S[bufnr].tables = "", {}
+    S[bufnr].stamp, S[bufnr].look, S[bufnr].tables = "", "", {}
   end
 end
 
+---@internal
+---@param bufnr integer
+---@param t Mkdn.TableRenderTable
+local function erase(bufnr, t)
+  for _, id in ipairs(t.drawn.ids) do
+    pcall(api.nvim_buf_del_extmark, bufnr, NS, id)
+  end
+end
+
+---@internal
+---1-based line where the extmark `id` sits now, nil when it is gone.
+---@param bufnr integer
+---@param id integer|nil
+---@return integer|nil
+local function line_of(bufnr, id)
+  if not id then return nil end
+  local pos = api.nvim_buf_get_extmark_by_id(bufnr, NS, id, {})
+  return pos[1] and pos[1] + 1 or nil
+end
+
 ---Apply the rendering for the whole buffer. A no-op while nothing changed
----(text, width, config), unless `force`.
+---(text, width, config), unless `force`. A table whose text, width and
+---cursor state are the same as at the last render is left as it is (its
+---extmarks followed the edit), only the others are drawn again.
 ---@param bufnr integer
 ---@param force? boolean
 ---@return integer count  # tables drawn
@@ -603,21 +758,62 @@ function M.render(bufnr, force)
   local avail = avail_width(bufnr, o)
   if not avail then return 0 end -- not shown anywhere: BufWinEnter renders it
   local tick = api.nvim_buf_get_changedtick(bufnr)
-  local stamp = ("%d:%d:%s"):format(tick, avail, vim.inspect(o))
+  local look = ("%d:%s"):format(avail, vim.inspect(o)) -- what a drawing depends on besides the text
+  local stamp = tick .. ":" .. look
   if st.stamp == stamp and not force then return 0 end
 
-  api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
-  st.stamp, st.tick, st.tables, st.cursor = stamp, tick, {}, cursor_rows(bufnr)
-  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  for _, t in ipairs(find_tables(lines)) do
-    local tlines = vim.list_slice(lines, t.first, t.last)
-    local model = M.layout(tlines, { avail = avail, pad = o.pad, min_width = o.min_width })
-    if model then
-      st.tables[#st.tables + 1] = { first = t.first, last = t.last, model = model }
-      draw(bufnr, t.first, tlines, model, st.cursor, o)
+  -- tables of the last render, by the line they are on now
+  local old = {}
+  if force or st.look ~= look then
+    api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
+  else
+    for _, t in ipairs(st.tables) do
+      local at = line_of(bufnr, t.drawn.probe)
+      if at and not old[at] then old[at] = t end
     end
   end
-  return #st.tables
+  st.stamp, st.look, st.tick, st.cursor = stamp, look, tick, cursor_rows(bufnr)
+
+  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local nlines = #lines
+  local tables = {}
+  for _, f in ipairs(find_tables(lines)) do
+    local tlines = vim.list_slice(lines, f.first, f.last)
+    local width = avail - indent_width(tlines[1])
+    local key = ("%d:%d:%d\n%s"):format(width, o.pad, o.min_width, table.concat(tlines, "\n"))
+    local raw, rawkey = raw_rows(f.first, #tlines, nlines, st.cursor, o)
+
+    local prev = old[f.first]
+    local same = prev
+      and prev.key == key
+      and prev.rawkey == rawkey
+      and (
+        not prev.drawn.anchor
+        or line_of(bufnr, prev.drawn.anchor.id) == f.first + prev.drawn.anchor.rel
+      )
+    if same then
+      old[f.first] = nil
+      prev.first, prev.last = f.first, f.last
+      tables[#tables + 1] = prev
+    else
+      local model = layout_cached(key, tlines, width, o)
+      if model then
+        tables[#tables + 1] = {
+          first = f.first,
+          last = f.last,
+          model = model,
+          key = key,
+          rawkey = rawkey,
+          drawn = draw(bufnr, f.first, tlines, model, raw, o),
+        }
+      end
+    end
+  end
+  for _, t in pairs(old) do
+    erase(bufnr, t)
+  end
+  st.tables = tables
+  return #tables
 end
 
 ---@internal
@@ -639,6 +835,7 @@ local function on_cursor(bufnr)
   st.cursor = now
   if st.tick ~= api.nvim_buf_get_changedtick(bufnr) then return end -- the text debounce redraws
   local o = cfg()
+  local nlines = api.nvim_buf_line_count(bufnr)
   for _, t in ipairs(st.tables) do
     local touched = false
     for l in pairs(now) do
@@ -648,15 +845,13 @@ local function on_cursor(bufnr)
       if l >= t.first and l <= t.last then touched = true end
     end
     if touched then
-      api.nvim_buf_clear_namespace(bufnr, NS, t.first - 1, t.last)
-      draw(
-        bufnr,
-        t.first,
-        api.nvim_buf_get_lines(bufnr, t.first - 1, t.last, false),
-        t.model,
-        now,
-        o
-      )
+      local raw, rawkey = raw_rows(t.first, #t.model.rows, nlines, now, o)
+      if rawkey ~= t.rawkey then
+        erase(bufnr, t)
+        local tlines = api.nvim_buf_get_lines(bufnr, t.first - 1, t.last, false)
+        t.drawn = draw(bufnr, t.first, tlines, t.model, raw, o)
+        t.rawkey = rawkey
+      end
     end
   end
 end
@@ -665,21 +860,11 @@ end
 ---@param bufnr integer
 ---@param on boolean
 local function set_conceallevel(bufnr, on)
-  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
-    if on then
-      local cl = api.nvim_get_option_value("conceallevel", { win = win })
-      if vim.w[win].mkdn_render_cl == nil then vim.w[win].mkdn_render_cl = cl end
-      if cl < 2 then
-        api.nvim_set_option_value("conceallevel", 2, { scope = "local", win = win })
-      end
-    elseif vim.w[win].mkdn_render_cl ~= nil then
-      api.nvim_set_option_value(
-        "conceallevel",
-        vim.w[win].mkdn_render_cl,
-        { scope = "local", win = win }
-      )
-      vim.w[win].mkdn_render_cl = nil
-    end
+  local guard = require("markdown.core.conceal_guard")
+  if on then
+    guard.apply("render", bufnr)
+  else
+    guard.restore("render", bufnr)
   end
 end
 
@@ -734,12 +919,22 @@ end
 
 ---@param bufnr? integer
 ---@return boolean
-function M.is_enabled(bufnr) return S[bufnr or api.nvim_get_current_buf()] ~= nil end
+function M.is_enabled(bufnr)
+  if not bufnr or bufnr == 0 then bufnr = api.nvim_get_current_buf() end
+  return S[bufnr] ~= nil
+end
 
 ---@param bufnr? integer
 function M.enable(bufnr)
   if not bufnr or bufnr == 0 then bufnr = api.nvim_get_current_buf() end
   if S[bufnr] then return end
+  if vim.fn.has("nvim-0.11") ~= 1 then
+    vim.notify(
+      "markdown.nvim: table render needs Neovim >= 0.11 (conceal_lines)",
+      vim.log.levels.WARN
+    )
+    return
+  end
   -- Both hide table text with conceal: the last one switched on wins.
   local tt = package.loaded["markdown.core.table_truncate"]
   if tt and tt.is_enabled(bufnr) then tt.disable(bufnr) end
@@ -747,7 +942,8 @@ function M.enable(bufnr)
   ensure_global()
   setup_highlights()
   local group = api.nvim_create_augroup("MarkdownNvimTableRenderBuf" .. bufnr, { clear = true })
-  S[bufnr] = { group = group, pending = false, tick = -1, stamp = "", tables = {}, cursor = {} }
+  S[bufnr] =
+    { group = group, pending = false, tick = -1, stamp = "", look = "", tables = {}, cursor = {} }
 
   api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
     group = group,
@@ -761,7 +957,7 @@ function M.enable(bufnr)
     callback = function() on_cursor(bufnr) end,
     desc = "[markdown.nvim] table render: show the cursor row as text",
   })
-  api.nvim_create_autocmd("BufWinEnter", {
+  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
     group = group,
     buffer = bufnr,
     callback = function()
@@ -770,11 +966,23 @@ function M.enable(bufnr)
     end,
     desc = "[markdown.nvim] table render: conceallevel for a new window",
   })
+  api.nvim_create_autocmd("BufWinLeave", {
+    group = group,
+    buffer = bufnr,
+    callback = function()
+      vim.schedule(function()
+        if S[bufnr] and api.nvim_buf_is_valid(bufnr) then set_conceallevel(bufnr, true) end
+      end)
+    end,
+    desc = "[markdown.nvim] table render: give a window that left its conceallevel back",
+  })
   api.nvim_create_autocmd("BufReadPost", {
     group = group,
     buffer = bufnr,
     callback = function()
-      if S[bufnr] then S[bufnr].stamp = "" end
+      if S[bufnr] then
+        S[bufnr].stamp, S[bufnr].look = "", ""
+      end
       schedule(bufnr)
     end,
     desc = "[markdown.nvim] table render: re-render after :edit!",

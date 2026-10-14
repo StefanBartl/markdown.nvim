@@ -209,7 +209,8 @@ dependency-free reimplementation of the vim-table-mode essentials.
   resize (or `number` / `signcolumn` change) re-lays the table out. The row under
   the cursor shows its real text, so editing works as usual (`table.render.cursor
   = "table"` shows the whole table). Tables in fenced code blocks are left alone.
-  Needs `conceallevel` >= 2 (set in the window while on, restored after);
+  Needs Neovim >= 0.11 and `conceallevel` >= 2 (set in the window while on, restored
+  after, also in splits);
   turning it on turns `truncate` off and vice versa. Always-on:
   `table.render.enabled = true`. `<leader>mtr` toggles it. Details:
   [table-wrap.md](table-wrap.md#virtual-grid-rendering).
