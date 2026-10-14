@@ -57,10 +57,11 @@ function M.records(text, sep)
 end
 
 ---@param lines string[]
+---@param opts? { sep?: string }  # field separator, default `M.sep`
 ---@return table|nil tbl, string|nil err
-function M.parse(lines)
+function M.parse(lines, opts)
   local registry = require("markdown.tables.registry")
-  local recs = M.records(table.concat(lines, "\n"), M.sep)
+  local recs = M.records(table.concat(lines, "\n"), opts and opts.sep or M.sep)
   if #recs == 0 then return nil, "nothing to read" end
   local header = table.remove(recs, 1)
   local width = #header
@@ -79,11 +80,12 @@ function M.parse(lines)
 end
 
 ---@param tbl table
+---@param opts? { sep?: string }  # field separator, default `M.sep`
 ---@return string[]
-function M.render(tbl)
+function M.render(tbl, opts)
   local registry = require("markdown.tables.registry")
   local header, rows = registry.strings(tbl)
-  local sep = M.sep
+  local sep = opts and opts.sep or M.sep
   local function field(v)
     v = v:gsub("<br>", "\n")
     if
