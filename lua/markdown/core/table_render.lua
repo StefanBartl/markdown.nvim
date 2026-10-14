@@ -721,6 +721,21 @@ local function line_of(bufnr, id)
   return pos[1] and pos[1] + 1 or nil
 end
 
+---@internal
+---Whether every mark of `ids` still sits on a line between `from` and `to` (1-based).
+---@param bufnr integer
+---@param ids integer[]
+---@param from integer
+---@param to integer
+---@return boolean
+local function marks_within(bufnr, ids, from, to)
+  for _, id in ipairs(ids) do
+    local at = line_of(bufnr, id)
+    if not at or at < from or at > to then return false end
+  end
+  return true
+end
+
 ---Apply the rendering for the whole buffer. A no-op while nothing changed
 ---(text, width, config), unless `force`. A table whose text, width and
 ---cursor state are the same as at the last render is left as it is (its
@@ -763,6 +778,7 @@ function M.render(bufnr, force)
     local prev = old[f.first]
     local same = prev
       and prev.key == key
+      and marks_within(bufnr, prev.drawn.ids, f.first - 1, f.last + 1)
       and prev.rawkey == rawkey
       and (
         not prev.drawn.anchor
@@ -786,8 +802,16 @@ function M.render(bufnr, force)
       end
     end
   end
-  for _, t in pairs(old) do
-    erase(bufnr, t)
+  -- Whatever is not part of a kept or new table goes: tables that were not found again, and
+  -- marks undo brought back or whose probes collapsed onto one line.
+  local keep = {}
+  for _, t in ipairs(tables) do
+    for _, id in ipairs(t.drawn.ids) do
+      keep[id] = true
+    end
+  end
+  for _, m in ipairs(api.nvim_buf_get_extmarks(bufnr, NS, 0, -1, {})) do
+    if not keep[m[1]] then pcall(api.nvim_buf_del_extmark, bufnr, NS, m[1]) end
   end
   st.tables = tables
   return #tables

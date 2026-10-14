@@ -337,6 +337,35 @@ return function(H)
   ]])
   eq(c.lua_get("vim.g.wiped_enabled"), false, "a wiped buffer is forgotten")
 
+  -- ───────────── undo / redo leave no stale grid behind ─────────────
+  load(c, {
+    "x",
+    "| a | b |",
+    "|---|---|",
+    "| 1 | 2 |",
+    "",
+    "| c | d |",
+    "|---|---|",
+    "| 3 | 4 |",
+    "",
+    "end",
+  })
+  local function tops() return select(2, table.concat(screen(c), "\n"):gsub("┌", "")) end
+  eq(tops(), 2, "two tables, two grids")
+  c.feed("ggjdG") -- delete both tables and more
+  c.feed("u")
+  c.feed("<C-r>")
+  c.feed("u")
+  c.feed("G")
+  c.cmd("sleep 250m")
+  c.settle(500)
+  eq(tops(), 2, "after undo / redo / undo there is one grid per table")
+  c.feed("ggjdd") -- one row removed
+  c.feed("u")
+  c.cmd("sleep 250m")
+  c.settle(500)
+  eq(tops(), 2, "after deleting a row and undoing it, still one grid per table")
+
   -- ───────────── layout options on the screen ─────────────
   load(c, DOC, [[require("markdown.config").setup({ table = { render = { border = "ascii" } } })]])
   sc = screen(c)
