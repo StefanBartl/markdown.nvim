@@ -152,7 +152,10 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   alignment in csv/tsv, org row groups, a `#+TBLFM:` line below an org table.
 - **Write-back** from the TableView float uses the format the table was read in and keeps what
   that format holds: the rules between org row groups, the rounded or single border of a box
-  table. A box table drawn by TableView itself (`╞═╪═╡` header rule) is read as well. A pipe in a
+  table. A box table drawn by TableView itself (`╞═╪═╡` header rule) is read as well. Moving a
+  row in the TableView (`<M-Up>` / `<M-Down>`) swaps two rows and the rules between org row groups
+  stay at their positions: the group sizes survive, and moving a row across a rule is how it
+  changes its group. A pipe in a
   cell is written escaped (`\|`) to org and gfm and plain to csv/tsv; a newline in a cell becomes
   `<br>`.
 - **Not built (yet):** RST/pandoc grid and simple tables, HTML with spans, wiki tables, SQL result
