@@ -194,18 +194,26 @@ local fold_cache = {}
 -- manager's :Lazy reload) registered a second BufDelete/BufWipeout handler
 -- in the same group instead of replacing the first -- confirmed, three
 -- reloads left six live autocmds where one was intended.
-require("lib.nvim.bindings.autocmd").create(
-  { "BufDelete", "BufWipeout" },
-  function(ev) fold_cache[ev.buf] = nil end,
-  {
-    group = vim.api.nvim_create_augroup("MarkdownNvimScopeFoldCache", { clear = true }),
-    desc = "[markdown.nvim] Invalidate scope fold cache on buffer delete",
-  }
-)
+local cache_autocmd_ready = false
+
+-- Registered on first use, not at require time (K1: requiring the module has no side effect).
+local function ensure_cache_autocmd()
+  if cache_autocmd_ready then return end
+  cache_autocmd_ready = true
+  require("lib.nvim.bindings.autocmd").create(
+    { "BufDelete", "BufWipeout" },
+    function(ev) fold_cache[ev.buf] = nil end,
+    {
+      group = vim.api.nvim_create_augroup("MarkdownNvimScopeFoldCache", { clear = true }),
+      desc = "[markdown.nvim] Invalidate scope fold cache on buffer delete",
+    }
+  )
+end
 
 ---@param bufnr integer
 ---@return { content_start: integer, content_end: integer, is_md: boolean }[]
 local function fold_blocks(bufnr)
+  ensure_cache_autocmd()
   local tick = api.nvim_buf_get_changedtick(bufnr)
   local c = fold_cache[bufnr]
   if c and c.tick == tick then return c.blocks end

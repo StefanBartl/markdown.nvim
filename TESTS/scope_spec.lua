@@ -7,8 +7,8 @@ return function(H)
   local api = vim.api
 
   -- ── Regression: the fold-cache invalidation augroup must be idempotent ──
-  -- markdown.scope registers a BufDelete/BufWipeout autocmd (module load
-  -- time) to invalidate its per-buffer fold_cache. It used to pass the group
+  -- markdown.scope registers a BufDelete/BufWipeout autocmd (lazily, on the
+  -- first fold-cache use) to invalidate its per-buffer fold_cache. It used to pass the group
   -- as a bare string to lib.nvim.bindings.autocmd.create, which resolves an
   -- existing group by name WITHOUT clear=true — so a second load of this
   -- module (package.loaded reset, e.g. a plugin manager's hot-reload)
@@ -18,7 +18,7 @@ return function(H)
     require("markdown.config").setup({})
     for _ = 1, 3 do
       package.loaded["markdown.scope"] = nil
-      require("markdown.scope")
+      require("markdown.scope").row_fence_kind(H.scratch("markdown"), 0)
     end
     local aus = api.nvim_get_autocmds({ group = "MarkdownNvimScopeFoldCache" })
     eq(
