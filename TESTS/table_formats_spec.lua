@@ -201,6 +201,21 @@ return function(H)
   local _, lmsg, lossy = conv.convert(fb, { from = "org", to = "gfm" }, 1)
   ok(lossy and lmsg:find("TBLFM", 1, true), "an org formula line is reported as not kept")
 
+  -- the list shows an org table through its gfm form
+  do
+    local cfgm = require("markdown.config")
+    local sn = vim.notify
+    vim.notify = function() end
+    cfgm.setup({ table = { formats = { "gfm", "org" } } })
+    vim.notify = sn
+    local lb = buf_with({ "x", "", unpack(ORG) })
+    local items = require("markdown.commands.table_list").collect("%", "markdown")
+    eq(#items, 1, "the list finds the org table")
+    eq(items[1].previews.table.lines[1], "| Name  | Qty |", "and previews it as a formatted table")
+    cfgm.setup({})
+    vim.api.nvim_buf_delete(lb, { force = true })
+  end
+
   -- arguments
   eq(conv.parse_args({ "to=org" }).to, "org", "to=")
   eq(conv.parse_args({ "from=csv", "to=tsv" }).from, "csv", "from=")
