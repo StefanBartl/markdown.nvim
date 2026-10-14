@@ -17,7 +17,10 @@ local function is_rule(line)
   return line:match("^%s*|[-+]+|%s*$") ~= nil and line:find("+", 1, true) ~= nil
 end
 
----A row without its closing pipe (org allows that) gets one, so it splits like the others.
+---A row without its closing pipe (org allows that) gets one, so it splits like the others. A row
+---that ends in backslash + pipe is read as an escaped pipe (the GFM reader's rule, shared with
+---`split_cells`; org itself has no escape): the pipe stays in the last cell. Rules are not
+---tolerated without their closing pipe (`|---+---`).
 ---@param line string
 ---@return string
 local function close_row(line)
@@ -86,11 +89,19 @@ function M.parse_block(block, start_line)
   local registry = require("markdown.tables.registry")
   local rows, aligns, rules = {}, nil, 0
   local rules_after = {} -- body row index -> a rule follows that row (the header rule is not listed)
+  local header_rule, dropped = false, false -- a rule that is stored nowhere is reported as lost
   for _, raw in ipairs(block) do
     local line = is_rule(raw) and raw or close_row(raw)
     if is_rule(line) then
       rules = rules + 1
-      if #rows > 1 then rules_after[#rows - 1] = true end
+      if #rows > 1 then
+        if rules_after[#rows - 1] then dropped = true end -- two rules in a row
+        rules_after[#rows - 1] = true
+      elseif #rows == 1 and not header_rule then
+        header_rule = true
+      else
+        dropped = true -- above the header, or a second one under it / under the cookie row
+      end
     else
       local ck = (not aligns) and cookies(line)
       if ck and #rows >= 1 then
@@ -120,6 +131,10 @@ function M.parse_block(block, start_line)
   if next(rules_after) then
     tbl.rules_after = rules_after
     tbl.lossy = { "horizontal rules between rows (org row groups)" }
+  end
+  if dropped then
+    -- not kept by any target, org included (reported by every `registry.lossy`)
+    tbl.lost = { "a horizontal rule above the header or a repeated one (not stored)" }
   end
   return tbl
 end

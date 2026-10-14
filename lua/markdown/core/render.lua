@@ -646,14 +646,16 @@ local global_group
 local function ensure_global()
   if global_group then return end
   global_group = api.nvim_create_augroup("MarkdownNvimRender", { clear = true })
-  api.nvim_create_autocmd({ "WinScrolled", "WinResized", "VimResized" }, {
+  -- WinClosed: a floating window closed from outside does not change the layout, so nothing else
+  -- tells us that its cursor row is a normal row again
+  api.nvim_create_autocmd({ "WinScrolled", "WinResized", "VimResized", "WinClosed" }, {
     group = global_group,
     callback = function()
       for bufnr in pairs(S) do
         schedule(bufnr)
       end
     end,
-    desc = "[markdown.nvim] render: draw what scrolled into view, re-fit rules after a resize",
+    desc = "[markdown.nvim] render: draw what scrolled into view, re-fit rules, redraw after a window closed",
   })
   api.nvim_create_autocmd("OptionSet", {
     group = global_group,

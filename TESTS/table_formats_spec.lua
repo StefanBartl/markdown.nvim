@@ -400,6 +400,79 @@ return function(H)
     )
   end
 
+  -- ───────────── independent review of 2696980 ─────────────
+  -- csv / tsv data is not GFM text: a literal backslash + pipe survives csv -> csv / tsv
+  do
+    local cm = reg.parse("csv", { "h,k", "foo\\|bar,2", "C:\\dir\\|x,3" })
+    eq(cm.format, "csv", "registry.parse says which format it read")
+    eq(reg.render("csv", cm)[2], "foo\\|bar,2", "a backslash-pipe in csv data survives csv -> csv")
+    eq(reg.render("tsv", cm)[3], "C:\\dir\\|x\t3", "and csv -> tsv")
+    local fm = reg.from_strings({ "a" }, { { "p\\\\|q" } })
+    eq(
+      reg.render("csv", fm)[2],
+      "p\\\\|q",
+      "an even run of backslashes before a pipe stays as it is"
+    )
+  end
+
+  -- csv: a last record that is a quoted empty field, without a trailing newline, is a record
+  eq(#reg.parse("csv", { "a", '""' }).rows, 1, "a final quoted empty record is a row")
+
+  -- org: an already escaped pipe is not escaped twice
+  do
+    local line = reg.render("org", reg.from_strings({ "a" }, { { "x \\| y" } }))[3]
+    ok(line:find("x \\| y |", 1, true), "an escaped pipe is kept as it is")
+    ok(not line:find("\\\\|", 1, true), "and not doubled")
+  end
+
+  -- org: a row ending in backslash + pipe is read with that pipe as a literal (org has no escape,
+  -- the GFM reader's rule is shared): pinned so a change is a decision
+  do
+    local o2 =
+      reg.find({ "| a | b \\|", "|---+---|", "| 1 | C:\\dir\\|" }, { formats = { "org" } })[1]
+    eq(o2.header.cells[2].content, "b \\|", "a trailing backslash-pipe stays in the last cell")
+  end
+
+  -- box: TableView's own style (`╞` header rule) with a multi-line body row
+  do
+    local tv = reg.find({
+      "┌───┬───┐",
+      "│ a │ b │",
+      "╞═══╪═══╡",
+      "│ 1 │ 2 │",
+      "│   │ 2b│",
+      "├───┼───┤",
+      "│ 3 │ 4 │",
+      "└───┴───┘",
+    }, { formats = { "box" } })[1]
+    eq(#tv.rows, 2, "the lines between two rules are one row, also after a `╞` header rule")
+    eq(tv.rows[1].cells[2].content, "2<br>2b", "joined with <br>")
+  end
+
+  -- the layout treats a header of dashes above the delimiter row as the header
+  do
+    local lay =
+      require("markdown.core.table_render").layout({ "| - | - |", "|---|---|", "| 1 | 2 |" })
+    eq(
+      lay.rows[1].kind .. "," .. lay.rows[2].kind .. "," .. lay.rows[3].kind,
+      "head,sep,body",
+      "dash header, delimiter, body"
+    )
+  end
+
+  -- org: rules that are stored nowhere are reported as lost, org -> org included
+  do
+    local lead =
+      reg.find({ "|---+---|", "| a | b |", "|---+---|", "| 1 | 2 |" }, { formats = { "org" } })[1]
+    eq(#reg.lossy("gfm", lead), 1, "a rule above the header is reported when converting")
+    eq(#reg.lossy("org", lead), 1, "and when writing org again")
+    local twice =
+      reg.find({ "| a | b |", "|---+---|", "|---+---|", "| 1 | 2 |" }, { formats = { "org" } })[1]
+    eq(#reg.lossy("org", twice), 1, "a second rule under the header rule is reported")
+    local plain = reg.find({ "| a | b |", "|---+---|", "| 1 | 2 |" }, { formats = { "org" } })[1]
+    eq(#reg.lossy("org", plain), 0, "an ordinary org table loses nothing")
+  end
+
   -- org: a row without its closing pipe still has its cells
   do
     local open = reg.find({ "| a | b", "|---+---|", "| 1 | 2" }, { formats = { "org" } })[1]
