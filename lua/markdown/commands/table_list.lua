@@ -36,12 +36,13 @@ function M.parse_args(argv)
     elseif key == "style" then
       if val ~= "grid" and val ~= "markdown" then return nil, "style must be grid or markdown" end
       opts.style = val
-    elseif key then
+    elseif key and not vim.uv.fs_stat(a) then
       return nil, "unknown option '" .. key .. "='"
     elseif opts.scope == nil then
-      opts.scope = a
+      opts.scope = a -- a path that looks like `key=value` is still a path
     else
-      return nil, "unexpected argument '" .. a .. "'"
+      -- `:Markdown table list my dir/x.md`: the shell-style split cut a path at its space
+      opts.scope = opts.scope .. " " .. a
     end
   end
   return opts, nil
@@ -93,10 +94,16 @@ local function make_item(t, name, style, bufnr, buf_lines)
     line = t.start_line,
     previews = {
       normal = normal,
-      table = {
-        lines = table_only(t.raw_lines, style),
-        ft = style == "markdown" and "markdown" or "",
-      },
+      -- the formatted table is made when a preview asks for it (listing a whole directory
+      -- must not format every table up front)
+      table = setmetatable({ ft = style == "markdown" and "markdown" or "" }, {
+        __index = function(spec, k)
+          if k ~= "lines" then return nil end
+          local lines = table_only(t.raw_lines, style)
+          rawset(spec, "lines", lines)
+          return lines
+        end,
+      }),
     },
     path = name,
     bufnr = bufnr,
@@ -120,12 +127,12 @@ function M.collect(scope, style)
     local bufnr = res.bufnr
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local name = vim.api.nvim_buf_get_name(bufnr)
-    for _, t in ipairs(parser.get_tables(bufnr)) do
+    for _, t in ipairs(parser.get_tables(bufnr, { skip_fences = true })) do
       items[#items + 1] = make_item(t, name, style, bufnr, lines)
     end
   else
     for _, path in ipairs(res.paths or {}) do
-      for _, t in ipairs(parser.get_tables_from_file(path)) do
+      for _, t in ipairs(parser.get_tables_from_file(path, { skip_fences = true })) do
         items[#items + 1] = make_item(t, path, style, nil, nil)
       end
     end
@@ -154,8 +161,8 @@ local function pickers_engine()
   if not pcall(require, "pickers.preview_modes") then return nil end -- an older pickers.nvim
   local ok, engines = pcall(require, "pickers.engines")
   if not ok then return nil end
-  local engine = engines.load()
-  return (engine and engine.pick_item) and engine or nil
+  local loaded, engine = pcall(engines.load)
+  return (loaded and engine and engine.pick_item) and engine or nil
 end
 
 ---Show `items` in a picker; `on_choose` gets the chosen one.
@@ -164,13 +171,13 @@ end
 function M.pick(items, on_choose)
   local engine = pickers_engine()
   if engine then
-    engine.pick_item({
+    local shown = pcall(engine.pick_item, {
       prompt = "Markdown tables",
       items = items,
       preview_modes = { "normal", "table" },
       on_select = on_choose,
     })
-    return
+    if shown then return end
   end
   require("markdown.util.picker").select(items, {
     prompt = "Markdown tables",

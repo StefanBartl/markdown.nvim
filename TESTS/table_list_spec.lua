@@ -49,6 +49,38 @@ return function(H)
   eq(md[1].previews.table.lines[1], "| Name | Description |", "markdown style: aligned GFM")
   eq(md[1].previews.table.ft, "markdown", "markdown style is highlighted as markdown")
 
+  -- the formatted table is made when a preview asks for it
+  local fresh = tl.collect("%")
+  eq(rawget(fresh[1].previews.table, "lines"), nil, "the table preview is not made up front")
+  ok(fresh[1].previews.table.lines[1]:find("┌", 1, true), "it is made on the first access")
+  ok(rawget(fresh[1].previews.table, "lines") ~= nil, "and kept")
+
+  -- tables inside fenced code are not listed (they are examples, not tables of the document)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+    "```lua",
+    "| x | y |",
+    "| - | - |",
+    "| 1 | 2 |",
+    "```",
+    "",
+    "see ```code``` here",
+    "",
+    "| A | B |",
+    "| - | - |",
+    "| 3 | 4 |",
+  })
+  local fenced = tl.collect("%")
+  eq(#fenced, 1, "only the table outside the fence")
+  eq(fenced[1].start_line, 9, "it is the one after the fence")
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, DOC)
+
+  -- the fence helper: ```lua inside a block does not close it, a longer closer does
+  local fmask = require("markdown.util.fence").mask({ "````", "```lua", "x", "````", "y" })
+  ok(fmask[1] and fmask[2] and fmask[3] and fmask[4] and not fmask[5], "fence mask")
+
+  -- a path with a space arrives as several tokens and is put back together
+  eq(tl.parse_args({ "scope=my", "dir/x.md" }).scope, "my dir/x.md", "a split path is joined")
+
   -- ───────────── collect: files ─────────────
   local root = H.tmproot("mkdn_table_list")
   vim.fn.writefile(DOC, root .. "/a.md")

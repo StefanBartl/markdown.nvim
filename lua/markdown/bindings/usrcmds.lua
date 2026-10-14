@@ -550,6 +550,11 @@ function M.apply_tableview(ev)
   ---@return "one"|"all"|nil kind
   ---@return table|table[]|nil target
   local function resolve_target(scope)
+    -- the same scope words as `:Markdown table format|list|view`
+    if scope then
+      scope = scope:gsub("^scope=", "")
+      if scope == "buffer" then scope = "%" end
+    end
     if scope == "%" then
       return "all", all_tables()
     elseif scope == "cwd" then
@@ -651,7 +656,7 @@ function M.apply_tableview(ev)
             tables = parser.get_tables(bufnr)
           end
           if not tables or #tables == 0 then
-            notify.info("No tables found in buffer")
+            notify.info("No tables found in " .. (ctx.args.scope or "buffer"))
             return
           end
           if #tables == 1 then

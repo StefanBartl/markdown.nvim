@@ -28,6 +28,7 @@
 
 local lib_table = require("lib.nvim.markdown.table")
 local table_wrap = require("markdown.core.table_wrap")
+local fences = require("markdown.util.fence")
 
 local M = {}
 
@@ -451,30 +452,6 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ---@internal
----Opening code fence: its character and length. A backtick fence has no
----backtick in its info string (that would be inline code, "```code``` text").
----@param line string
----@return string|nil char, integer|nil len
-local function fence_open(line)
-  local m = line:match("^%s*(```+)[^`]*$")
-  if m then return "`", #m end
-  m = line:match("^%s*(~~~+)")
-  if m then return "~", #m end
-end
-
----@internal
----Closing fence for an opener of `c` x `n`: only fence characters (at least
----`n`), nothing else on the line -- "```lua" does not close.
----@param line string
----@param c string
----@param n integer
----@return boolean
-local function fence_close(line, c, n)
-  local m = line:match("^%s*(" .. c .. "+)%s*$")
-  return m ~= nil and #m >= n
-end
-
----@internal
 ---Table line ranges of `lines`, outside fenced code blocks.
 ---@param lines string[]
 ---@return { first: integer, last: integer }[]
@@ -495,12 +472,12 @@ local function find_tables(lines)
   end
   for i, line in ipairs(lines) do
     if not fence then
-      local c, n = fence_open(line)
+      local c, n = fences.open(line)
       if c then
         flush(i - 1)
         fence = { c = c, n = n }
       end
-    elseif fence_close(line, fence.c, fence.n) then
+    elseif fences.close(line, fence.c, fence.n) then
       fence = nil
       seg_start = i + 1
     end
