@@ -522,6 +522,54 @@ return function(H)
     vim.notify = notify_before
   end
 
+  -- TableView `move_current_row` on an org table with row groups: a move swaps two rows, the
+  -- rules stay at their POSITIONS. So the group sizes survive and moving a row across a rule is
+  -- how a row changes its group (decided 2026-10-15: not a bug; attaching the rule to a row would
+  -- change the group sizes with every move)
+  do
+    local api = vim.api
+    local cfg = require("markdown.config")
+    local notify_before = vim.notify
+    vim.notify = function() end
+    cfg.setup({ table = { formats = { "gfm", "org", "box" } } })
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "| h | k |",
+      "|---+---|",
+      "| a | 1 |",
+      "| b | 2 |",
+      "|---+---|",
+      "| c | 3 |",
+      "| d | 4 |",
+    })
+    local renderer = require("markdown.tableview.renderer")
+    local mt = require("markdown.tableview.parser").get_tables(buf)[1]
+    eq(mt.format, "org", "the org table with row groups")
+    renderer.render_markdowntable(mt, { floating = true, style = "markdown" })
+    local win = api.nvim_get_current_win()
+    for i, l in ipairs(api.nvim_buf_get_lines(api.nvim_win_get_buf(win), 0, -1, false)) do
+      if l:find("| c ", 1, true) then api.nvim_win_set_cursor(win, { i, 2 }) end
+    end
+    renderer.move_current_row(-1) -- c swaps places with b, across the rule
+    renderer.write_back()
+    eq(
+      table.concat(api.nvim_buf_get_lines(buf, 0, -1, false), "\n"),
+      table.concat({
+        "| h | k |",
+        "|---+---|",
+        "| a | 1 |",
+        "| c | 3 |",
+        "|---+---|",
+        "| b | 2 |",
+        "| d | 4 |",
+      }, "\n"),
+      "the rule stays between the second and third body row; c and b changed groups"
+    )
+    renderer.close_view()
+    cfg.setup({})
+    vim.notify = notify_before
+  end
+
   -- ───────────── config ─────────────
   local cfgm = require("markdown.config")
   local saved_notify = vim.notify
