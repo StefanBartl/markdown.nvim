@@ -155,6 +155,7 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `<leader>mtf` | n | Format the table at the cursor (`:Markdown table format`) |
 | `<leader>mtu` | n | Toggle display-only truncation of over-wide cells (`:Markdown table truncate`) |
 | `<leader>mtl` | n | List the tables of the buffer in a picker (`:Markdown table list`) |
+| `<leader>mrr` | n | Toggle the native in-buffer rendering and the table grid for the buffer (`:Markdown render`) |
 | `<leader>mtr` | n | Toggle the virtual grid rendering of tables, fitted to the window (`:Markdown table render`) |
 | `<leader>mtp` | n | Popup with the full text of the table cell under the cursor (`:Markdown table truncate show`) |
 

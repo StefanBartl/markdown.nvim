@@ -196,6 +196,8 @@ function M.table_truncate_toggle() require("markdown.core.table_truncate").toggl
 function M.table_list() require("markdown.commands.table_list").run({}) end
 ---Toggles the virtual grid rendering (fits the window) of tables for the current buffer.
 function M.table_render_toggle() require("markdown.core.table_render").toggle() end
+---Toggles the native rendering and the table grid for the current buffer (`:Markdown render`).
+function M.render_toggle() require("markdown.commands.render").run({}) end
 ---Shows the full text of the table cell under the cursor in a popup.
 function M.table_cell_popup() require("markdown.core.table_popup").show(nil, { force = true }) end
 

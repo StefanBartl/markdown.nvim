@@ -16,7 +16,7 @@ plugin, not a CLI, and every one of them is optional:
 | [hover.nvim](https://github.com/StefanBartl/hover.nvim) | The link and path preview float |
 | [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | `.pdf` targets rendered in a buffer, and `:Markdown export pdf` |
 | [images.nvim](https://github.com/StefanBartl/images.nvim), [snacks.nvim](https://github.com/folke/snacks.nvim), [image.nvim](https://github.com/3rd/image.nvim) | Image previews in a float, and `:Markdown image paste\|screenshot` |
-| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim), render-markdown.nvim | The rendering and preview back ends |
+| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim) | The browser preview back end (in-buffer rendering is built in) |
 | telescope.nvim, fzf-lua, snacks.picker | Picker backends for link selection |
 | [nvzone/menu](https://github.com/nvzone/menu) | A host for the context-menu entries — see [FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md) |
 | [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit.select` is the default picker backend and `ui.kit.confirm` backs the `DD` delete-linked-file confirm dialog — both fall back to `vim.ui.select`/a plain `dd` when absent |
@@ -43,15 +43,6 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
   dependencies = {
     "StefanBartl/lib.nvim",
     "StefanBartl/hover.nvim",
-    -- Host of `:Markdown render` (in-buffer rendering of headings, checkboxes, code
-    -- blocks, ...) until markdown.nvim renders natively. Optional: without it
-    -- `:Markdown render` only warns. Tables are drawn by markdown.nvim's own
-    -- `table.render`, so keep render-markdown.nvim's table component off.
-    {
-      "MeanderingProgrammer/render-markdown.nvim",
-      dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
-      opts = { pipe_table = { enabled = false } },
-    },
   },
   ft = { "markdown", "mdx", "md" },
   config = function()

@@ -110,7 +110,7 @@ the tables that changed are drawn again after an edit, the others keep their
 extmarks. `pad`, `min_width`, `max_width` and `debounce_ms` must be whole numbers
 (anything else falls back to the default with a warning). It replaces `:Markdown table truncate` in the same buffer, and it should
 not be combined with another plugin that also conceals table pipes (for example
-render-markdown.nvim's table component).
+a table component of a rendering plugin).
 
 `table.render` keys: `enabled` (false), `border` ("single"), `cursor` ("row"),
 `pad` (1), `min_width` (6), `max_width` (nil = window width), `row_separator`

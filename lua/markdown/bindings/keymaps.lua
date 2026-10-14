@@ -304,6 +304,14 @@ local DEFAULT_KEYMAPS = {
     desc = "Toggle table grid rendering",
   },
   {
+    id = "render_toggle",
+    mode = "n",
+    lhs = "<leader>mrr",
+    action = "render_toggle",
+    feature = "render",
+    desc = "Toggle native rendering (and the table grid)",
+  },
+  {
     id = "table_cell_popup",
     mode = "n",
     lhs = "<leader>mtp",

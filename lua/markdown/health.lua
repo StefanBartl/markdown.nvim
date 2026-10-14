@@ -78,12 +78,13 @@ function M.check()
   )
 
   -- Optional host plugins for :Markdown render / preview.
-  if vim.fn.exists(":RenderMarkdown") == 2 then
-    ok("render-markdown.nvim detected (:Markdown render available)")
-  else
-    info(
-      "render-markdown.nvim not found — :Markdown render will warn if used (add it as a dependency, docs/installation.md)"
+  ok(
+    ("native rendering available (:Markdown render; render.enabled = %s)"):format(
+      tostring((cfg.render or {}).enabled == true)
     )
+  )
+  if vim.fn.has("nvim-0.11") ~= 1 then
+    info("Neovim < 0.11: the table grid (table.render) needs conceal_lines and stays off")
   end
   if vim.fn.exists(":MDView") == 2 then
     ok("mdview.nvim detected (:Markdown preview / :Markdown mdview available)")

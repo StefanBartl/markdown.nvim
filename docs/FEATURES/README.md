@@ -14,7 +14,7 @@ already have.
 | **Body-text formatting** | Strip bold/strikethrough/all-emphasis markers, collapse blank-line runs, trim trailing whitespace, normalize bullet markers — over a buffer, a file, or every `*.md` below a directory |
 | **Under the cursor** | One dispatcher over anchors, images, URLs, files and PDFs — and a hover float that previews what the target actually is |
 | **Fenced-block scope** | A fenced code block treated as its own sub-document, so the commands above operate inside it |
-| **Delegated rendering** | Preview, render and PDF export handed to render-markdown.nvim, mdview.nvim, images.nvim and pdfport.nvim — whichever are installed |
+| **Native rendering** | Headings, bullets, checkboxes, code blocks, rules, quotes / callouts, inline markup and tables drawn in the buffer (display only); browser preview, images and PDF export delegated to mdview.nvim, images.nvim and pdfport.nvim |
 
 Everything is installed by a `FileType` autocommand on Markdown buffers; only
 `:Markdown` itself is global. There are no external tool requirements — `rg`
@@ -37,7 +37,7 @@ relevant config. For the full default-key list see
   (anchors/images/URLs/files/PDFs), image paste/screenshot
 - [Highlighting and UI](HIGHLIGHTING-AND-UI.md) — fenced/inline code,
   blockquotes, link underline, fenced-block scope
-- [Integrations](INTEGRATIONS.md) — render-markdown.nvim, mdview.nvim,
+- [Integrations](INTEGRATIONS.md) — native rendering, mdview.nvim,
   images.nvim/snacks.nvim/image.nvim, pdfport.nvim, nvzone/menu, picker
   backends, which-key, lib.nvim
 

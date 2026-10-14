@@ -108,6 +108,27 @@ local DEFAULTS = {
   -- Defaults for `:Markdown table format` / the GFM table formatter
   -- (core.table_fmt). Explicit command args (`header=`, `cell=`, `skip=`)
   -- always override these per call.
+  -- Native in-buffer rendering (`core.render`, replaces render-markdown.nvim): headings, bullets,
+  -- checkboxes, code blocks, thematic breaks, block quotes / callouts, inline code / links /
+  -- images. Display only (extmarks), the cursor row shows its text. `:Markdown render` toggles it
+  -- together with the table grid. Tables are `table.render`.
+  render = {
+    enabled = false, -- true: on for every markdown buffer
+    margin = 40, -- rows drawn above and below the visible ones
+    debounce_ms = 60,
+    headings = {
+      enabled = true,
+      icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " },
+      background = true,
+    },
+    bullets = { enabled = true, icons = { "•", "◦", "▪" } },
+    checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
+    code = { enabled = true, background = true, label = true },
+    rules = { enabled = true, char = "─" },
+    quotes = { enabled = true, icon = "▎", callouts = true },
+    inline = { enabled = true, code = true, links = true, images = true },
+  },
+
   table = {
     header_align = "left", -- "left" | "center" | "right"
     entry_align = "left",

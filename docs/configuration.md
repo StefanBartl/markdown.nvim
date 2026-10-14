@@ -158,11 +158,25 @@ require("markdown").setup({
     picker = "hover_select",
   },
 
+  -- Native in-buffer rendering (display only; `:Markdown render`, `<leader>mrr`):
+  -- render = {
+  --   enabled = false,            -- true: on for every markdown buffer
+  --   margin = 40, debounce_ms = 60,
+  --   headings   = { enabled = true, icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " }, background = true },
+  --   bullets    = { enabled = true, icons = { "•", "◦", "▪" } },
+  --   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
+  --   code       = { enabled = true, background = true, label = true },
+  --   rules      = { enabled = true, char = "─" },
+  --   quotes     = { enabled = true, icon = "▎", callouts = true },
+  --   inline     = { enabled = true, code = true, links = true, images = true },
+  -- },
+
   -- Defaults for :Markdown table format; explicit command args (header=,
   -- cell=, skip=, max=, wrap, nowrap) always override these per call.
   -- wrap.enabled = true makes plain :Markdown table format / <leader>mtf /
   -- table mode wrap at wrap.max (40 when unset); see docs/table-wrap.md.
   table = {
+    -- formats = { "gfm" }, -- "gfm" | "org" | "box": table formats found in documents (:Markdown table convert)
     -- popup = true, -- CursorHold in a table cell: float with its content (false = off)
     -- render = { enabled = false, border = "single", cursor = "row", pad = 1, min_width = 6, max_width = nil,
     --            row_separator = "auto", debounce_ms = 80 }, -- virtual grid rendering that fits the window
