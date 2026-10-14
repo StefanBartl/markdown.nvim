@@ -117,6 +117,21 @@ function M.check()
     info("which-key not found — mappings still carry their own descriptions")
   end
 
+  -- Optional picker backends (util/picker.lua) and the snacks image preview
+  -- (commands/links.lua); each is a soft dependency, never an error.
+  local pickers = {
+    { "telescope", "telescope.pickers", "telescope picker backend" },
+    { "fzf-lua", "fzf-lua", "fzf-lua picker backend" },
+    { "snacks", "snacks.picker", "snacks image-preview picker for links" },
+  }
+  for _, dep in ipairs(pickers) do
+    if pcall(require, dep[2]) then
+      ok(dep[1] .. " found: " .. dep[3])
+    else
+      info(dep[1] .. " not installed: " .. dep[3] .. " unavailable")
+    end
+  end
+
   -- Fenced-block scope (treat ```markdown/md/mdx/… blocks as sub-documents).
   local fs = cfg.fenced_scope or {}
   if fs.enable == false then
