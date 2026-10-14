@@ -60,7 +60,10 @@ return function(H)
   local path_open = platform.open("C:/tmp/some file.html")
   ok(path_open, "a path is opened")
   eq(#spawned[#spawned].argv, 2, "a path gives a two-element argv")
-  eq(spawned[#spawned].argv[2], "C:\\tmp\\some file.html", "with backslashes")
+  -- `:p` is the host's idea of absolute (on CI's Linux it prefixes $HOME): mirror it
+  local want = (vim.fn.fnamemodify("C:/tmp/some file.html", ":p"):gsub("/", "\\"))
+  eq(spawned[#spawned].argv[2], want, "absolute, with backslashes")
+  ok(not spawned[#spawned].argv[2]:find("/", 1, true), "no forward slash is left")
 
   -- another target starts at the first opener again
   platform.open(URL .. "x")
