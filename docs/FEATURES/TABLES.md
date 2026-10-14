@@ -140,10 +140,14 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
 | `csv`, `tsv` | standalone | RFC 4180: quoted separators, doubled quotes, newlines in quotes; first record is the header; only through `convert from=csv\|tsv` |
 
 - **Config:** `table.formats = { "gfm" }` (default) -- add `"org"` and/or `"box"` to find them in
-  markdown buffers too. Overlapping matches: the format listed first wins. Tables inside code
+  markdown buffers too. Overlapping matches: the format listed first wins, so `{ "org", "gfm" }`
+  and `{ "gfm", "org" }` can read the same lines differently (a one-column org table without a `+`
+  in its rule is indistinguishable from GFM and is read as GFM). Tables inside code
   fences are skipped by `list`.
 - **Command:** `:Markdown table convert [from=auto] [to=gfm]` (and `:TableViewConvert`): the table
-  at the cursor or in the `:range`, `from=auto` tries every embedded format, `from=csv|tsv` reads
+  at the cursor or in the `:range`, `from=auto` tries every embedded format (it does **not** follow `table.formats`, so a
+  foreign table can be converted without configuring anything; `list` and the TableView only see
+  the configured formats), `from=csv|tsv` reads
   the range (or the whole buffer) as delimited text. What the target cannot keep is reported:
   alignment in csv/tsv, org row groups, a `#+TBLFM:` line below an org table.
 - **Write-back** from the TableView float uses the format the table was read in and keeps what
