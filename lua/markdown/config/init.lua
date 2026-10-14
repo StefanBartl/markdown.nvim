@@ -365,14 +365,19 @@ local function degrade_invalid_scalars(cfg, issues)
         rd[key] = rdef[key]
       end
     end
+    -- whole numbers only: a fraction desyncs the borders from the rows, `math.huge`
+    -- makes every table "too wide" and `nan` fails every comparison
+    local function int(v, min)
+      return type(v) == "number" and v == math.floor(v) and v >= min and v < math.huge
+    end
     check("enabled", function(v) return type(v) == "boolean" end)
     check("border", function(v) return v == "single" or v == "rounded" or v == "ascii" end)
     check("cursor", function(v) return v == "row" or v == "table" end)
-    check("pad", function(v) return type(v) == "number" and v >= 0 end)
-    check("min_width", function(v) return type(v) == "number" and v >= 1 end)
-    check("max_width", function(v) return v == nil or (type(v) == "number" and v >= 10) end)
+    check("pad", function(v) return int(v, 0) end)
+    check("min_width", function(v) return int(v, 1) end)
+    check("max_width", function(v) return v == nil or int(v, 10) end)
     check("row_separator", function(v) return v == "auto" or type(v) == "boolean" end)
-    check("debounce_ms", function(v) return type(v) == "number" and v >= 0 end)
+    check("debounce_ms", function(v) return int(v, 0) end)
   end
 
   -- ERR-22: `hover.max_lines` reaches `hover/section.lua`'s `#out >= limit`
