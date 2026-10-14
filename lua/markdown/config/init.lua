@@ -418,6 +418,16 @@ local function degrade_invalid_scalars(cfg, issues)
   end
 
   -- `render`: whole numbers for the counts, tables for the construct blocks, lists of icons
+  if cfg.render ~= nil and type(cfg.render) ~= "table" then
+    -- `render = true` / `false` is the short form of `render = { enabled = ... }`
+    local on = cfg.render == true
+    if type(cfg.render) ~= "boolean" then
+      bad("render", cfg.render, DEFAULTS.render)
+      on = DEFAULTS.render.enabled
+    end
+    cfg.render = vim.deepcopy(DEFAULTS.render)
+    cfg.render.enabled = on
+  end
   if cfg.render then
     local rdef = DEFAULTS.render
     local r = cfg.render

@@ -154,6 +154,92 @@ local function conceal(out, col, end_col, conceal_text, extra)
 end
 
 ---@internal
+---The next `[text](url)` / `![alt](url)` at or after `pos`: balanced parentheses in the url, a
+---`![img](src)` allowed inside the text of a link (a badge), a backslash-escaped `[` is skipped.
+---@param line string
+---@param pos integer
+---@return integer|nil s, integer|nil e, string|nil bang, string|nil text
+function M._link_at(line, pos)
+  local init = pos
+  while true do
+    local s = line:find("[", init, true)
+    if not s then return nil end
+    local bang = ""
+    local open = s
+    if s > 1 and line:sub(s - 1, s - 1) == "!" then
+      bang = "!"
+      open = s - 1
+    end
+    local bs = 0
+    local k = open - 1
+    while k >= 1 and line:sub(k, k) == "\\" do
+      bs = bs + 1
+      k = k - 1
+    end
+    if open < pos or bs % 2 == 1 then
+      init = s + 1
+    else
+      -- the text: up to the "]" that closes this "[" (nested brackets of an image count)
+      local depth, j = 0, s
+      local close
+      while j <= #line do
+        local ch = line:sub(j, j)
+        if ch == "\\" then
+          j = j + 1
+        elseif ch == "[" then
+          depth = depth + 1
+        elseif ch == "]" then
+          depth = depth - 1
+          if depth == 0 then
+            close = j
+            break
+          end
+        end
+        j = j + 1
+      end
+      if close and line:sub(close + 1, close + 1) == "(" then
+        local d, m = 0, close + 1
+        local stop
+        while m <= #line do
+          local ch = line:sub(m, m)
+          if ch == "(" then
+            d = d + 1
+          elseif ch == ")" then
+            d = d - 1
+            if d == 0 then
+              stop = m
+              break
+            end
+          end
+          m = m + 1
+        end
+        if stop then return open, stop, bang, line:sub(s + 1, close - 1) end
+      end
+      init = s + 1
+    end
+  end
+end
+
+---@internal
+---Whether `line` can be the text a `---` underlines (setext): plain paragraph text, not a
+---heading, list item, quote, fence, table row or another rule.
+---@param line string|nil
+---@return boolean
+function M._is_paragraph_line(line)
+  if not line or not line:match("%S") then return false end
+  return not (
+    line:match("^%s*#+%s")
+    or line:match("^%s*[-*+]%s")
+    or line:match("^%s*%d+[.)]%s")
+    or line:match("^%s*>")
+    or line:match("^%s*```")
+    or line:match("^%s*~~~")
+    or line:match("^%s*|")
+    or line:match("^%s*[-*_][-*_%s]*$")
+  )
+end
+
+---@internal
 ---Inline markup of `line` from byte `from` on (code spans first, so nothing inside them is touched).
 ---@param out Mkdn.RenderMark[]
 ---@param line string
@@ -166,14 +252,27 @@ local function inline(out, line, from, c)
     while true do
       local s, e = line:find("`+", pos)
       if not s then break end
-      local ticks = line:sub(s, e)
-      local cs, ce = line:find(ticks, e + 1, true)
-      if not cs then break end
-      conceal(out, s - 1, e, "")
-      conceal(out, cs - 1, ce, "")
-      out[#out + 1] = { col = e, opts = { end_col = cs - 1, hl_group = "MarkdownRenderCode" } }
-      spans[#spans + 1] = { s, ce }
-      pos = ce + 1
+      -- the closing run has exactly the length of the opening one (CommonMark)
+      local cs, ce
+      local q = e + 1
+      while true do
+        local rs, re = line:find("`+", q)
+        if not rs then break end
+        if re - rs == e - s then
+          cs, ce = rs, re
+          break
+        end
+        q = re + 1
+      end
+      if not cs then
+        pos = e + 1 -- an unpaired run: look for the next one
+      else
+        conceal(out, s - 1, e, "")
+        conceal(out, cs - 1, ce, "")
+        out[#out + 1] = { col = e, opts = { end_col = cs - 1, hl_group = "MarkdownRenderCode" } }
+        spans[#spans + 1] = { s, ce }
+        pos = ce + 1
+      end
     end
   end
   local function inside(p)
@@ -185,7 +284,7 @@ local function inline(out, line, from, c)
   if c.links or c.images then
     local pos = from
     while true do
-      local s, e, bang, text = line:find("(!?)%[([^%]]*)%]%(([^)]*)%)", pos)
+      local s, e, bang, text = M._link_at(line, pos)
       if not s then break end
       if not inside(s) then
         local is_img = bang == "!"
@@ -246,7 +345,7 @@ function M.line_marks(line, ctx)
     and #rule_ch >= 3
     and ("-*_"):find(rule_ch:sub(1, 1), 1, true)
     and rule_ch == rule_ch:sub(1, 1):rep(#rule_ch)
-    and not (rule_ch:sub(1, 1) == "-" and ctx.prev and ctx.prev:match("%S"))
+    and not (rule_ch:sub(1, 1) == "-" and M._is_paragraph_line(ctx.prev))
   then
     out[#out + 1] = {
       col = 0,
@@ -540,11 +639,27 @@ local function ensure_global()
     end,
     desc = "[markdown.nvim] render: draw what scrolled into view, re-fit rules after a resize",
   })
+  api.nvim_create_autocmd("OptionSet", {
+    group = global_group,
+    pattern = { "number", "relativenumber", "signcolumn", "foldcolumn", "numberwidth" },
+    callback = function()
+      for bufnr in pairs(S) do
+        schedule(bufnr)
+      end
+    end,
+    desc = "[markdown.nvim] render: re-fit rules after a change of the text area width",
+  })
   api.nvim_create_autocmd("ColorScheme", {
     group = global_group,
     callback = setup_highlights,
     desc = "[markdown.nvim] render: re-link the highlight groups",
   })
+end
+
+---The table grid (or truncation) of `bufnr` was switched on or off: its rows change owner.
+---@param bufnr integer
+function M.grid_changed(bufnr)
+  if S[bufnr] then schedule(bufnr) end
 end
 
 ---@param bufnr? integer

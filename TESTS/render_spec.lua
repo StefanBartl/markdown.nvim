@@ -88,6 +88,28 @@ return function(H)
     "without a grid the table rows get the inline marks"
   )
 
+  -- links: a badge, parentheses in the url, an escaped bracket; code spans: runs of equal length
+  local badge = "[![build](a.svg)](http://x)"
+  local bs, be = r._link_at(badge, 1)
+  eq(bs .. "-" .. be, "1-" .. #badge, "a badge is one link")
+  local paren = "[a](http://x/(y)) z"
+  local ps, pe = r._link_at(paren, 1)
+  eq(pe, #"[a](http://x/(y))", "balanced parentheses stay in the url")
+  eq(r._link_at("\\[not](x)", 1), nil, "an escaped bracket is no link")
+  eq(#marks("x `` y `z`"), 3, "an unpaired backtick run does not hide a later span")
+  local run = find(
+    marks("a ``b`c`` d"),
+    function(m) return m.opts.hl_group == "MarkdownRenderCode" end
+  )
+  eq(run.opts.end_col - run.col, 3, "the closing run has the length of the opening one: b`c")
+  eq(ps, 1, "link starts at the bracket")
+
+  -- `---` is a rule under a heading, list item, quote or fence, only text makes it a setext line
+  eq(#marks("---", { prev = "# Title" }), 1, "rule under a heading")
+  eq(#marks("---", { prev = "- item" }), 1, "rule under a list item")
+  eq(#marks("---", { prev = "> quote" }), 1, "rule under a quote")
+  eq(#marks("---", { prev = "```" }), 1, "rule under a fence")
+
   -- ───────────── code blocks, front matter ─────────────
   local roles, langs = r.roles({ "---", "a: 1", "---", "```lua", "x", "```", "y" })
   eq(roles[1] .. roles[3], "frontfront", "front matter")
@@ -212,6 +234,24 @@ return function(H)
   r.disable(big)
   vim.cmd("only")
 
+  -- a window that leaves the buffer and comes back must not take the raised level for its own
+  do
+    local guard = require("markdown.core.conceal_guard")
+    local a = H.scratch("markdown")
+    local b = H.scratch("markdown")
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t", a)
+    eq(vim.wo.conceallevel, 2, "guard raises the level")
+    vim.api.nvim_set_current_buf(b)
+    guard.apply("t", a) -- what the scheduled BufWinLeave handler does: the window has left
+    eq(vim.wo.conceallevel, 0, "the window got its level back when it left")
+    vim.api.nvim_set_current_buf(a) -- Neovim restores the raised value it remembered for `a`
+    guard.apply("t", a)
+    guard.restore("t", a)
+    eq(vim.wo.conceallevel, 0, "and still has its own level after coming back")
+  end
+
   -- config
   local cfgm = require("markdown.config")
   local sn = vim.notify
@@ -219,6 +259,11 @@ return function(H)
   cfgm.setup({ render = { margin = 2.5, headings = { icons = "x" }, bogus = 1 } })
   eq(cfgm.get().render.margin, r.DEFAULTS.margin, "a fractional margin is refused")
   eq(#cfgm.get().render.headings.icons, 6, "icons must be a list of strings")
+  cfgm.setup({ render = true })
+  eq(cfgm.get().render.enabled, true, "render = true is the short form of enabled = true")
+  eq(cfgm.get().render.margin, r.DEFAULTS.margin, "and keeps the other defaults")
+  cfgm.setup({ render = "yes" })
+  eq(cfgm.get().render.enabled, r.DEFAULTS.enabled, "a string is refused and the default is used")
   cfgm.setup({ render = { bullets = { icons = { "-", "+" } } } })
   eq(cfgm.get().render.bullets.icons[2], "+", "a valid override is kept")
   vim.notify = sn

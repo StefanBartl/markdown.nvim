@@ -1025,6 +1025,8 @@ function M.enable(bufnr)
   })
   set_conceallevel(bufnr, true)
   M.render(bufnr)
+  local rr = package.loaded["markdown.core.render"]
+  if rr then rr.grid_changed(bufnr) end
 end
 
 ---@param bufnr? integer
@@ -1036,6 +1038,8 @@ function M.disable(bufnr)
   S[bufnr] = nil
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end
   set_conceallevel(bufnr, false)
+  local rr = package.loaded["markdown.core.render"]
+  if rr then rr.grid_changed(bufnr) end
 end
 
 ---@param bufnr? integer
