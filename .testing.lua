@@ -30,4 +30,15 @@ return {
     -- short-name probe (`cmd /c for %I`) of the path resolver on Windows.
     spawn = { "rg", "cmd" },
   },
+  -- Findings the minimal conformance editor cannot avoid (docs/CONFORMANCE.md of testing.nvim); reviewed 2026-10-14.
+  conformance = {
+    waivers = {
+      {
+        check = "K14",
+        text = ":Hover",
+        reason = ":Hover belongs to hover.nvim, which markdown.nvim loads as a dependency; hover.nvim documents it",
+        expires = "2027-04-14",
+      },
+    },
+  },
 }
