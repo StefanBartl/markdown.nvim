@@ -636,13 +636,21 @@ function M.apply_tableview(ev)
 
   composer.verb("TableViewSelect", {
     buffer = bufnr,
-    desc = "[markdown.nvim] Select and preview table",
+    desc = "[markdown.nvim] Select and preview a table of the buffer, or of scope=%|cwd|<path>",
     routes = {
       {
         path = {},
-        run = function()
-          local tables = parser.get_tables(bufnr)
-          if #tables == 0 then
+        args = scope_arg,
+        run = function(ctx)
+          local tables
+          if ctx.args.scope and ctx.args.scope ~= "" and ctx.args.scope ~= "%" then
+            local kind, target = resolve_target(ctx.args.scope)
+            if not kind then return end
+            tables = target
+          else
+            tables = parser.get_tables(bufnr)
+          end
+          if not tables or #tables == 0 then
             notify.info("No tables found in buffer")
             return
           end
@@ -655,6 +663,29 @@ function M.apply_tableview(ev)
       },
     },
   })
+
+  -- One `:TableView<Sub>` per `:Markdown table <sub>` (list, render, truncate,
+  -- format, new, mode, tableize, import), so both entry points offer the same
+  -- set. They forward to the same code, arguments and range included.
+  local tcmd = require("markdown.commands.table")
+  for _, sub in ipairs(tcmd.subcommand_names()) do
+    if sub ~= "view" then
+      local name = "TableView" .. sub:sub(1, 1):upper() .. sub:sub(2)
+      pcall(api.nvim_buf_create_user_command, bufnr, name, function(o)
+        local argv = vim.split(vim.trim(o.args), "%s+", { trimempty = true })
+        table.insert(argv, 1, sub)
+        tcmd.run(argv, { args = o.args, range = o.range, line1 = o.line1, line2 = o.line2 })
+      end, {
+        nargs = "*",
+        range = true,
+        desc = "[markdown.nvim] Same as :Markdown table " .. sub,
+        complete = function(arglead, cmdline)
+          local rest = cmdline:gsub("^%S+%s*", "")
+          return tcmd.complete(arglead, "Markdown table " .. sub .. " " .. rest)
+        end,
+      })
+    end
+  end
 
   composer.verb("TableViewClose", {
     buffer = bufnr,

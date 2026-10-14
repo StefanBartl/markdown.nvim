@@ -17,6 +17,7 @@
 ---   M.layout(src, opts)          – pure: widths, aligns and wrapped cells of one table
 ---   M.row_lines(model, i, style) – pure: virtual-text chunks of source row `i`
 ---   M.border(model, kind, style) – pure: top / mid / bottom border chunks
+---   M.to_lines(src, opts)        – pure: the table as plain text lines
 ---   M.render(bufnr, force)       – apply the extmarks for the whole buffer
 ---   M.clear(bufnr)               – remove them
 ---   M.enable/disable/toggle(bufnr)
@@ -406,6 +407,39 @@ function M.row_lines(model, i, style)
     lines[k] = out
   end
   return lines
+end
+
+---Pure: the table as plain text lines -- the same grid the buffer render
+---draws, for places that show text (a picker preview, a float). Natural width,
+---or fitted to `opts.avail` columns. A table that cannot be laid out comes back
+---as its source lines.
+---@param src string[]
+---@param opts? { avail?: integer, pad?: integer, border?: string, row_separator?: boolean|"auto" }
+---@return string[]
+function M.to_lines(src, opts)
+  opts = opts or {}
+  local model = M.layout(src, { avail = opts.avail, pad = opts.pad })
+  if not model then return vim.deepcopy(src) end
+  local style = M.style({ border = opts.border, row_separator = opts.row_separator }, model)
+  local function join(chunks)
+    local t = {}
+    for _, c in ipairs(chunks) do
+      t[#t + 1] = c[1]
+    end
+    return table.concat(t)
+  end
+  local out = { join(M.border(model, "top", style)) }
+  local last = #model.rows
+  for i = 1, last do
+    for _, line in ipairs(M.row_lines(model, i, style)) do
+      out[#out + 1] = join(line)
+    end
+    if style.row_separator and model.rows[i].kind == "body" and i < last then
+      out[#out + 1] = join(M.border(model, "mid", style))
+    end
+  end
+  out[#out + 1] = join(M.border(model, "bottom", style))
+  return out
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────

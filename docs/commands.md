@@ -86,11 +86,23 @@ automatic runs). The manual commands work regardless. Live mode is debounced by
 
 ## `:Markdown table`
 
+> **`:Markdown table` and `:TableView*` are the same surface.** Every
+> `:Markdown table <sub>` has a buffer-local `:TableView<Sub>` counterpart
+> (`:TableViewList`, `:TableViewRender`, `:TableViewTruncate`, `:TableViewFormat`,
+> `:TableViewNew`, `:TableViewMode`, `:TableViewTableize`, `:TableViewImport`) and
+> every `:TableView…` command is an action of `:Markdown table view`
+> (`Toggle` `Markdown` `Box` `Select` `Close` `OpenBrowser` `OpenBrowserNice`,
+> plus `list`). Arguments, completion and ranges are the same. The scope words are
+> the same everywhere too: `%` / `buffer`, `cwd`, a path (`scope=` optional).
+> `TESTS/table_list_spec.lua` pins this: a new `:Markdown table` subcommand that
+> has no `:TableView` counterpart fails the suite.
+
 The single namespace for every table action — preview, format, and a focused,
 dependency-free reimplementation of the vim-table-mode essentials.
 
 ```vim
-:Markdown table view [toggle|markdown|box|select|close|browser|browsernice] [scope|reopen]
+:Markdown table view [toggle|markdown|box|select|list|close|browser|browsernice] [scope|reopen]
+:Markdown table list [scope=%|cwd|cfile|PATH] [style=grid|markdown]  " tables of a scope in a picker
 :Markdown table format [options]        " align columns / normalize separators
                                          " options: left|center|right, header=, cell=, skip=, scope=,
                                          "          max=N | wrap | nowrap | auto | reflow  (cap the column width)
@@ -177,6 +189,18 @@ dependency-free reimplementation of the vim-table-mode essentials.
   (native float, no focus, closes on the next move; on by default,
   `table.popup = false` disables it); `show` / `<leader>mtp` opens it on demand. Always-on:
   `table.truncate.enabled = true`. `<leader>mtu` toggles it.
+- **list** `[scope=...] [style=...]` shows every table of a scope as one entry
+  (`file:line  header  (n rows)`) in a picker and jumps to the one you choose.
+  Scope: `%` / `buffer` (default), `cwd` (every `*.md` below the working
+  directory), `cfile` (the file under the cursor) or a file / directory; the
+  `scope=` prefix is optional. With
+  [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) the preview window
+  has two modes and `<M-t>` switches between them: *normal* (the file, cursor on
+  the table) and *table* (only the table, formatted: `style=grid` box drawing,
+  the default, or `style=markdown` aligned GFM). Without pickers.nvim (or with an
+  older one, or `table.list.picker = "builtin"`) the entries go through the
+  built-in chooser (`links.picker`) and there is no preview. `<leader>mtl` lists
+  the current buffer.
 - **render** `[on|off|toggle]` shows every table as a compact grid, display
   only (the file text is untouched): columns are as wide as their longest cell
   (the padding the formatter wrote for one huge cell elsewhere disappears), box

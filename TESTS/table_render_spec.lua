@@ -101,6 +101,14 @@ return function(H)
     "explicit false wins"
   )
 
+  -- plain text lines (picker preview): the same grid
+  local plain = tr.to_lines({ "| A | B |", "| - | - |", "| 1 | 22 |" })
+  eq(plain[1], "┌───┬────┐", "to_lines: top border")
+  eq(plain[2], "│ A │ B  │", "to_lines: header")
+  eq(plain[3], "├───┼────┤", "to_lines: separator")
+  eq(plain[#plain], "└───┴────┘", "to_lines: bottom border")
+  eq(#tr.to_lines({ "no table" }), 1, "to_lines: not a table -> the source back")
+
   -- ───────────── buffer ─────────────
   local ns = vim.api.nvim_create_namespace("markdown_table_render")
   local buf = H.scratch("markdown")

@@ -112,6 +112,18 @@ rows of the same logical row. Off by default — nothing changes until a
   [HEADINGS.md](HEADINGS.md#folding)
 - **API hooks:** `core.table_wrap.on("before_reflow"|"after_reflow", fn)`
 
+## `table_list` — the tables of a scope in a picker
+
+`:Markdown table list [scope=...] [style=grid|markdown]` (also `:TableViewList`,
+`<leader>mtl`). One entry per table; with pickers.nvim the preview switches
+between the file around the table and the table alone, formatted (`<M-t>`,
+a `Pickers.Item.previews` feature of pickers.nvim). Details:
+[commands.md](../commands.md#markdown-table).
+
+- **Module:** `commands/table_list.lua` (pure `parse_args`, `collect`; `open`, `pick`)
+- **Config:** `table.list = { picker = "auto" | "builtin", style = "grid" | "markdown" }`
+- **Reuses:** `core.table_render.to_lines` for the grid, `util.scope` for the scope words
+
 ## `table_render` — virtual grid that fits the window
 
 Display-only rendering of every GFM table as a compact grid. The buffer text is

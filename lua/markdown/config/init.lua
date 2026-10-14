@@ -130,9 +130,11 @@ local NESTED_OPTS = {
     "wrap_profiles",
     "truncate",
     "render",
+    "list",
     "popup",
   },
   ["table.truncate"] = { "enabled", "max", "marker", "popup" },
+  ["table.list"] = { "picker", "style" },
   ["table.render"] = {
     "enabled",
     "border",
@@ -342,6 +344,19 @@ local function degrade_invalid_scalars(cfg, issues)
       end
       cfg.table.render = vim.deepcopy(DEFAULTS.table.render)
       cfg.table.render.enabled = on
+    end
+    if type(cfg.table.list) ~= "table" then
+      if cfg.table.list ~= nil then bad("table.list", cfg.table.list, "a table") end
+      cfg.table.list = vim.deepcopy(DEFAULTS.table.list)
+    end
+    local ls, ldef = cfg.table.list, DEFAULTS.table.list
+    if ls.picker ~= "auto" and ls.picker ~= "builtin" then
+      bad("table.list.picker", ls.picker, ldef.picker)
+      ls.picker = ldef.picker
+    end
+    if ls.style ~= "grid" and ls.style ~= "markdown" then
+      bad("table.list.style", ls.style, ldef.style)
+      ls.style = ldef.style
     end
     local rd, rdef = cfg.table.render, DEFAULTS.table.render
     local function check(key, ok)
