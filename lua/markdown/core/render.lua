@@ -359,19 +359,31 @@ local function cursor_rows(bufnr)
 end
 
 ---@internal
+---The narrowest window width and the row spans the windows show (overlapping ones merged), so two
+---windows far apart do not drag every row in between into the drawing.
 ---@param bufnr integer
----@return integer|nil width, integer first, integer last
+---@param margin integer
+---@return integer|nil width, integer[][] spans  # { { first, last }, ... } 1-based, ascending
 local function window_span(bufnr, margin)
-  local width, first, last
+  local width, spans = nil, {}
   for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
     local info = vim.fn.getwininfo(win)[1]
     local w = info.width - info.textoff
     width = width and math.min(width, w) or w
-    first = first and math.min(first, info.topline) or info.topline
-    last = last and math.max(last, info.botline) or info.botline
+    spans[#spans + 1] = { math.max(1, info.topline - margin), info.botline + margin }
   end
-  if not width then return nil, 0, 0 end
-  return width, math.max(1, first - margin), last + margin
+  if not width then return nil, {} end
+  table.sort(spans, function(x, y) return x[1] < y[1] end)
+  local merged = {}
+  for _, sp in ipairs(spans) do
+    local lastm = merged[#merged]
+    if lastm and sp[1] <= lastm[2] + 1 then
+      lastm[2] = math.max(lastm[2], sp[2])
+    else
+      merged[#merged + 1] = { sp[1], sp[2] }
+    end
+  end
+  return width, merged
 end
 
 ---@internal
@@ -416,7 +428,7 @@ function M.refresh(bufnr, force)
   local st = S[bufnr]
   if not st or not api.nvim_buf_is_valid(bufnr) then return end
   local c = cfg()
-  local width, first, last = window_span(bufnr, c.margin)
+  local width, spans = window_span(bufnr, c.margin)
   if not width then return end -- not shown: BufWinEnter draws it
   local tick = api.nvim_buf_get_changedtick(bufnr)
   local look = ("%d:%s"):format(width, vim.inspect(c))
@@ -426,18 +438,21 @@ function M.refresh(bufnr, force)
     st.roles, st.langs = M.roles(api.nvim_buf_get_lines(bufnr, 0, -1, false))
     st.tick, st.look = tick, look
   end
-  last = math.min(last, api.nvim_buf_line_count(bufnr))
+  local count = api.nvim_buf_line_count(bufnr)
   st.cursor = cursor_rows(bufnr)
-  local lo = math.max(first - 1, 1) -- one row above the range: the "previous line" of its first row
-  local seg = api.nvim_buf_get_lines(bufnr, lo - 1, last, false)
-  for row = first, last do
-    if not st.drawn[row] then
-      if st.cursor[row] then
-        st.drawn[row] = {}
-      else
-        local line = seg[row - lo + 1]
-        local prev = seg[row - lo]
-        if line then draw_row(bufnr, st, row, line, prev, width, c) end
+  for _, sp in ipairs(spans) do
+    local first, last = sp[1], math.min(sp[2], count)
+    local lo = math.max(first - 1, 1) -- one row above the range: the "previous line" of its first row
+    local seg = api.nvim_buf_get_lines(bufnr, lo - 1, last, false)
+    for row = first, last do
+      if not st.drawn[row] then
+        if st.cursor[row] then
+          st.drawn[row] = {}
+        else
+          local line = seg[row - lo + 1]
+          local prev = seg[row - lo]
+          if line then draw_row(bufnr, st, row, line, prev, width, c) end
+        end
       end
     end
   end
