@@ -76,9 +76,11 @@ function M.compute(lines, opts)
   local max = (opts and opts.max) or d.max
   local marker = vim.fn.strcharpart((opts and opts.marker) or d.marker, 0, 1)
   local result = {}
+  local fenced = require("markdown.util.fence").mask(lines)
 
   for _, tbl in ipairs(lib_table.parse(lines)) do
-    if tbl.end_line - tbl.start_line < MAX_ROWS then
+    -- a table inside a fenced code block is an example, not a table of the document
+    if tbl.end_line - tbl.start_line < MAX_ROWS and not fenced[tbl.start_line] then
       -- Natural width per column over the data rows.
       local widths = {}
       for _, row in ipairs(tbl.rows) do
@@ -127,10 +129,15 @@ function M.compute(lines, opts)
                 local content = cells[ci]
                 local cw = vim.fn.strdisplaywidth(content)
                 if cw > v then
-                  local keep = prefix_bytes(content, v - vim.fn.strdisplaywidth(marker))
+                  local budget = v - vim.fn.strdisplaywidth(marker)
+                  local keep = prefix_bytes(content, budget)
+                  -- a double-width character that does not fit leaves a column short: fill it
+                  local short = math.max(0, budget - vim.fn.strdisplaywidth(content:sub(1, keep)))
                   local from = s + lead + keep
                   local to = trail >= 1 and (e - 1) or e
-                  if to >= from then marks[#marks + 1] = { s = from, e = to, text = marker } end
+                  if to >= from then
+                    marks[#marks + 1] = { s = from, e = to, text = marker .. (" "):rep(short) }
+                  end
                   -- Centered / right-aligned column: a cut cell that is not the widest
                   -- also has padding in front; keep one margin space, hide the rest.
                   if lead > 1 then

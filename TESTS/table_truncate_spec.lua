@@ -45,6 +45,42 @@ return function(H)
     "a long cell is cut with the marker"
   )
   ok(shown(lines[4], marks[4]):find("--r…", 1, true) ~= nil, "the code span is cut, too")
+  -- a double-width character at the cut: the missing column is filled, rows keep one width
+  local wide = lib.format_lines({
+    "| A | B |",
+    "|---|---|",
+    "| 日本語日本語日本語日本語日本語 | x |",
+    "| short | y |",
+  })
+  local wmarks = tt.compute(wide, { max = 8, marker = "…" })
+  local wwidth = vim.fn.strdisplaywidth(shown(wide[1], wmarks[1]))
+  for r = 1, #wide do
+    eq(vim.fn.strdisplaywidth(shown(wide[r], wmarks[r])), wwidth, "wide chars: row " .. r)
+  end
+
+  -- a table inside a fenced code block is left alone
+  local fenced = {
+    "```",
+    "| A | B |",
+    "|---|---|",
+    "| " .. string.rep("x", 60) .. " | y |",
+    "```",
+  }
+  eq(next(tt.compute(fenced, { max = 10 })), nil, "no truncation inside a fence")
+
+  -- config: the marker is one display column
+  local cfgm = require("markdown.config")
+  local saved_notify = vim.notify
+  vim.notify = function() end
+  cfgm.setup({ table = { truncate = { marker = "..." } } })
+  eq(
+    cfgm.get().table.truncate.marker,
+    cfgm.DEFAULTS and "…" or "…",
+    "a 3-column marker is refused"
+  )
+  vim.notify = saved_notify
+  cfgm.setup({})
+
   for _, m in ipairs(marks[1]) do
     eq(m.text, "", "the header only loses padding, never text")
   end

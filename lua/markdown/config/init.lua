@@ -330,7 +330,12 @@ local function degrade_invalid_scalars(cfg, issues)
         bad("table.truncate.max", trunc.max, DEFAULTS.table.truncate.max)
         trunc.max = DEFAULTS.table.truncate.max
       end
-      if type(trunc.marker) ~= "string" or trunc.marker == "" then
+      -- one display column: the cut cell keeps the column width of its neighbours
+      if
+        type(trunc.marker) ~= "string"
+        or trunc.marker == ""
+        or vim.fn.strdisplaywidth(trunc.marker) ~= 1
+      then
         bad("table.truncate.marker", trunc.marker, DEFAULTS.table.truncate.marker)
         trunc.marker = DEFAULTS.table.truncate.marker
       end
