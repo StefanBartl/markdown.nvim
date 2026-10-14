@@ -288,6 +288,14 @@ local DEFAULT_KEYMAPS = {
     desc = "Toggle table cell truncation",
   },
   {
+    id = "table_render_toggle",
+    mode = "n",
+    lhs = "<leader>mtr",
+    action = "table_render_toggle",
+    feature = "table",
+    desc = "Toggle table grid rendering",
+  },
+  {
     id = "table_cell_popup",
     mode = "n",
     lhs = "<leader>mtp",

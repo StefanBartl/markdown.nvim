@@ -59,6 +59,51 @@ continuation rows are real table rows; only the editor shows the `↳` sign.
 Continuation rows carry a `↳` gutter sign (virtual text — the buffer text
 stays clean GFM, nothing is written for the marker itself).
 
+## Virtual grid rendering
+
+Wrapping with `:MDTableWrap` rewrites the file. If you only want tables to
+*look* right in the editor -- without touching the text, whatever the formatter
+or somebody else wrote -- use the virtual render:
+
+```vim
+:Markdown table render          " toggle for this buffer  (<leader>mtr)
+```
+
+```lua
+require("markdown").setup({
+  table = { render = { enabled = true } }, -- every markdown buffer
+})
+```
+
+What it does:
+
+- Each column is as wide as its longest cell. The wide padding a formatter writes
+  because of one very long cell in another row is not shown.
+- Box-drawing borders replace the pipes (`border = "single" | "rounded" | "ascii"`).
+- A table wider than the window is fitted: columns that are already short keep
+  their width, the others share the rest, and cells wrap onto extra virtual
+  lines. Words are kept whole as long as the width allows (down to `min_width`
+  columns per column, then below). `<br>` in a cell is a forced line break.
+- Resize the window, split, toggle `number` / `signcolumn`: the layout is
+  recomputed (debounced by `debounce_ms`). With the buffer in several windows the
+  narrowest one decides.
+- Column alignment (`:--`, `:-:`, `--:`) is honored; code spans are highlighted.
+- The row under the cursor shows its real text so it can be edited
+  (`cursor = "table"`: the whole table). Edits re-render after `debounce_ms`.
+- Tables in fenced code blocks are skipped.
+
+Notes: it needs `conceallevel >= 2` (raised window-locally while on, restored on
+`off`), it replaces `:Markdown table truncate` in the same buffer, and it should
+not be combined with another plugin that also conceals table pipes (for example
+render-markdown.nvim's table component).
+
+`table.render` keys: `enabled` (false), `border` ("single"), `cursor` ("row"),
+`pad` (1), `min_width` (6), `max_width` (nil = window width), `row_separator`
+("auto": a line between body rows only when some row wraps; `true` / `false`),
+`debounce_ms` (80). Highlight groups `MarkdownTableBorder`, `MarkdownTableHead`,
+`MarkdownTableCode` link to `Comment`, `Title`, `@markup.raw.markdown_inline` by
+default.
+
 ## Commands
 
 | Command | What |

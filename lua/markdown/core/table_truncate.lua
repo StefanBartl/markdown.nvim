@@ -224,6 +224,9 @@ function M.is_enabled(bufnr) return S[bufnr or api.nvim_get_current_buf()] ~= ni
 function M.enable(bufnr)
   bufnr = bufnr or api.nvim_get_current_buf()
   if S[bufnr] then return end
+  -- Both hide table text with conceal: the last one switched on wins.
+  local tr = package.loaded["markdown.core.table_render"]
+  if tr and tr.is_enabled(bufnr) then tr.disable(bufnr) end
   local group = api.nvim_create_augroup("MarkdownNvimTableTruncate" .. bufnr, { clear = true })
   S[bufnr] = { pending = false, group = group }
   local function schedule()

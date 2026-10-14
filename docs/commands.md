@@ -97,6 +97,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
 :Markdown table new [cols] [rows]        " insert an empty GFM table template
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table truncate [on|off|toggle|show] " cut over-wide cells with … (display only); show = popup
+:Markdown table render [on|off|toggle] " show tables as a compact grid that fits the window (display only)
 :Markdown table tableize [format]       " turn delimited text into a GFM table
 :Markdown table import [clipboard|PATH] " parse an HTML <table> into a GFM table
 ```
@@ -176,6 +177,18 @@ dependency-free reimplementation of the vim-table-mode essentials.
   (native float, no focus, closes on the next move; on by default,
   `table.popup = false` disables it); `show` / `<leader>mtp` opens it on demand. Always-on:
   `table.truncate.enabled = true`. `<leader>mtu` toggles it.
+- **render** `[on|off|toggle]` shows every table as a compact grid, display
+  only (the file text is untouched): columns are as wide as their longest cell
+  (the padding the formatter wrote for one huge cell elsewhere disappears), box
+  borders replace the pipes, and when a table is wider than the window the
+  columns share the space and the cells wrap onto extra virtual lines. A window
+  resize (or `number` / `signcolumn` change) re-lays the table out. The row under
+  the cursor shows its real text, so editing works as usual (`table.render.cursor
+  = "table"` shows the whole table). Tables in fenced code blocks are left alone.
+  Needs `conceallevel` >= 2 (set in the window while on, restored after);
+  turning it on turns `truncate` off and vice versa. Always-on:
+  `table.render.enabled = true`. `<leader>mtr` toggles it. Details:
+  [table-wrap.md](table-wrap.md#virtual-grid-rendering).
 - **tableize** converts the current line (or a `:'<,'>` visual range) of
   delimited text into a GFM table. The separator is auto-detected (tab, comma,
   or runs of 2+ spaces) or named explicitly:

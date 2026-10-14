@@ -405,6 +405,14 @@ return {
         desc = "Format table at cursor",
       },
       {
+        id = "table_render_toggle",
+        lhs = "<leader>mtr",
+        mode = "n",
+        action = "table_render_toggle",
+        feature = "table",
+        desc = "Toggle table grid rendering",
+      },
+      {
         id = "table_truncate_toggle",
         lhs = "<leader>mtu",
         mode = "n",

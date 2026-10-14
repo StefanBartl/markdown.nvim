@@ -129,9 +129,20 @@ local NESTED_OPTS = {
     "wrap",
     "wrap_profiles",
     "truncate",
+    "render",
     "popup",
   },
   ["table.truncate"] = { "enabled", "max", "marker", "popup" },
+  ["table.render"] = {
+    "enabled",
+    "border",
+    "cursor",
+    "pad",
+    "min_width",
+    "max_width",
+    "row_separator",
+    "debounce_ms",
+  },
   ["table.wrap"] = {
     "enabled",
     "auto",
@@ -322,6 +333,31 @@ local function degrade_invalid_scalars(cfg, issues)
         trunc.marker = DEFAULTS.table.truncate.marker
       end
     end
+
+    if type(cfg.table.render) ~= "table" then
+      -- `render = true` is the natural shorthand for "on"
+      local on = cfg.table.render == true
+      if cfg.table.render ~= nil and type(cfg.table.render) ~= "boolean" then
+        bad("table.render", cfg.table.render, "a table")
+      end
+      cfg.table.render = vim.deepcopy(DEFAULTS.table.render)
+      cfg.table.render.enabled = on
+    end
+    local rd, rdef = cfg.table.render, DEFAULTS.table.render
+    local function check(key, ok)
+      if not ok(rd[key]) then
+        bad("table.render." .. key, rd[key], rdef[key])
+        rd[key] = rdef[key]
+      end
+    end
+    check("enabled", function(v) return type(v) == "boolean" end)
+    check("border", function(v) return v == "single" or v == "rounded" or v == "ascii" end)
+    check("cursor", function(v) return v == "row" or v == "table" end)
+    check("pad", function(v) return type(v) == "number" and v >= 0 end)
+    check("min_width", function(v) return type(v) == "number" and v >= 1 end)
+    check("max_width", function(v) return v == nil or (type(v) == "number" and v >= 10) end)
+    check("row_separator", function(v) return v == "auto" or type(v) == "boolean" end)
+    check("debounce_ms", function(v) return type(v) == "number" and v >= 0 end)
   end
 
   -- ERR-22: `hover.max_lines` reaches `hover/section.lua`'s `#out >= limit`

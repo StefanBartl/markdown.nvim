@@ -119,6 +119,16 @@
 ---@field marker string # One-character marker for the cut tail. Default "…".
 ---@field popup boolean # Legacy opt-out for the cell popup (`table.popup`); false disables it. Default true.
 
+---@class Mkdn.TableRenderConfig
+---@field enabled boolean # On for every markdown buffer. Default false.
+---@field border "single"|"rounded"|"ascii" # Border characters. Default "single".
+---@field cursor "row"|"table" # What shows its real text under the cursor. Default "row".
+---@field pad integer # Spaces left and right of a cell's text. Default 1.
+---@field min_width integer # Narrowest a column is squeezed to. Default 6.
+---@field max_width? integer # Cap on the table width; nil = the window width.
+---@field row_separator boolean|"auto" # Line between body rows; "auto" = only when a row wraps. Default "auto".
+---@field debounce_ms integer # Delay before a re-render after an edit or resize. Default 80.
+
 ---@class Mkdn.TableConfig
 ---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
 ---@field entry_align Mkdn.TableAlign # Default body-row alignment.
@@ -126,6 +136,7 @@
 ---@field wrap Mkdn.TableWrapConfig # Width-limited wrapping (`:MDTable*` commands).
 ---@field wrap_profiles table<string, table> # Named wrap-opt presets for `:MDTableProfile`.
 ---@field truncate Mkdn.TableTruncateConfig # Display-only cell truncation (`:Markdown table truncate`).
+---@field render Mkdn.TableRenderConfig # Virtual grid rendering that fits the window (`:Markdown table render`).
 ---@field popup boolean # CursorHold float with the content of the cell under the cursor. Default true; false opts out.
 
 ---@class Mkdn.TableViewConfig

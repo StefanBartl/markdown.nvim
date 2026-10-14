@@ -148,6 +148,21 @@ local DEFAULTS = {
       popup = true, -- legacy opt-out, same as `table.popup = false` when false
     },
 
+    -- Display-only grid rendering (`core.table_render`): compact columns, box
+    -- borders, cells wrapped to the window width, re-laid-out on resize. The
+    -- file text is untouched. Needs `conceallevel` >= 2 (set while on).
+    -- Toggle: `:Markdown table render`. Replaces `truncate` where both are on.
+    render = {
+      enabled = false, -- true: on for every markdown buffer
+      border = "single", -- "single" | "rounded" | "ascii"
+      cursor = "row", -- "row" | "table": shown as real text under the cursor
+      pad = 1, -- spaces left and right of a cell's text
+      min_width = 6, -- narrowest a column is squeezed to before the table overflows
+      max_width = nil, -- cap on the table width, nil = window width
+      row_separator = "auto", -- true | false | "auto" (only when a row wraps)
+      debounce_ms = 80,
+    },
+
     -- CursorHold in any table cell: float with the cell's full content.
     -- Opt out with `popup = false`.
     popup = true,
