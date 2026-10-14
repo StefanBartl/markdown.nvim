@@ -764,8 +764,14 @@ Dispatch priority:
   6. Local file (`[text](path)`).
 
 Opening rules:
-  * URLs open in the default browser (via |vim.ui.open()| where available,
-    falling back to a system command).
+  * URLs open in the default browser through a chain of openers (Windows:
+    `explorer.exe`, `rundll32 url.dll,FileProtocolHandler`, |vim.ui.open()|;
+    elsewhere |vim.ui.open()|, lib.nvim `open_default`, `open` / `xdg-open`).
+    A spawned process is not an opened tab: an opener whose exit code is
+    reliable and that fails hands over to the next one. Opening the SAME link
+    again within 15 seconds starts one opener further down the chain, and
+    later requests keep starting there until nvim is restarted. The last
+    attempts and the chain are listed by `:checkhealth markdown`.
   * Internal `#anchor` links jump in-buffer.
   * File targets whose extension is in `open.external_extensions` (images,
     PDFs, media, …) open with the system application; all other (text-like)
@@ -1512,7 +1518,8 @@ table instead, stacked one after another and separated by a blank line plus a
 label. See |:Markdown-table|.
 
 Browser export creates a temporary `.html` file in `vim.fn.tempname()` and
-opens it with the system application (xdg-open / open / cmd start).
+opens it with the system application (the opener chain described under
+"Opening rules").
 
 ==============================================================================
 9. FOLD EXPRESSION                              *markdown.nvim-foldexpr*

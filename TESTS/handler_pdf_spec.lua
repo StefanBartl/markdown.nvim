@@ -27,6 +27,7 @@ return function(H)
     reset()
     local system_opened = nil
     local orig_ui_open = vim.ui.open
+    local restore_chain = H.ui_opener_only()
     -- A test double over typed `vim.ui` surface: replacing the field is the
     -- point of the case, not a second definition of it.
     ---@diagnostic disable-next-line: duplicate-set-field
@@ -42,6 +43,7 @@ return function(H)
     end)
 
     vim.ui.open = orig_ui_open
+    restore_chain()
     if not ok_run then error(err_run, 0) end
     eq(
       system_opened,
@@ -85,6 +87,7 @@ return function(H)
 
     local system_opened = nil
     local orig_ui_open = vim.ui.open
+    local restore_chain = H.ui_opener_only()
     -- A test double over typed `vim.ui` surface: replacing the field is the
     -- point of the case, not a second definition of it.
     ---@diagnostic disable-next-line: duplicate-set-field
@@ -99,6 +102,7 @@ return function(H)
     end)
 
     vim.ui.open = orig_ui_open
+    restore_chain()
     if not ok_run then error(err_run, 0) end
     eq(system_opened, "C:/docs/report.pdf", "'System app' choice still opens via the system app")
   end

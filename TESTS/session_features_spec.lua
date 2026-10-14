@@ -605,6 +605,7 @@ return function(H)
     end
 
     local target = "C:/tmp/some file.html"
+    platform._reset() -- an earlier open of the same target would rotate to the next opener
     local okOpen = platform.open(target)
     ok(okOpen, "platform.open: reports success via the list-argv fallback")
     ok(captured, "platform.open: launched via vim.system (not a shell string)")
@@ -615,8 +616,8 @@ return function(H)
         eq(captured.argv[1], "explorer.exe", "platform.open (windows): argv[1] is explorer.exe")
         eq(
           captured.argv[2],
-          target,
-          "platform.open (windows): the raw target is the last argv element (no shellescape quoting)"
+          (target:gsub("/", "\\")),
+          "platform.open (windows): the backslashed path is the last argv element (no shellescape quoting)"
         )
       end
     end

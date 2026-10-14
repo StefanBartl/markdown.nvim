@@ -20,6 +20,16 @@ function H.ok(v, msg)
   if not v then error(("FAIL %s: expected truthy, got %q"):format(msg or "", tostring(v)), 2) end
 end
 
+--- Make `platform.open` use only `vim.ui.open` (which the spec replaces by a double), so no spec
+--- can start a real explorer / xdg-open whatever the OS. Returns the function that undoes it.
+---@return fun() restore
+function H.ui_opener_only()
+  local platform = require("markdown.util.platform")
+  local real = platform._chain
+  platform._chain = function() return { platform.ui_opener } end
+  return function() platform._chain = real end
+end
+
 --- Fresh scratch buffer, made current, with an optional filetype.
 ---@param ft string|nil
 ---@return integer bufnr
