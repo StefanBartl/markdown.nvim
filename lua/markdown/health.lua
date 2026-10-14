@@ -30,11 +30,24 @@ function M.check()
     })
   end
 
-  -- System opener used by the link/file/image handlers (cross-platform path).
-  if vim.ui and type(vim.ui.open) == "function" then
-    ok("vim.ui.open available (native cross-platform opener for links/files)")
-  else
-    info("vim.ui.open missing (Neovim < 0.10) — using the legacy jobstart opener")
+  -- System opener used by the link/file/image handlers: a chain, the same target asked for again
+  -- within a few seconds starts one opener further down.
+  do
+    local platform = require("markdown.util.platform")
+    local names = {}
+    for _, o in ipairs(platform._chain()) do
+      names[#names + 1] = o.name
+    end
+    ok("link opener chain: " .. table.concat(names, " -> "))
+    local attempts = platform.log()
+    if #attempts == 0 then
+      info("no link/file opened in this session yet")
+    else
+      for i = math.max(1, #attempts - 4), #attempts do
+        local a = attempts[i]
+        info(("%s via %s: %s"):format(a.target, a.opener, a.result))
+      end
+    end
   end
 
   -- Config sanity.

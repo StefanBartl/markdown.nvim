@@ -18,6 +18,7 @@ return function(H)
 
   -- Stub the system opener so no real browser launches; count invocations.
   local orig_ui_open = vim.ui and vim.ui.open
+  local restore_chain = H.ui_opener_only()
   local opens = 0
   -- A test double over typed `vim.ui` surface: replacing the field is the
   -- point of the case, not a second definition of it.
@@ -32,6 +33,7 @@ return function(H)
     if restored then return end
     restored = true
     if vim.ui then vim.ui.open = orig_ui_open end
+    restore_chain()
   end
   -- Best-effort restore even if an assertion below errors out.
   local run_ok, run_err = pcall(function()

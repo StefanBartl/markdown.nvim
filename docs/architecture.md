@@ -15,7 +15,7 @@ lua/markdown/
     ignore.lua             default directory ignore list
     picker.lua             hover_select / vim.ui.select abstraction
     path.lua               link target -> filesystem path (buffer dir, then cwd; Windows-safe)
-    platform.lua           cross-platform "open with system default app" (vim.ui.open + per-OS fallback)
+    platform.lua           cross-platform "open with system default app" (per-OS chain of openers, exit-code watch, rotation on a repeated request, attempt log)
     md_files.lua           collect every *.md file under a directory, recursively
   core/
     headings.lua           navigation + level shifting
