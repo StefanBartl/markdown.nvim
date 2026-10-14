@@ -99,7 +99,12 @@ local function make_item(t, name, style, bufnr, buf_lines)
       table = setmetatable({ ft = style == "markdown" and "markdown" or "" }, {
         __index = function(spec, k)
           if k ~= "lines" then return nil end
-          local lines = table_only(t.raw_lines, style)
+          -- an org / box table is shown through its GFM form
+          local src = t.raw_lines
+          if t.format and t.format ~= "gfm" then
+            src = require("markdown.tables.registry").render("gfm", t) or src
+          end
+          local lines = table_only(src, style)
           rawset(spec, "lines", lines)
           return lines
         end,
