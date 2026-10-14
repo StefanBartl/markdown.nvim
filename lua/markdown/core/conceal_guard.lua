@@ -28,6 +28,12 @@ local api = vim.api
 ---@type table<integer, Mkdn.ConcealEntry>
 local saved = {}
 
+---The original level of a window that was released, kept per window: when its buffer comes back
+---Neovim restores the raised value it remembered from the buffer, and that must not pass for the
+---window's own level.
+---@type table<integer, { buf: integer, cl: integer }>
+local last = {}
+
 ---@internal
 ---@param win integer
 ---@param cl integer
@@ -42,7 +48,10 @@ end
 ---@param win integer
 local function drop(win)
   local e = saved[win]
-  if e then put(win, e.cl) end
+  if e then
+    put(win, e.cl)
+    last[win] = { buf = e.buf, cl = e.cl }
+  end
   saved[win] = nil
 end
 
@@ -53,6 +62,9 @@ function M.apply(owner, bufnr)
   for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
     showing[win] = true
   end
+  for win in pairs(last) do
+    if not api.nvim_win_is_valid(win) then last[win] = nil end
+  end
   local sibling
   for win, e in pairs(saved) do
     if e.buf == bufnr and showing[win] then sibling = e.cl end
@@ -62,7 +74,19 @@ function M.apply(owner, bufnr)
     -- value would be taken for the window's own
     if saved[win] and saved[win].buf ~= bufnr then drop(win) end
     local cl = api.nvim_get_option_value("conceallevel", { win = win })
-    if not saved[win] then saved[win] = { cl = sibling or cl, buf = bufnr, owners = {} } end
+    if not saved[win] then
+      local own = cl
+      -- an already raised value is not the window's own: take what it had here, or the sibling's
+      if cl >= 2 then
+        local l = last[win]
+        if l and l.buf == bufnr then
+          own = l.cl
+        elseif sibling then
+          own = sibling
+        end
+      end
+      saved[win] = { cl = own, buf = bufnr, owners = {} }
+    end
     saved[win].owners[owner] = true
     if cl < 2 then put(win, 2) end
   end

@@ -273,6 +273,8 @@ function M.enable(bufnr)
   })
   set_conceallevel(bufnr, true)
   M.render(bufnr)
+  local rr = package.loaded["markdown.core.render"]
+  if rr then rr.grid_changed(bufnr) end
 end
 
 ---@param bufnr? integer
@@ -284,6 +286,8 @@ function M.disable(bufnr)
   S[bufnr] = nil
   M.clear(bufnr)
   set_conceallevel(bufnr, false)
+  local rr = package.loaded["markdown.core.render"]
+  if rr then rr.grid_changed(bufnr) end
 end
 
 ---@param bufnr? integer

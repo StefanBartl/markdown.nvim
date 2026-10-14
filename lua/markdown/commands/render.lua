@@ -13,8 +13,9 @@ local function apply(bufnr, on)
   local render = require("markdown.core.render")
   local tables = require("markdown.core.table_render")
   if on then
-    render.enable(bufnr)
+    -- the grid first: the renderer leaves the table rows to it
     if require("markdown.config").feature_enabled("table") then tables.enable(bufnr) end
+    render.enable(bufnr)
   else
     render.disable(bufnr)
     tables.disable(bufnr)
