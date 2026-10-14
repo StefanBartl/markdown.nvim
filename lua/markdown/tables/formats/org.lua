@@ -2,7 +2,8 @@
 ---@brief Org-mode tables: `| a | b |` rows, `|---+---|` rules, optional `<r>` / `<l>` / `<c>` cookie row.
 ---@description
 --- A block of `|` lines is an org table when it has a rule line `|---+---|` (with a `+`,
---- which GFM separators never have). The first row is the header. A row made only of
+--- which GFM separators never have), so a one-column org table with a plain `|---|` rule is
+--- indistinguishable from GFM and is read as GFM. The first row is the header. A row made only of
 --- alignment cookies gives the column alignment and is not data. `#+TBLFM:` lines after
 --- the table are not part of it and stay untouched.
 
