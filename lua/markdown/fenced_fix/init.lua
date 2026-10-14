@@ -105,16 +105,16 @@ function M.setup(opts)
     end
   end
   pcall(M.apply)
+  -- Registered here, not at require time (K1: requiring the module has no side effect).
+  -- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
+  -- name and would skip the clear on a second load of this module (e.g. a
+  -- hot-reload via package.loaded reset), leaving the previous ColorScheme
+  -- autocmd registered alongside the new one instead of replaced.
+  autocmd.create("ColorScheme", function() M.apply() end, {
+    group = vim.api.nvim_create_augroup("MarkdownNvimFencedFix", { clear = true }),
+    desc = "Re-apply fenced fix after colorscheme changes",
+  })
   return M
 end
-
--- Raw nvim_create_augroup on purpose, not autocmd.group(): that caches by
--- name and would skip the clear on a second load of this module (e.g. a
--- hot-reload via package.loaded reset), leaving the previous ColorScheme
--- autocmd registered alongside the new one instead of replaced.
-autocmd.create("ColorScheme", function() M.apply() end, {
-  group = vim.api.nvim_create_augroup("MarkdownNvimFencedFix", { clear = true }),
-  desc = "Re-apply fenced fix after colorscheme changes",
-})
 
 return M
