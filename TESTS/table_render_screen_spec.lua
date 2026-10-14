@@ -49,6 +49,14 @@ return function(H)
     child.lua(
       [[
       local lines, setup = ...
+      -- a clean editor for every case: one window, a new buffer, default config and size
+      vim.cmd("only")
+      local old = vim.api.nvim_get_current_buf()
+      pcall(require("markdown.core.table_render").disable, old)
+      vim.cmd("silent! enew!")
+      vim.cmd("silent! bwipeout! " .. old)
+      vim.o.columns, vim.o.lines = 80, 24
+      require("markdown.config").setup({})
       vim.o.swapfile = false
       vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
       vim.bo.filetype = "markdown"
@@ -147,10 +155,8 @@ return function(H)
     not table.concat(sc, "\n"):find("│", 1, true),
     "cursor=table: no rendered rows while the cursor is in it"
   )
-  c.kill()
 
   -- ───────────── B: indent ─────────────
-  c = spawn()
   local indented = {
     "text",
     "",
@@ -184,10 +190,8 @@ return function(H)
   for _, l in ipairs(sc) do
     ok(vim.fn.strdisplaywidth(l) <= 80, "tab: fits the window")
   end
-  c.kill()
 
   -- ───────────── C: table on buffer line 1 ─────────────
-  c = spawn()
   load(c, { "| A | B |", "| - | - |", "| 1 | 2 |", "", "end" })
   sc = screen(c)
   ok(c.lua_get("require('markdown.core.table_render').is_enabled(0)"), "enabled")
@@ -198,10 +202,8 @@ return function(H)
   sc = screen(c)
   ok(table.concat(sc, "\n"):find("│ 1 │ 2 │", 1, true), "only-table buffer: rows drawn")
   ok(table.concat(sc, "\n"):find("└", 1, true), "only-table buffer: bottom border drawn")
-  c.kill()
 
   -- ───────────── E: conceallevel in splits ─────────────
-  c = spawn()
   load(c, DOC)
   eq(c.lua_get("vim.wo.conceallevel"), 2, "render raised conceallevel")
   c.cmd("split")
@@ -220,10 +222,8 @@ return function(H)
   c.cmd("only")
   c.cmd("enew")
   eq(c.lua_get("vim.wo.conceallevel"), 0, "a window on another buffer is not left concealed")
-  c.kill()
 
   -- table_truncate has the same pattern
-  c = spawn()
   c.lua([[
     vim.api.nvim_buf_set_lines(0, 0, -1, false, { "| A | B |", "| - | - |", "| 1 | 2 |" })
     vim.bo.filetype = "markdown"
@@ -239,10 +239,8 @@ return function(H)
   eq(c.lua_get("vim.g.cl_after_enable"), 2, "truncate raised conceallevel")
   eq(tl[1], 0, "truncate: first window restored")
   eq(tl[2], 0, "truncate: split window restored")
-  c.kill()
 
   -- ───────────── F: fences ─────────────
-  c = spawn()
   load(c, {
     "```lua",
     "| x | y |",
@@ -288,10 +286,8 @@ return function(H)
   joined = table.concat(screen(c), "\n")
   ok(not joined:find("│ 1 │ 2 │", 1, true), "a shorter inner fence does not close the block")
   ok(joined:find("│ 7 │ 8 │", 1, true), "the table after a four-backtick block is rendered")
-  c.kill()
 
   -- ───────────── event wiring: edit, resize, wipeout ─────────────
-  c = spawn()
   load(c, { "x", "", "| A | B |", "| - | - |", "| 1 | 2 |", "", "end" })
   c.feed("5Gwwwiiiiiiiiiiiiiiiiiiii<Esc>") -- edit a cell (the cursor is still in the row)
   c.feed("1G")
@@ -340,10 +336,8 @@ return function(H)
     vim.g.wiped_enabled = tr.is_enabled(b)
   ]])
   eq(c.lua_get("vim.g.wiped_enabled"), false, "a wiped buffer is forgotten")
-  c.kill()
 
   -- ───────────── layout options on the screen ─────────────
-  c = spawn()
   load(c, DOC, [[require("markdown.config").setup({ table = { render = { border = "ascii" } } })]])
   sc = screen(c)
   eq(head(sc[3], 3), "+--", "border = ascii")
@@ -379,10 +373,8 @@ return function(H)
   for _, l in ipairs(screen(c)) do
     if is_grid(l) then ok(vim.fn.strdisplaywidth(l) <= 40, "max_width caps the table: " .. l) end
   end
-  c.kill()
 
   -- ───────────── wide characters: no line wider than the table ─────────────
-  c = spawn()
   load(c, {
     "x",
     "",
