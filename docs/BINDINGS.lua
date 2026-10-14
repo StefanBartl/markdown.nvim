@@ -693,15 +693,30 @@ return {
         name = "TableViewSelect [scope=%|cwd|PATH]",
         desc = "Pick a table from the buffer, or of a scope (scope= and buffer are accepted like in :Markdown table view)",
       },
-      { name = "TableViewList [scope=%|cwd|PATH] [style=grid|markdown]", desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim)" },
-      { name = "TableViewConvert [from=...] [to=...]", desc = "Same as `:Markdown table convert`; takes a range" },
-      { name = "TableViewRender [on|off|toggle]", desc = "Same as `:Markdown table render`: virtual table grid fitted to the window" },
+      {
+        name = "TableViewList [scope=%|cwd|PATH] [style=grid|markdown]",
+        desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim)",
+      },
+      {
+        name = "TableViewConvert [from=...] [to=...]",
+        desc = "Same as `:Markdown table convert`; takes a range",
+      },
+      {
+        name = "TableViewRender [on|off|toggle]",
+        desc = "Same as `:Markdown table render`: virtual table grid fitted to the window",
+      },
       { name = "TableViewTruncate [on|off|toggle]", desc = "Same as `:Markdown table truncate`" },
       { name = "TableViewFormat [ALIGN] [scope=...]", desc = "Same as `:Markdown table format`" },
       { name = "TableViewNew [cols] [rows]", desc = "Same as `:Markdown table new`" },
       { name = "TableViewMode [on|off|toggle]", desc = "Same as `:Markdown table mode`" },
-      { name = "TableViewTableize [sep]", desc = "Same as `:Markdown table tableize`; takes a range, a quoted separator such as a space survives" },
-      { name = "TableViewImport [clipboard|PATH]", desc = "Same as `:Markdown table import`; takes a range" },
+      {
+        name = "TableViewTableize [sep]",
+        desc = "Same as `:Markdown table tableize`; takes a range, a quoted separator such as a space survives",
+      },
+      {
+        name = "TableViewImport [clipboard|PATH]",
+        desc = "Same as `:Markdown table import`; takes a range",
+      },
       { name = "TableViewClose", desc = "Close floating preview" },
       {
         name = "TableViewOpenBrowser [reopen]",
