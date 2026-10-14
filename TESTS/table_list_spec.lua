@@ -159,4 +159,18 @@ return function(H)
     "list completes scope="
   )
   eq(cmds["TableViewList"].nargs, "*", ":TableViewList takes the same arguments")
+
+  -- the forwarder hands the sub-command the same raw text `:Markdown table ...` does: a quoted
+  -- literal separator survives (`" "` is a space, not "auto-detect")
+  vim.api.nvim_buf_set_lines(pbuf, 0, -1, false, { "x y" })
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  vim.cmd('TableViewTableize " "')
+  eq(
+    vim.api.nvim_buf_get_lines(pbuf, 0, 1, false)[1],
+    "| x | y |",
+    ':TableViewTableize " " splits at the space'
+  )
+  vim.api.nvim_buf_set_lines(pbuf, 0, -1, false, { "p,q" })
+  vim.cmd("TableViewTableize csv")
+  eq(vim.api.nvim_buf_get_lines(pbuf, 0, 1, false)[1], "| p | q |", ":TableViewTableize csv")
 end

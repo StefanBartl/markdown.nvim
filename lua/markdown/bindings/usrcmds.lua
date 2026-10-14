@@ -674,7 +674,10 @@ function M.apply_tableview(ev)
       pcall(api.nvim_buf_create_user_command, bufnr, name, function(o)
         local argv = vim.split(vim.trim(o.args), "%s+", { trimempty = true })
         table.insert(argv, 1, sub)
-        tcmd.run(argv, { args = o.args, range = o.range, line1 = o.line1, line2 = o.line2 })
+        -- `ctx.args` is the raw text after `:Markdown`, as `table tableize " "` -- the
+        -- sub-command parsers (tableize) strip those two leading words
+        local raw = ("table %s %s"):format(sub, o.args)
+        tcmd.run(argv, { args = raw, range = o.range, line1 = o.line1, line2 = o.line2 })
       end, {
         nargs = "*",
         range = true,
