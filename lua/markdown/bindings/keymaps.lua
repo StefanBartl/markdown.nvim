@@ -288,6 +288,14 @@ local DEFAULT_KEYMAPS = {
     desc = "Toggle table cell truncation",
   },
   {
+    id = "table_list",
+    mode = "n",
+    lhs = "<leader>mtl",
+    action = "table_list",
+    feature = "table",
+    desc = "List the tables of the buffer",
+  },
+  {
     id = "table_render_toggle",
     mode = "n",
     lhs = "<leader>mtr",

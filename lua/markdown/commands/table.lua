@@ -1,6 +1,7 @@
 ---@module 'markdown.commands.table'
 --- `:Markdown table <sub>` router.
----   view     [toggle|markdown|box|select|close|browser|browsernice]  TableView actions
+---   view     [toggle|markdown|box|select|list|close|browser|browsernice]  TableView actions
+---   list     [scope=%|cwd|PATH] [style=grid|markdown]   Tables of a scope in a picker
 ---   format   [ALIGN] [header=A] [cell=A] [skip=COL] [scope=cursor|buffer|cwd|PATH]
 ---   new      [cols] [rows]                              Insert an empty table
 ---   mode     [on|off|toggle]                            Per-buffer auto-format mode
@@ -22,6 +23,7 @@ local VIEW_ACTIONS = {
   markdown = "TableViewMarkdown",
   box = "TableViewBox",
   select = "TableViewSelect",
+  list = "TableViewList",
   close = "TableViewClose",
   browser = "TableViewOpenBrowser",
   browsernice = "TableViewOpenBrowserNice",
@@ -44,7 +46,10 @@ local function do_view(argv)
   -- to the buffer-local command: `:Markdown table view toggle %` -> `:TableViewToggle %`.
   local rest = {}
   for i = 2, #argv do
-    rest[#rest + 1] = argv[i]
+    -- Same scope words as `format` / `list`: `scope=cwd`, `scope=%`, `buffer`.
+    local a = argv[i]:gsub("^scope=", "")
+    if a == "buffer" then a = "%" end
+    rest[#rest + 1] = a
   end
   if #rest > 0 then
     vim.cmd(cmd .. " " .. table.concat(rest, " "))
@@ -312,6 +317,10 @@ local function do_render(argv)
   end
 end
 
+---@internal
+---@param argv string[]
+local function do_list(argv) require("markdown.commands.table_list").run(argv) end
+
 local subcommands = {
   view = do_view,
   format = do_format,
@@ -319,11 +328,12 @@ local subcommands = {
   mode = do_mode,
   truncate = do_truncate,
   render = do_render,
+  list = do_list,
   tableize = do_tableize,
   import = do_import,
 }
 
---- Runs `:Markdown table <view|format|new|mode|truncate|render|tableize|import> ...`.
+--- Runs `:Markdown table <view|format|new|mode|truncate|render|list|tableize|import> ...`.
 ---@param argv string[]
 ---@param ctx? table  forwarded command context (range/line1/line2)
 ---@return nil
@@ -332,11 +342,24 @@ function M.run(argv, ctx)
   local sub = argv[1]
   local fn = sub and subcommands[sub]
   if not fn then
-    notify.info("Usage: :Markdown table <view|format|new|mode|truncate|tableize|import> ...")
+    notify.info(
+      "Usage: :Markdown table <view|format|new|mode|truncate|render|list|tableize|import> ..."
+    )
     return
   end
   table.remove(argv, 1)
   fn(argv, ctx)
+end
+
+---The names of the `:Markdown table` subcommands (for the `:TableView*` counterparts and the specs).
+---@return string[]
+function M.subcommand_names()
+  local out = {}
+  for name in pairs(subcommands) do
+    out[#out + 1] = name
+  end
+  table.sort(out)
+  return out
 end
 
 ---@param arglead string
@@ -362,7 +385,13 @@ function M.complete(arglead, cmdline)
     if slot == 5 then
       local action = (tokens[4] or ""):lower()
       local out = {}
-      if action == "toggle" or action == "markdown" or action == "box" then
+      if
+        action == "toggle"
+        or action == "markdown"
+        or action == "box"
+        or action == "select"
+        or action == "list"
+      then
         if vim.startswith("%", arglead) then out[#out + 1] = "%" end
         if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
         vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
@@ -379,6 +408,18 @@ function M.complete(arglead, cmdline)
       table.sort(out)
       return out
     end
+  end
+  if sub == "list" and slot >= 4 then
+    local out = {}
+    for _, w in ipairs({ "scope=%", "scope=cwd", "scope=cfile", "style=grid", "style=markdown" }) do
+      if vim.startswith(w, arglead) then out[#out + 1] = w end
+    end
+    if arglead:match("^scope=") then
+      for _, f in ipairs(vim.fn.getcompletion(arglead:gsub("^scope=", ""), "file")) do
+        out[#out + 1] = "scope=" .. f
+      end
+    end
+    return out
   end
   if (sub == "mode" or sub == "truncate" or sub == "render") and slot == 4 then
     local out = {}

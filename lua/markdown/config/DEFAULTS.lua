@@ -148,6 +148,13 @@ local DEFAULTS = {
       popup = true, -- legacy opt-out, same as `table.popup = false` when false
     },
 
+    -- `:Markdown table list [scope=...]`: every table of a scope in a picker, the
+    -- preview switches between the file (normal) and the table alone (<M-t>).
+    list = {
+      picker = "auto", -- "auto": pickers.nvim when it supports it, else the built-in chooser | "builtin"
+      style = "grid", -- the "table only" preview: "grid" (box drawing) | "markdown" (aligned GFM)
+    },
+
     -- Display-only grid rendering (`core.table_render`): compact columns, box
     -- borders, cells wrapped to the window width, re-laid-out on resize. The
     -- file text is untouched. Needs `conceallevel` >= 2 (set while on).

@@ -129,6 +129,10 @@
 ---@field row_separator boolean|"auto" # Line between body rows; "auto" = only when a row wraps. Default "auto".
 ---@field debounce_ms integer # Delay before a re-render after an edit or resize. Default 80.
 
+---@class Mkdn.TableListConfig
+---@field picker "auto"|"builtin" # "auto": pickers.nvim when it can show switchable previews, else the built-in chooser.
+---@field style "grid"|"markdown" # How the "table only" preview is drawn. Default "grid".
+
 ---@class Mkdn.TableConfig
 ---@field header_align Mkdn.TableAlign # Default header-row alignment for `:Markdown table format`.
 ---@field entry_align Mkdn.TableAlign # Default body-row alignment.
@@ -136,6 +140,7 @@
 ---@field wrap Mkdn.TableWrapConfig # Width-limited wrapping (`:MDTable*` commands).
 ---@field wrap_profiles table<string, table> # Named wrap-opt presets for `:MDTableProfile`.
 ---@field truncate Mkdn.TableTruncateConfig # Display-only cell truncation (`:Markdown table truncate`).
+---@field list Mkdn.TableListConfig # `:Markdown table list` (picker over the tables of a scope).
 ---@field render Mkdn.TableRenderConfig # Virtual grid rendering that fits the window (`:Markdown table render`).
 ---@field popup boolean # CursorHold float with the content of the cell under the cursor. Default true; false opts out.
 

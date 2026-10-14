@@ -64,6 +64,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `table_next_cell` | `]\|` | n | `table_next_cell` | feature `table` | Next table cell |
 | `table_prev_cell` | `[\|` | n | `table_prev_cell` | feature `table` | Prev table cell |
 | `table_format` | `<leader>mtf` | n | `table_format` | feature `table` | Format table at cursor |
+| `table_list` | `<leader>mtl` | n | `table_list` | feature `table` | List the tables of the buffer |
 | `table_render_toggle` | `<leader>mtr` | n | `table_render_toggle` | feature `table` | Toggle table grid rendering |
 | `table_truncate_toggle` | `<leader>mtu` | n | `table_truncate_toggle` | feature `table` | Toggle table cell truncation |
 | `table_cell_popup` | `<leader>mtp` | n | `table_cell_popup` | feature `table` | Popup with the full table cell text |
@@ -163,6 +164,7 @@ buffer-local.
 | `:Markdown table format [options]` | GFM table formatter at cursor/in scope |
 | `:Markdown table new [cols] [rows]` | Insert an empty GFM table template |
 | `:Markdown table mode [on\|off\|toggle]` | Per-buffer table auto-format (vim-table-mode style) |
+| `:Markdown table list [scope=...] [style=...]` | The tables of a scope in a picker; the preview switches file / table only |
 | `:Markdown table render [on\|off\|toggle]` | Per-buffer virtual grid rendering of tables, fitted to the window |
 | `:Markdown table truncate [on\|off\|toggle]` | Per-buffer display-only truncation of over-wide cells |
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |

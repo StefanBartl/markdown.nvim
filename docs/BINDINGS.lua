@@ -405,6 +405,14 @@ return {
         desc = "Format table at cursor",
       },
       {
+        id = "table_list",
+        lhs = "<leader>mtl",
+        mode = "n",
+        action = "table_list",
+        feature = "table",
+        desc = "List the tables of the buffer",
+      },
+      {
         id = "table_render_toggle",
         lhs = "<leader>mtr",
         mode = "n",
