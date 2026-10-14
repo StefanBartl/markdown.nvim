@@ -87,13 +87,22 @@ function M.parse_table(lines, start_line)
   return tbl
 end
 
---- Parse every GFM table out of a plain list of lines. Pure (no buffer or file
+--- Parse every table of the enabled formats (`table.formats`, GFM by default; see
+--- `markdown.tables.registry`) out of a plain list of lines. Pure (no buffer or file
 --- I/O), so it works equally for a live buffer's lines and a file read from
 --- disk via `vim.fn.readfile`.
 ---@param lines string[]
----@param opts? { skip_fences?: boolean }  # leave out tables inside fenced code blocks
+---@param opts? { skip_fences?: boolean, formats?: string[] }  # skip tables inside fenced code blocks; formats to look for
 ---@return table[]
 function M.get_tables_from_lines(lines, opts)
+  return require("markdown.tables.registry").find(lines, opts)
+end
+
+--- The GFM scanner behind the registry's "gfm" format.
+---@param lines string[]
+---@param opts? { skip_fences?: boolean }
+---@return table[]
+function M.scan_gfm(lines, opts)
   local tables = {}
   local fenced = opts and opts.skip_fences and require("markdown.util.fence").mask(lines) or {}
   local i = 1

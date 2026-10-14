@@ -132,6 +132,7 @@ local NESTED_OPTS = {
     "render",
     "list",
     "popup",
+    "formats",
   },
   ["table.truncate"] = { "enabled", "max", "marker", "popup" },
   ["table.list"] = { "picker", "style" },
@@ -280,6 +281,17 @@ local function degrade_invalid_scalars(cfg, issues)
     if type(cfg.table.entry_align) ~= "string" or not ALIGNS[cfg.table.entry_align] then
       bad("table.entry_align", cfg.table.entry_align, DEFAULTS.table.entry_align)
       cfg.table.entry_align = DEFAULTS.table.entry_align
+    end
+
+    local FORMATS = { gfm = true, org = true, box = true }
+    local fmts = cfg.table.formats
+    local fmts_ok = type(fmts) == "table" and #fmts > 0
+    for _, name in ipairs(fmts_ok and fmts or {}) do
+      if not FORMATS[name] then fmts_ok = false end
+    end
+    if not fmts_ok then
+      bad("table.formats", fmts, DEFAULTS.table.formats)
+      cfg.table.formats = vim.deepcopy(DEFAULTS.table.formats)
     end
 
     -- ERR-22: `table.wrap.{min,pad}` reach `table_wrap.plan`'s `w < mins[i]`/

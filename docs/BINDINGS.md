@@ -165,6 +165,7 @@ buffer-local.
 | `:Markdown table new [cols] [rows]` | Insert an empty GFM table template |
 | `:Markdown table mode [on\|off\|toggle]` | Per-buffer table auto-format (vim-table-mode style) |
 | `:Markdown table list [scope=...] [style=...]` | The tables of a scope in a picker; the preview switches file / table only |
+| `:Markdown table convert [from=auto\|gfm\|org\|box\|csv\|tsv] [to=...]` | Rewrite the table at the cursor / in the range in another format; reports what the target cannot keep |
 | `:Markdown table render [on\|off\|toggle]` | Per-buffer virtual grid rendering of tables, fitted to the window |
 | `:Markdown table truncate [on\|off\|toggle]` | Per-buffer display-only truncation of over-wide cells |
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |
@@ -210,6 +211,7 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `:TableViewBox` | Toggle floating table preview (box-drawing style) |
 | `:TableViewSelect [scope=%\|cwd\|PATH]` | Pick a table from the buffer, or of a scope (`scope=` and `buffer` are accepted like in `:Markdown table view`) |
 | `:TableViewList [scope=%\|cwd\|PATH] [style=grid\|markdown]` | Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim) |
+| `:TableViewConvert [from=...] [to=...]` | Same as `:Markdown table convert`; takes a range |
 | `:TableViewRender [on\|off\|toggle]` | Same as `:Markdown table render`: virtual table grid fitted to the window |
 | `:TableViewTruncate [on\|off\|toggle]` | Same as `:Markdown table truncate` |
 | `:TableViewFormat [ALIGN] [scope=...]` | Same as `:Markdown table format` |

@@ -124,6 +124,34 @@ a `Pickers.Item.previews` feature of pickers.nvim). Details:
 - **Config:** `table.list = { picker = "auto" | "builtin", style = "grid" | "markdown" }`
 - **Reuses:** `core.table_render.to_lines` for the grid, `util.scope` for the scope words
 
+## `tables` — formats beyond GFM, one registry
+
+`:Markdown table list|view|select|render` read tables through `markdown.tables.registry`. A
+format is a module under `markdown.tables.formats.<name>` with `scan` (tables inside a
+document) or `parse` (the whole text is one table) and `render` (write it back, which is what
+`convert` and the TableView write-back use). The model is the parser's own (`header.cells`,
+`alignments`, `rows`, `start_line`, `end_line`, `raw_lines`) plus `format`.
+
+| format | where | notes |
+|---|---|---|
+| `gfm` | embedded | pipe tables; the default and the only one unless `table.formats` says more |
+| `org` | embedded | `\|---+---\|` rules, `<r>`/`<l>`/`<c>` cookie row for alignment; `#+TBLFM:` lines are not part of the table and stay untouched |
+| `box` | embedded | `┌─┬─┐ │ a │ b │ ├─┼─┤ └─┴─┘` as TableView's box style, psql unicode, sqlite `.mode box`; rules between body rows make multi-line cells (`<br>`) |
+| `csv`, `tsv` | standalone | RFC 4180: quoted separators, doubled quotes, newlines in quotes; first record is the header; only through `convert from=csv\|tsv` |
+
+- **Config:** `table.formats = { "gfm" }` (default) -- add `"org"` and/or `"box"` to find them in
+  markdown buffers too. Overlapping matches: the format listed first wins. Tables inside code
+  fences are skipped by `list`.
+- **Command:** `:Markdown table convert [from=auto] [to=gfm]` (and `:TableViewConvert`): the table
+  at the cursor or in the `:range`, `from=auto` tries every embedded format, `from=csv|tsv` reads
+  the range (or the whole buffer) as delimited text. What the target cannot keep is reported:
+  alignment in csv/tsv, org row groups, a `#+TBLFM:` line below an org table.
+- **Write-back** from the TableView float uses the format the table was read in.
+- **Not built (yet):** RST/pandoc grid and simple tables, HTML with spans, wiki tables, SQL result
+  sets, JSON, LaTeX, AsciiDoc. They fit the same registry (see the analysis note in the tasks vault).
+- **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,csv,tsv}.lua`,
+  `commands/table_convert.lua`
+
 ## `table_render` — virtual grid that fits the window
 
 Display-only rendering of every GFM table as a compact grid. The buffer text is

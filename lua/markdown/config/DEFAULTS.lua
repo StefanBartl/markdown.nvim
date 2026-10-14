@@ -170,6 +170,11 @@ local DEFAULTS = {
       debounce_ms = 80,
     },
 
+    -- Table formats looked for inside documents (list, view, select, render read them):
+    -- "gfm" (pipe tables), "org" (org-mode tables), "box" (box-drawing tables).
+    -- CSV / TSV are standalone: `:Markdown table convert from=csv`.
+    formats = { "gfm" },
+
     -- CursorHold in any table cell: float with the cell's full content.
     -- Opt out with `popup = false`.
     popup = true,

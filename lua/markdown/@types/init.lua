@@ -142,6 +142,7 @@
 ---@field truncate Mkdn.TableTruncateConfig # Display-only cell truncation (`:Markdown table truncate`).
 ---@field list Mkdn.TableListConfig # `:Markdown table list` (picker over the tables of a scope).
 ---@field render Mkdn.TableRenderConfig # Virtual grid rendering that fits the window (`:Markdown table render`).
+---@field formats string[] # Table formats looked for in documents: "gfm" | "org" | "box". Default { "gfm" }.
 ---@field popup boolean # CursorHold float with the content of the cell under the cursor. Default true; false opts out.
 
 ---@class Mkdn.TableViewConfig

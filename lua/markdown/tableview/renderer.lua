@@ -839,6 +839,10 @@ function M.write_back()
 
   for _, mt in ipairs(state.tables) do
     local lines = build_lines_from_markdowntable(mt) -- natural widths, ignores col_overrides
+    if mt.format and mt.format ~= "gfm" then
+      -- a table that was read as org / box: written back in its own format
+      lines = require("markdown.tables.registry").render(mt.format, mt) or lines
+    end
 
     if mt.bufnr and api.nvim_buf_is_valid(mt.bufnr) then
       -- ERR-30: the float is a normal window the user can leave; re-verify

@@ -566,6 +566,10 @@ return {
         desc = "Render table preview; scope=%|cwd|<path> or off-table cursor = every matching table, stacked",
       },
       {
+        name = "Markdown table convert [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]",
+        desc = "Rewrite the table at the cursor / in the range in another format; reports what the target cannot keep",
+      },
+      {
         name = "Markdown table format [options]",
         desc = "GFM table formatter at cursor/in scope",
       },
@@ -682,6 +686,7 @@ return {
         desc = "Pick a table from the buffer, or of a scope (scope= and buffer are accepted like in :Markdown table view)",
       },
       { name = "TableViewList [scope=%|cwd|PATH] [style=grid|markdown]", desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim)" },
+      { name = "TableViewConvert [from=...] [to=...]", desc = "Same as `:Markdown table convert`; takes a range" },
       { name = "TableViewRender [on|off|toggle]", desc = "Same as `:Markdown table render`: virtual table grid fitted to the window" },
       { name = "TableViewTruncate [on|off|toggle]", desc = "Same as `:Markdown table truncate`" },
       { name = "TableViewFormat [ALIGN] [scope=...]", desc = "Same as `:Markdown table format`" },
