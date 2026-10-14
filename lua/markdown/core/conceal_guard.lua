@@ -44,15 +44,23 @@ local function put(win, cl)
 end
 
 ---@internal
----Give the window its level back and forget it.
+---Release the window. One that still shows the buffer gets its level back. One that went to
+---another buffer gets it back only while it carries the raised value (2, inherited from the
+---buffer it left); a different value is that buffer's own and must not be overwritten. The
+---original is kept in `last` for the day the buffer returns.
 ---@param win integer
 local function drop(win)
   local e = saved[win]
-  if e then
+  saved[win] = nil
+  if not e then return end
+  if not api.nvim_win_is_valid(win) then return end
+  if api.nvim_win_get_buf(win) == e.buf then
     put(win, e.cl)
+    last[win] = nil
+  else
+    if api.nvim_get_option_value("conceallevel", { win = win }) == 2 then put(win, e.cl) end
     last[win] = { buf = e.buf, cl = e.cl }
   end
-  saved[win] = nil
 end
 
 ---@param owner string

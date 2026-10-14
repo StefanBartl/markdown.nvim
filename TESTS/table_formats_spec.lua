@@ -271,6 +271,153 @@ return function(H)
   local only = reg.find({ "| a | b |", "| --- | --- |", "after" })[1]
   eq(only.end_line, 2, "header-only table ends on the separator")
 
+  -- ───────────── review round 3 ─────────────
+  local function no_newline(lines)
+    for _, l in ipairs(lines) do
+      if l:find("\n", 1, true) then return false end
+    end
+    return true
+  end
+
+  -- a multi-line csv field converts to org (it used to raise inside nvim_buf_set_lines)
+  do
+    local mb = buf_with({ "a,b", '"x', 'y",2' })
+    local good, why = conv.convert(mb, { from = "csv", to = "org" }, 1)
+    ok(good, "csv with a multi-line field -> org: " .. tostring(why))
+    ok(no_newline(vim.api.nvim_buf_get_lines(mb, 0, -1, false)), "no cell line holds a newline")
+    ok(vim.api.nvim_buf_get_lines(mb, 0, -1, false)[3]:find("x<br>y", 1, true), "as <br>")
+  end
+
+  -- a pipe in a csv cell is escaped in org, so it stays one cell
+  do
+    local piped = reg.render("org", reg.parse("csv", { "a,b", '"x|y",2' }))
+    local back = reg.find(piped, { formats = { "org" } })[1]
+    eq(#back.header.cells, 2, "the pipe did not become a column")
+    eq(#back.rows[1].cells, 2, "nor in the body")
+  end
+
+  -- an escaped pipe from gfm / org is a plain pipe in csv / tsv
+  do
+    local gp = reg.find({ "| a | b |", "| --- | --- |", "| x \\| y | 2 |" })[1]
+    eq(reg.render("csv", gp)[2], "x | y,2", "csv holds the plain pipe")
+    eq(reg.render("tsv", gp)[2], "x | y\t2", "tsv too")
+    local twice = reg.find({ "| a |", "| --- |", "| x \\\\| y |" })
+    eq(#twice, 1, "an even run of backslashes does not escape (still one table)")
+  end
+
+  -- empty cells of a one-column table survive csv
+  do
+    local one = reg.find({ "| a |", "| --- |", "| |", "| x |" })[1]
+    local lines = reg.render("csv", one)
+    eq(table.concat(lines, "\n"), 'a\n""\nx', "an empty cell is written as an empty quoted field")
+    eq(#reg.parse("csv", lines).rows, 2, "and reads back as a row")
+    eq(#reg.parse("csv", { "a", "", "x" }).rows, 1, "a blank line is still no record")
+  end
+
+  -- CRLF inside a quoted field is one newline
+  eq(
+    reg.parse("csv", { "a,b\r", '"x\r', 'y",2\r' }).rows[1].cells[1].content,
+    "x\ny",
+    "no stray CR in a multi-line field"
+  )
+
+  -- a body row that looks like a delimiter row is data
+  do
+    local dash = reg.find({ "| a | b |", "|---|---|", "| - | - |", "| x | y |" })[1]
+    eq(#dash.rows, 2, "the parser keeps the dash row")
+    local lines = reg.render("box", dash)
+    local rows_seen = 0
+    for _, l in ipairs(lines) do
+      if vim.startswith(l, "│") then rows_seen = rows_seen + 1 end
+    end
+    eq(rows_seen, 3, "box shows header + dash row + data row")
+    local m =
+      require("markdown.core.table_render").layout({ "| a | b |", "|---|---|", "| - | - |" })
+    eq(m.rows[3].kind, "body", "the layout draws it as a body row")
+    eq(m.rows[2].kind, "sep", "and only the second line as the rule")
+  end
+
+  -- TableView's own box style (╞═╪═╡ header rule) is found and read
+  do
+    local tv = reg.find({
+      "┌─────┬─────┐",
+      "│ a   │ b   │",
+      "╞═════╪═════╡",
+      "│ 1   │ 2   │",
+      "├─────┼─────┤",
+      "│ 3   │ 4   │",
+      "└─────┴─────┘",
+    }, { formats = { "box" } })
+    eq(#tv, 1, "the table with a double header rule is found")
+    eq(#tv[1].rows, 2, "two body rows")
+    eq(tv[1].rows[2].cells[1].content, "3", "read correctly")
+  end
+
+  -- a multi-line csv field written as box keeps its rows apart
+  do
+    local mt = reg.parse("csv", { "a,b", '"x', 'y",2', "3,4" })
+    local lines = reg.render("box", mt)
+    local mids = 0
+    for _, l in ipairs(lines) do
+      if vim.startswith(l, "├") then mids = mids + 1 end
+    end
+    eq(mids, 2, "a rule between the rows, as for <br> cells")
+    eq(#reg.find(lines, { formats = { "box" } })[1].rows, 2, "read back as two rows")
+    eq(
+      #reg.lossy("box", reg.parse("csv", { "a", '"x', 'y"' })),
+      1,
+      "a single multi-line row is reported as lossy"
+    )
+  end
+
+  -- org: the rules between body rows are written back (TableView `:w` on an unedited table)
+  do
+    local ORG_GROUPS = { "| a | b |", "|---+---|", "| 1 | 2 |", "|---+---|", "| 3 | 4 |" }
+    local og = reg.find(ORG_GROUPS, { formats = { "org" } })[1]
+    eq(
+      table.concat(reg.render("org", og), "\n"),
+      table.concat(ORG_GROUPS, "\n"),
+      "an unedited org table is written back as it was"
+    )
+    eq(#reg.lossy("org", og), 0, "nothing is lost writing org as org")
+    ok(#reg.lossy("gfm", og) > 0, "but converting it to gfm drops the rules")
+  end
+
+  -- box: a rounded border stays rounded
+  do
+    local rounded = {
+      "╭───┬───╮",
+      "│ a │ b │",
+      "├───┼───┤",
+      "│ 1 │ 2 │",
+      "╰───┴───╯",
+    }
+    local rb = reg.find(rounded, { formats = { "box" } })[1]
+    eq(
+      table.concat(reg.render("box", rb), "\n"),
+      table.concat(rounded, "\n"),
+      "the rounded table is written back unchanged"
+    )
+  end
+
+  -- org: a row without its closing pipe still has its cells
+  do
+    local open = reg.find({ "| a | b", "|---+---|", "| 1 | 2" }, { formats = { "org" } })[1]
+    eq(strings(open), "a,b/1,2", "missing closing pipes are tolerated")
+  end
+
+  -- the csv separator is an option, and registry.parse hands it on
+  do
+    local semi = reg.parse("csv", { "a;b", "1;2" }, { sep = ";" })
+    eq(strings(semi), "a,b/1,2", "csv reads a semicolon separator")
+    eq(
+      require("markdown.tables.formats.csv").render(semi, { sep = ";" })[2],
+      "1;2",
+      "and writes it"
+    )
+    eq(reg.parse("csv", { "a;b", "1;2" }).header.cells[1].content, "a;b", "default stays a comma")
+  end
+
   -- write-back goes bottom-up: a table that changes its line count must not stale the ones below
   do
     local api = vim.api

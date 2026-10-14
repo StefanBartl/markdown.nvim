@@ -167,13 +167,14 @@ end
 ---A standalone format (csv, tsv, ...) read as one table.
 ---@param name string
 ---@param lines string[]
+---@param opts? table  # handed to the format (csv: `{ sep = ";" }`)
 ---@return table|nil tbl, string|nil err
-function M.parse(name, lines)
+function M.parse(name, lines, opts)
   local f = M.get(name)
   if not f or not f.parse then
     return nil, "'" .. tostring(name) .. "' is not a standalone format"
   end
-  return f.parse(lines)
+  return f.parse(lines, opts)
 end
 
 ---What `render` of format `name` cannot keep of `tbl`.
@@ -181,7 +182,9 @@ end
 ---@param tbl table
 ---@return string[]
 function M.lossy(name, tbl)
-  local out = vim.deepcopy(tbl.lossy or {})
+  -- what the source format could not hold was lost by reading it; writing it back in the
+  -- same format keeps everything the model holds (org rules, box rules and border)
+  local out = tbl.format == name and {} or vim.deepcopy(tbl.lossy or {})
   local f = M.get(name)
   if f and f.lossy then vim.list_extend(out, f.lossy(tbl)) end
   return out

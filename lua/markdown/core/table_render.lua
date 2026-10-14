@@ -243,14 +243,13 @@ function M.layout(src, opts)
   local pad = opts.pad or M.DEFAULTS.pad
   local rows, n, aligns, seen_sep = {}, 0, {}, false
   for i, line in ipairs(src) do
-    if lib_table.is_separator_line(line) then
+    -- only the first separator-looking line is the delimiter row; a later `| - | - |` is data
+    if not seen_sep and lib_table.is_separator_line(line) then
       rows[i] = { kind = "sep", height = 1 }
-      if not seen_sep then
-        seen_sep = true
-        for c, spec in ipairs((lib_table.split_cells(line))) do
-          local l, r = spec:sub(1, 1) == ":", spec:sub(-1) == ":"
-          aligns[c] = (l and r) and "center" or (r and "right" or "left")
-        end
+      seen_sep = true
+      for c, spec in ipairs((lib_table.split_cells(line))) do
+        local l, r = spec:sub(1, 1) == ":", spec:sub(-1) == ":"
+        aligns[c] = (l and r) and "center" or (r and "right" or "left")
       end
     else
       local cells = lib_table.split_cells(line)

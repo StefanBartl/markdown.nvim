@@ -41,7 +41,8 @@ function M.scan(lines, opts)
       local j = i + 1
       while j <= #lines and not BOTTOM[first_char(lines[j])] do
         local c = first_char(lines[j])
-        if c ~= "│" and c ~= "├" then break end
+        -- `├` is a rule between rows, `╞` the header rule TableView draws
+        if c ~= "│" and c ~= "├" and c ~= "╞" then break end
         j = j + 1
       end
       if j <= #lines and BOTTOM[first_char(lines[j])] and j - i >= 2 then
@@ -115,6 +116,7 @@ function M.parse_block(block, start_line)
     header[c] = ""
   end
   return registry.from_strings(header, rows, nil, {
+    border = first_char(block[1]) == "╭" and "rounded" or "single",
     row_rules = mids > 1, -- rules between the body rows are written back
     start_line = start_line,
     end_line = start_line + #block - 1,
@@ -129,7 +131,10 @@ local function has_br(tbl)
   for _, r in ipairs(tbl.rows) do
     for _, c in ipairs(r.cells) do
       local s = type(c) == "table" and c.content or c
-      if type(s) == "string" and s:find("<br>", 1, true) then return true end
+      -- a newline (a multi-line csv field) is a line break in the cell as much as `<br>`
+      if type(s) == "string" and (s:find("<br>", 1, true) or s:find("\n", 1, true)) then
+        return true
+      end
     end
   end
   return false
@@ -142,7 +147,7 @@ function M.render(tbl, opts)
   local gfm = require("markdown.tables.formats.gfm").render(tbl)
   -- A multi-line cell (`<br>`) needs a rule between the rows, or the lines read back as rows.
   return require("markdown.core.table_render").to_lines(gfm, {
-    border = opts and opts.border or "single",
+    border = opts and opts.border or tbl.border or "single",
     row_separator = tbl.row_rules == true or has_br(tbl),
   })
 end

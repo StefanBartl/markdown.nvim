@@ -17,6 +17,19 @@ local function is_rule(line)
   return line:match("^%s*|[-+]+|%s*$") ~= nil and line:find("+", 1, true) ~= nil
 end
 
+---A row without its closing pipe (org allows that) gets one, so it splits like the others.
+---@param line string
+---@return string
+local function close_row(line)
+  local t = vim.trim(line)
+  if t:sub(-1) ~= "|" then return t .. " |" end
+  local bs = 0
+  while #t - 1 - bs >= 1 and t:sub(#t - 1 - bs, #t - 1 - bs) == "\\" do
+    bs = bs + 1
+  end
+  return bs % 2 == 1 and (t .. " |") or t
+end
+
 ---@param line string
 ---@return string[]|nil aligns
 local function cookies(line)
@@ -72,9 +85,12 @@ end
 function M.parse_block(block, start_line)
   local registry = require("markdown.tables.registry")
   local rows, aligns, rules = {}, nil, 0
-  for _, line in ipairs(block) do
+  local rules_after = {} -- body row index -> a rule follows that row (the header rule is not listed)
+  for _, raw in ipairs(block) do
+    local line = is_rule(raw) and raw or close_row(raw)
     if is_rule(line) then
       rules = rules + 1
+      if #rows > 1 then rules_after[#rows - 1] = true end
     else
       local ck = (not aligns) and cookies(line)
       if ck and #rows >= 1 then
@@ -101,8 +117,23 @@ function M.parse_block(block, start_line)
     end_line = start_line + #block - 1,
     raw_lines = block,
   })
-  if rules > 1 then tbl.lossy = { "horizontal rules between rows (org row groups)" } end
+  if next(rules_after) then
+    tbl.rules_after = rules_after
+    tbl.lossy = { "horizontal rules between rows (org row groups)" }
+  end
   return tbl
+end
+
+---A cell as one org line: a newline becomes `<br>`, a pipe that is not escaped yet gets
+---escaped (an odd run of backslashes before it already escapes it).
+---@param s string
+---@return string
+local function esc(s)
+  s = s:gsub("(\\*)|", function(bs)
+    if #bs % 2 == 1 then return bs .. "|" end
+    return bs .. "\\|"
+  end)
+  return (s:gsub("\r?\n", "<br>"))
 end
 
 ---@param tbl table
@@ -110,6 +141,17 @@ end
 function M.render(tbl)
   local registry = require("markdown.tables.registry")
   local header, rows, aligns = registry.strings(tbl)
+  local function escape_row(r)
+    local out = {}
+    for c, v in ipairs(r) do
+      out[c] = esc(v)
+    end
+    return out
+  end
+  header = escape_row(header)
+  for i, r in ipairs(rows) do
+    rows[i] = escape_row(r)
+  end
   local n = #header
   local widths = {}
   local function measure(row)
@@ -142,8 +184,11 @@ function M.render(tbl)
     has_align = has_align or cook[c] ~= ""
   end
   if has_align then out[#out + 1] = line(cook) end
-  for _, r in ipairs(rows) do
+  local rules_after = tbl.rules_after or {}
+  local rule_line = out[2]
+  for i, r in ipairs(rows) do
     out[#out + 1] = line(r)
+    if rules_after[i] then out[#out + 1] = rule_line end
   end
   return out
 end
