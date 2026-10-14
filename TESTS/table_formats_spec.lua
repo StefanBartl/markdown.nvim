@@ -113,6 +113,14 @@ return function(H)
     "└───┴───┘",
   }, { formats = { "box" } })[1]
   eq(multi.rows[1].cells[1].content, "x<br>y", "lines of one box row become <br>")
+  local rewritten = reg.render("box", multi)
+  local rules = 0
+  for _, l in ipairs(rewritten) do
+    if vim.startswith(l, "├") then rules = rules + 1 end
+  end
+  eq(rules, 2, "the rule between the body rows survives the write-back")
+  local again = reg.find(rewritten, { formats = { "box" } })[1]
+  eq(again.rows[2].cells[1].content, "z", "and the rewritten table reads the same")
 
   -- ───────────── csv / tsv ─────────────
   local csv = reg.parse("csv", { "name,note", '"Smith, J","said ""hi"""', 'x,"two', 'lines"' })
@@ -122,6 +130,8 @@ return function(H)
     "RFC 4180: quoted separators, quotes and newlines"
   )
   local tsv = reg.parse("tsv", { "a\tb", "1\t2" })
+  eq(require("markdown.tables.formats.csv").sep, ",", "tsv leaves no state behind in csv")
+  eq(reg.render("csv", tsv)[1], "a,b", "csv after tsv still writes commas")
   eq(strings(tsv), "a,b/1,2", "tsv")
   eq(reg.parse("gfm", { "x" }), nil, "gfm is not a standalone format")
 

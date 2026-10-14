@@ -3,7 +3,8 @@
 ---@description
 --- The block runs from a top border (`┌` or `╭`) to a bottom border (`└` or `╰`). The lines
 --- between two rules form one row; several `│` lines in one group are one row with
---- multi-line cells, joined with `<br>`. The first group is the header.
+--- multi-line cells, joined with `<br>`. The first group is the header. A table with rules
+--- between its body rows is written back with them (`row_rules`).
 
 local lib_table = require("lib.nvim.markdown.table")
 
@@ -114,6 +115,7 @@ function M.parse_block(block, start_line)
     header[c] = ""
   end
   return registry.from_strings(header, rows, nil, {
+    row_rules = mids > 1, -- rules between the body rows are written back
     start_line = start_line,
     end_line = start_line + #block - 1,
     raw_lines = block,
@@ -127,7 +129,7 @@ function M.render(tbl, opts)
   local gfm = require("markdown.tables.formats.gfm").render(tbl)
   return require("markdown.core.table_render").to_lines(
     gfm,
-    { border = opts and opts.border or "single", row_separator = false }
+    { border = opts and opts.border or "single", row_separator = tbl.row_rules == true }
   )
 end
 

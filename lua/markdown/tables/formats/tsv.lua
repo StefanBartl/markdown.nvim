@@ -7,25 +7,11 @@ local M = {}
 
 ---@param lines string[]
 ---@return table|nil tbl, string|nil err
-function M.parse(lines)
-  local saved = csv.sep
-  csv.sep = "\t"
-  local ok, tbl, err = pcall(csv.parse, lines)
-  csv.sep = saved
-  if not ok then return nil, tbl end
-  return tbl, err
-end
+function M.parse(lines) return csv.parse(lines, { sep = "\t" }) end
 
 ---@param tbl table
 ---@return string[]
-function M.render(tbl)
-  local saved = csv.sep
-  csv.sep = "\t"
-  local ok, out = pcall(csv.render, tbl)
-  csv.sep = saved
-  if not ok then error(out) end
-  return out
-end
+function M.render(tbl) return csv.render(tbl, { sep = "\t" }) end
 
 M.lossy = csv.lossy
 
