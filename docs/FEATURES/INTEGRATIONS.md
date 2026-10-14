@@ -8,7 +8,15 @@ markdown` reports whether each was detected.
 
 - **Module:** `commands/render.lua`
 - **Command:** `:Markdown render [on|off|toggle]` (see
-  [commands.md](../commands.md#markdown-render--markdown-preview--markdown-mdview))
+  [commands.md](../commands.md#markdown-render--markdown-preview--markdown-mdview));
+  `toggle` is `:RenderMarkdown toggle` (the plugin starts enabled, so markdown.nvim keeps no
+  state of its own)
+- **Install:** list it as a dependency of markdown.nvim in the plugin spec, see
+  [installation.md](../installation.md#lazynvim). It is only the host until markdown.nvim
+  renders natively (planned); tables are already native (`table.render`).
+- **Tables:** switch render-markdown.nvim's table component off
+  (`opts = { pipe_table = { enabled = false } }`) when `table.render` is used, otherwise both
+  conceal the same pipes.
 - **Health:** `:checkhealth markdown` reports detection.
 
 ## mdview.nvim

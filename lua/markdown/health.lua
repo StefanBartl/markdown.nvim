@@ -81,7 +81,9 @@ function M.check()
   if vim.fn.exists(":RenderMarkdown") == 2 then
     ok("render-markdown.nvim detected (:Markdown render available)")
   else
-    info("render-markdown.nvim not found — :Markdown render will warn if used")
+    info(
+      "render-markdown.nvim not found — :Markdown render will warn if used (add it as a dependency, docs/installation.md)"
+    )
   end
   if vim.fn.exists(":MDView") == 2 then
     ok("mdview.nvim detected (:Markdown preview / :Markdown mdview available)")

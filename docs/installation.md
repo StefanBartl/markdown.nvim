@@ -40,7 +40,19 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
 ```lua
 {
   "StefanBartl/markdown.nvim",
-  dependencies = { "StefanBartl/lib.nvim", "StefanBartl/hover.nvim" },
+  dependencies = {
+    "StefanBartl/lib.nvim",
+    "StefanBartl/hover.nvim",
+    -- Host of `:Markdown render` (in-buffer rendering of headings, checkboxes, code
+    -- blocks, ...) until markdown.nvim renders natively. Optional: without it
+    -- `:Markdown render` only warns. Tables are drawn by markdown.nvim's own
+    -- `table.render`, so keep render-markdown.nvim's table component off.
+    {
+      "MeanderingProgrammer/render-markdown.nvim",
+      dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
+      opts = { pipe_table = { enabled = false } },
+    },
+  },
   ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown").setup()
