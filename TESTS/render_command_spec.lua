@@ -37,6 +37,28 @@ return function(H)
   eq(table.concat(seen, ","), "enable,disable,toggle,toggle", "actions forwarded to the plugin")
 
   -- completion
+  -- invalid argument: a warning, the plugin is not called; the case does not matter
+  seen = {}
+  render.run({ "bogus" })
+  eq(#seen, 0, "an invalid argument does not reach the plugin")
+  render.run({ "ON" })
+  eq(seen[1], "enable", "ON is on")
+
+  -- the plugin resets conceallevel; with the table grid on it is raised again
+  vim.api.nvim_create_user_command(
+    "RenderMarkdown",
+    function() vim.wo.conceallevel = 0 end,
+    { nargs = 1 }
+  )
+  local tr = require("markdown.core.table_render")
+  local rbuf = H.scratch("markdown")
+  vim.api.nvim_buf_set_lines(rbuf, 0, -1, false, { "| a |", "| - |", "| 1 |", "", "x" })
+  tr.enable(rbuf)
+  render.run({ "off" })
+  vim.wait(200, function() return vim.wo.conceallevel >= 2 end)
+  ok(vim.wo.conceallevel >= 2, "conceallevel is raised again for the table grid")
+  tr.disable(rbuf)
+
   eq(table.concat(render.complete("t"), ","), "toggle", "completes toggle")
   eq(#render.complete(""), 3, "completes on / off / toggle")
   vim.api.nvim_del_user_command("RenderMarkdown")

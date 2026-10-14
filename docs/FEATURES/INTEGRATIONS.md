@@ -104,3 +104,8 @@ Not an optional integration — the one hard runtime dependency. Supplies the
 `:Markdown`/`:TableView*`/`:MDTable*` command layer
 (`lib.nvim.bindings.usercmd.composer`) and `core/table_mode.lua`'s auto-format
 debounce (`lib.nvim.debounce.buffer`).
+
+**`:Markdown render` and the table grid.** `:RenderMarkdown` acts on all buffers, `:Markdown table render` on
+one. render-markdown.nvim sets and resets `conceallevel` itself; while the table grid is on in the buffer,
+`:Markdown render` raises it to 2 again afterwards (the grid hides its rows with `conceal_lines`). A direct
+`:RenderMarkdown disable` is not intercepted: re-enter the window or toggle `:Markdown table render`.

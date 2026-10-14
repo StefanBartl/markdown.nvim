@@ -11,7 +11,13 @@ local M = {}
 
 ---@internal
 ---@return boolean
-local function available() return vim.fn.exists(":RenderMarkdown") == 2 end
+local function available()
+  if vim.fn.exists(":RenderMarkdown") == 2 then return true end
+  -- a lazy.nvim spec with `ft = "markdown"` defines the command only once loaded
+  local ok, lazy = pcall(require, "lazy")
+  if ok then pcall(lazy.load, { plugins = { "render-markdown.nvim" } }) end
+  return vim.fn.exists(":RenderMarkdown") == 2
+end
 
 ---@internal
 ---@param action "enable"|"disable"|"toggle"
@@ -21,8 +27,17 @@ local function run(action)
     return
   end
   -- The plugin starts enabled, so there is no state of our own to track: ask it to toggle.
+  local buf = vim.api.nvim_get_current_buf()
   vim.cmd("RenderMarkdown " .. action)
-  notify.info("Markdown rendering: " .. action)
+  -- The plugin sets and resets `conceallevel` itself; the table grid hides its rows with
+  -- `conceal_lines`, which needs >= 2: raise it again once the plugin is done.
+  vim.schedule(function()
+    local tr = package.loaded["markdown.core.table_render"]
+    if tr and vim.api.nvim_buf_is_valid(buf) and tr.is_enabled(buf) then
+      require("markdown.core.conceal_guard").apply("render", buf)
+    end
+  end)
+  notify.info("Markdown rendering (all buffers): " .. action)
 end
 
 --- Runs `:Markdown render [on|off|toggle]`.
