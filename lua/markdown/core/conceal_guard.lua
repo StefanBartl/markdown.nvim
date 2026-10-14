@@ -50,6 +50,12 @@ function M.apply(owner, bufnr)
     if e.buf == bufnr and showing[win] then sibling = e.cl end
   end
   for win in pairs(showing) do
+    -- the window came from another buffer of this owner: give that one its level back first,
+    -- or the raised value would be taken for the window's own
+    if st[win] and st[win].buf ~= bufnr then
+      put(win, st[win].cl)
+      st[win] = nil
+    end
     local cl = api.nvim_get_option_value("conceallevel", { win = win })
     if not st[win] or st[win].buf ~= bufnr then st[win] = { cl = sibling or cl, buf = bufnr } end
     if cl < 2 then put(win, 2) end

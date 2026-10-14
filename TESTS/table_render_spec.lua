@@ -307,6 +307,25 @@ return function(H)
   ok(not still, "a grid whose line is no longer next to the table is not kept")
   tr.disable(inc)
 
+  -- one window, two buffers with the grid on: the level the window had is not lost
+  do
+    local function mk()
+      local b = H.scratch("markdown")
+      vim.api.nvim_buf_set_lines(b, 0, -1, false, { "| a |", "| - |", "| 1 |", "", "x" })
+      return b
+    end
+    vim.cmd("only")
+    local a = mk()
+    vim.wo.conceallevel = 0
+    tr.enable(a)
+    local b2 = mk()
+    tr.enable(b2)
+    vim.api.nvim_set_current_buf(a)
+    tr.disable(a)
+    tr.disable(b2)
+    eq(vim.wo.conceallevel, 0, "conceallevel is back after switching between two grid buffers")
+  end
+
   vim.api.nvim_set_current_buf(buf)
   tr.enable(buf)
   tr.disable(buf)
