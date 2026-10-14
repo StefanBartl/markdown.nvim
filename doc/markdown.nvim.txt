@@ -765,8 +765,11 @@ Dispatch priority:
 
 Opening rules:
   * URLs open in the default browser through a chain of openers (Windows:
-    `explorer.exe`, `rundll32 url.dll,FileProtocolHandler`, |vim.ui.open()|;
-    elsewhere |vim.ui.open()|, lib.nvim `open_default`, `open` / `xdg-open`).
+    `rundll32 url.dll,FileProtocolHandler`, `powershell Start-Process`,
+    |vim.ui.open()|; elsewhere |vim.ui.open()|, lib.nvim `open_default`,
+    `open` / `xdg-open`). Never `explorer.exe`: given a URL with `?`, `&` or
+    a `%xx` escape it opens the Documents folder in a hidden window instead
+    of the browser and exits 1 as on success.
     A spawned process is not an opened tab: an opener whose exit code is
     reliable and that fails hands over to the next one. Opening the SAME link
     again within 15 seconds starts one opener further down the chain, and

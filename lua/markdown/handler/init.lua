@@ -163,7 +163,7 @@ end
 
 local function open_file_in_current_window(p)
   if not p or p == "" then return false end
-  if p:match("^https?://") then return url.open(p) end
+  if p:match("^https?://") then return url.open_target(p) end
   local stat = uv.fs_stat(p)
   if not stat then
     notify.warn("External anchor: target file not found: " .. tostring(p))
@@ -189,7 +189,7 @@ end
 function M.open_target(target)
   if not target or target == "" then return false end
 
-  if target:match("^https?://") then return url.open(target) end
+  if target:match("^https?://") then return url.open_target(target) end
 
   if target:match("^#") then return goto_fragment(target) end
 

@@ -38,44 +38,76 @@ return function(H)
 
   local URL = "https://example.com/a?b=1&c=2"
 
-  -- ───────────── windows: explorer.exe first, URL untouched (the & survives) ─────────────
+  -- ───────────── windows: rundll32 first, URL untouched (? and & survive) ─────────────
   reset("windows")
   local good = platform.open(URL)
   ok(good, "open reports a started opener")
-  eq(spawned[1].argv[1], "explorer.exe", "windows starts explorer.exe first")
-  eq(spawned[1].argv[2], URL, "the URL reaches it untouched, & included")
-  eq(#spawned[1].argv, 2, "and nothing else (no stray gsub count)")
+  eq(spawned[1].argv[1], "rundll32.exe", "windows starts rundll32 first")
+  eq(spawned[1].argv[2], "url.dll,FileProtocolHandler", "the ShellExecute entry point")
+  eq(spawned[1].argv[3], URL, "the URL reaches it untouched, ? and & included")
+  eq(#spawned[1].argv, 3, "and nothing else (no stray gsub count)")
   eq(#ui_calls, 0, "vim.ui.open (cmd.exe /c start) is not the first choice")
 
   -- the same target again within RETRY_MS: the next opener
   platform.open(URL)
-  eq(spawned[2].argv[1], "rundll32.exe", "asking again rotates to rundll32")
-  eq(spawned[2].argv[3], URL, "with the URL as it is")
+  eq(spawned[2].argv[1], "powershell.exe", "asking again rotates to powershell Start-Process")
+  eq(
+    spawned[2].argv[#spawned[2].argv],
+    "Start-Process -FilePath '" .. URL .. "'",
+    "with the URL single-quoted (& and $ are literal there)"
+  )
   platform.open(URL)
   eq(#ui_calls, 1, "and once more to vim.ui.open")
   platform.open(URL)
-  eq(spawned[3].argv[1], "explorer.exe", "then around to the first one again")
+  eq(spawned[3].argv[1], "rundll32.exe", "then around to the first one again")
 
-  -- a path: absolute and backslashed, or explorer.exe opens a folder window instead
+  -- explorer.exe is no opener: a URL with ?, & or %xx makes it open the Documents folder
+  -- (hidden) instead of the browser, so it is nowhere in the chain
+  for _, o in ipairs(platform._chain()) do
+    local probe = {}
+    platform._spawn = function(argv)
+      probe[#probe + 1] = argv[1]
+      return true
+    end
+    o.run("https://example.com/?a=1&b=%3F", function() end)
+    for _, exe in ipairs(probe) do
+      ok(exe ~= "explorer.exe", o.name .. " does not use explorer.exe")
+    end
+  end
+  reset("windows")
+
+  -- a path: absolute and backslashed, as ShellExecute wants it
   local path_open = platform.open("C:/tmp/some file.html")
   ok(path_open, "a path is opened")
-  eq(#spawned[#spawned].argv, 2, "a path gives a two-element argv")
+  eq(#spawned[#spawned].argv, 3, "a path gives a three-element rundll32 argv")
   -- `:p` is the host's idea of absolute (on CI's Linux it prefixes $HOME): mirror it
   local want = (vim.fn.fnamemodify("C:/tmp/some file.html", ":p"):gsub("/", "\\"))
-  eq(spawned[#spawned].argv[2], want, "absolute, with backslashes")
-  ok(not spawned[#spawned].argv[2]:find("/", 1, true), "no forward slash is left")
+  eq(spawned[#spawned].argv[3], want, "absolute, with backslashes")
+  ok(not spawned[#spawned].argv[3]:find("/", 1, true), "no forward slash is left")
+
+  -- a single quote in a target is doubled for PowerShell
+  reset("windows")
+  platform.open("https://example.com/it's")
+  platform.open("https://example.com/it's")
+  eq(
+    spawned[2].argv[#spawned[2].argv],
+    "Start-Process -FilePath 'https://example.com/it''s'",
+    "a ' inside the URL is doubled"
+  )
 
   -- another target starts at the first opener again
+  reset("windows")
+  platform.open(URL)
   platform.open(URL .. "x")
-  eq(spawned[#spawned].argv[1], "explorer.exe", "a different target starts at the first opener")
+  eq(spawned[#spawned].argv[1], "rundll32.exe", "a different target starts at the first opener")
 
   -- ───────────── a watched opener that fails hands over by itself ─────────────
   reset("windows")
   platform.open("https://example.com/other")
-  platform.open("https://example.com/other") -- rotate to rundll32 (exit code is reliable)
-  eq(spawned[2].argv[1], "rundll32.exe", "rundll32 is running")
-  finish(2, 3)
-  eq(#ui_calls, 1, "a non-zero exit of rundll32 runs vim.ui.open")
+  eq(spawned[1].argv[1], "rundll32.exe", "rundll32 is running (exit code is reliable)")
+  finish(1, 3)
+  eq(spawned[2].argv[1], "powershell.exe", "a non-zero exit of rundll32 runs powershell")
+  eq(#ui_calls, 0, "vim.ui.open is still in reserve")
   ok(
     vim.tbl_contains(
       vim.tbl_map(
@@ -89,29 +121,29 @@ return function(H)
 
   reset("windows")
   platform.open("https://example.com/third")
-  platform.open("https://example.com/third")
-  finish(2, 0)
-  eq(#ui_calls, 0, "a clean exit hands over to nobody")
+  finish(1, 0)
+  eq(#spawned, 1, "a clean exit hands over to nobody")
+  eq(#ui_calls, 0, "and vim.ui.open stays untouched")
 
   -- the rotation sticks: later requests, also after RETRY_MS, do not start with the opener that
   -- did nothing
   reset("windows")
   platform.open("https://example.com/sticky")
-  platform.open("https://example.com/sticky") -- rotated to rundll32
+  platform.open("https://example.com/sticky") -- rotated to powershell
   local keep_retry = platform.RETRY_MS
   platform.RETRY_MS = 0 -- the repeat window is over
   platform.open("https://example.com/sticky")
-  eq(spawned[#spawned].argv[1], "rundll32.exe", "after the window it still starts at rundll32")
+  eq(spawned[#spawned].argv[1], "powershell.exe", "after the window it still starts at powershell")
   platform.open("https://example.com/another")
-  eq(spawned[#spawned].argv[1], "rundll32.exe", "and so does another target")
+  eq(spawned[#spawned].argv[1], "powershell.exe", "and so does another target")
   platform.RETRY_MS = keep_retry
 
   -- a late hand-over (exit callback of an older request) does not take the place of a newer one
   reset("windows")
   platform.open("https://example.com/A")
-  platform.open("https://example.com/A") -- rundll32 for A, watched
-  platform.open("https://example.com/B") -- also starts at rundll32 (sticky), last = B
-  finish(2, 3) -- A's rundll32 fails: vim.ui.open takes A over
+  platform.open("https://example.com/A") -- powershell for A, watched
+  platform.open("https://example.com/B") -- also starts at powershell (sticky), last = B
+  finish(2, 3) -- A's powershell fails: vim.ui.open takes A over
   eq(#ui_calls, 1, "A was handed over")
   platform.open("https://example.com/B") -- repeat of B: must still rotate to the next opener
   eq(#ui_calls, 2, "the repeat of B rotated although A's hand-over came in between")
@@ -119,9 +151,9 @@ return function(H)
   -- URIs without // go through untouched
   reset("windows")
   platform.open("mailto:a@b.c")
-  eq(spawned[1].argv[2], "mailto:a@b.c", "mailto: is no path")
+  eq(spawned[1].argv[3], "mailto:a@b.c", "mailto: is no path")
   platform.open("ms-settings:network")
-  eq(spawned[#spawned].argv[2], "ms-settings:network", "nor is ms-settings:")
+  eq(spawned[#spawned].argv[3], "ms-settings:network", "nor is ms-settings:")
 
   -- ───────────── an opener that cannot even start is skipped ─────────────
   reset("windows")
@@ -130,7 +162,7 @@ return function(H)
     return false, "ENOENT"
   end
   local started, err = platform.open("https://example.com/none")
-  eq(#spawned, 2, "explorer.exe and rundll32 were both tried")
+  eq(#spawned, 2, "rundll32 and powershell were both tried")
   eq(#ui_calls, 1, "and vim.ui.open took over")
   ok(started, "the request was served by the last opener: " .. tostring(err))
 
@@ -146,7 +178,7 @@ return function(H)
   local before = #platform.log()
   platform.open("https://example.com/logged")
   local entries = platform.log()
-  eq(entries[#entries].opener, "explorer.exe", "the log names the opener")
+  eq(entries[#entries].opener, "rundll32", "the log names the opener")
   eq(entries[#entries].result, "spawned", "and what happened")
   eq(#entries, before + 1, "one entry per attempt")
 

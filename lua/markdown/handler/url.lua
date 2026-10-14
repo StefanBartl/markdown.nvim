@@ -83,14 +83,13 @@ function M.is_url_line(line) return extract_url_from_line(line) ~= nil end
 
 function M.extract(line) return extract_url_from_line(line) end
 
-function M.open(line)
-  line = line or api.nvim_get_current_line()
-  local target = extract_url_from_line(line)
-  if not target then
-    if M.config.notify_on_error then notify.info("No URL found under cursor") end
-    return false
-  end
-
+---Open an URL that is already known (a link target the scanner extracted). It is handed over as
+---it is: running it through the line extraction again would cut it at the first `(`, `|`, `[`
+---or `!` (`.../Foo_(bar)` became `.../Foo_`).
+---@param target string
+---@return boolean ok
+function M.open_target(target)
+  if type(target) ~= "string" or target == "" then return false end
   local ok = open_with_system_viewer(target)
   if ok then
     if M.config.notify_on_error then notify.info("Opening -> " .. target) end
@@ -98,6 +97,19 @@ function M.open(line)
     if M.config.notify_on_error then notify.error("Failed to open -> " .. target) end
   end
   return ok
+end
+
+---Open the URL found in `line` (the current line by default).
+---@param line? string
+---@return boolean ok
+function M.open(line)
+  line = line or api.nvim_get_current_line()
+  local target = extract_url_from_line(line)
+  if not target then
+    if M.config.notify_on_error then notify.info("No URL found under cursor") end
+    return false
+  end
+  return M.open_target(target)
 end
 
 return M

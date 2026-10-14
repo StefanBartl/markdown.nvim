@@ -105,6 +105,36 @@ return function(H)
     eq(opened, false, "open: reports failure when platform.open fails")
   end
 
+  -- ── M.open_target: a target the link scanner extracted is handed over as it is. Running it
+  -- through the line extraction again cut it at the first `(`, `|`, `[` or `!`. ──
+  do
+    local platform = require("markdown.util.platform")
+    local real_open = platform.open
+    local captured
+    platform.open = function(target)
+      captured = target
+      return true
+    end
+    local handler = require("markdown.handler")
+    local cases = {
+      "https://en.wikipedia.org/wiki/Foo_(bar)",
+      "https://example.com/?q=a|b",
+      "https://example.com/p[1]",
+      "https://example.com/a!b",
+      "https://example.com/x?y=1&z=2#frag",
+    }
+    for _, target in ipairs(cases) do
+      captured = nil
+      ok(url.open_target(target), "open_target: opens " .. target)
+      eq(captured, target, "open_target: " .. target .. " arrives untouched")
+      captured = nil
+      ok(handler.open_target(target), "handler.open_target: opens " .. target)
+      eq(captured, target, "handler.open_target: " .. target .. " arrives untouched")
+    end
+    eq(url.open_target(""), false, "open_target: an empty target is refused")
+    platform.open = real_open
+  end
+
   -- ── Near-cursor HTML href fallback: no URL on the current line, but an
   -- <a href> sits within the scan radius. ──
   do
