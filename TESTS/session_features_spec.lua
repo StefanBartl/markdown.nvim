@@ -612,10 +612,10 @@ return function(H)
     if captured then
       eq(captured.detach, true, "platform.open: launches detached")
       if platform.os() == "windows" then
-        eq(#captured.argv, 2, "platform.open (windows): argv has exactly 2 elements")
-        eq(captured.argv[1], "explorer.exe", "platform.open (windows): argv[1] is explorer.exe")
+        eq(#captured.argv, 3, "platform.open (windows): argv has exactly 3 elements")
+        eq(captured.argv[1], "rundll32.exe", "platform.open (windows): argv[1] is rundll32.exe")
         eq(
-          captured.argv[2],
+          captured.argv[3],
           (target:gsub("/", "\\")),
           "platform.open (windows): the backslashed path is the last argv element (no shellescape quoting)"
         )

@@ -15,10 +15,15 @@
 ---     chain (the first one evidently did not work), wrapping around;
 ---   * every attempt is kept in a small log (`M.log()`, shown by `:checkhealth markdown`).
 ---
---- Windows: `explorer.exe` first (no cmd.exe tokenizer: a `&` in the URL survives; its exit code is
---- always 1, so it is not watched), then `rundll32 url.dll,FileProtocolHandler` (exit code
---- reliable), then `vim.ui.open` (`cmd.exe /c start ""`). Elsewhere: `vim.ui.open`,
---- `lib.nvim.cross.open_default`, then the plain `open` / `xdg-open`.
+--- Windows: `rundll32 url.dll,FileProtocolHandler` first (ShellExecute in-process: `?`, `&`, `%xx`
+--- and long URLs arrive intact, exit code reliable), then `powershell Start-Process` (the same
+--- ShellExecute, URL single-quoted), then `vim.ui.open` (`cmd.exe /c start ""`, which cuts a bare
+--- `&`). NOT `explorer.exe`: it is a folder browser, not an opener. Given a URL with `?`, `&` or a
+--- `%xx` escape it takes the argument for a path pattern, drops it and opens the Documents folder
+--- instead -- in a window nobody sees, because children are started hidden -- while exiting 1
+--- exactly as on success (measured 2026-10-14 against Chrome: `https://x/plain` opens,
+--- `https://x/?q=1`, `https://x/a&b=1` and `https://x/a%3Fq=1` open nothing).
+--- Elsewhere: `vim.ui.open`, `lib.nvim.cross.open_default`, then the plain `open` / `xdg-open`.
 
 local M = {}
 
@@ -111,8 +116,8 @@ function M._spawn(argv, on_exit)
   return true
 end
 
----A Windows target as `explorer.exe` resolves it: an URL untouched, a path absolute and with
----backslashes (a relative or forward-slashed path opens a folder window instead).
+---A Windows target as ShellExecute resolves it: an URL untouched, a path absolute and with
+---backslashes (a relative or forward-slashed path is taken for something else).
 ---@param target string
 ---@return string
 local function windows_target(target)
@@ -172,17 +177,22 @@ function M._chain()
   local os = M.os()
   if os == "windows" then
     return {
-      -- exit code is always 1 for a handed-over request: not watched
-      argv_opener(
-        "explorer.exe",
-        function(t) return { "explorer.exe", windows_target(t) } end,
-        false
-      ),
       argv_opener(
         "rundll32",
         function(t) return { "rundll32.exe", "url.dll,FileProtocolHandler", windows_target(t) } end,
         true
       ),
+      -- the URL single-quoted: `&` and `$` are literal inside PowerShell single quotes
+      argv_opener("powershell Start-Process", function(t)
+        local quoted = "'" .. windows_target(t):gsub("'", "''") .. "'"
+        return {
+          "powershell.exe",
+          "-NoProfile",
+          "-NonInteractive",
+          "-Command",
+          "Start-Process -FilePath " .. quoted,
+        }
+      end, true),
       ui_opener,
     }
   end
