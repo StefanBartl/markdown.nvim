@@ -165,5 +165,10 @@ cell, a small popup shows the whole text. Off by default.
   popup = true }` — `enabled = true` turns it on for every markdown buffer;
   `table.popup` (default true, independent of truncation) opens the popup on
   `CursorHold` in any table cell, `table.popup = false` opts out
+  The marker must be one display column wide (anything else falls back to the
+  default); a double-width character at the cut is filled up so the rows keep one
+  width; tables inside fenced code blocks are left alone. The whole buffer is
+  re-laid-out on a change (no visible-range limit); `table.render` is the
+  incremental alternative.
 - **Needs:** `conceallevel >= 2` (set window-locally while on, then restored);
   the cursor line shows its full text unless `concealcursor` includes the mode
