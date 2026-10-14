@@ -2,6 +2,7 @@
 --- `:Markdown table <sub>` router.
 ---   view     [toggle|markdown|box|select|list|close|browser|browsernice]  TableView actions
 ---   list     [scope=%|cwd|PATH] [style=grid|markdown]   Tables of a scope in a picker
+---   convert  [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]   Table at the cursor / in the range, rewritten
 ---   format   [ALIGN] [header=A] [cell=A] [skip=COL] [scope=cursor|buffer|cwd|PATH]
 ---   new      [cols] [rows]                              Insert an empty table
 ---   mode     [on|off|toggle]                            Per-buffer auto-format mode
@@ -321,6 +322,11 @@ end
 ---@param argv string[]
 local function do_list(argv) require("markdown.commands.table_list").run(argv) end
 
+---@internal
+---@param argv string[]
+---@param ctx? table
+local function do_convert(argv, ctx) require("markdown.commands.table_convert").run(argv, ctx) end
+
 local subcommands = {
   view = do_view,
   format = do_format,
@@ -329,11 +335,12 @@ local subcommands = {
   truncate = do_truncate,
   render = do_render,
   list = do_list,
+  convert = do_convert,
   tableize = do_tableize,
   import = do_import,
 }
 
---- Runs `:Markdown table <view|format|new|mode|truncate|render|list|tableize|import> ...`.
+--- Runs `:Markdown table <view|format|new|mode|truncate|render|list|convert|tableize|import> ...`.
 ---@param argv string[]
 ---@param ctx? table  forwarded command context (range/line1/line2)
 ---@return nil
@@ -343,7 +350,7 @@ function M.run(argv, ctx)
   local fn = sub and subcommands[sub]
   if not fn then
     notify.info(
-      "Usage: :Markdown table <view|format|new|mode|truncate|render|list|tableize|import> ..."
+      "Usage: :Markdown table <view|format|new|mode|truncate|render|list|convert|tableize|import> ..."
     )
     return
   end
@@ -412,6 +419,9 @@ function M.complete(arglead, cmdline)
       table.sort(out)
       return out
     end
+  end
+  if sub == "convert" and slot >= 4 then
+    return require("markdown.commands.table_convert").complete(arglead)
   end
   if sub == "list" and slot >= 4 then
     local out = {}

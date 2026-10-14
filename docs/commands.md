@@ -110,6 +110,9 @@ dependency-free reimplementation of the vim-table-mode essentials.
 :Markdown table mode [on|off|toggle]    " auto-format the table you're editing
 :Markdown table truncate [on|off|toggle|show] " cut over-wide cells with … (display only); show = popup
 :Markdown table render [on|off|toggle] " show tables as a compact grid that fits the window (display only)
+:Markdown table convert [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]
+                                         " rewrite the table at the cursor (or the :range) in another format;
+                                         " reports what the target cannot keep (alignment in csv, #+TBLFM, row groups)
 :Markdown table tableize [format]       " turn delimited text into a GFM table
 :Markdown table import [clipboard|PATH] " parse an HTML <table> into a GFM table
 ```
