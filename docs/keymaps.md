@@ -154,6 +154,7 @@ If [which-key](https://github.com/folke/which-key.nvim) is installed, the
 | `]\|` / `[\|` | n | Next / previous table cell |
 | `<leader>mtf` | n | Format the table at the cursor (`:Markdown table format`) |
 | `<leader>mtu` | n | Toggle display-only truncation of over-wide cells (`:Markdown table truncate`) |
+| `<leader>mtr` | n | Toggle the virtual grid rendering of tables, fitted to the window (`:Markdown table render`) |
 | `<leader>mtp` | n | Popup with the full text of the table cell under the cursor (`:Markdown table truncate show`) |
 
 Inside the floating preview itself (buffer-local to the popup, Normal mode

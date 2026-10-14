@@ -293,17 +293,37 @@ local function do_truncate(argv)
   end
 end
 
+---@internal
+---@param argv string[]
+local function do_render(argv)
+  local tr = require("markdown.core.table_render")
+  local action = (argv[1] or "toggle"):lower()
+  local bufnr = vim.api.nvim_get_current_buf()
+  if action == "on" then
+    tr.enable(bufnr)
+    notify.info("Table render: on")
+  elseif action == "off" then
+    tr.disable(bufnr)
+    notify.info("Table render: off")
+  elseif action == "toggle" then
+    notify.info("Table render: " .. (tr.toggle(bufnr) and "on" or "off"))
+  else
+    notify.warn("table render: expected on|off|toggle")
+  end
+end
+
 local subcommands = {
   view = do_view,
   format = do_format,
   new = do_new,
   mode = do_mode,
   truncate = do_truncate,
+  render = do_render,
   tableize = do_tableize,
   import = do_import,
 }
 
---- Runs `:Markdown table <view|format|new|mode|truncate|tableize|import> ...`.
+--- Runs `:Markdown table <view|format|new|mode|truncate|render|tableize|import> ...`.
 ---@param argv string[]
 ---@param ctx? table  forwarded command context (range/line1/line2)
 ---@return nil
@@ -360,7 +380,7 @@ function M.complete(arglead, cmdline)
       return out
     end
   end
-  if (sub == "mode" or sub == "truncate") and slot == 4 then
+  if (sub == "mode" or sub == "truncate" or sub == "render") and slot == 4 then
     local out = {}
     local names = { "on", "off", "toggle" }
     if sub == "truncate" then names[#names + 1] = "show" end

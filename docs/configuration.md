@@ -164,6 +164,8 @@ require("markdown").setup({
   -- table mode wrap at wrap.max (40 when unset); see docs/table-wrap.md.
   table = {
     -- popup = true, -- CursorHold in a table cell: float with its content (false = off)
+    -- render = { enabled = false, border = "single", cursor = "row", pad = 1, min_width = 6, max_width = nil,
+    --            row_separator = "auto", debounce_ms = 80 }, -- virtual grid rendering that fits the window
     -- truncate = { enabled = false, max = 40, marker = "…", popup = true }, -- display-only cell cut + full-text popup
     header_align = "left", -- "left" | "center" | "right"
     entry_align  = "left",

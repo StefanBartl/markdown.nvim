@@ -112,6 +112,27 @@ rows of the same logical row. Off by default — nothing changes until a
   [HEADINGS.md](HEADINGS.md#folding)
 - **API hooks:** `core.table_wrap.on("before_reflow"|"after_reflow", fn)`
 
+## `table_render` — virtual grid that fits the window
+
+Display-only rendering of every GFM table as a compact grid. The buffer text is
+never touched: each row is concealed (extmark `conceal`) and drawn again as
+inline virtual text, continuation lines of wrapped cells and the borders are
+virtual lines. Details and options: [table-wrap.md](../table-wrap.md#virtual-grid-rendering).
+
+- **Module:** `core/table_render.lua` (pure `layout` / `row_lines` / `border`,
+  extmark rendering, per-buffer enable/disable)
+- **Command:** `:Markdown table render [on|off|toggle]`; **keymap**
+  `<leader>mtr` (id `table_render_toggle`)
+- **Config:** `table.render` (`enabled`, `border`, `cursor`, `pad`, `min_width`,
+  `max_width`, `row_separator`, `debounce_ms`); `enabled = true` turns it on for
+  every markdown buffer (FileType dispatcher, like `truncate`)
+- **Autocmds:** buffer-local `TextChanged[I]` / `InsertLeave` / `CursorMoved[I]`
+  / `BufWinEnter` / `BufReadPost`; global `MarkdownNvimTableRender` group
+  (`WinResized`, `VimResized`, `OptionSet`, `ColorScheme`), created on first use
+- **Highlights:** `MarkdownTableBorder`, `MarkdownTableHead`,
+  `MarkdownTableCode` (default links, override freely)
+- **Exclusive with** `table_truncate` per buffer (the last one switched on wins)
+
 ## `table_truncate` + `table_popup` — one row per record, full text on demand
 
 Alternative to wrapping: keep every table row on one line. A cell wider than
