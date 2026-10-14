@@ -122,15 +122,39 @@ function M.parse_block(block, start_line)
   })
 end
 
+---@internal
+---@param tbl table
+---@return boolean
+local function has_br(tbl)
+  for _, r in ipairs(tbl.rows) do
+    for _, c in ipairs(r.cells) do
+      local s = type(c) == "table" and c.content or c
+      if type(s) == "string" and s:find("<br>", 1, true) then return true end
+    end
+  end
+  return false
+end
+
 ---@param tbl table
 ---@param opts? { border?: string }
 ---@return string[]
 function M.render(tbl, opts)
   local gfm = require("markdown.tables.formats.gfm").render(tbl)
-  return require("markdown.core.table_render").to_lines(
-    gfm,
-    { border = opts and opts.border or "single", row_separator = tbl.row_rules == true }
-  )
+  -- A multi-line cell (`<br>`) needs a rule between the rows, or the lines read back as rows.
+  return require("markdown.core.table_render").to_lines(gfm, {
+    border = opts and opts.border or "single",
+    row_separator = tbl.row_rules == true or has_br(tbl),
+  })
+end
+
+---@param tbl table
+---@return string[]
+function M.lossy(tbl)
+  -- one body row cannot show where its lines end: no rule separates it from anything
+  if #tbl.rows == 1 and has_br(tbl) then
+    return { "multi-line cells of a single body row (read back as separate rows)" }
+  end
+  return {}
 end
 
 M._split = split

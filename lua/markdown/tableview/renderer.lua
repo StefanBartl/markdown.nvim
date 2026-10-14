@@ -837,7 +837,10 @@ function M.write_back()
 
   local wrote_buf, wrote_file, skipped, stale = 0, 0, 0, 0
 
-  for _, mt in ipairs(state.tables) do
+  -- Bottom-up: a table that comes back with another number of lines (org / box rules) must not
+  -- shift the range of the tables below it that are still to be written.
+  for ti = #state.tables, 1, -1 do
+    local mt = state.tables[ti]
     local lines = build_lines_from_markdowntable(mt) -- natural widths, ignores col_overrides
     if mt.format and mt.format ~= "gfm" then
       -- a table that was read as org / box: written back in its own format

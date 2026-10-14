@@ -238,6 +238,70 @@ return function(H)
     ":Markdown table convert exists"
   )
 
+  -- ───────────── review fixes ─────────────
+  -- an escaped pipe is not escaped twice
+  local pipe = reg.find({ "| x \\| y | z |", "| --- | --- |", "| 1 | 2 |" })[1]
+  eq(reg.render("gfm", pipe)[1], "| x \\| y | z |", "an escaped pipe survives the gfm writer")
+  eq(#reg.find(reg.render("gfm", pipe))[1].header.cells, 2, "and the table keeps two columns")
+
+  -- alignment survives gfm -> box / org -> gfm
+  local aligned = reg.find(GFM)[1]
+  eq(reg.render("gfm", aligned)[2], "| ----- | --: |", "gfm keeps the right-alignment colon")
+  local from_org =
+    reg.find({ "| a | b |", "|---+---|", "| <r> | <c> |", "| 1 | 2 |" }, { formats = { "org" } })[1]
+  eq(reg.render("gfm", from_org)[2], "| -: | :-: |", "org cookies become gfm alignment")
+
+  -- an empty row in an org table is data, not the alignment row
+  local gaps =
+    reg.find({ "| a | b |", "|---+---|", "| | |", "| 1 | 2 |" }, { formats = { "org" } })[1]
+  eq(#gaps.rows, 2, "an all-empty org row stays a row")
+
+  -- a multi-line cell written as box reads back as one row
+  local br = reg.from_strings({ "a", "b" }, { { "x<br>y", "1" }, { "z", "2" } })
+  local boxed = reg.find(reg.render("box", br), { formats = { "box" } })[1]
+  eq(#boxed.rows, 2, "<br> cells come back as the same two rows")
+  eq(boxed.rows[1].cells[1].content, "x<br>y", "with the lines joined again")
+  eq(
+    #reg.lossy("box", reg.from_strings({ "a" }, { { "x<br>y" } })),
+    1,
+    "one body row cannot say where it ends"
+  )
+
+  -- a header-only GFM table covers its separator line, so a rewrite does not leave it behind
+  local only = reg.find({ "| a | b |", "| --- | --- |", "after" })[1]
+  eq(only.end_line, 2, "header-only table ends on the separator")
+
+  -- write-back goes bottom-up: a table that changes its line count must not stale the ones below
+  do
+    local api = vim.api
+    local cfg = require("markdown.config")
+    local notify_before = vim.notify
+    vim.notify = function() end
+    cfg.setup({ table = { formats = { "gfm", "org", "box" } } })
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_lines(buf, 0, -1, false, {
+      "|---+---|",
+      "| a | b |",
+      "|---+---|",
+      "| 1 | 2 |",
+      "|---+---|",
+      "",
+      "|G1|G2|",
+      "|--|--|",
+      "|1|2|",
+    })
+    local tables = require("markdown.tableview.parser").get_tables(buf)
+    eq(#tables, 2, "an org table with three rules and a gfm table")
+    local renderer = require("markdown.tableview.renderer")
+    renderer.render_tables(tables, { floating = true })
+    renderer.write_back()
+    local out = api.nvim_buf_get_lines(buf, 0, -1, false)
+    eq(out[#out - 2], "| G1 | G2 |", "the table below the shrunk org table was still written")
+    renderer.close_view()
+    cfg.setup({})
+    vim.notify = notify_before
+  end
+
   -- ───────────── config ─────────────
   local cfgm = require("markdown.config")
   local saved_notify = vim.notify

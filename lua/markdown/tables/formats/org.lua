@@ -21,20 +21,21 @@ end
 ---@return string[]|nil aligns
 local function cookies(line)
   local cells = lib_table.split_cells(line)
-  local out = {}
+  local out, real = {}, false
   for i, c in ipairs(cells) do
     local t = vim.trim(c)
     local k = t:match("^<([lrc])%d*>$")
-    if not k then
-      if t == "" then
-        k = "l"
-      else
-        return nil
-      end
+    if k then
+      real = true
+    elseif t == "" then
+      k = "l"
+    else
+      return nil
     end
     out[i] = (k == "r" and "right") or (k == "c" and "center") or "left"
   end
-  return #out > 0 and out or nil
+  -- a row of empty cells is a data row, only a real cookie makes it the alignment row
+  return (real and #out > 0) and out or nil
 end
 
 ---@param lines string[]

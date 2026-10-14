@@ -52,7 +52,7 @@ function M.parse_table(lines, start_line)
     alignments = {},
     rows = {},
     start_line = start_line,
-    end_line = start_line,
+    end_line = start_line + 1, -- header + separator; body rows extend it
   }
 
   tbl.header = { cells = parse_row(header_line) }
