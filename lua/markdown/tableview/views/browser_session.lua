@@ -18,6 +18,10 @@
 ---      scroll position preserved across the reload.
 --- `force_new` (the `reopen` argument on `:Markdown table view browser`)
 --- resets the "already opened" flag for when the tab was closed by hand.
+---
+--- "Opened" means an opener was started, not that a tab appeared: `platform.open` watches the
+--- openers whose exit code is reliable and logs every attempt. When the last logged attempt for
+--- the file failed, the next `show` opens again instead of trusting a tab that never came.
 local M = {}
 
 local platform = require("markdown.util.platform")
@@ -50,6 +54,20 @@ local AUTO_REFRESH_SCRIPT = [[
 </script>
 ]]
 
+---Whether the last logged attempt to open `path` failed (could not start, or exited non-zero
+---and no further opener took over). Nothing logged counts as not failed.
+---@param path string
+---@return boolean
+function M._last_open_failed(path)
+  local last
+  for _, entry in ipairs(platform.log()) do
+    if entry.target == path then last = entry end
+  end
+  if not last then return false end
+  local r = last.result
+  return r:find("^failed") ~= nil or (r:find("^exit ") ~= nil and r ~= "exit 0")
+end
+
 --- Write `html` to the fixed file for `style_key` and open it in the system
 --- browser — but only the first time per style per Neovim session; later
 --- calls just update the file, and the page's own auto-refresh picks it up.
@@ -67,7 +85,9 @@ function M.show(html, style_key, force_new)
   fh:write(with_refresh)
   fh:close()
 
-  if force_new then opened[style_key] = false end
+  if force_new or (opened[style_key] and M._last_open_failed(path)) then
+    opened[style_key] = false
+  end
   if opened[style_key] then
     -- A tab is presumably already open; it will pick up the new content on
     -- its next auto-refresh tick.

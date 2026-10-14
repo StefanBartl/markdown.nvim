@@ -158,7 +158,9 @@ require("markdown").setup({
     picker = "hover_select",
   },
 
-  -- Native in-buffer rendering (display only; `:Markdown render`, `<leader>mrr`):
+  -- Native in-buffer rendering (display only; `:Markdown render`, `<leader>mrr`).
+  -- `render = true` is the short form of `render = { enabled = true }` (every other key keeps
+  -- its default); `render = false` is `{ enabled = false }`:
   -- render = {
   --   enabled = false,            -- true: on for every markdown buffer
   --   margin = 40, debounce_ms = 60,
