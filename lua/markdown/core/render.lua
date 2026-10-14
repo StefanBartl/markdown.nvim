@@ -138,6 +138,7 @@ end
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
 ---@field width integer  # columns a thematic break fills
+---@field grid? boolean  # false: no table grid draws the table rows, so they get the inline marks (default true)
 ---@field cfg table
 
 ---@internal
@@ -236,8 +237,8 @@ function M.line_marks(line, ctx)
     return out
   end
 
-  -- a table row is drawn by core.table_render: its columns must not shift
-  if line:match("^%s*|") then return out end
+  -- a table row is drawn by core.table_render / table_truncate: its columns must not shift
+  if ctx.grid ~= false and line:match("^%s*|") then return out end
 
   local rule_ch = line:gsub("%s", "")
   if
@@ -348,6 +349,18 @@ end
 local S = {}
 
 ---@internal
+---Whether a table display (grid or truncation) owns the table rows of this buffer.
+---@param bufnr integer
+---@return boolean
+local function grid_active(bufnr)
+  for _, mod in ipairs({ "markdown.core.table_render", "markdown.core.table_truncate" }) do
+    local m = package.loaded[mod]
+    if m and m.is_enabled(bufnr) then return true end
+  end
+  return false
+end
+
+---@internal
 ---@param bufnr integer
 ---@return table<integer, boolean>
 local function cursor_rows(bufnr)
@@ -405,7 +418,8 @@ end
 ---@param prev string|nil
 ---@param width integer
 ---@param c table
-local function draw_row(bufnr, st, row, line, prev, width, c)
+---@param grid boolean
+local function draw_row(bufnr, st, row, line, prev, width, c, grid)
   local ids = {}
   local marks = M.line_marks(line, {
     role = st.roles[row],
@@ -413,6 +427,7 @@ local function draw_row(bufnr, st, row, line, prev, width, c)
     prev = prev,
     width = width,
     cfg = c,
+    grid = grid,
   })
   for _, m in ipairs(marks) do
     local ok, id = pcall(api.nvim_buf_set_extmark, bufnr, NS, row - 1, m.col, m.opts)
@@ -431,7 +446,8 @@ function M.refresh(bufnr, force)
   local width, spans = window_span(bufnr, c.margin)
   if not width then return end -- not shown: BufWinEnter draws it
   local tick = api.nvim_buf_get_changedtick(bufnr)
-  local look = ("%d:%s"):format(width, vim.inspect(c))
+  local grid = grid_active(bufnr)
+  local look = ("%d:%s:%s"):format(width, tostring(grid), vim.inspect(c))
   if force or st.tick ~= tick or st.look ~= look then
     api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
     st.drawn = {}
@@ -451,7 +467,7 @@ function M.refresh(bufnr, force)
         else
           local line = seg[row - lo + 1]
           local prev = seg[row - lo]
-          if line then draw_row(bufnr, st, row, line, prev, width, c) end
+          if line then draw_row(bufnr, st, row, line, prev, width, c, grid) end
         end
       end
     end
@@ -489,7 +505,7 @@ local function on_cursor(bufnr)
       clear_row(bufnr, st, r)
       local line = api.nvim_buf_get_lines(bufnr, r - 1, r, false)[1]
       local prev = r > 1 and api.nvim_buf_get_lines(bufnr, r - 2, r - 1, false)[1] or nil
-      if line then draw_row(bufnr, st, r, line, prev, width, c) end
+      if line then draw_row(bufnr, st, r, line, prev, width, c, grid_active(bufnr)) end
     end
   end
   st.cursor = now
