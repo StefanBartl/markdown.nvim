@@ -83,6 +83,10 @@ return function(H)
   ok(find(marks("![alt](a.png)"), function(m) return m.opts.conceal == "▣" end), "image marker")
   eq(#marks("`[not](a)`"), 3, "no link inside a code span")
   eq(#marks("| `c` | [d](u) |"), 0, "table rows are left to the table grid")
+  ok(
+    #marks("| `c` | [d](u) |", { grid = false }) > 0,
+    "without a grid the table rows get the inline marks"
+  )
 
   -- ───────────── code blocks, front matter ─────────────
   local roles, langs = r.roles({ "---", "a: 1", "---", "```lua", "x", "```", "y" })
@@ -113,6 +117,13 @@ return function(H)
   eq(#r.line_marks("- b", { width = 20, cfg = off }), 0, "bullets off")
 
   -- ───────────── buffer ─────────────
+  local function rows_of(b, n)
+    local set = {}
+    for _, m2 in ipairs(vim.api.nvim_buf_get_extmarks(b, n, 0, -1, {})) do
+      set[m2[2] + 1] = true
+    end
+    return set
+  end
   local ns = vim.api.nvim_create_namespace("markdown_render")
   local buf = H.scratch("markdown")
   local doc = { "# T", "", "- [ ] a", "", "> q", "", "text `c`", "", "last" }
@@ -163,6 +174,24 @@ return function(H)
   local count = #vim.api.nvim_buf_get_extmarks(big, ns, 0, -1, {})
   ok(count < 600, "a long file draws only the rows around the window (" .. count .. " marks)")
   r.disable(big)
+
+  -- a table row: drawn inline without a grid, left alone while the grid owns the buffer
+  local tb = H.scratch("markdown")
+  vim.api.nvim_buf_set_lines(tb, 0, -1, false, { "| `a` | b |", "|---|---|", "| 1 | 2 |", "", "x" })
+  vim.api.nvim_win_set_cursor(0, { 5, 0 })
+  r.enable(tb)
+  ok(rows_of(tb, ns)[1], "no grid: the inline code in a table row is drawn")
+  r.disable(tb)
+  local grid = require("markdown.core.table_render")
+  grid.enable(tb)
+  r.enable(tb)
+  local own = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(tb, ns, 0, -1, {})) do
+    own[m[2] + 1] = true
+  end
+  ok(not own[1], "the grid owns the table rows")
+  r.disable(tb)
+  grid.disable(tb)
 
   -- two windows on one buffer, one at the top and one at the bottom: the rows between them are not drawn
   vim.cmd("split")
