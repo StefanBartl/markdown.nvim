@@ -164,6 +164,25 @@ return function(H)
   ok(count < 600, "a long file draws only the rows around the window (" .. count .. " marks)")
   r.disable(big)
 
+  -- two windows on one buffer, one at the top and one at the bottom: the rows between them are not drawn
+  vim.cmd("split")
+  local second = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(second, big)
+  vim.api.nvim_win_set_cursor(second, { 3000, 0 })
+  vim.cmd("normal! zb")
+  vim.api.nvim_set_current_win(vim.fn.win_getid(vim.fn.winnr("#")))
+  vim.api.nvim_win_set_buf(0, big)
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+  vim.cmd("normal! zt")
+  r.enable(big)
+  count = #vim.api.nvim_buf_get_extmarks(big, ns, 0, -1, {})
+  ok(
+    count > 0 and count < 600,
+    "two distant windows draw their own rows only (" .. count .. " marks)"
+  )
+  r.disable(big)
+  vim.cmd("only")
+
   -- config
   local cfgm = require("markdown.config")
   local sn = vim.notify
