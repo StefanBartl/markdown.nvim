@@ -79,7 +79,10 @@ function M.parse_block(block, start_line)
   -- cells). With only the rule under the header (what TableView draws) every line is a row.
   local mids = 0
   for _, line in ipairs(block) do
-    if first_char(line) == "├" then mids = mids + 1 end
+    -- `╞` (the header rule TableView draws) counts like `├`: it is the header rule, as `├` is
+    -- in the other box styles
+    local c = first_char(line)
+    if c == "├" or c == "╞" then mids = mids + 1 end
   end
   local function merge(parts_list)
     local merged = {}

@@ -308,6 +308,48 @@ return function(H)
     vim.cmd("only")
   end
 
+  -- a floating window closed from outside changes no layout: WinClosed redraws its cursor row
+  do
+    local fb = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(fb, 0, -1, false, { "# H", "", "- a", "", "`x`", "", "> q" })
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    r.enable(fb)
+    local fl = vim.api.nvim_open_win(
+      fb,
+      false,
+      { relative = "editor", row = 2, col = 2, width = 20, height = 5 }
+    )
+    vim.api.nvim_win_set_cursor(fl, { 5, 0 })
+    vim.api.nvim_exec_autocmds("CursorMoved", { buffer = fb })
+    ok(not rows_of(fb, ns)[5], "the floating window's cursor row is raw")
+    vim.api.nvim_win_close(fl, true)
+    vim.wait(1000, function() return rows_of(fb, ns)[5] end, 20)
+    ok(rows_of(fb, ns)[5], "closing the floating window draws its row again")
+    r.disable(fb)
+  end
+
+  -- a link after a badge is marked once: the inner scan of the badge stops at its end
+  eq(#marks("[![a](b)](c) [d](e)"), 9, "badge 3 + inner image 3 + sibling link 3")
+
+  -- conceal_guard: the remembered original of a left window is used up once it is back
+  do
+    local guard = require("markdown.core.conceal_guard")
+    local a, b = H.scratch("markdown"), H.scratch("markdown")
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t5", a)
+    vim.api.nvim_set_current_buf(b)
+    guard.apply("t5", a) -- the window left: its original 0 is remembered
+    vim.api.nvim_set_current_buf(a)
+    guard.apply("t5", a)
+    guard.restore("t5", a)
+    eq(vim.wo.conceallevel, 0, "back to the original after the round trip")
+    vim.wo.conceallevel = 2
+    guard.apply("t5", a)
+    guard.restore("t5", a)
+    eq(vim.wo.conceallevel, 2, "a 2 the user set afterwards is kept (the old 0 is not replayed)")
+  end
+
   -- the text area width changes with `number`: the rules are fitted again
   do
     local nb = H.scratch("markdown")

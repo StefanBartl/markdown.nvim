@@ -174,7 +174,10 @@ function M.parse(name, lines, opts)
   if not f or not f.parse then
     return nil, "'" .. tostring(name) .. "' is not a standalone format"
   end
-  return f.parse(lines, opts)
+  local tbl, err = f.parse(lines, opts)
+  -- the format the table was read in (a csv model holds no GFM escapes: see csv.render)
+  if tbl and not tbl.format then tbl.format = name end
+  return tbl, err
 end
 
 ---What `render` of format `name` cannot keep of `tbl`.
@@ -185,6 +188,8 @@ function M.lossy(name, tbl)
   -- what the source format could not hold was lost by reading it; writing it back in the
   -- same format keeps everything the model holds (org rules, box rules and border)
   local out = tbl.format == name and {} or vim.deepcopy(tbl.lossy or {})
+  -- `lost`: what the reader dropped without storing it, so no writer can bring it back
+  vim.list_extend(out, tbl.lost or {})
   local f = M.get(name)
   if f and f.lossy then vim.list_extend(out, f.lossy(tbl)) end
   return out

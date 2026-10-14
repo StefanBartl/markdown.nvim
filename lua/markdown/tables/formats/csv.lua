@@ -89,11 +89,14 @@ function M.render(tbl, opts)
   local sep = opts and opts.sep or M.sep
   local function field(v)
     v = v:gsub("<br>", "\n")
-    -- an escaped pipe (`\|`, GFM / org cell text) is a plain pipe in the data
-    v = v:gsub("(\\*)|", function(bs)
-      if #bs % 2 == 1 then return bs:sub(1, -2) .. "|" end
-      return bs .. "|"
-    end)
+    -- an escaped pipe (`\|`, GFM / org cell text) is a plain pipe in the data. Not for a table
+    -- read from csv / tsv: there `\|` is a literal backslash and a pipe (a regex, `C:\dir\|x`).
+    if tbl.format ~= "csv" and tbl.format ~= "tsv" then
+      v = v:gsub("(\\*)|", function(bs)
+        if #bs % 2 == 1 then return bs:sub(1, -2) .. "|" end
+        return bs .. "|"
+      end)
+    end
     if
       v:find('[%s"' .. vim.pesc(sep) .. "]")
       and (v:find('["\n' .. vim.pesc(sep) .. "]") or v:match("^%s") or v:match("%s$"))
