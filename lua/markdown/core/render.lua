@@ -176,6 +176,10 @@ function M._link_at(line, pos)
       bs = bs + 1
       k = k - 1
     end
+    -- an escaped "!" is a literal "!" in front of a plain link
+    if bang == "!" and bs % 2 == 1 then
+      bang, open, bs = "", s, 0
+    end
     if open < pos or bs % 2 == 1 then
       init = s + 1
     else
@@ -282,29 +286,34 @@ local function inline(out, line, from, c)
     return false
   end
   if c.links or c.images then
-    local pos = from
-    while true do
-      local s, e, bang, text = M._link_at(line, pos)
-      if not s then break end
-      if not inside(s) then
-        local is_img = bang == "!"
-        if (is_img and c.images) or (not is_img and c.links) then
+    -- `limit`: only links that end at or before it (the text of an enclosing link, a badge)
+    local function scan_links(pos, limit)
+      while true do
+        local s, e, bang, text = M._link_at(line, pos)
+        if not s or (limit and e > limit) then break end
+        if not inside(s) then
+          local is_img = bang == "!"
           local open_len = is_img and 2 or 1
-          -- "[" / "![" before the text, "](url)" after it
-          conceal(out, s - 1, s - 1 + open_len, is_img and "▣" or "")
           local text_end = s - 1 + open_len + #text
-          out[#out + 1] = {
-            col = s - 1 + open_len,
-            opts = {
-              end_col = text_end,
-              hl_group = is_img and "MarkdownRenderImage" or "MarkdownRenderLink",
-            },
-          }
-          conceal(out, text_end, e, "")
+          if (is_img and c.images) or (not is_img and c.links) then
+            -- "[" / "![" before the text, "](url)" after it
+            conceal(out, s - 1, s - 1 + open_len, is_img and "▣" or "")
+            out[#out + 1] = {
+              col = s - 1 + open_len,
+              opts = {
+                end_col = text_end,
+                hl_group = is_img and "MarkdownRenderImage" or "MarkdownRenderLink",
+              },
+            }
+            conceal(out, text_end, e, "")
+          end
+          -- a link inside the text of this one: `[![alt](img)](url)`
+          if text:find("[", 1, true) then scan_links(s + open_len, text_end) end
         end
+        pos = e + 1
       end
-      pos = e + 1
     end
+    scan_links(from)
   end
 end
 
@@ -345,7 +354,8 @@ function M.line_marks(line, ctx)
     and #rule_ch >= 3
     and ("-*_"):find(rule_ch:sub(1, 1), 1, true)
     and rule_ch == rule_ch:sub(1, 1):rep(#rule_ch)
-    and not (rule_ch:sub(1, 1) == "-" and M._is_paragraph_line(ctx.prev))
+    -- only a run of dashes without spaces can underline a paragraph (setext); `- - -` is a rule
+    and not (line:match("^%s*%-+%s*$") and M._is_paragraph_line(ctx.prev))
   then
     out[#out + 1] = {
       col = 0,
@@ -554,7 +564,13 @@ function M.refresh(bufnr, force)
     st.tick, st.look = tick, look
   end
   local count = api.nvim_buf_line_count(bufnr)
+  local was = st.cursor
   st.cursor = cursor_rows(bufnr)
+  -- a row that was a cursor row and is not any more (its window closed or left the buffer)
+  -- is drawn again
+  for r in pairs(was) do
+    if not st.cursor[r] then clear_row(bufnr, st, r) end
+  end
   for _, sp in ipairs(spans) do
     local first, last = sp[1], math.min(sp[2], count)
     local lo = math.max(first - 1, 1) -- one row above the range: the "previous line" of its first row

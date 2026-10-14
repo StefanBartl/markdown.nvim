@@ -146,7 +146,11 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   at the cursor or in the `:range`, `from=auto` tries every embedded format, `from=csv|tsv` reads
   the range (or the whole buffer) as delimited text. What the target cannot keep is reported:
   alignment in csv/tsv, org row groups, a `#+TBLFM:` line below an org table.
-- **Write-back** from the TableView float uses the format the table was read in.
+- **Write-back** from the TableView float uses the format the table was read in and keeps what
+  that format holds: the rules between org row groups, the rounded or single border of a box
+  table. A box table drawn by TableView itself (`╞═╪═╡` header rule) is read as well. A pipe in a
+  cell is written escaped (`\|`) to org and gfm and plain to csv/tsv; a newline in a cell becomes
+  `<br>`.
 - **Not built (yet):** RST/pandoc grid and simple tables, HTML with spans, wiki tables, SQL result
   sets, JSON, LaTeX, AsciiDoc. They fit the same registry (see the analysis note in the tasks vault).
 - **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,csv,tsv}.lua`,

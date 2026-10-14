@@ -252,6 +252,119 @@ return function(H)
     eq(vim.wo.conceallevel, 0, "and still has its own level after coming back")
   end
 
+  -- ───────────── review round 3 ─────────────
+  -- a badge: the inner image is marked too, not only the outer link
+  do
+    local bm = marks("[![build](a.svg)](http://x)")
+    ok(
+      find(bm, function(m) return m.opts.conceal == "▣" end),
+      "the image inside a badge gets its marker"
+    )
+    eq(#bm, 6, "outer link: 3 marks, inner image: 3 marks")
+  end
+
+  -- an escaped "!" is a literal "!" in front of a plain link
+  do
+    local s, e, bang = r._link_at("\\![a](b)", 1)
+    eq(s .. "-" .. e .. "-" .. bang, "3-8-", "the link after \\! is found, as a link")
+    ok(#marks("\\![a](b)") > 0, "and drawn")
+    eq(r._link_at("\\\\![a](b)", 1), 3, "an even run of backslashes does not escape the !")
+  end
+
+  -- `- - -` under a paragraph is a thematic break (a setext underline has no inner spaces)
+  do
+    local sp = marks("- - -", { prev = "text" })
+    ok(
+      find(sp, function(m) return m.opts.virt_text ~= nil end),
+      "a spaced rule under text is drawn as a rule"
+    )
+    eq(#marks("---", { prev = "text" }), 0, "a plain run of dashes under text stays a setext line")
+  end
+
+  -- the cursor row of a window that closes is drawn again
+  do
+    local cb = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(cb, 0, -1, false, { "# H", "", "- a", "", "`x`", "", "> q" })
+    vim.api.nvim_win_set_cursor(0, { 1, 0 })
+    r.enable(cb)
+    vim.cmd("split")
+    local w2 = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_cursor(w2, { 5, 0 })
+    vim.api.nvim_exec_autocmds("CursorMoved", { buffer = cb })
+    ok(not rows_of(cb, ns)[5], "the second window's cursor row is raw")
+    vim.api.nvim_win_close(w2, true)
+    vim.wait(1000, function() return rows_of(cb, ns)[5] end, 20)
+    ok(rows_of(cb, ns)[5], "closing that window draws its row again")
+    -- the same when the window goes to another buffer (no WinEnter then)
+    vim.cmd("split")
+    local w3 = vim.api.nvim_get_current_win()
+    vim.api.nvim_win_set_cursor(w3, { 5, 0 })
+    vim.api.nvim_exec_autocmds("CursorMoved", { buffer = cb })
+    ok(not rows_of(cb, ns)[5], "a window on the same buffer holds the cursor row again")
+    vim.api.nvim_win_set_buf(w3, H.scratch("markdown"))
+    vim.wait(1000, function() return rows_of(cb, ns)[5] end, 20)
+    ok(rows_of(cb, ns)[5], "a window that switched buffer releases its cursor row")
+    r.disable(cb)
+    vim.cmd("only")
+  end
+
+  -- the text area width changes with `number`: the rules are fitted again
+  do
+    local nb = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(nb, 0, -1, false, { "# H", "", "---", "", "x" })
+    vim.api.nvim_win_set_cursor(0, { 5, 0 })
+    vim.wo.number = false
+    r.enable(nb)
+    local function rule_width()
+      for _, m in ipairs(vim.api.nvim_buf_get_extmarks(nb, ns, 0, -1, { details = true })) do
+        local vt = m[4].virt_text
+        if vt and vt[1][1]:find("─", 1, true) then return vim.fn.strchars(vt[1][1]) end
+      end
+    end
+    local before = rule_width()
+    vim.wo.number = true
+    -- the harness runs the spec inside an autocommand: Neovim does not nest OptionSet there
+    vim.api.nvim_exec_autocmds("OptionSet", { pattern = "number" })
+    vim.wait(1000, function() return rule_width() ~= before end, 20)
+    ok(
+      rule_width() < before,
+      ("the rule got narrower after :set number (%s -> %s)"):format(before, tostring(rule_width()))
+    )
+    r.disable(nb)
+    vim.wo.number = false
+  end
+
+  -- conceal_guard: a window that went to another buffer keeps that buffer's own level
+  do
+    local guard = require("markdown.core.conceal_guard")
+    local a, b = H.scratch("markdown"), H.scratch("markdown")
+    vim.api.nvim_set_current_buf(b)
+    vim.wo.conceallevel = 3
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t2", a)
+    vim.api.nvim_set_current_buf(b)
+    guard.apply("t2", a) -- the scheduled BufWinLeave handler
+    eq(vim.wo.conceallevel, 3, "the other buffer's own level is not overwritten")
+    guard.restore("t2", a)
+    vim.api.nvim_set_current_buf(a)
+  end
+
+  -- conceal_guard: a level the user sets after render was switched off is theirs
+  do
+    local guard = require("markdown.core.conceal_guard")
+    local a = H.scratch("markdown")
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t3", a)
+    guard.restore("t3", a)
+    eq(vim.wo.conceallevel, 0, "first round: back to 0")
+    vim.wo.conceallevel = 2
+    guard.apply("t3", a)
+    guard.restore("t3", a)
+    eq(vim.wo.conceallevel, 2, "second round: the 2 the user set is kept")
+  end
+
   -- config
   local cfgm = require("markdown.config")
   local sn = vim.notify
