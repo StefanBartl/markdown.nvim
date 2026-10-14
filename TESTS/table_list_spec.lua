@@ -191,6 +191,12 @@ return function(H)
     "list completes scope="
   )
   eq(cmds["TableViewList"].nargs, "*", ":TableViewList takes the same arguments")
+  -- the scope words every view action accepts are offered
+  local sc = tcmd.complete("", "Markdown table view toggle ")
+  for _, w in ipairs({ "%", "cwd", "buffer", "scope=cwd" }) do
+    ok(vim.tbl_contains(sc, w), "view toggle completes " .. w)
+  end
+  ok(vim.tbl_contains(tcmd.complete("", "Markdown table view select "), "buffer"), "select too")
 
   -- the forwarder hands the sub-command the same raw text `:Markdown table ...` does: a quoted
   -- literal separator survives (`" "` is a space, not "auto-detect")

@@ -394,6 +394,10 @@ function M.complete(arglead, cmdline)
       then
         if vim.startswith("%", arglead) then out[#out + 1] = "%" end
         if vim.startswith("cwd", arglead) then out[#out + 1] = "cwd" end
+        if vim.startswith("buffer", arglead) then out[#out + 1] = "buffer" end
+        for _, w in ipairs({ "scope=%", "scope=cwd", "scope=buffer" }) do
+          if vim.startswith(w, arglead) then out[#out + 1] = w end
+        end
         vim.list_extend(out, vim.fn.getcompletion(arglead, "file"))
       elseif action == "browser" or action == "browsernice" then
         if vim.startswith("reopen", arglead) then out[#out + 1] = "reopen" end

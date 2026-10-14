@@ -677,7 +677,18 @@ return {
         name = "TableViewBox",
         desc = "Toggle floating table preview (box-drawing style)",
       },
-      { name = "TableViewSelect", desc = "Pick a table from the buffer" },
+      {
+        name = "TableViewSelect [scope=%|cwd|PATH]",
+        desc = "Pick a table from the buffer, or of a scope (scope= and buffer are accepted like in :Markdown table view)",
+      },
+      { name = "TableViewList [scope=%|cwd|PATH] [style=grid|markdown]", desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim)" },
+      { name = "TableViewRender [on|off|toggle]", desc = "Same as `:Markdown table render`: virtual table grid fitted to the window" },
+      { name = "TableViewTruncate [on|off|toggle]", desc = "Same as `:Markdown table truncate`" },
+      { name = "TableViewFormat [ALIGN] [scope=...]", desc = "Same as `:Markdown table format`" },
+      { name = "TableViewNew [cols] [rows]", desc = "Same as `:Markdown table new`" },
+      { name = "TableViewMode [on|off|toggle]", desc = "Same as `:Markdown table mode`" },
+      { name = "TableViewTableize [sep]", desc = "Same as `:Markdown table tableize`; takes a range, a quoted separator such as a space survives" },
+      { name = "TableViewImport [clipboard|PATH]", desc = "Same as `:Markdown table import`; takes a range" },
       { name = "TableViewClose", desc = "Close floating preview" },
       {
         name = "TableViewOpenBrowser [reopen]",
@@ -730,6 +741,18 @@ return {
       group = "MarkdownNvimTableWrapSelective",
       pattern = "*.md, *.markdown, *.mdx",
       desc = "Reflow only tables changed since last save (config.table.wrap.selective_reflow, default off)",
+    },
+    {
+      event = "TextChanged/TextChangedI/InsertLeave/CursorMoved/CursorMovedI/BufWinEnter/WinEnter/BufWinLeave/BufReadPost/BufWipeout",
+      group = "MarkdownNvimTableRenderBuf<bufnr>",
+      pattern = "(buffer-local)",
+      desc = "Table grid (core.table_render, while on in the buffer): re-render after edits, show the cursor row as text, keep conceallevel per window, clean up on wipeout",
+    },
+    {
+      event = "WinResized/VimResized/OptionSet/ColorScheme",
+      group = "MarkdownNvimTableRender",
+      pattern = "(none -- OptionSet: number, relativenumber, signcolumn, foldcolumn, numberwidth)",
+      desc = "Table grid: re-lay-out after a resize or a change of the text area width; created on the first enable",
     },
     {
       event = "ColorScheme",
