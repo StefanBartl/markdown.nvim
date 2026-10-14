@@ -103,10 +103,12 @@ local function apply_to_already_loaded(cfg)
     and require("markdown.config").feature_enabled("table")
   local render = ((cfg.table or {}).render or {}).enabled
     and require("markdown.config").feature_enabled("table")
+  local native = (cfg.render or {}).enabled and require("markdown.config").feature_enabled("render")
   for _, bufnr in ipairs(api.nvim_list_bufs()) do
     if api.nvim_buf_is_loaded(bufnr) and is_md(vim.bo[bufnr].filetype) then
       if truncate then pcall(require("markdown.core.table_truncate").enable, bufnr) end
       if render then pcall(require("markdown.core.table_render").enable, bufnr) end
+      if native then pcall(require("markdown.core.render").enable, bufnr) end
       local ok, err = pcall(function()
         if cfg.enable_autocmds ~= false then
           keymaps().apply(bufnr)
@@ -251,6 +253,15 @@ function M.setup(cfg)
       "table_render",
       "[markdown.nvim] table render: enable (table.render.enabled)",
       function(ctx) require("markdown.core.table_render").enable(ctx.buf) end
+    )
+  end
+
+  -- Native rendering on for every markdown buffer (config.render.enabled).
+  if feat("render") and (cfg.render or {}).enabled then
+    on_filetype(
+      "render",
+      "[markdown.nvim] render: enable (render.enabled)",
+      function(ctx) require("markdown.core.render").enable(ctx.buf) end
     )
   end
 

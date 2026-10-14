@@ -1,43 +1,24 @@
 ---@module 'markdown.commands.render'
---- `:Markdown render [on|off|toggle]` — control render-markdown.nvim.
---- render-markdown.nvim is the host of the in-buffer rendering until markdown.nvim renders
---- natively (task markdown.nvim/replace-render-markdown-nvim). It is listed as a dependency in
---- the install docs; when it is not present the command warns instead of erroring.
---- (Tables are drawn by `core.table_render`, not by render-markdown.nvim: disable its
---- `pipe_table` component, see docs/FEATURES/INTEGRATIONS.md.)
+--- `:Markdown render [on|off|toggle]` -- the native in-buffer rendering (`core.render`: headings,
+--- bullets, checkboxes, code blocks, rules, quotes / callouts, inline markup) together with the
+--- table grid (`core.table_render`) for the current buffer. Display only, the text is untouched.
 local notify = require("markdown.util.notify").create("[markdown.commands.render]")
 
 local M = {}
 
 ---@internal
----@return boolean
-local function available()
-  if vim.fn.exists(":RenderMarkdown") == 2 then return true end
-  -- a lazy.nvim spec with `ft = "markdown"` defines the command only once loaded
-  local ok, lazy = pcall(require, "lazy")
-  if ok then pcall(lazy.load, { plugins = { "render-markdown.nvim" } }) end
-  return vim.fn.exists(":RenderMarkdown") == 2
-end
-
----@internal
----@param action "enable"|"disable"|"toggle"
-local function run(action)
-  if not available() then
-    notify.warn("render: render-markdown.nvim not available (add it as a dependency, see docs)")
-    return
+---@param bufnr integer
+---@param on boolean
+local function apply(bufnr, on)
+  local render = require("markdown.core.render")
+  local tables = require("markdown.core.table_render")
+  if on then
+    render.enable(bufnr)
+    if require("markdown.config").feature_enabled("table") then tables.enable(bufnr) end
+  else
+    render.disable(bufnr)
+    tables.disable(bufnr)
   end
-  -- The plugin starts enabled, so there is no state of our own to track: ask it to toggle.
-  local buf = vim.api.nvim_get_current_buf()
-  vim.cmd("RenderMarkdown " .. action)
-  -- The plugin sets and resets `conceallevel` itself; the table grid hides its rows with
-  -- `conceal_lines`, which needs >= 2: raise it again once the plugin is done.
-  vim.schedule(function()
-    local tr = package.loaded["markdown.core.table_render"]
-    if tr and vim.api.nvim_buf_is_valid(buf) and tr.is_enabled(buf) then
-      require("markdown.core.conceal_guard").apply("render", buf)
-    end
-  end)
-  notify.info("Markdown rendering (all buffers): " .. action)
 end
 
 --- Runs `:Markdown render [on|off|toggle]`.
@@ -45,15 +26,20 @@ end
 ---@return nil
 function M.run(argv)
   local arg = (argv[1] or "toggle"):lower()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local on
   if arg == "on" then
-    run("enable")
+    on = true
   elseif arg == "off" then
-    run("disable")
+    on = false
   elseif arg == "" or arg == "toggle" then
-    run("toggle")
+    on = not require("markdown.core.render").is_enabled(bufnr)
   else
     notify.warn("render: invalid argument (on|off|toggle)")
+    return
   end
+  apply(bufnr, on)
+  notify.info("Markdown rendering: " .. (on and "on" or "off"))
 end
 
 ---@param arglead string

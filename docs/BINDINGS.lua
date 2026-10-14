@@ -413,6 +413,14 @@ return {
         desc = "List the tables of the buffer",
       },
       {
+        id = "render_toggle",
+        lhs = "<leader>mrr",
+        mode = "n",
+        action = "render_toggle",
+        feature = "render",
+        desc = "Toggle native rendering (and the table grid)",
+      },
+      {
         id = "table_render_toggle",
         lhs = "<leader>mtr",
         mode = "n",
@@ -591,7 +599,7 @@ return {
       },
       {
         name = "Markdown render [on|off|toggle]",
-        desc = "render-markdown.nvim wrapper (optional host)",
+        desc = "Native in-buffer rendering (core.render) and the table grid for this buffer",
       },
       {
         name = "Markdown preview [start|stop|toggle]",
@@ -758,6 +766,18 @@ return {
       group = "MarkdownNvimTableRender",
       pattern = "(none -- OptionSet: number, relativenumber, signcolumn, foldcolumn, numberwidth)",
       desc = "Table grid: re-lay-out after a resize or a change of the text area width; created on the first enable",
+    },
+    {
+      event = "TextChanged/TextChangedI/InsertLeave/CursorMoved/CursorMovedI/BufWinEnter/WinEnter/BufWinLeave/BufWipeout",
+      group = "MarkdownNvimRenderBuf<bufnr>",
+      pattern = "(buffer-local)",
+      desc = "Native rendering (core.render, while on in the buffer): redraw after edits, cursor row shows its text, conceallevel per window",
+    },
+    {
+      event = "WinScrolled/WinResized/VimResized/ColorScheme",
+      group = "MarkdownNvimRender",
+      pattern = "(none)",
+      desc = "Native rendering: draw what scrolled into view, re-fit thematic breaks after a resize; created on the first enable",
     },
     {
       event = "ColorScheme",

@@ -83,6 +83,7 @@ local TOP_LEVEL_OPTS = {
   "heading_format",
   "keymaps",
   "table",
+  "render",
   "tableview",
   "links",
   "list",
@@ -110,6 +111,25 @@ local TOP_LEVEL_OPTS = {
 ---@type table<string, string[]>
 local NESTED_OPTS = {
   features = { "disable", "enable", "just_enable" },
+  render = {
+    "enabled",
+    "margin",
+    "debounce_ms",
+    "headings",
+    "bullets",
+    "checkboxes",
+    "code",
+    "rules",
+    "quotes",
+    "inline",
+  },
+  ["render.headings"] = { "enabled", "icons", "background" },
+  ["render.bullets"] = { "enabled", "icons" },
+  ["render.checkboxes"] = { "enabled", "unchecked", "checked", "partial" },
+  ["render.code"] = { "enabled", "background", "label" },
+  ["render.rules"] = { "enabled", "char" },
+  ["render.quotes"] = { "enabled", "icon", "callouts" },
+  ["render.inline"] = { "enabled", "code", "links", "images" },
   underline_headings = { "char" },
   menu = { "enable", "fold", "toc", "refs" },
   integrations = { "ui_menu" },
@@ -395,6 +415,53 @@ local function degrade_invalid_scalars(cfg, issues)
     check("max_width", function(v) return v == nil or int(v, 10) end)
     check("row_separator", function(v) return v == "auto" or type(v) == "boolean" end)
     check("debounce_ms", function(v) return int(v, 0) end)
+  end
+
+  -- `render`: whole numbers for the counts, tables for the construct blocks, lists of icons
+  if cfg.render then
+    local rdef = DEFAULTS.render
+    local r = cfg.render
+    local function whole(v, min)
+      return type(v) == "number" and v == math.floor(v) and v >= min and v < math.huge
+    end
+    if type(r.enabled) ~= "boolean" then
+      bad("render.enabled", r.enabled, rdef.enabled)
+      r.enabled = rdef.enabled
+    end
+    if not whole(r.margin, 0) then
+      bad("render.margin", r.margin, rdef.margin)
+      r.margin = rdef.margin
+    end
+    if not whole(r.debounce_ms, 0) then
+      bad("render.debounce_ms", r.debounce_ms, rdef.debounce_ms)
+      r.debounce_ms = rdef.debounce_ms
+    end
+    for name, def in pairs(rdef) do
+      if type(def) == "table" then
+        if type(r[name]) ~= "table" then
+          bad("render." .. name, r[name], "a table")
+          r[name] = vim.deepcopy(def)
+        end
+        for key, dv in pairs(def) do
+          local v = r[name][key]
+          local good
+          if type(dv) == "table" then
+            good = type(v) == "table" and #v > 0
+            for _, icon in ipairs(good and v or {}) do
+              if type(icon) ~= "string" then good = false end
+            end
+          elseif type(dv) == "boolean" then
+            good = type(v) == "boolean"
+          else
+            good = type(v) == "string"
+          end
+          if not good then
+            bad("render." .. name .. "." .. key, v, dv)
+            r[name][key] = vim.deepcopy(dv)
+          end
+        end
+      end
+    end
   end
 
   -- ERR-22: `hover.max_lines` reaches `hover/section.lua`'s `#out >= limit`

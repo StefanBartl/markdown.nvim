@@ -65,6 +65,7 @@ with `keymaps.<id> = "<lhs>"` / `= false`.
 | `table_prev_cell` | `[\|` | n | `table_prev_cell` | feature `table` | Prev table cell |
 | `table_format` | `<leader>mtf` | n | `table_format` | feature `table` | Format table at cursor |
 | `table_list` | `<leader>mtl` | n | `table_list` | feature `table` | List the tables of the buffer |
+| `render_toggle` | `<leader>mrr` | n | `render_toggle` | feature `render` | Toggle native rendering (and the table grid) |
 | `table_render_toggle` | `<leader>mtr` | n | `table_render_toggle` | feature `table` | Toggle table grid rendering |
 | `table_truncate_toggle` | `<leader>mtu` | n | `table_truncate_toggle` | feature `table` | Toggle table cell truncation |
 | `table_cell_popup` | `<leader>mtp` | n | `table_cell_popup` | feature `table` | Popup with the full table cell text |
@@ -170,7 +171,7 @@ buffer-local.
 | `:Markdown table truncate [on\|off\|toggle]` | Per-buffer display-only truncation of over-wide cells |
 | `:Markdown table tableize [format]` | Convert delimited text (range) into a GFM table (csv/tsv/psv/space/…) |
 | `:Markdown table import [clipboard\|PATH]` | Parse an HTML `<table>` into a GFM table (round-trips with the browser export) |
-| `:Markdown render [on\|off\|toggle]` | render-markdown.nvim wrapper (optional host) |
+| `:Markdown render [on\|off\|toggle]` | Native in-buffer rendering (`core.render`) and the table grid for this buffer |
 | `:Markdown preview [start\|stop\|toggle]` | mdview.nvim wrapper (optional host) |
 | `:Markdown mdview [path]` | Open a file directly via mdview.nvim (optional host) |
 | `:Markdown create fs` | Create files/dirs for local link targets |
@@ -234,6 +235,8 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `VimResized`, `WinResized` | `MarkdownNvimTableWrapResize` | (none — all loaded buffers) | Debounced reflow of auto-mode tables (`config.table.wrap.auto_resize`, default `off`) |
 | `TextChanged`, `TextChangedI`, `InsertLeave`, `CursorMoved`, `CursorMovedI`, `BufWinEnter`, `WinEnter`, `BufWinLeave`, `BufReadPost`, `BufWipeout` | `MarkdownNvimTableRenderBuf<bufnr>` | (buffer-local) | Table grid (`core.table_render`) while on in the buffer: re-render after edits, show the cursor row as text, keep `conceallevel` per window, clean up on wipeout |
 | `WinResized`, `VimResized`, `OptionSet`, `ColorScheme` | `MarkdownNvimTableRender` | (none; `OptionSet`: `number`, `relativenumber`, `signcolumn`, `foldcolumn`, `numberwidth`) | Table grid: re-lay-out after a resize or a change of the text area width; created on the first enable |
+| `TextChanged`, `TextChangedI`, `InsertLeave`, `CursorMoved`, `CursorMovedI`, `BufWinEnter`, `WinEnter`, `BufWinLeave`, `BufWipeout` | `MarkdownNvimRenderBuf<bufnr>` | (buffer-local) | Native rendering (`core.render`) while on in the buffer: redraw after edits, cursor row shows its text, `conceallevel` per window |
+| `WinScrolled`, `WinResized`, `VimResized`, `ColorScheme` | `MarkdownNvimRender` | (none) | Native rendering: draw what scrolled into view, re-fit thematic breaks after a resize; created on the first enable |
 | `CursorHold` | `MarkdownNvimTableCellPopup` | (none — all buffers, filtered to markdown filetypes) | Float with the content of the table cell under the cursor (feature `table`; real tables outside code fences in normal buffers only; opt out with `table.popup = false`) |
 | `BufWritePre` | `MarkdownNvimTableWrapSelective` | `*.md`, `*.markdown`, `*.mdx` | Reflow only tables changed since last save (`config.table.wrap.selective_reflow`, default `off`) |
 | `ColorScheme` | `MarkdownNvimHL` | `*` | Re-apply blockquote/link-underline highlights (feature `hl` / `link_hl`) — blockquote itself is a decoration provider now, not a `FileType`/`BufEnter` re-apply |

@@ -257,7 +257,7 @@ Everything lives under the `table` feature, and stays available when only the
 ## `:Markdown render` / `:Markdown preview` / `:Markdown mdview`
 
 ```vim
-:Markdown render  [on|off|toggle]        " render-markdown.nvim (optional host)
+:Markdown render  [on|off|toggle]        " native in-buffer rendering + table grid for this buffer (display only)
 :Markdown preview [start|stop|toggle]    " mdview.nvim (optional host)
 :Markdown mdview   [path]                " mdview.nvim (optional host)
 ```

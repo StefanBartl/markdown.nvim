@@ -29,10 +29,10 @@ search.
   keymap or a non-Markdown buffer is a bug, not a feature — the one deliberate
   exception is the bare-path hover, which is opt-in and lives in
   [`hover.md`](hover.md).
-- **This plugin does not render.** Preview, rendering and PDF export are
-  delegated to whichever of render-markdown.nvim, mdview.nvim, images.nvim
-  and pdfport.nvim is installed. Drawing a preview here would duplicate four
-  plugins and be worse than all of them.
+- **In-buffer rendering is native and display only** (`core/render.lua`,
+  `core/table_render.lua`: extmarks, never a text change). Browser preview,
+  image previews and PDF export are delegated to mdview.nvim, images.nvim and
+  pdfport.nvim; drawing those here would duplicate three plugins.
 - **Every integration is soft.** Detected at runtime, absent means one feature
   missing rather than an error. Never `require` an optional plugin at
   `setup()` time.

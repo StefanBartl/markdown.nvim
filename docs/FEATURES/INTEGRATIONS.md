@@ -4,20 +4,24 @@ Thin wrappers/adapters around optional host plugins — all soft
 dependencies: absent, they warn instead of erroring, and `:checkhealth
 markdown` reports whether each was detected.
 
-## render-markdown.nvim
+## Native rendering (formerly render-markdown.nvim)
 
-- **Module:** `commands/render.lua`
-- **Command:** `:Markdown render [on|off|toggle]` (see
-  [commands.md](../commands.md#markdown-render--markdown-preview--markdown-mdview));
-  `toggle` is `:RenderMarkdown toggle` (the plugin starts enabled, so markdown.nvim keeps no
-  state of its own)
-- **Install:** list it as a dependency of markdown.nvim in the plugin spec, see
-  [installation.md](../installation.md#lazynvim). It is only the host until markdown.nvim
-  renders natively (planned); tables are already native (`table.render`).
-- **Tables:** switch render-markdown.nvim's table component off
-  (`opts = { pipe_table = { enabled = false } }`) when `table.render` is used, otherwise both
-  conceal the same pipes.
-- **Health:** `:checkhealth markdown` reports detection.
+markdown.nvim renders in the buffer itself (`core/render.lua`, `core/table_render.lua`); no host
+plugin is needed and none is called. `:Markdown render [on|off|toggle]` switches the native
+renderer and the table grid on or off for the current buffer, `<leader>mrr` does the same,
+`render.enabled = true` / `table.render.enabled = true` turn them on for every markdown buffer.
+
+- **Draws:** headings (icon + background), bullets, checkboxes, code blocks (background + language
+  label), thematic breaks, block quotes and callouts, inline code / links / images with the markup
+  hidden. Everything is extmarks; the text is never touched and the cursor row shows its text.
+- **Cost:** only the rows in and around the windows are drawn (`render.margin`), debounced after
+  edits and when scrolling.
+- **Config:** the `render` block (per-construct switches and icons), see
+  [configuration](../configuration.md) and `config/DEFAULTS.lua`; highlight groups
+  `MarkdownRender*` with default links.
+- **Migrating from render-markdown.nvim:** remove it from the dependencies; if you keep it
+  installed next to this, switch one of the two off, both conceal the same markup.
+- **Health:** `:checkhealth markdown` reports the state.
 
 ## mdview.nvim
 
@@ -105,7 +109,6 @@ Not an optional integration — the one hard runtime dependency. Supplies the
 (`lib.nvim.bindings.usercmd.composer`) and `core/table_mode.lua`'s auto-format
 debounce (`lib.nvim.debounce.buffer`).
 
-**`:Markdown render` and the table grid.** `:RenderMarkdown` acts on all buffers, `:Markdown table render` on
-one. render-markdown.nvim sets and resets `conceallevel` itself; while the table grid is on in the buffer,
-`:Markdown render` raises it to 2 again afterwards (the grid hides its rows with `conceal_lines`). A direct
-`:RenderMarkdown disable` is not intercepted: re-enter the window or toggle `:Markdown table render`.
+**`conceallevel`.** The native renderer, the table grid and table truncate all need `conceallevel >= 2`.
+`core/conceal_guard.lua` raises it per window, remembers the original once however many of them are on,
+and gives it back when the last one lets go (also in splits and when a window shows another buffer).

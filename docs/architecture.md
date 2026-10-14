@@ -86,7 +86,7 @@ lua/markdown/
     toc.lua                :Markdown toc (TOC + separators)
     refs.lua               :Markdown refs sync|check|live|baseline (thin wrapper over core/refs.lua)
     table.lua              :Markdown table view|format|new|mode|tableize|import
-    render.lua             :Markdown render (render-markdown.nvim)
+    render.lua             :Markdown render (native renderer + table grid)
     preview.lua            :Markdown preview (mdview.nvim)
     mdview.lua             :Markdown mdview (mdview.nvim)
     image.lua              :Markdown image paste|screenshot (images.nvim)
