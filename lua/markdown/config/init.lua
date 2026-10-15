@@ -108,6 +108,12 @@ local TOP_LEVEL_OPTS = {
 -- (plain lists), and `features.disable`/`enable`/`just_enable` (lists of
 -- feature names, already value-checked by `resolve_features`'s own
 -- `warn_unknown`) -- all of those are user DATA, not a named-option shape.
+-- Tables handed to another plugin as they are: its option set is that plugin's to define and
+-- validate, so a key it learns later does not have to be taught to this allow-list first.
+-- `hover` is hover.nvim's (`hover.setup`); markdown.nvim only layers its own defaults under it.
+---@type table<string, true>
+local PASSTHROUGH = { hover = true }
+
 ---@type table<string, string[]>
 local NESTED_OPTS = {
   features = { "disable", "enable", "just_enable" },
@@ -185,22 +191,6 @@ local NESTED_OPTS = {
   ["links.cursor"] = { "enable", "startinsert", "path_cursor" },
   ["links.diagnostics"] = { "mode" },
   list = { "picker" },
-  hover = {
-    "enabled",
-    "trigger",
-    "delay_ms",
-    "placeholder_grace_ms",
-    "max_lines",
-    "max_width",
-    "border",
-    "bare_paths",
-    "filetypes",
-    "inline_images",
-    "url",
-    "office",
-  },
-  ["hover.url"] = { "hover", "fetch", "timeout_ms" },
-  ["hover.office"] = { "convert", "timeout_ms" },
   image = { "preview" },
   open = { "external_extensions" },
   blockquote_hl = { "marker_fg", "text_fg", "text_bg", "text_bold", "text_italic", "width" },
@@ -256,6 +246,8 @@ local function sanitize_level(raw, allowed, path, issues)
         path .. key,
         did_you_mean(key, allowed)
       )
+    elseif type(value) == "table" and PASSTHROUGH[path .. key] then
+      out[key] = value
     elseif type(value) == "table" and NESTED_OPTS[path .. key] then
       out[key] = sanitize_level(value, NESTED_OPTS[path .. key], path .. key .. ".", issues)
     else

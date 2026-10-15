@@ -157,6 +157,14 @@ require("markdown").setup({
 })
 ```
 
+The `hover` table is handed to hover.nvim as it is (markdown.nvim puts its own
+defaults underneath), so every option hover.nvim documents works here:
+`mode` (`"auto"`, `"manual"`, `"off"`), `links`, `paths`, `video`, `zen`,
+`keymaps`, and so on. markdown.nvim does not check these keys; hover.nvim
+validates its own, so a typo in one is not reported by markdown.nvim.
+`enabled`, `bare_paths` and `url` are hover.nvim's legacy spellings of
+`mode = "off"`, `paths.enabled` and `links`; they keep working.
+
 Turn it off entirely with `hover = { enabled = false }`, or via the feature
 gate: `features = { disable = { "hover" } }`.
 

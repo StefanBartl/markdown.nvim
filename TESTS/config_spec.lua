@@ -91,6 +91,34 @@ return function(H)
   config.setup({ hover = { max_lines = 0 } })
   eq(config.get().hover.max_lines, 20, "hover.max_lines = 0 degrades to default")
 
+  -- hover is handed to hover.nvim as it is: its current keys (mode, links, paths) arrive and raise no
+  -- "unknown config key"; the legacy keys of DEFAULTS keep working; every other table is still checked.
+  do
+    config.setup({
+      hover = {
+        mode = "manual",
+        links = { web = true },
+        paths = { enabled = false },
+        delay_ms = 99,
+      },
+    })
+    local h = config.get().hover
+    eq(h.mode, "manual", "hover.mode (hover.nvim's current key) reaches the config")
+    eq(h.links.web, true, "hover.links.web reaches the config")
+    eq(h.paths.enabled, false, "hover.paths.enabled reaches the config")
+    eq(h.delay_ms, 99, "a legacy-era key still merges over the default")
+    eq(h.trigger[1], "CursorHold", "the defaults underneath stay")
+    eq(#config.issues(), 0, "no 'unknown config key' for hover.nvim's keys")
+    ok(
+      h.bare_paths ~= nil and h.url ~= nil,
+      "the legacy defaults (bare_paths, url) are still there"
+    )
+
+    config.setup({ table = { wrapp = {} } })
+    ok(#config.issues() > 0, "a typo in a checked table is still reported")
+    config.setup({})
+  end
+
   -- ERR-22: refs.debounce_ms reaches core.refs.on_change's
   -- `timer:start(delay, 0, fn)` unguarded; a wrong type used to raise
   -- outright the first time a text change fired in `refs.mode = "live"`.

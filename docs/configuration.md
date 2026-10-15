@@ -200,6 +200,9 @@ require("markdown").setup({
   -- Link/path hover preview under the cursor. See docs/hover.md for the full
   -- write-up — this is the same config, just placed in the "full reference"
   -- alongside everything else.
+  -- The whole `hover` table is passed on to hover.nvim unchecked (it validates its
+  -- own keys): `mode`, `links`, `paths`, `keymaps` and the rest work here too.
+  -- `enabled`, `bare_paths` and `url` below are its legacy spellings.
   hover = {
     enabled = true,
     -- "CursorHold" follows 'updatetime'. "mouse" additionally requires
