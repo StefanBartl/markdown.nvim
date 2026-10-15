@@ -160,8 +160,10 @@ require("markdown").setup({
 The `hover` table is handed to hover.nvim as it is (markdown.nvim puts its own
 defaults underneath), so every option hover.nvim documents works here:
 `mode` (`"auto"`, `"manual"`, `"off"`), `links`, `paths`, `video`, `zen`,
-`keymaps`, and so on. markdown.nvim does not check these keys; hover.nvim
-validates its own, so a typo in one is not reported by markdown.nvim.
+`keymaps`, and so on. Nobody checks the key names: markdown.nvim does not, and
+hover.nvim only range-checks a few values (`mode`, `border`), so a misspelled
+key inside `hover` is silently ignored rather than reported. `hover = true`
+means the defaults; `hover = false` turns the hover off.
 `enabled`, `bare_paths` and `url` are hover.nvim's legacy spellings of
 `mode = "off"`, `paths.enabled` and `links`; they keep working.
 
