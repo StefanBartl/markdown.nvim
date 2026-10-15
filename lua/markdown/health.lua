@@ -101,6 +101,29 @@ function M.check()
   end
   if vim.fn.exists(":MDView") == 2 then
     ok("mdview.nvim detected (:Markdown preview / :Markdown mdview available)")
+    -- Hint for screen sharing, not a problem: the defaults are legitimate setups. Read behind a pcall,
+    -- an mdview.nvim without these options simply gives no hint.
+    local mdview_ok, mdview_cfg = pcall(require, "mdview.config")
+    local browser = mdview_ok
+      and type(mdview_cfg) == "table"
+      and type(mdview_cfg.defaults) == "table"
+      and mdview_cfg.defaults.browser
+    if type(browser) == "table" then
+      if browser.focus ~= nil and browser.focus ~= "nvim" then
+        info(
+          ('mdview.nvim browser.focus = "%s"; recommended for screen sharing: "nvim" (keeps keyboard focus in Neovim; clean on macOS, best-effort on Windows, no effect on Linux)'):format(
+            tostring(browser.focus)
+          )
+        )
+      end
+      if browser.behavior ~= nil and browser.behavior ~= "reuse" then
+        info(
+          ('mdview.nvim browser.behavior = "%s"; recommended for screen sharing: "reuse" (one tab follows the buffer you edit)'):format(
+            tostring(browser.behavior)
+          )
+        )
+      end
+    end
   else
     info("mdview.nvim not found — :Markdown preview / :Markdown mdview will warn if used")
   end
