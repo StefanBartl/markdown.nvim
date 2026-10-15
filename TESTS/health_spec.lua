@@ -127,4 +127,58 @@ return function(H)
     ok(run_ok, "checkhealth completes even when markdown.config itself fails to load")
     ok(says(report.warn, "config module failed to load"), "and reports why")
   end
+
+  -- ── mdview.nvim present but not set up for screen sharing: an info hint, never a warning. ──
+  do
+    local saved = package.loaded["mdview.config"]
+    local had_command = vim.fn.exists(":MDView") == 2
+    if not had_command then vim.api.nvim_create_user_command("MDView", function() end, {}) end
+
+    ---@param browser table|nil
+    ---@return table report
+    local function with_mdview(browser)
+      package.loaded["mdview.config"] = { defaults = { browser = browser } }
+      return checkhealth()
+    end
+
+    report = with_mdview({ focus = "browser", behavior = "reuse" })
+    ok(
+      says(report.info, 'browser.focus = "browser"'),
+      "focus other than nvim: the hint names option and value"
+    )
+    ok(says(report.info, 'recommended for screen sharing: "nvim"'), "...and the recommended value")
+    ok(
+      not says(report.info, "browser.behavior"),
+      "...and says nothing about a behavior that is as recommended"
+    )
+    eq(#report.warn, 0, "a legitimate setup is never a warning")
+
+    report = with_mdview({ focus = "nvim", behavior = "follow" })
+    ok(
+      says(report.info, 'browser.behavior = "follow"'),
+      "behavior other than reuse: the hint names option and value"
+    )
+    ok(
+      not says(report.info, "browser.focus"),
+      "...and nothing about a focus that is as recommended"
+    )
+
+    report = with_mdview({ focus = "nvim", behavior = "reuse" })
+    ok(not says(report.info, "recommended for screen sharing"), "both as recommended: no hint")
+
+    report = with_mdview(nil)
+    ok(
+      not says(report.info, "recommended for screen sharing"),
+      "an mdview without these options: no hint, no error"
+    )
+
+    package.loaded["mdview.config"] = nil
+    package.preload["mdview.config"] = function() error("synthetic: mdview config broken") end
+    local run_ok = pcall(checkhealth)
+    package.preload["mdview.config"] = nil
+    ok(run_ok, "a failing read of mdview's config does not break the report")
+
+    package.loaded["mdview.config"] = saved
+    if not had_command then pcall(vim.api.nvim_del_user_command, "MDView") end
+  end
 end
