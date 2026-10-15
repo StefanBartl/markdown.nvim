@@ -116,6 +116,19 @@ return function(H)
 
     config.setup({ table = { wrapp = {} } })
     ok(#config.issues() > 0, "a typo in a checked table is still reported")
+
+    -- a non-table `hover` must not throw out of setup() (the pass-through leaves the value
+    -- unexamined, so the max_lines guard used to index a boolean / number / string)
+    local okb = pcall(config.setup, { hover = true })
+    ok(okb, "hover = true does not raise in setup()")
+    eq(config.get().hover.max_lines, 20, "hover = true means the defaults")
+    eq(#config.issues(), 0, "hover = true is a valid short form, nothing reported")
+    config.setup({ hover = false })
+    eq(config.get().hover, false, "hover = false stays false (hover disabled)")
+    local okn = pcall(config.setup, { hover = 5 })
+    ok(okn, "hover = 5 does not raise in setup()")
+    eq(config.get().hover.max_lines, 20, "a wrong-typed hover falls back to the defaults")
+    ok(#config.issues() > 0, "a wrong-typed hover is reported")
     config.setup({})
   end
 

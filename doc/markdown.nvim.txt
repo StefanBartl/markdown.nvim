@@ -609,6 +609,12 @@ Options: ~
                               targets. Default FALSE -- see below.
     url.timeout_ms (integer)  Per-fetch timeout. Default 2000.
 
+The `hover` table is handed to hover.nvim as it is (the defaults above sit
+underneath), so every hover.nvim option works here too: `mode` ("auto",
+"manual", "off"), `links`, `paths`, `keymaps` and so on. Key names inside
+`hover` are not checked: a misspelled one is silently ignored, not reported.
+`hover = true` means the defaults, `hover = false` turns the hover off.
+
 The "mouse" trigger additionally requires 'mousemoveevent', a global option
 this plugin deliberately does not set for you. Without it, that trigger
 simply never fires.

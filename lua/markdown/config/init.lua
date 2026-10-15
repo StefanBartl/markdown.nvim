@@ -469,6 +469,18 @@ local function degrade_invalid_scalars(cfg, issues)
   -- ERR-22: `hover.max_lines` reaches `hover/section.lua`'s `#out >= limit`
   -- unvalidated -- a wrong type crashes that comparison the first time an
   -- anchor/file hover runs (the default-on path via `hover.enabled`).
+  --
+  -- `hover` is a pass-through table (nothing below it is allow-listed), so a
+  -- non-table value would otherwise reach the `.max_lines` access and throw out
+  -- of `setup()`. `true` is the short form of "defaults on"; `false` stays as
+  -- it is (it disables the hover, see bindings/autocmds.lua); anything else is
+  -- reported and replaced by the defaults.
+  if cfg.hover == true then
+    cfg.hover = vim.deepcopy(DEFAULTS.hover)
+  elseif cfg.hover ~= nil and cfg.hover ~= false and type(cfg.hover) ~= "table" then
+    bad("hover", cfg.hover, "a table")
+    cfg.hover = vim.deepcopy(DEFAULTS.hover)
+  end
   if cfg.hover then
     if type(cfg.hover.max_lines) ~= "number" or cfg.hover.max_lines < 1 then
       bad("hover.max_lines", cfg.hover.max_lines, DEFAULTS.hover.max_lines)

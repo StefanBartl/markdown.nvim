@@ -200,8 +200,9 @@ require("markdown").setup({
   -- Link/path hover preview under the cursor. See docs/hover.md for the full
   -- write-up — this is the same config, just placed in the "full reference"
   -- alongside everything else.
-  -- The whole `hover` table is passed on to hover.nvim unchecked (it validates its
-  -- own keys): `mode`, `links`, `paths`, `keymaps` and the rest work here too.
+  -- The whole `hover` table is passed on to hover.nvim with its key names unchecked (a
+  -- misspelled key is silently ignored): `mode`, `links`, `paths`, `keymaps` and the
+  -- rest work here too.
   -- `enabled`, `bare_paths` and `url` below are its legacy spellings.
   hover = {
     enabled = true,
@@ -319,6 +320,8 @@ recognised key with an invalid-typed or out-of-range value (`progress_style`,
 `table.header_align`/`entry_align`, `toc.min_level`/`max_level`/
 `anchor_separator`, `heading_format.capitalize`) degrades to its default the
 same way, also reported. Both kinds are repeated by `:checkhealth markdown`.
+The one exception is `hover`: it is handed to hover.nvim as it is, so key names
+inside it are not checked (see `docs/hover.md`).
 
 ## Feature gating
 
