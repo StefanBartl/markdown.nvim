@@ -166,6 +166,19 @@ return function(H)
     report = with_mdview({ focus = "nvim", behavior = "reuse" })
     ok(not says(report.info, "recommended for screen sharing"), "both as recommended: no hint")
 
+    report = with_mdview({ focus = "browser", behavior = "follow", open_mode = "isolated" })
+    ok(
+      not says(report.info, "browser.focus"),
+      "open_mode isolated: focus is a no-op there, so it is not recommended"
+    )
+    ok(
+      says(report.info, 'browser.behavior = "follow"'),
+      "...while behavior is still hinted in isolated mode"
+    )
+
+    report = with_mdview({ focus = "browser", open_mode = "default" })
+    ok(says(report.info, 'browser.focus = "browser"'), "open_mode default: focus is hinted")
+
     report = with_mdview(nil)
     ok(
       not says(report.info, "recommended for screen sharing"),
