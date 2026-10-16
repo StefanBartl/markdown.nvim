@@ -109,7 +109,9 @@ function M.check()
       and type(mdview_cfg.defaults) == "table"
       and mdview_cfg.defaults.browser
     if type(browser) == "table" then
-      if browser.focus ~= nil and browser.focus ~= "nvim" then
+      -- browser.focus only acts in open_mode "default"; in "isolated" mode it is a no-op, so
+      -- recommending it there would point at a setting that changes nothing.
+      if browser.focus ~= nil and browser.focus ~= "nvim" and browser.open_mode ~= "isolated" then
         info(
           ('mdview.nvim browser.focus = "%s"; recommended for screen sharing: "nvim" (keeps keyboard focus in Neovim; clean on macOS, best-effort on Windows, no effect on Linux)'):format(
             tostring(browser.focus)

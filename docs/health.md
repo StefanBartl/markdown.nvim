@@ -12,4 +12,6 @@ optional `which-key` integration and picker-backend choice, and the
 
 With mdview.nvim installed it also adds an info line (never a warning) when mdview's
 `browser.focus` is not `"nvim"` or `browser.behavior` is not `"reuse"`, the two
-settings that keep a screen-shared preview from stealing keyboard focus.
+settings that keep a screen-shared preview from stealing keyboard focus. The
+`focus` hint is skipped when `browser.open_mode` is `"isolated"`, where that
+option has no effect.
