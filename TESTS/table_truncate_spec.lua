@@ -196,7 +196,23 @@ return function(H)
   ok(tt.render(big) > 0, "a jump to the end paints the new view")
   local last = vim.api.nvim_buf_get_extmarks(big, ns, { #many - 5, 0 }, { #many - 1, -1 }, {})
   ok(#last > 0, "the end of the buffer is concealed after the jump")
+  -- a scroll event repaints at once from the cached ranges (no debounce, no raw text after a jump)
   tt.clear(big)
+  tt.enable(big)
+  vim.cmd("normal! gg")
+  vim.api.nvim_exec_autocmds("WinScrolled", {})
+  eq(
+    #vim.api.nvim_buf_get_extmarks(big, ns, { #many - 5, 0 }, { #many - 1, -1 }, {}),
+    0,
+    "top: the end is not painted"
+  )
+  vim.cmd("normal! G")
+  vim.api.nvim_exec_autocmds("WinScrolled", {})
+  ok(
+    #vim.api.nvim_buf_get_extmarks(big, ns, { #many - 5, 0 }, { #many - 1, -1 }, {}) > 0,
+    "WinScrolled paints the new view before any debounce"
+  )
+  tt.disable(big)
   vim.api.nvim_buf_delete(big, { force = true })
 
   -- `truncate = true` is accepted as "on"

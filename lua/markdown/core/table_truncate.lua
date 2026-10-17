@@ -201,6 +201,15 @@ local function visible_span(bufnr)
   return lo, hi
 end
 
+---@internal
+---What the computed ranges depend on: the text and the settings.
+---@param bufnr integer
+---@return string
+local function render_key(bufnr)
+  local d = cfg()
+  return ("%d:%d:%s"):format(api.nvim_buf_get_changedtick(bufnr), d.max, d.marker)
+end
+
 ---@param bufnr integer
 function M.clear(bufnr)
   rendered_at[bufnr] = nil
@@ -217,8 +226,7 @@ function M.render(bufnr)
   if not api.nvim_buf_is_valid(bufnr) then return 0 end
   -- InsertLeave / BufWinEnter / a scroll inside the painted span fire without
   -- an edit: nothing to redo then.
-  local d = cfg()
-  local key = ("%d:%d:%s"):format(api.nvim_buf_get_changedtick(bufnr), d.max, d.marker)
+  local key = render_key(bufnr)
   local vlo, vhi = visible_span(bufnr)
   local done = rendered_at[bufnr]
   if done and done.key == key and (not vlo or (vlo >= done.lo and vhi <= done.hi)) then return 0 end
@@ -294,7 +302,15 @@ function M.enable(bufnr)
   api.nvim_create_autocmd({ "WinScrolled", "WinResized" }, {
     group = group,
     callback = function()
-      if #vim.fn.win_findbuf(bufnr) > 0 then schedule() end
+      if #vim.fn.win_findbuf(bufnr) == 0 then return end
+      local c = computed[bufnr]
+      if c and c.key == render_key(bufnr) then
+        -- the text did not change: only a repaint from the cached ranges, at once, so a jump never shows
+        -- raw table text for the length of the debounce
+        M.render(bufnr)
+      else
+        schedule()
+      end
     end,
     desc = "[markdown.nvim] table truncate: repaint the visible lines",
   })
@@ -322,6 +338,7 @@ function M.enable(bufnr)
     callback = function()
       S[bufnr] = nil
       rendered_at[bufnr] = nil
+      computed[bufnr] = nil
       pcall(api.nvim_del_augroup_by_id, group)
     end,
   })
