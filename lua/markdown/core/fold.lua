@@ -16,8 +16,8 @@ local function ambient_heading_level(bufnr, lnum)
 end
 
 --- Table-wrap continuation-row detection, mirroring
---- `core.table_wrap.unwrap_rows`'s heuristic (a non-separator table row with
---- exactly one non-empty cell, directly following a data row of the table).
+--- `core.table_wrap.unwrap_rows`'s heuristic (a table row other than the delimiter
+--- row with exactly one non-empty cell, directly following a data row of the table).
 --- Only consulted when `vim.b.mdtable_fold_continuations` is set (via
 --- `:MDTableFoldRow`/`:MDTableFoldAll`), so this is zero-overhead otherwise.
 ---@internal
@@ -26,12 +26,38 @@ end
 ---@return boolean
 local function is_table_continuation_line(bufnr, lnum)
   local table_fmt = require("markdown.core.table_fmt")
-  local line = vim.api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
-  if not table_fmt.is_table_line(line) or table_fmt.is_separator_line(line) then return false end
-  local prev = vim.api.nvim_buf_get_lines(bufnr, lnum - 2, lnum - 1, false)[1] or ""
-  if not table_fmt.is_table_line(prev) then return false end
-  -- The first data row (right after the separator) never continues the header.
-  if table_fmt.is_separator_line(prev) then return false end
+  local api = vim.api
+  local line = api.nvim_buf_get_lines(bufnr, lnum - 1, lnum, false)[1] or ""
+  if not table_fmt.is_table_line(line) then return false end
+  local prev = api.nvim_buf_get_lines(bufnr, lnum - 2, lnum - 1, false)[1] or ""
+  if lnum < 2 or not table_fmt.is_table_line(prev) then return false end
+
+  -- The delimiter row is a property of the block (lib separator_index), not of the
+  -- line: a `| | - |` continuation row or a `| - | - |` data row above it are rows.
+  -- Collect the block from its first line down to `lnum + 1` (the next line decides
+  -- whether a dash first line is the header), fetching upwards in chunks.
+  local block = { line }
+  local next_line = api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)[1]
+  if next_line and table_fmt.is_table_line(next_line) then block[2] = next_line end
+  local top, done = lnum, false
+  while not done and top > 1 do
+    local from = math.max(1, top - 64)
+    local chunk = api.nvim_buf_get_lines(bufnr, from - 1, top - 1, false)
+    for k = #chunk, 1, -1 do
+      if not table_fmt.is_table_line(chunk[k]) then
+        done = true
+        break
+      end
+      table.insert(block, 1, chunk[k])
+      top = top - 1
+    end
+  end
+  local sep = table_fmt.separator_index(block, 1, #block)
+  if not sep then return false end
+  local sep_lnum = top + sep - 1
+  -- Header rows, the delimiter row and the first data row (right after the
+  -- delimiter) never continue a row.
+  if lnum <= sep_lnum + 1 then return false end
 
   local cells = table_fmt.parse_row(line)
   -- A one-cell row (a one-column table) can not be told from a continuation row;
