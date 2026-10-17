@@ -144,6 +144,9 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   and `{ "gfm", "org" }` can read the same lines differently (a one-column org table without a `+`
   in its rule is indistinguishable from GFM and is read as GFM). Tables inside code
   fences are skipped by `list`.
+- **Hand-typed org tables:** the closing pipe is optional on rows and on rules, so `| a | b` /
+  `|---+---` / `| 1 | 2` is found like the closed form (and written back closed). A rule starts
+  with `|-` as in org itself: a line starting with `|+` is a data row, never a rule.
 - **Command:** `:Markdown table convert [from=auto] [to=gfm]` (and `:TableViewConvert`): the table
   at the cursor or in the `:range`, `from=auto` tries every embedded format (it does **not** follow `table.formats`, so a
   foreign table can be converted without configuring anything; `list` and the TableView only see
