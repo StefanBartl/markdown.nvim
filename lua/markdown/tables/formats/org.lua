@@ -1,8 +1,9 @@
 ---@module 'markdown.tables.formats.org'
 ---@brief Org-mode tables: `| a | b |` rows, `|---+---|` rules, optional `<r>` / `<l>` / `<c>` cookie row.
 ---@description
---- A block of `|` lines is an org table when it has a rule line `|---+---|` (with a `+`,
---- which GFM separators never have), so a one-column org table with a plain `|---|` rule is
+--- A block of `|` lines is an org table when it has a rule line `|---+---|` (starts with `|-`,
+--- only `-` and `+` after that, at least one `+`, which GFM separators never have; a line starting
+--- with `|+` is a data row, never a rule), so a one-column org table with a plain `|---|` rule is
 --- indistinguishable from GFM and is read as GFM. The first row is the header. A row made only of
 --- alignment cookies gives the column alignment and is not data. `#+TBLFM:` lines after
 --- the table are not part of it and stay untouched.
@@ -11,9 +12,12 @@ local lib_table = require("lib.nvim.markdown.table")
 
 local M = {}
 
----A rule is `|---+---|` made only of dashes and plus signs, with at least one plus (a GFM
----separator never has one). Its closing pipe is optional, like the one of a row: hand-typed
----tables are `|---+---`.
+---A rule is `|---+---|`: it starts with `|-` (org's own hline test; leading blanks are fine), only
+---`-` and `+` follow, there is at least one `+` (a GFM separator never has one) and only blanks
+---come after the optional closing pipe (hand-typed tables are `|---+---`). So `|+---+---|` is
+---deliberately NO rule (a data row with a `+` cell); do not loosen the pattern to `[-+]+`, that
+---turns a `|+|` data row back into a rule that swallows it. Other characters (`|-5+3|`) or blanks
+---inside (`|---+--- |`) make it a data row, too.
 ---@param line string
 ---@return boolean
 local function is_rule(line)

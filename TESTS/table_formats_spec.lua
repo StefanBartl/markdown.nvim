@@ -507,8 +507,14 @@ return function(H)
     -- a data row `|+|` between rows is a cell holding `+`, not a repeated rule that eats the row
     local plus = org_of({ "| a | b |", "|---+---|", "|+|", "| 1 | 2 |" })
     ok(plus ~= nil, "a block with a `|+|` data row is still an org table")
-    eq(strings(plus), "a,b/+;1,2", "the `|+|` row stays data and the row after it is not swallowed")
-    eq(#reg.lossy("org", plus), 0, "nothing is reported as lost")
+    if plus then
+      -- the cells are compared, not the whole string: how short rows are padded is not under test
+      local _, rows = reg.strings(plus)
+      eq(#rows, 2, "the `|+|` row stays data and the row after it is not swallowed")
+      eq(rows[1] and rows[1][1], "+", "the `|+|` row holds a `+` cell")
+      eq(rows[2] and table.concat(rows[2], ","), "1,2", "and the row after it is intact")
+      eq(#reg.lossy("org", plus), 0, "nothing is reported as lost")
+    end
     -- `|+|`, `|+---|`, `|+-|` and `|+--+--+|` are no rules: with no real rule there is no org table
     for _, bad in ipairs({ "|+|", "|+---|", "|+-|", "|+--+--+|", "|+--+--+", "  |+---+---|" }) do
       eq(
@@ -522,6 +528,38 @@ return function(H)
       local t = org_of({ "| a | b |", good, "| 1 | 2 |" })
       ok(t ~= nil, good .. " is a rule")
       eq(t and strings(t), "a,b/1,2", good .. " is read as a rule")
+    end
+  end
+
+  -- org: the strict half of the rule. After `|-` only `-` and `+` may follow, at least one `+`,
+  -- and only blanks after the optional closing pipe. Everything else is a data row of an org
+  -- table that has a real rule elsewhere, so it must neither end the table nor eat the row.
+  do
+    for _, data in ipairs({
+      "|-5+3|", -- another character after the dash
+      "|---+--- |", -- a blank inside, before the closing pipe
+      "|--- +---|", -- a blank in the middle of the body
+      "|-+|-+|", -- an inner pipe
+      "|---+---| x |", -- text after the closing pipe
+      "|---|", -- dashes only: no plus, so no rule (and not an org one-column rule)
+      "|-|",
+    }) do
+      local t =
+        reg.find({ "| a | b |", "|---+---|", data, "| 1 | 2 |" }, { formats = { "org" } })[1]
+      ok(t ~= nil, data .. " does not break the org table")
+      if t then
+        local _, rows = reg.strings(t)
+        eq(#rows, 2, data .. " is a data row, not a rule")
+        eq(rows[2] and table.concat(rows[2], ","), "1,2", data .. " does not swallow the next row")
+        eq(#reg.lossy("org", t), 0, data .. " loses nothing (it is no second rule)")
+      end
+    end
+    -- the offending line keeps its text as a cell, so it really was read as data
+    local dash =
+      reg.find({ "| a | b |", "|---+---|", "|-5+3|", "| 1 | 2 |" }, { formats = { "org" } })[1]
+    if dash then
+      local _, rows = reg.strings(dash)
+      eq(rows[1] and rows[1][1], "-5+3", "`|-5+3|` is a cell with that text")
     end
   end
 
