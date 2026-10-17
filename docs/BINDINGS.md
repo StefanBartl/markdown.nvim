@@ -211,7 +211,7 @@ Created per markdown buffer by the `usrcmds` handler of the `MarkdownNvimFileTyp
 | `:TableViewMarkdown` | Toggle floating table preview (aligned Markdown style) |
 | `:TableViewBox` | Toggle floating table preview (box-drawing style) |
 | `:TableViewSelect [scope=%\|cwd\|PATH]` | Pick a table from the buffer, or of a scope (`scope=` and `buffer` are accepted like in `:Markdown table view`) |
-| `:TableViewList [scope=%\|cwd\|PATH] [style=grid\|markdown]` | Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim) |
+| `:TableViewList [scope=%\|cwd\|PATH] [style=grid\|markdown]` | Same as `:Markdown table list`: tables of a scope in a picker (<M-c> switches the preview with pickers.nvim) |
 | `:TableViewConvert [from=...] [to=...]` | Same as `:Markdown table convert`; takes a range |
 | `:TableViewRender [on\|off\|toggle]` | Same as `:Markdown table render`: virtual table grid fitted to the window |
 | `:TableViewTruncate [on\|off\|toggle]` | Same as `:Markdown table truncate` |

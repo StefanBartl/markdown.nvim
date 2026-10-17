@@ -1160,7 +1160,7 @@ is deleted.
   One entry per table of the scope (`%` / `buffer`, `cwd`, `cfile`, a file or
   a directory) in a picker: `file:line  header  (n rows)`, jump to the one you
   choose. With pickers.nvim the preview switches between the file and the
-  table alone with <M-t>. Also `:TableViewList`, <leader>mtl.
+  table alone with <M-c>. Also `:TableViewList`, <leader>mtl.
 
 :Markdown table convert [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]
 

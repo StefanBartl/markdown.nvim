@@ -3,7 +3,7 @@
 ---@description
 --- Every GFM table of the scope is one entry (`file:line  header  (n rows)`).
 --- With pickers.nvim the preview window switches between the file around the
---- table ("normal") and the table alone, formatted ("table"), with `<M-t>`;
+--- table ("normal") and the table alone, formatted ("table"), with `<M-c>`;
 --- without it the entries go through the built-in chooser. Choosing an entry
 --- jumps to the table.
 ---

@@ -201,7 +201,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
   directory), `cfile` (the file under the cursor) or a file / directory; the
   `scope=` prefix is optional. With
   [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) the preview window
-  has two modes and `<M-t>` switches between them: *normal* (the file, cursor on
+  has two modes and `<M-c>` switches between them: *normal* (the file, cursor on
   the table) and *table* (only the table, formatted: `style=grid` box drawing,
   the default, or `style=markdown` aligned GFM). Without pickers.nvim (or with an
   older one, or `table.list.picker = "builtin"`) the entries go through the

@@ -170,7 +170,7 @@ local DEFAULTS = {
     },
 
     -- `:Markdown table list [scope=...]`: every table of a scope in a picker, the
-    -- preview switches between the file (normal) and the table alone (<M-t>).
+    -- preview switches between the file (normal) and the table alone (<M-c>).
     list = {
       picker = "auto", -- "auto": pickers.nvim when it supports it, else the built-in chooser | "builtin"
       style = "grid", -- the "table only" preview: "grid" (box drawing) | "markdown" (aligned GFM)
