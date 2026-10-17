@@ -148,8 +148,13 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   in its rule is indistinguishable from GFM and is read as GFM). Tables inside code
   fences are skipped by `list`.
 - **Hand-typed org tables:** the closing pipe is optional on rows and on rules, so `| a | b` /
-  `|---+---` / `| 1 | 2` is found like the closed form (and written back closed). A rule starts
-  with `|-` as in org itself: a line starting with `|+` is a data row, never a rule.
+  `| a | b` / `|---+---` / `| 1 | 2` is found like the closed form. It is written back closed by
+  the TableView write-back and by `convert` to another format; `convert to=org` on an org table
+  answers "already org" and leaves the text as typed (open stays open).
+  The rule is stricter than org's own hline test: a rule starts with `|-`, only `-` and `+`
+  follow, there is at least one `+` (a GFM separator never has one), and only blanks may come
+  after the optional closing pipe. Anything else is a data row: `|+---+---|`, `|-5+3|`,
+  `|---+--- |` (blank inside), `|-+|-+|` (inner pipe) and `|---|` (no plus) are cells, never rules.
 - **Command:** `:Markdown table convert [from=auto] [to=gfm]` (and `:TableViewConvert`): the table
   at the cursor or in the `:range`, `from=auto` tries every embedded format (it does **not** follow `table.formats`, so a
   foreign table can be converted without configuring anything; `list` and the TableView only see
