@@ -2,7 +2,8 @@
 -- (testing.rpc) draws it and the spec reads the cells. Covers what the pure specs cannot: no blank
 -- rows between table rows with `wrap` on, the cursor row, indent, restore of `conceallevel` in
 -- splits, fences, the event wiring (edit / resize / wipeout), the top border of a line-1 table in
--- a split that was not at the top, and the config checks.
+-- a split that was not at the top, after a buffer switch and after zz/zt (and <C-e> hiding it
+-- until the next cursor move), and the config checks.
 ---@diagnostic disable: missing-fields
 
 return function(H)
@@ -453,6 +454,9 @@ return function(H)
     )
     return v[1], v[2]
   end
+  ---@param win integer
+  ---@return string  # "topline,topfill"
+  local function at_top(win) return table.concat({ view(win) }, ",") end
   ---@return integer
   local function tops_on_screen() return select(2, table.concat(screen(c), "\n"):gsub("┌", "")) end
   ---Screen line of the lower window's top border: the last "┌" on the screen.
@@ -519,11 +523,52 @@ return function(H)
   eq(select(2, view(lower)), 1, "the other window's cursor row: the lower window follows")
   eq(tops_on_screen(), 2, "the other window's cursor row: two top borders")
 
-  -- 5. <C-e> still scrolls the border away (the filler line is not forced back)
-  scene("30Gzt", "50G", "gg<C-e>")
-  wtop, fill = view(lower)
-  ok(wtop > 1 or fill == 0, "<C-e> scrolls past the border")
+  -- 5. <C-e> scrolls the border away, and it stays away (also once every timer has run) until
+  -- the cursor moves again
+  scene("30Gzt", "50G", "gg")
+  eq(select(2, view(lower)), 1, "<C-e>: the border is there before")
+  c.feed("<C-e>")
+  c.settle(400)
+  eq(at_top(lower), "1,0", "<C-e> scrolls the border away")
+  c.settle(400)
+  eq(at_top(lower), "1,0", "<C-e>: still away once the editor is idle")
+  c.feed("l")
+  c.settle(400)
+  eq(at_top(lower), "1,1", "<C-e>: the next cursor move brings the border back")
+
+  -- one window from here on
   c.cmd("only")
+  local win = c.lua_get("vim.api.nvim_get_current_win()")
+  ---@param what string
+  local function border_on_top(what)
+    eq(at_top(win), "1,1", what .. ": scrolled to the filler line")
+    eq(head(screen(c)[1], 1), "┌", what .. ": the top border is the first screen line")
+    eq(screen(c)[2], "| A | B |", what .. ": the cursor row follows the border")
+  end
+  c.feed("gg0") -- column 0 too ('nostartofline' keeps the column of the `l` above)
+  c.settle(400)
+  border_on_top("gg")
+
+  -- 6. the buffer comes back into the window with its cursor still on (1, 0), where the cursor
+  -- of the other buffer was as well: no CursorMoved, and the stamp of the last render is unchanged
+  eq(c.lua_get("vim.api.nvim_win_get_cursor(0)")[2], 0, "the cursor is on column 0")
+  c.cmd("enew")
+  c.settle(300)
+  c.feed("<C-^>")
+  c.settle(400)
+  border_on_top("back with <C-^>")
+  c.cmd("enew")
+  c.settle(300)
+  c.cmd("b#")
+  c.settle(400)
+  border_on_top("back with :b#")
+
+  -- 7. zz / zt / z<CR> / z. on line 1 scroll without moving the cursor (no CursorMoved)
+  for _, keys in ipairs({ "zz", "zt", "z<CR>", "z." }) do
+    c.feed(keys)
+    c.settle(400)
+    border_on_top(keys .. " on line 1")
+  end
   c.kill()
 
   -- ───────────── pure helpers ─────────────

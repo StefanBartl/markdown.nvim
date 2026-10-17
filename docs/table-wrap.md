@@ -105,10 +105,14 @@ later, and put back on `off`, when the window shows another buffer, or when the
 buffer is wiped). Neovim draws no virtual line above buffer line 1, so for a table
 that starts there the window is scrolled to `topfill` to show the top border
 above the cursor row. This holds for every window showing the buffer once it is at
-the top, also a split that comes up from further down (`gg`, `:1`, `k`, `<C-y>`)
-or whose first row turned into text because another window's cursor is there;
-`<C-e>` still scrolls the border away. Only a window too short for the border
-plus its cursor line drops it: Neovim keeps the cursor line visible first.
+the top, also a split that comes up from further down (`gg`, `:1`, `k`, `<C-y>`),
+one whose first row turned into text because another window's cursor is there,
+one the buffer comes back to (`<C-^>`, `:b#`; after `debounce_ms`), and after
+`zz`, `zt`, `z<CR>` or `z.` on line 1. `<C-e>` and the mouse wheel do scroll the
+border away, but only until the next cursor move in any window showing the
+buffer, or the next re-render (a resize, entering one of its windows), brings it
+back; `<C-y>` brings it back too. A window too short for the border plus its
+cursor line drops it: Neovim keeps the cursor line visible first.
 Tables are indented like their source; a tab counts as what it displays as. Only
 the tables that changed are drawn again after an edit, the others keep their
 extmarks. `pad`, `min_width`, `max_width` and `debounce_ms` must be whole numbers

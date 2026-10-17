@@ -741,17 +741,19 @@ end
 
 ---Neovim draws no virtual line above buffer line 1 unless the window is scrolled to
 ---`topfill`. When the table starts on line 1 and its first row shows its text, the top
----border sits there: show it in every window that is at the top of the buffer.
+---border sits there: show it in every window that is at the top of the buffer (only in
+---`win` when given).
 ---@param bufnr integer
-function M.sync_topfill(bufnr)
+---@param win? integer
+function M.sync_topfill(bufnr, win)
   local st = S[bufnr]
   if not st then return end
   local want = 0
   for _, t in ipairs(st.tables) do
     if t.first == 1 and t.drawn.top_fill then want = t.drawn.top_fill end
   end
-  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
-    api.nvim_win_call(win, function()
+  for _, w in ipairs(win and { win } or vim.fn.win_findbuf(bufnr)) do
+    api.nvim_win_call(w, function()
       local v = vim.fn.winsaveview()
       if v.topline == 1 and v.topfill ~= want then
         v.topfill = want
@@ -777,7 +779,12 @@ function M.render(bufnr, force)
   local tick = api.nvim_buf_get_changedtick(bufnr)
   local look = ("%d:%s"):format(avail, vim.inspect(o)) -- what a drawing depends on besides the text
   local stamp = tick .. ":" .. look
-  if st.stamp == stamp and not force then return 0 end
+  if st.stamp == stamp and not force then
+    -- Nothing to draw, but a view may be new: a window the buffer comes back to (`:b#`,
+    -- `<C-^>`) gets its old view back without the filler line and without a CursorMoved.
+    M.sync_topfill(bufnr)
+    return 0
+  end
 
   -- tables of the last render, by the line they are on now
   local old = {}
@@ -914,12 +921,42 @@ end
 
 local global_group
 
+---The last key Neovim executed (after mappings), see `ensure_global`.
+---@type string|nil
+local last_key
+
+---Keys that scroll by screen rows on purpose: from the top they may scroll the border away.
+local SCROLL_KEYS = {
+  [vim.keycode("<C-e>")] = true,
+  [vim.keycode("<ScrollWheelDown>")] = true,
+  [vim.keycode("<S-ScrollWheelDown>")] = true,
+  [vim.keycode("<C-ScrollWheelDown>")] = true,
+}
+
 ---@internal
 ---Events that are not buffer-local; created on the first `enable`, so requiring
 ---this module has no side effect.
 local function ensure_global()
   if global_group then return end
   global_group = api.nvim_create_augroup("MarkdownNvimTableRender", { clear = true })
+  -- `zz`, `zt`, `z<CR>` and `z.` on line 1 drop the filler line without moving the cursor
+  -- (no CursorMoved), so the scroll itself re-syncs. `<C-e>` and the wheel make the same
+  -- change on purpose and are told apart only by the key that caused it.
+  vim.on_key(function(key) last_key = key end, NS)
+  api.nvim_create_autocmd("WinScrolled", {
+    group = global_group,
+    callback = function()
+      if last_key and SCROLL_KEYS[last_key] then return end
+      for id in pairs(vim.v.event) do
+        local win = tonumber(id)
+        if win and api.nvim_win_is_valid(win) then
+          local bufnr = api.nvim_win_get_buf(win)
+          if S[bufnr] then M.sync_topfill(bufnr, win) end
+        end
+      end
+    end,
+    desc = "[markdown.nvim] table render: keep the top border of a line-1 table after zz/zt",
+  })
   api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
     group = global_group,
     callback = function()
