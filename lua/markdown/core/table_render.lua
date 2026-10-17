@@ -242,12 +242,11 @@ function M.layout(src, opts)
   opts = opts or {}
   local pad = opts.pad or M.DEFAULTS.pad
   local rows, n, aligns, seen_sep = {}, 0, {}, false
+  -- the delimiter row by the GFM rule lib.nvim's markdown.table.parse uses (a later
+  -- `| - | - |` is data, a dash header above the delimiter row is the header)
+  local sep_idx = lib_table.separator_index(src, 1, #src)
   for i, line in ipairs(src) do
-    -- only the first separator-looking line is the delimiter row; a later `| - | - |` is data.
-    -- A header of dashes right above the delimiter row is the header (same rule as lib.nvim's
-    -- markdown.table.parse): when lines 1 and 2 both look like a separator, line 2 is it.
-    local dash_header = i == 1 and lib_table.is_separator_line(src[2])
-    if not seen_sep and not dash_header and lib_table.is_separator_line(line) then
+    if i == sep_idx then
       rows[i] = { kind = "sep", height = 1 }
       seen_sep = true
       for c, spec in ipairs((lib_table.split_cells(line))) do
