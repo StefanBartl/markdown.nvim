@@ -116,7 +116,7 @@ rows of the same logical row. Off by default — nothing changes until a
 
 `:Markdown table list [scope=...] [style=grid|markdown]` (also `:TableViewList`,
 `<leader>mtl`). One entry per table; with pickers.nvim the preview switches
-between the file around the table and the table alone, formatted (`<M-t>`,
+between the file around the table and the table alone, formatted (`<M-c>`,
 a `Pickers.Item.previews` feature of pickers.nvim). Details:
 [commands.md](../commands.md#markdown-table).
 

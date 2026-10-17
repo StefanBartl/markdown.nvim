@@ -695,7 +695,7 @@ return {
       },
       {
         name = "TableViewList [scope=%|cwd|PATH] [style=grid|markdown]",
-        desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-t> switches the preview with pickers.nvim)",
+        desc = "Same as `:Markdown table list`: tables of a scope in a picker (<M-c> switches the preview with pickers.nvim)",
       },
       {
         name = "TableViewConvert [from=...] [to=...]",
