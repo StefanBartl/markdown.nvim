@@ -190,7 +190,10 @@ dependency-free reimplementation of the vim-table-mode essentials.
   is concealed (extmark `conceal`), padding and separator dashes of the other
   cells are concealed so the column stays aligned. Turns `conceallevel` up to 2
   in the window while on and restores it. The cursor line shows its full text
-  unless `concealcursor` includes the current mode. Independently of truncation,
+  unless `concealcursor` includes the current mode. The cut is by column count
+  (`max`), not by window width, so a resize changes nothing; only the lines in
+  and around the windows (200 lines beyond each edge) carry extmarks, repainted
+  on scroll and resize, recomputed after an edit (debounced). Independently of truncation,
   `CursorHold` in any table cell opens a small popup with the cell content
   (native float, no focus, closes on the next move; on by default,
   `table.popup = false` disables it); `show` / `<leader>mtp` opens it on demand. Always-on:

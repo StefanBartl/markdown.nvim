@@ -14,6 +14,10 @@ and a small float shows what it points at, whatever that is.
 > Everything below still applies; `hover = { … }` in markdown.nvim's spec is
 > handed to the framework unchanged.
 
+> The popup with the full text of a truncated **table cell** is a separate,
+> native float (not a hover.nvim source): see `:Markdown table truncate show`
+> in [commands.md](commands.md).
+
 ```markdown
 See [the architecture doc](docs/architecture.md#modules) for details.
                           └─ hover here ─┘
