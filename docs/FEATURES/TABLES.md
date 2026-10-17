@@ -50,7 +50,10 @@ GFM table (`tableize`), and jump between cells.
   itself, both `"below"` and `"above"` insert right after it (the only spot
   that keeps the header/separator shape intact). No-op (returns `false`)
   only for `"above"` a header row, since that would land the row between the
-  header and its separator. Not bound to a key here —
+  header and its separator. The separator is the block's delimiter row by
+  the GFM rule `lib.nvim`'s `markdown.table.parse` uses: a later `| - | - |`
+  line is an ordinary data row, and a line ending in an escaped `\|` is not
+  part of the table. Not bound to a key here —
   [cascade.nvim](https://github.com/StefanBartl/cascade.nvim) calls it as a
   soft-dependency fallback for its own `o`/`O` when the cursor line isn't a
   list item (see its `docs/integrations.md`).
