@@ -97,7 +97,9 @@ Custom `foldexpr` for ATX and Setext headings.
 - **Extended by table-wrap:** when `:MDTableFoldRow`/`:MDTableFoldAll` (see
   [TABLES.md](TABLES.md#table_wrap--width-limited-wrapping-mdtable)) have run
   in a buffer, `foldexpr` also nests a table's continuation rows one level
-  under their heading section (`vim.b.mdtable_fold_continuations`).
+  under their heading section (`vim.b.mdtable_fold_continuations`). Each table
+  block's delimiter row and heading level are worked out once per buffer change
+  (`changedtick`), so a fold pass stays linear in the table's length.
 
 ## Table of Contents
 
