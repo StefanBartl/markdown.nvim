@@ -501,6 +501,30 @@ return function(H)
     eq(#reg.find({ "| a | b", "| 1 | 2+3" }, { formats = { "org" } }), 0, "a plus in a cell")
   end
 
+  -- org: a rule starts with `|-` (org's own hline test), so `|+...` lines are data, never rules
+  do
+    local function org_of(lines) return reg.find(lines, { formats = { "org" } })[1] end
+    -- a data row `|+|` between rows is a cell holding `+`, not a repeated rule that eats the row
+    local plus = org_of({ "| a | b |", "|---+---|", "|+|", "| 1 | 2 |" })
+    ok(plus ~= nil, "a block with a `|+|` data row is still an org table")
+    eq(strings(plus), "a,b/+;1,2", "the `|+|` row stays data and the row after it is not swallowed")
+    eq(#reg.lossy("org", plus), 0, "nothing is reported as lost")
+    -- `|+|`, `|+---|`, `|+-|` and `|+--+--+|` are no rules: with no real rule there is no org table
+    for _, bad in ipairs({ "|+|", "|+---|", "|+-|", "|+--+--+|", "|+--+--+", "  |+---+---|" }) do
+      eq(
+        #reg.find({ "| a | b |", bad, "| 1 | 2 |" }, { formats = { "org" } }),
+        0,
+        bad .. " is no rule"
+      )
+    end
+    -- the real rules stay rules: a leading dash, plus signs inside, open or closed
+    for _, good in ipairs({ "|-+-|", "|---+---|", "|-+-+-", "  |-----+-----  ", "|-+|" }) do
+      local t = org_of({ "| a | b |", good, "| 1 | 2 |" })
+      ok(t ~= nil, good .. " is a rule")
+      eq(t and strings(t), "a,b/1,2", good .. " is read as a rule")
+    end
+  end
+
   -- the csv separator is an option, and registry.parse hands it on
   do
     local semi = reg.parse("csv", { "a;b", "1;2" }, { sep = ";" })
