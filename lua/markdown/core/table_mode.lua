@@ -19,6 +19,7 @@
 local autocmd = require("lib.nvim.bindings.autocmd")
 local fmt = require("markdown.core.table_fmt")
 local lib_debounce_buffer = require("lib.nvim.debounce.buffer")
+local lib_table = require("lib.nvim.markdown.table")
 
 local api = vim.api
 
@@ -446,17 +447,28 @@ end
 -- Row insertion (o / O, mirrors list-bullet continuation)
 -- ---------------------------------------------------------------------------
 
---- True when `line` is a GFM table separator row (only `-`, `:`, `|`, spaces,
---- with at least one `-`). The dash requirement matters: a blank *data* row
---- (an empty-cell row this very function's caller just inserted) is nothing
---- but pipes and padding spaces, and would otherwise match the same shape.
+--- 0-indexed buffer row of the delimiter row of the table block around `row0`,
+--- or nil. Only one line of a block is the delimiter row (GFM, the same rule as
+--- lib.nvim's `markdown.table.parse` and the renderers): a data row made of
+--- dashes (`| - | - |`) is a data row, a dash header above the delimiter row is
+--- the header. A blank data row (pipes and spaces only) never matches: it has
+--- no dash.
 ---@internal
----@param line any
----@return boolean
-local function is_separator_line(line)
-  return type(line) == "string"
-    and line:match("^%s*|[%s%-:|]+|%s*$") ~= nil
-    and line:find("-", 1, true) ~= nil
+---@param bufnr integer
+---@param row0 integer
+---@return integer|nil sep_row0
+---@return integer first_row0  # first row of the block
+local function block_separator_row(bufnr, row0)
+  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local first, last = row0 + 1, row0 + 1
+  while first > 1 and is_table_line(lines[first - 1]) do
+    first = first - 1
+  end
+  while last < #lines and is_table_line(lines[last + 1]) do
+    last = last + 1
+  end
+  local idx = lib_table.separator_index(lines, first, last)
+  return idx and (idx - 1), first - 1
 end
 
 --- Insert a blank, `cols`-wide row at buffer line `target` (0-indexed
@@ -511,8 +523,9 @@ function M.insert_row(bufnr, row0, direction)
   local line = api.nvim_buf_get_lines(bufnr, row0, row0 + 1, false)[1]
   if not is_table_line(line) then return false end
 
-  if is_separator_line(line) then
-    if row0 == 0 then return false end
+  local sep_row0, first_row0 = block_separator_row(bufnr, row0)
+  if sep_row0 == row0 then
+    if row0 == first_row0 then return false end
     local header = api.nvim_buf_get_lines(bufnr, row0 - 1, row0, false)[1]
     local cols = #cell_starts(header or "")
     if cols == 0 then return false end
@@ -523,8 +536,7 @@ function M.insert_row(bufnr, row0, direction)
   local cols = #cell_starts(line)
   if cols == 0 then return false end
 
-  local next_line = api.nvim_buf_get_lines(bufnr, row0 + 1, row0 + 2, false)[1]
-  local is_header = is_separator_line(next_line)
+  local is_header = sep_row0 == row0 + 1
 
   local target
   if direction == "below" then

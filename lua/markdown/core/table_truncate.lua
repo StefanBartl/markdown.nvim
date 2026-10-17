@@ -96,9 +96,11 @@ function M.compute(lines, opts)
       end
 
       if any then
+        -- only the delimiter row loses dashes; a data row of dashes (`| - | - |`) is cut like data
+        local sep_idx = lib_table.separator_index(lines, tbl.start_line, tbl.end_line)
         for ln = tbl.start_line, tbl.end_line do
           local line = lines[ln]
-          local is_sep = lib_table.is_separator_line(line)
+          local is_sep = ln == sep_idx
           local cells, ranges = lib_table.split_cells(line)
           local marks = {}
           for ci, rng in ipairs(ranges) do
