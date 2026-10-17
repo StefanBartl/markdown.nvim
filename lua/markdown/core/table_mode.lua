@@ -36,12 +36,9 @@ local S = {}
 -- Detection / reformat
 -- ---------------------------------------------------------------------------
 
----@internal
----@param line any
----@return boolean
-local function is_table_line(line)
-  return type(line) == "string" and line:match("^%s*|.*|%s*$") ~= nil
-end
+-- lib.nvim's row rule (the one `markdown.table.parse` uses): a line ending in an
+-- escaped pipe is not a table row.
+local is_table_line = lib_table.is_table_line
 
 --- True when the cursor row is a GFM table line.
 ---@internal
@@ -459,16 +456,22 @@ end
 ---@return integer|nil sep_row0
 ---@return integer first_row0  # first row of the block
 local function block_separator_row(bufnr, row0)
-  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local first, last = row0 + 1, row0 + 1
-  while first > 1 and is_table_line(lines[first - 1]) do
+  -- Walk outwards line by line (like `table_popup.block_at`) instead of
+  -- fetching the whole buffer: `o`/`O` costs O(table), not O(buffer).
+  local count = api.nvim_buf_line_count(bufnr)
+  local function is_row(n0)
+    return is_table_line(api.nvim_buf_get_lines(bufnr, n0, n0 + 1, false)[1])
+  end
+  local first, last = row0, row0
+  while first > 0 and is_row(first - 1) do
     first = first - 1
   end
-  while last < #lines and is_table_line(lines[last + 1]) do
+  while last < count - 1 and is_row(last + 1) do
     last = last + 1
   end
-  local idx = lib_table.separator_index(lines, first, last)
-  return idx and (idx - 1), first - 1
+  local lines = api.nvim_buf_get_lines(bufnr, first, last + 1, false)
+  local idx = lib_table.separator_index(lines, 1, #lines)
+  return idx and (first + idx - 1), first
 end
 
 --- Insert a blank, `cols`-wide row at buffer line `target` (0-indexed

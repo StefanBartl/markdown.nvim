@@ -95,6 +95,35 @@ return function(H)
     ok(dl[4]:match("^|%s*%-%s*|") ~= nil, "insert_row above dash row: the dash row follows")
     vim.cmd("stopinsert")
 
+    -- a line ending in an escaped pipe directly above the table is not a table
+    -- row (lib.nvim's `is_table_line`, the rule `parse` uses), so the dash line
+    -- below it stays the header instead of becoming the delimiter row
+    local e = H.scratch("markdown")
+    api.nvim_buf_set_lines(
+      e,
+      0,
+      -1,
+      false,
+      { "| x | y \\|", "| - | - |", "|---|---|", "| 1 | 2 |" }
+    )
+    ok(
+      not table_mode.insert_row(e, 1, "above"),
+      "insert_row: 'above' a dash header under an escaped-pipe line is not handled"
+    )
+    eq(#api.nvim_buf_get_lines(e, 0, -1, false), 4, "insert_row escaped line: nothing added")
+    ok(table_mode.insert_row(e, 1, "below"), "insert_row: 'below' that dash header is handled")
+    local el = api.nvim_buf_get_lines(e, 0, -1, false)
+    eq(#el, 5, "insert_row escaped line: one row added")
+    ok(
+      el[3]:match("^|%-+|%-+|$") ~= nil or el[3]:match("^|%s*%-+%s*|%s*%-+%s*|$") ~= nil,
+      "insert_row escaped line: the delimiter row stays below the header"
+    )
+    ok(
+      el[4]:match("^|%s*|%s*|%s*$") ~= nil,
+      "insert_row escaped line: the blank row lands after the delimiter row"
+    )
+    vim.cmd("stopinsert")
+
     -- `o` on a dash header skips the delimiter row below it
     local h = H.scratch("markdown")
     api.nvim_buf_set_lines(h, 0, -1, false, { "| - | - |", "|---|---|", "| x | y |" })
