@@ -11,16 +11,19 @@ local lib_table = require("lib.nvim.markdown.table")
 
 local M = {}
 
+---A rule is `|---+---|` made only of dashes and plus signs, with at least one plus (a GFM
+---separator never has one). Its closing pipe is optional, like the one of a row: hand-typed
+---tables are `|---+---`.
 ---@param line string
 ---@return boolean
 local function is_rule(line)
-  return line:match("^%s*|[-+]+|%s*$") ~= nil and line:find("+", 1, true) ~= nil
+  return line:match("^%s*|%-[-+]*|?%s*$") ~= nil and line:find("+", 1, true) ~= nil
 end
 
 ---A row without its closing pipe (org allows that) gets one, so it splits like the others. A row
 ---that ends in backslash + pipe is read as an escaped pipe (the GFM reader's rule, shared with
----`split_cells`; org itself has no escape): the pipe stays in the last cell. Rules are not
----tolerated without their closing pipe (`|---+---`).
+---`split_cells`; org itself has no escape): the pipe stays in the last cell. Rules never come
+---through here (`is_rule` accepts them with or without the closing pipe).
 ---@param line string
 ---@return string
 local function close_row(line)
