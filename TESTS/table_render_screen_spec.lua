@@ -1,7 +1,8 @@
 -- TESTS/table_render_screen_spec.lua -- the table grid on a REAL screen: an embedded Neovim
 -- (testing.rpc) draws it and the spec reads the cells. Covers what the pure specs cannot: no blank
 -- rows between table rows with `wrap` on, the cursor row, indent, restore of `conceallevel` in
--- splits, fences, the event wiring (edit / resize / wipeout) and the config checks.
+-- splits, fences, the event wiring (edit / resize / wipeout), the top border of a line-1 table in
+-- a split that was not at the top, and the config checks.
 ---@diagnostic disable: missing-fields
 
 return function(H)
@@ -428,6 +429,101 @@ return function(H)
     if is_grid(l) then widths[vim.fn.strdisplaywidth(l)] = true end
   end
   eq(vim.tbl_count(widths), 1, "every grid line has the same display width")
+
+  -- ───────────── table on line 1 in a second window that was not at the top ─────────────
+  -- Neovim draws the virtual line above buffer line 1 only when the window is scrolled to
+  -- `topfill`; sync_topfill has to do that for every window showing the buffer, not only the
+  -- current one or the one that was at the top when the row turned into text.
+  local LINE1 = { "| A | B |", "| - | - |", "| 1 | 2 |" }
+  for i = 1, 80 do
+    LINE1[#LINE1 + 1] = "text " .. i
+  end
+  load(c, LINE1)
+  c.cmd("split")
+  c.cmd("wincmd =")
+  local wins = c.lua_get("vim.api.nvim_tabpage_list_wins(0)") -- top to bottom
+  local upper, lower = wins[1], wins[2]
+  ---@param win integer
+  ---@return integer topline, integer topfill
+  local function view(win)
+    local v = c.lua_get(
+      ("vim.api.nvim_win_call(%d, function() local v = vim.fn.winsaveview() return { v.topline, v.topfill } end)"):format(
+        win
+      )
+    )
+    return v[1], v[2]
+  end
+  ---@return integer
+  local function tops_on_screen() return select(2, table.concat(screen(c), "\n"):gsub("┌", "")) end
+  ---Screen line of the lower window's top border: the last "┌" on the screen.
+  ---@return integer|nil
+  local function lower_top_border()
+    local found
+    for i, l in ipairs(screen(c)) do
+      if l:find("^┌") then found = i end
+    end
+    return found
+  end
+  ---Put the lower window at `lower_keys` and the upper one at `upper_keys`, then run `keys`
+  ---in the lower window.
+  local function scene(lower_keys, upper_keys, keys)
+    c.cmd("wincmd =")
+    c.lua(("vim.api.nvim_set_current_win(%d)"):format(lower))
+    c.feed(lower_keys)
+    c.settle(200)
+    c.lua(("vim.api.nvim_set_current_win(%d)"):format(upper))
+    c.feed(upper_keys)
+    c.settle(200)
+    c.lua(("vim.api.nvim_set_current_win(%d)"):format(lower))
+    c.feed(keys)
+    c.settle(400)
+  end
+  ok(
+    c.lua_get(("vim.api.nvim_win_get_height(%d)"):format(lower)) >= 8,
+    "the lower window has room for the table"
+  )
+
+  -- 1. the lower window is scrolled down, its own cursor goes to line 1 (the upper one is far away)
+  scene("30Gzt", "50G", "gg")
+  local wtop, fill = view(lower)
+  eq(wtop, 1, "own gg: the lower window is at the top")
+  eq(fill, 1, "own gg: the lower window is scrolled to the filler line")
+  local at = lower_top_border()
+  ok(at and at > 3, "own gg: the lower window shows the top border")
+  eq(screen(c)[(at or 0) + 1], "| A | B |", "own gg: the cursor row follows the border")
+  -- the same with :1 and with k from further down
+  scene("30Gzt", "50G", ":1<CR>")
+  eq(select(2, view(lower)), 1, "own :1: scrolled to the filler line")
+  scene("30Gzt", "50G", "29k")
+  eq(select(2, view(lower)), 1, "own k: scrolled to the filler line")
+
+  -- 2. both cursors on line 1, the lower window comes up from further down
+  scene("30Gzt", "gg", "gg")
+  eq(select(2, view(upper)), 1, "both on line 1: upper scrolled to the filler line")
+  eq(select(2, view(lower)), 1, "both on line 1: lower scrolled to the filler line")
+  eq(tops_on_screen(), 2, "both on line 1: two top borders, one per window")
+
+  -- 3. the lower window scrolls back to the top with <C-y> while the upper cursor holds line 1
+  scene("40Gzt", "gg", "100<C-y>")
+  wtop, fill = view(lower)
+  eq(wtop, 1, "<C-y>: the lower window is back at the top")
+  eq(fill, 1, "<C-y>: and shows the filler line")
+  eq(tops_on_screen(), 2, "<C-y>: two top borders")
+
+  -- 4. the lower window sits at the top (cursor further down); the upper cursor enters line 1
+  scene("ggjjjj", "50G", "")
+  eq(select(2, view(lower)), 0, "no row is text: no filler line needed")
+  c.lua(("vim.api.nvim_set_current_win(%d)"):format(upper))
+  c.feed("gg")
+  c.settle(400)
+  eq(select(2, view(lower)), 1, "the other window's cursor row: the lower window follows")
+  eq(tops_on_screen(), 2, "the other window's cursor row: two top borders")
+
+  -- 5. <C-e> still scrolls the border away (the filler line is not forced back)
+  scene("30Gzt", "50G", "gg<C-e>")
+  wtop, fill = view(lower)
+  ok(wtop > 1 or fill == 0, "<C-e> scrolls past the border")
+  c.cmd("only")
   c.kill()
 
   -- ───────────── pure helpers ─────────────
