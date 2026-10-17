@@ -25,12 +25,20 @@ local api = vim.api
 
 ---Pure: the cell of table row `line` that byte column `col` (0-based, as
 ---`nvim_win_get_cursor` reports it) is in. The pipe in front of a cell belongs
----to that cell. Nil for a non-row, a separator row, or a column past the last cell.
+---to that cell. Nil for a non-row, the delimiter row, or a column past the last cell.
+---
+---Which row is the delimiter row is a property of the table block, not of the line
+---(`lib_table.separator_index`): a `| - | - |` data row or a dash header has cells.
+---`delimiter` says whether `line` is its block's delimiter row; when nil, the line is
+---judged on its own and any separator-looking line counts as the delimiter.
 ---@param line string
 ---@param col integer
+---@param delimiter? boolean
 ---@return Mkdn.TableCellAt|nil
-function M.cell_at(line, col)
-  if not lib_table.is_table_line(line) or lib_table.is_separator_line(line) then return nil end
+function M.cell_at(line, col, delimiter)
+  if not lib_table.is_table_line(line) then return nil end
+  if delimiter == nil then delimiter = lib_table.is_separator_line(line) end
+  if delimiter then return nil end
   local cells, ranges = lib_table.split_cells(line)
   local c1 = col + 1
   for i, rng in ipairs(ranges) do
@@ -77,12 +85,14 @@ function M.body(text, width)
   return out
 end
 
----Whether 1-based `row` of `bufnr` sits in a real GFM table (a run of pipe lines with a
----separator row) outside a fenced code block, as opposed to a stray `| a |` line.
+---The run of table lines around 1-based `row` of `bufnr` and the 1-based buffer row
+---of its delimiter row (`lib_table.separator_index`; nil when the run has none).
 ---@param bufnr integer
 ---@param row integer
----@return boolean
-function M.in_table(bufnr, row)
+---@return integer lo
+---@return integer hi
+---@return integer|nil delimiter
+local function block_at(bufnr, row)
   local last = api.nvim_buf_line_count(bufnr)
   local lo, hi = row, row
   local function is_row(n)
@@ -94,15 +104,19 @@ function M.in_table(bufnr, row)
   while hi < last and is_row(hi + 1) do
     hi = hi + 1
   end
-  if hi - lo < 2 then return false end
-  local has_sep = false
-  for _, l in ipairs(api.nvim_buf_get_lines(bufnr, lo - 1, hi, false)) do
-    if lib_table.is_separator_line(l) then
-      has_sep = true
-      break
-    end
-  end
-  if not has_sep then return false end
+  local lines = api.nvim_buf_get_lines(bufnr, lo - 1, hi, false)
+  local idx = lib_table.separator_index(lines, 1, #lines)
+  return lo, hi, idx and (lo + idx - 1) or nil
+end
+
+---Whether 1-based `row` of `bufnr` sits in a real GFM table (a run of pipe lines with a
+---delimiter row) outside a fenced code block, as opposed to a stray `| a |` line.
+---@param bufnr integer
+---@param row integer
+---@return boolean
+function M.in_table(bufnr, row)
+  local lo, hi, delimiter = block_at(bufnr, row)
+  if hi - lo < 2 or not delimiter then return false end
   return require("markdown.scope.builtin").block_at(bufnr, row - 1) == nil
 end
 
@@ -131,7 +145,11 @@ function M.show(bufnr, opts)
   if bufnr ~= api.nvim_get_current_buf() then return false end
   local row, col = unpack(api.nvim_win_get_cursor(0))
   local line = api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1]
-  local cell = line and M.cell_at(line, col)
+  -- The delimiter row is a property of the block: a cut `| --- | - |` data row or dash
+  -- header (core.table_truncate cuts those too) has a cell to show.
+  local cell = line
+    and lib_table.is_table_line(line)
+    and M.cell_at(line, col, select(3, block_at(bufnr, row)) == row)
   if not cell or cell.text == "" then return false end
   if opts.strict and (vim.bo[bufnr].buftype ~= "" or not M.in_table(bufnr, row)) then
     return false

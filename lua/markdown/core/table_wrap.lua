@@ -446,12 +446,10 @@ function M.find_issues(lines)
       end
       local stop = i - 1
       if stop - start >= 1 then
-        local sep_ok = false
-        if stop >= start + 1 then
-          local is_sep = table_fmt.is_separator_line(lines[start + 1])
-          sep_ok = is_sep
-        end
-        if not sep_ok then
+        -- The delimiter row is a property of the block (lib separator_index): a
+        -- `| - | - |` data row is a row whose cells are counted like any other.
+        local sep_idx = table_fmt.separator_index(lines, start, stop)
+        if sep_idx ~= start + 1 then
           issues[#issues + 1] = {
             line = start,
             message = string.format("Missing separator line (expected on line %d)", start + 1),
@@ -468,7 +466,7 @@ function M.find_issues(lines)
         end
 
         for ln = start + 1, stop do
-          if not table_fmt.is_separator_line(lines[ln]) then
+          if ln ~= sep_idx then
             local cells = table_fmt.parse_row(lines[ln])
             if #cells ~= col_count then
               issues[#issues + 1] = {

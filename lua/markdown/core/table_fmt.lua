@@ -18,7 +18,7 @@
 ---
 --- Also re-exports lib.nvim.markdown.table's lower-level primitives under
 --- their historical names (trim, display_width, pad_cell, is_table_line,
---- is_separator_line, parse_row, parse_all_tables, find_table_at_cursor,
+--- is_separator_line, separator_index, parse_row, parse_all_tables, find_table_at_cursor,
 --- calc_widths, gen_separator, format_row, resolve_overrides) so
 --- `markdown.core.table_wrap`, `markdown.core.fold`, `markdown.core.table_mode`
 --- and `markdown.commands.mdtable` keep working unchanged.
@@ -80,6 +80,7 @@ M.display_width = lib_table.display_width
 M.pad_cell = lib_table.pad_cell
 M.is_table_line = lib_table.is_table_line
 M.is_separator_line = lib_table.is_separator_line
+M.separator_index = lib_table.separator_index
 M.parse_row = lib_table.parse_row
 M.parse_all_tables = lib_table.parse
 M.find_table_at_cursor = lib_table.at_cursor

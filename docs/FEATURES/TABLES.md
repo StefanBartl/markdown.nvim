@@ -195,7 +195,10 @@ Alternative to wrapping: keep every table row on one line. A cell wider than
 `table.truncate.max` (default 40 columns) is shown cut with `…`; the file text
 is never touched (extmark `conceal`, padding and separator dashes of the other
 cells are hidden too so the column stays aligned). With the cursor in a cut
-cell, a small popup shows the whole text. Off by default.
+cell, a small popup shows the whole text. Off by default. Only the delimiter row
+of a table has no cells: a `| - | - |` data row or a header made of dashes is cut
+and gets the popup like any other row (the same rule holds for `:MDTableLint`,
+which counts the cells of such a row, and for the continuation-row fold).
 
 - **Modules:** `core/table_truncate.lua` (pure `compute` + extmark rendering,
   per-buffer enable/disable), `core/table_popup.lua` (`cell_at`, popup float)
