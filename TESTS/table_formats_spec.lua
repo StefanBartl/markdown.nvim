@@ -479,6 +479,28 @@ return function(H)
     eq(strings(open), "a,b/1,2", "missing closing pipes are tolerated")
   end
 
+  -- org: a rule without its closing pipe is a rule too (hand-typed tables)
+  do
+    local typed = reg.find({ "| a | b", "|---+---", "| 1 | 2" }, { formats = { "org" } })
+    eq(#typed, 1, "an org block whose rule has no closing pipe is found")
+    eq(strings(typed[1]), "a,b/1,2", "and read like the closed one")
+    eq(#typed[1].raw_lines, 3, "the rule stays part of the block")
+    local spaced = reg.find({ "| a | b |", "|-----+-----  ", "| 1 | 2 |" }, { formats = { "org" } })
+    eq(#spaced, 1, "trailing blanks after an open rule are fine")
+    local three = reg.find({ "| a | b | c", "|-+-+-", "| 1 | 2 | 3" }, { formats = { "org" } })
+    eq(strings(three[1]), "a,b,c/1,2,3", "a rule made only of -+ with no pipe at the end")
+    -- the written form keeps the rule and closes everything
+    eq(reg.render("org", typed[1])[2], "|---+---|", "writing it back gives the closed rule")
+    -- gfm separators and plain one-column rules stay gfm / not org, with or without closing pipe
+    local gfm_closed = { "| a | b |", "| --- | --- |", "| 1 | 2 |" }
+    eq(#reg.find(gfm_closed, { formats = { "org" } }), 0, "gfm")
+    eq(#reg.find({ "| a | b", "|---|---", "| 1 | 2" }, { formats = { "org" } }), 0, "gfm, open")
+    eq(#reg.find({ "| a", "|---", "| 1" }, { formats = { "org" } }), 0, "one column stays gfm")
+    eq(#reg.find({ "| a |", "|-", "| 1 |" }, { formats = { "org" } }), 0, "org hline stays gfm")
+    -- a data row that merely contains a plus is no rule
+    eq(#reg.find({ "| a | b", "| 1 | 2+3" }, { formats = { "org" } }), 0, "a plus in a cell")
+  end
+
   -- the csv separator is an option, and registry.parse hands it on
   do
     local semi = reg.parse("csv", { "a;b", "1;2" }, { sep = ";" })
