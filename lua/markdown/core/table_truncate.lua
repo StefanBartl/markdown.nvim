@@ -169,36 +169,79 @@ end
 ---@type table<integer, { pending: boolean, group: integer }>
 local S = {}
 
----@type table<integer, string>  # last rendered "changedtick:max:marker" per buffer
+--- Lines kept concealed beyond the window edges, so a scroll by a few screens
+--- does not show raw table text before the next re-render.
+local VIEW_MARGIN = 200
+
+---@class Mkdn.TruncateRendered
+---@field key string   # "changedtick:max:marker" the marks were computed for
+---@field lo integer   # first line (1-based) that carries extmarks
+---@field hi number    # last line that carries extmarks (math.huge: all)
+
+---@type table<integer, Mkdn.TruncateRendered>  # what is currently painted per buffer
 local rendered_at = {}
+
+---@type table<integer, { key: string, marks: table<integer, Mkdn.TruncateConceal[]> }>
+local computed = {}
+
+---@internal
+---The line span the windows showing `bufnr` currently display, over all of
+---them. `nil` when no window shows the buffer (then everything is painted).
+---@param bufnr integer
+---@return integer|nil lo, integer|nil hi  # 1-based, inclusive
+local function visible_span(bufnr)
+  local lo, hi
+  for _, win in ipairs(vim.fn.win_findbuf(bufnr)) do
+    local info = vim.fn.getwininfo(win)[1]
+    if info then
+      lo = math.min(lo or info.topline, info.topline)
+      hi = math.max(hi or info.botline, info.botline)
+    end
+  end
+  return lo, hi
+end
 
 ---@param bufnr integer
 function M.clear(bufnr)
   rendered_at[bufnr] = nil
+  computed[bufnr] = nil
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end
 end
 
----Apply the truncation extmarks for the whole buffer.
+---Apply the truncation extmarks to the lines the windows show (plus a margin).
+---The ranges are computed once per text and settings (whole buffer: the width
+---of a column needs every row of its table); a scroll only repaints.
 ---@param bufnr integer
 ---@return integer count  # ranges concealed
 function M.render(bufnr)
   if not api.nvim_buf_is_valid(bufnr) then return 0 end
-  -- InsertLeave / BufWinEnter fire without an edit: nothing to redo then.
+  -- InsertLeave / BufWinEnter / a scroll inside the painted span fire without
+  -- an edit: nothing to redo then.
   local d = cfg()
-  local stamp = ("%d:%d:%s"):format(api.nvim_buf_get_changedtick(bufnr), d.max, d.marker)
-  if rendered_at[bufnr] == stamp then return 0 end
-  M.clear(bufnr)
-  rendered_at[bufnr] = stamp
-  local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+  local key = ("%d:%d:%s"):format(api.nvim_buf_get_changedtick(bufnr), d.max, d.marker)
+  local vlo, vhi = visible_span(bufnr)
+  local done = rendered_at[bufnr]
+  if done and done.key == key and (not vlo or (vlo >= done.lo and vhi <= done.hi)) then return 0 end
+  local c = computed[bufnr]
+  if not c or c.key ~= key then
+    c = { key = key, marks = M.compute(api.nvim_buf_get_lines(bufnr, 0, -1, false)) }
+    computed[bufnr] = c
+  end
+  api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
+  local lo = vlo and math.max(1, vlo - VIEW_MARGIN) or 1
+  local hi = vhi and (vhi + VIEW_MARGIN) or math.huge
+  rendered_at[bufnr] = { key = key, lo = lo, hi = hi }
   local count = 0
-  for ln, marks in pairs(M.compute(lines)) do
-    for _, m in ipairs(marks) do
-      local ok = pcall(api.nvim_buf_set_extmark, bufnr, NS, ln - 1, m.s - 1, {
-        end_row = ln - 1,
-        end_col = m.e,
-        conceal = m.text,
-      })
-      if ok then count = count + 1 end
+  for ln, marks in pairs(c.marks) do
+    if ln >= lo and ln <= hi then
+      for _, m in ipairs(marks) do
+        local ok = pcall(api.nvim_buf_set_extmark, bufnr, NS, ln - 1, m.s - 1, {
+          end_row = ln - 1,
+          end_col = m.e,
+          conceal = m.text,
+        })
+        if ok then count = count + 1 end
+      end
     end
   end
   return count
@@ -245,6 +288,15 @@ function M.enable(bufnr)
     buffer = bufnr,
     callback = schedule,
     desc = "[markdown.nvim] table truncate: re-render",
+  })
+  -- Not buffer-local (the event is keyed by window): a scroll or resize of any
+  -- window showing this buffer repaints when the view left the painted span.
+  api.nvim_create_autocmd({ "WinScrolled", "WinResized" }, {
+    group = group,
+    callback = function()
+      if #vim.fn.win_findbuf(bufnr) > 0 then schedule() end
+    end,
+    desc = "[markdown.nvim] table truncate: repaint the visible lines",
   })
   api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
     group = group,

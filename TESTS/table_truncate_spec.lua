@@ -172,6 +172,33 @@ return function(H)
   )
   ok(keep ~= nil, "a line with composing marks is truncated")
 
+  -- only the lines around the window carry extmarks; a jump repaints, a move inside
+  -- the painted span does not
+  local many = {}
+  for _ = 1, 1500 do
+    vim.list_extend(many, { "| H | " .. string.rep("w", 30) .. " |", "|---|---|", "| a | b |", "" })
+  end
+  local big = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(big)
+  vim.api.nvim_buf_set_lines(big, 0, -1, false, many)
+  require("markdown.config").setup({ table = { truncate = { max = 10 } } })
+  vim.cmd("normal! gg")
+  local near = tt.render(big)
+  ok(near > 0, "the first screen is painted")
+  local rows = {}
+  for _, e in ipairs(vim.api.nvim_buf_get_extmarks(big, ns, 0, -1, {})) do
+    rows[#rows + 1] = e[2]
+  end
+  ok(#rows < #many, "the far end of a many buffer is not painted")
+  ok(math.max(unpack(rows)) < 1000, "nothing beyond the margin below the window")
+  eq(tt.render(big), 0, "a render without a move or an edit repaints nothing")
+  vim.cmd("normal! G")
+  ok(tt.render(big) > 0, "a jump to the end paints the new view")
+  local last = vim.api.nvim_buf_get_extmarks(big, ns, { #many - 5, 0 }, { #many - 1, -1 }, {})
+  ok(#last > 0, "the end of the buffer is concealed after the jump")
+  tt.clear(big)
+  vim.api.nvim_buf_delete(big, { force = true })
+
   -- `truncate = true` is accepted as "on"
   require("markdown.config").setup({ table = { truncate = true } })
   eq(require("markdown.config").get().table.truncate.enabled, true, "truncate = true turns it on")
