@@ -4,6 +4,7 @@ local notify = require("markdown.util.notify").create("[markdown.anchor.jump]")
 
 local M = {}
 local api = vim.api
+local slug = require("markdown.core.slug")
 
 ---@internal
 ---@param title string
@@ -82,7 +83,7 @@ local function jump_to_anchor(anchor)
   local fence_pattern = "^%s*[`~][`~][`~]+%S*%s*$"
 
   for i = lower, upper do
-    local line = api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or ""
+    local line = slug.strip_containers(api.nvim_buf_get_lines(bufnr, i - 1, i, false)[1] or "")
 
     if line:match(fence_pattern) then
       in_fence = not in_fence

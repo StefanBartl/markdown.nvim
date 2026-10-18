@@ -76,6 +76,22 @@ end
 --- Skips fenced code blocks (a `#` line inside a code fence is a comment, not a
 --- heading) and YAML frontmatter. De-duplication matches GitHub: repeated base
 --- slugs get `-1`, `-2`, … in the order they appear.
+---The content of a line inside block quotes and list items: every leading `>` marker and bullet / ordered list marker is
+---taken off, as many times as they nest (`> - ## Setup` -> `## Setup`). GitHub numbers the headings in such containers like
+---any other, and a fence opened inside one is still a fence. A line without containers comes back unchanged.
+---@param line string
+---@return string
+function M.strip_containers(line)
+  local rest = line
+  while true do
+    local inner = rest:match("^%s*>%s?(.*)$")
+      or rest:match("^%s*[-*+]%s+(.*)$")
+      or rest:match("^%s*%d+[.)]%s+(.*)$")
+    if not inner then return rest end
+    rest = inner
+  end
+end
+
 ---@param bufnr? integer
 ---@param opts? { style?: "gfm"|"keep-case", separator?: string } # Defaults to `config.toc.anchor_style`/`anchor_separator` when omitted.
 ---@return { list: { row: integer, level: integer, title: string, anchor: string }[], set: table<string, true>, by_row: table<integer, string> }
@@ -90,7 +106,7 @@ function M.heading_anchors(bufnr, opts)
   local start = body_start(lines)
 
   for i = start, #lines do
-    local line = lines[i]
+    local line = M.strip_containers(lines[i])
     if line:match(FENCE_LINE) then
       in_fence = not in_fence
     elseif not in_fence then
