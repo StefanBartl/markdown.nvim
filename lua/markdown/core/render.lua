@@ -30,6 +30,7 @@ M.DEFAULTS = {
     background = true,
   },
   bullets = { enabled = true, icons = { "•", "◦", "▪" } },
+  ordered = { enabled = true }, -- the number of `1.` / `1)` list items gets its own colour
   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
   code = { enabled = true, background = true, label = true },
   rules = { enabled = true, char = "─" },
@@ -76,6 +77,7 @@ local function setup_highlights()
     MarkdownRenderBold = "@markup.strong",
     MarkdownRenderItalic = "@markup.italic",
     MarkdownRenderStrike = "@markup.strikethrough",
+    MarkdownRenderOrdered = "@markup.list.numbered",
     MarkdownRenderRule = "Comment",
     MarkdownRenderQuote = "Comment",
     MarkdownRenderInfo = "DiagnosticInfo",
@@ -522,6 +524,23 @@ function M.line_marks(line, ctx)
         local level = math.floor(#ind / 2) % #c.bullets.icons + 1
         conceal(out, #ind, #ind + 1, c.bullets.icons[level])
         text_from = #ind + 2
+      end
+    end
+    -- `1. item` / `1) item`: the number is coloured; a checkbox after it is drawn like one after a bullet
+    local oind, number, punct = line:match("^(%s*)(%d+)([.)])%s")
+    if oind and number and punct and not marker and c.ordered.enabled then
+      local marker_end = #oind + #number + 1
+      out[#out + 1] =
+        { col = #oind, opts = { end_col = marker_end, hl_group = "MarkdownRenderOrdered" } }
+      text_from = marker_end + 2
+      local cb, ce = line:find("^%[[ xX%-]%]%s", marker_end + 2)
+      if cb and c.checkboxes.enabled then
+        local state = line:sub(cb + 1, cb + 1)
+        local icon = (state == " " and c.checkboxes.unchecked)
+          or (state == "-" and c.checkboxes.partial)
+          or c.checkboxes.checked
+        conceal(out, cb - 1, cb + 2, icon)
+        text_from = ce + 1
       end
     end
   end

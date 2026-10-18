@@ -166,6 +166,7 @@ require("markdown").setup({
   --   margin = 40, debounce_ms = 60,
   --   headings   = { enabled = true, icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " }, background = true },
   --   bullets    = { enabled = true, icons = { "•", "◦", "▪" } },
+  --   ordered    = { enabled = true },
   --   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
   --   code       = { enabled = true, background = true, label = true },
   --   rules      = { enabled = true, char = "─" },

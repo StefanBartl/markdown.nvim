@@ -44,7 +44,11 @@ return function(H)
   ok(find(marks("- [x] done"), function(m) return m.opts.conceal == "☑" end), "checked")
   ok(find(marks("- [-] part"), function(m) return m.opts.conceal == "◐" end), "partial")
   eq(#marks("-nospace"), 0, "no space, no bullet")
-  eq(#marks("1. ordered"), 0, "ordered lists are left alone")
+  eq(
+    #marks("1. ordered"),
+    1,
+    "an ordered item gets only the colour of its number (render_ordered_spec)"
+  )
 
   -- ───────────── rules ─────────────
   local rule = marks("---")[1]

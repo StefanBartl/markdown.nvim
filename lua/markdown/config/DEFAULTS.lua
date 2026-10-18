@@ -122,6 +122,7 @@ local DEFAULTS = {
       background = true,
     },
     bullets = { enabled = true, icons = { "•", "◦", "▪" } },
+    ordered = { enabled = true }, -- the number of a `1.` / `1)` list item gets its own colour
     checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
     code = { enabled = true, background = true, label = true },
     rules = { enabled = true, char = "─" },
