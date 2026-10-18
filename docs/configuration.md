@@ -170,7 +170,7 @@ require("markdown").setup({
   --   code       = { enabled = true, background = true, label = true },
   --   rules      = { enabled = true, char = "─" },
   --   quotes     = { enabled = true, icon = "▎", callouts = true },
-  --   inline     = { enabled = true, code = true, links = true, images = true },
+  --   inline     = { enabled = true, code = true, links = true, images = true, bold = true, italic = true, strike = true },
   -- },
 
   -- Defaults for :Markdown table format; explicit command args (header=,

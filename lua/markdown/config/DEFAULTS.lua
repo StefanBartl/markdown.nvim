@@ -126,7 +126,15 @@ local DEFAULTS = {
     code = { enabled = true, background = true, label = true },
     rules = { enabled = true, char = "─" },
     quotes = { enabled = true, icon = "▎", callouts = true },
-    inline = { enabled = true, code = true, links = true, images = true },
+    inline = {
+      enabled = true,
+      code = true,
+      links = true,
+      images = true,
+      bold = true, -- **bold** and __bold__
+      italic = true, -- *italic* and _italic_ (and ***both***)
+      strike = true, -- ~~strike~~
+    },
   },
 
   table = {

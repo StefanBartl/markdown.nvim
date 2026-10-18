@@ -34,7 +34,15 @@ M.DEFAULTS = {
   code = { enabled = true, background = true, label = true },
   rules = { enabled = true, char = "─" },
   quotes = { enabled = true, icon = "▎", callouts = true },
-  inline = { enabled = true, code = true, links = true, images = true },
+  inline = {
+    enabled = true,
+    code = true,
+    links = true,
+    images = true,
+    bold = true,
+    italic = true,
+    strike = true,
+  },
 }
 
 local CALLOUTS = {
@@ -65,6 +73,9 @@ local function setup_highlights()
     MarkdownRenderCode = "@markup.raw.markdown_inline",
     MarkdownRenderLink = "@markup.link.label",
     MarkdownRenderImage = "@markup.link",
+    MarkdownRenderBold = "@markup.strong",
+    MarkdownRenderItalic = "@markup.italic",
+    MarkdownRenderStrike = "@markup.strikethrough",
     MarkdownRenderRule = "Comment",
     MarkdownRenderQuote = "Comment",
     MarkdownRenderInfo = "DiagnosticInfo",
@@ -76,6 +87,7 @@ local function setup_highlights()
   for name, target in pairs(links) do
     api.nvim_set_hl(0, name, { link = target, default = true })
   end
+  api.nvim_set_hl(0, "MarkdownRenderBoldItalic", { bold = true, italic = true, default = true })
 end
 
 ---@internal
@@ -244,6 +256,81 @@ function M._is_paragraph_line(line)
 end
 
 ---@internal
+---Emphasis of `line` from byte `from` on: `**bold**`, `__bold__`, `*italic*`, `_italic_`, `***both***` and `~~strike~~`.
+---The markers are hidden and the text between them is highlighted. A run of markers opens when a non-space follows it and
+---closes when a non-space precedes it; `_` never opens or closes inside a word (`snake_case_name`). A run closes the nearest
+---later run of the same character and length, so `**bold *it* x**` nests; a backslash escapes a run. `skip(p)` says that
+---byte `p` belongs to something else (a code span, the address of a link).
+---@param out Mkdn.RenderMark[]
+---@param line string
+---@param from integer  # 1-based
+---@param c table  # cfg.inline
+---@param skip fun(p: integer): boolean
+function M._emphasis(out, line, from, c, skip)
+  local backslash = string.char(92)
+  local runs = {}
+  local i, n = from, #line
+  while i <= n do
+    local ch = line:sub(i, i)
+    if
+      (ch == "*" or ch == "_" or ch == "~")
+      and not skip(i)
+      and line:sub(i - 1, i - 1) ~= backslash
+    then
+      local j = i
+      while line:sub(j + 1, j + 1) == ch do
+        j = j + 1
+      end
+      runs[#runs + 1] = { s = i, e = j, ch = ch, len = j - i + 1 }
+      i = j + 1
+    else
+      i = i + 1
+    end
+  end
+
+  ---a character that makes `_` part of a word (a letter, a digit, any multibyte character)
+  local function word(ch) return ch ~= "" and (ch:match("%w") ~= nil or ch:byte() >= 128) end
+  local function space(ch) return ch == "" or ch:match("%s") ~= nil end
+  local function can_open(r)
+    local before, after = line:sub(r.s - 1, r.s - 1), line:sub(r.e + 1, r.e + 1)
+    if space(after) then return false end
+    return not (r.ch == "_" and word(before))
+  end
+  local function can_close(r)
+    local before, after = line:sub(r.s - 1, r.s - 1), line:sub(r.e + 1, r.e + 1)
+    if space(before) then return false end
+    return not (r.ch == "_" and word(after))
+  end
+  ---the highlight group of a pair of runs of this character and length, or nil when that kind is switched off
+  local function group_of(ch, len)
+    if ch == "~" then return len == 2 and c.strike ~= false and "MarkdownRenderStrike" or nil end
+    if len == 1 then return c.italic ~= false and "MarkdownRenderItalic" or nil end
+    if len == 2 then return c.bold ~= false and "MarkdownRenderBold" or nil end
+    if len == 3 then
+      return (c.bold ~= false and c.italic ~= false) and "MarkdownRenderBoldItalic" or nil
+    end
+  end
+
+  local used = {}
+  for a = 1, #runs do
+    local open = runs[a]
+    local group = not used[a] and can_open(open) and group_of(open.ch, open.len) or nil
+    if group then
+      for b = a + 1, #runs do
+        local close = runs[b]
+        if not used[b] and close.ch == open.ch and close.len == open.len and can_close(close) then
+          used[a], used[b] = true, true
+          conceal(out, open.s - 1, open.e, "")
+          conceal(out, close.s - 1, close.e, "")
+          out[#out + 1] = { col = open.e, opts = { end_col = close.s - 1, hl_group = group } }
+          break
+        end
+      end
+    end
+  end
+end
+
+---@internal
 ---Inline markup of `line` from byte `from` on (code spans first, so nothing inside them is touched).
 ---@param out Mkdn.RenderMark[]
 ---@param line string
@@ -306,6 +393,8 @@ local function inline(out, line, from, c)
               },
             }
             conceal(out, text_end, e, "")
+            -- the `](url)` part is nobody's emphasis (`__init__` in an address)
+            spans[#spans + 1] = { text_end + 1, e }
           end
           -- a link inside the text of this one: `[![alt](img)](url)`
           if text:find("[", 1, true) then scan_links(s + open_len, text_end) end
@@ -315,6 +404,7 @@ local function inline(out, line, from, c)
     end
     scan_links(from)
   end
+  if c.bold or c.italic or c.strike then M._emphasis(out, line, from, c, inside) end
 end
 
 ---The extmarks of one line (pure).
