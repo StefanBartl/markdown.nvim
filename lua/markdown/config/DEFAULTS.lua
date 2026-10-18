@@ -135,6 +135,7 @@ local DEFAULTS = {
       bold = true, -- **bold** and __bold__
       italic = true, -- *italic* and _italic_ (and ***both***)
       strike = true, -- ~~strike~~
+      comments = true, -- <!-- a comment on one line --> is dimmed
     },
   },
 

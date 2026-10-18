@@ -43,6 +43,7 @@ M.DEFAULTS = {
     bold = true,
     italic = true,
     strike = true,
+    comments = true,
   },
 }
 
@@ -78,6 +79,7 @@ local function setup_highlights()
     MarkdownRenderItalic = "@markup.italic",
     MarkdownRenderStrike = "@markup.strikethrough",
     MarkdownRenderOrdered = "@markup.list.numbered",
+    MarkdownRenderComment = "Comment",
     MarkdownRenderRule = "Comment",
     MarkdownRenderQuote = "Comment",
     MarkdownRenderInfo = "DiagnosticInfo",
@@ -373,6 +375,23 @@ local function inline(out, line, from, c)
       if p >= sp[1] and p <= sp[2] then return true end
     end
     return false
+  end
+  if c.comments ~= false then
+    -- `<!-- a comment -->` on one line is dimmed, and nothing inside it is links or emphasis
+    local pos = from
+    while true do
+      local s = line:find("<!--", pos, true)
+      if not s then break end
+      if inside(s) then
+        pos = s + 4
+      else
+        local _, e = line:find("-->", s + 4, true)
+        if not e then break end
+        out[#out + 1] = { col = s - 1, opts = { end_col = e, hl_group = "MarkdownRenderComment" } }
+        spans[#spans + 1] = { s, e }
+        pos = e + 1
+      end
+    end
   end
   if c.links or c.images then
     -- `limit`: only links that end at or before it (the text of an enclosing link, a badge)
