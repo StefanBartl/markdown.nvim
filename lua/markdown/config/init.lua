@@ -133,7 +133,7 @@ local NESTED_OPTS = {
   ["render.bullets"] = { "enabled", "icons" },
   ["render.ordered"] = { "enabled" },
   ["render.checkboxes"] = { "enabled", "unchecked", "checked", "partial" },
-  ["render.code"] = { "enabled", "background", "label" },
+  ["render.code"] = { "enabled", "background", "label", "icons", "icon_map" },
   ["render.rules"] = { "enabled", "char" },
   ["render.quotes"] = { "enabled", "icon", "callouts" },
   ["render.inline"] = {
@@ -459,7 +459,13 @@ local function degrade_invalid_scalars(cfg, issues)
         for key, dv in pairs(def) do
           local v = r[name][key]
           local good
-          if type(dv) == "table" then
+          if key == "icon_map" then
+            -- language -> icon: user data, empty by default; an entry that is not text is reported and dropped
+            good = type(v) == "table"
+            for lang, icon in pairs(good and v or {}) do
+              if type(lang) ~= "string" or type(icon) ~= "string" then good = false end
+            end
+          elseif type(dv) == "table" then
             good = type(v) == "table" and #v > 0
             for _, icon in ipairs(good and v or {}) do
               if type(icon) ~= "string" then good = false end

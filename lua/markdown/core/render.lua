@@ -33,7 +33,7 @@ M.DEFAULTS = {
   bullets = { enabled = true, icons = { "•", "◦", "▪" } },
   ordered = { enabled = true }, -- the number of `1.` / `1)` list items gets its own colour
   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
-  code = { enabled = true, background = true, label = true },
+  code = { enabled = true, background = true, label = true, icons = true, icon_map = {} },
   rules = { enabled = true, char = "─" },
   quotes = { enabled = true, icon = "▎", callouts = true },
   inline = {
@@ -276,6 +276,30 @@ end
 ---@field cfg table
 
 ---@internal
+---@internal
+---The icon of a code block's language: the user's `code.icon_map` first, then nvim-web-devicons or mini.icons when one
+---is installed (the language is taken as the file type). Nil when there is none.
+---@param lang string
+---@param c table  # `render.code`
+---@return string|nil
+function M._lang_icon(lang, c)
+  if c.icons == false then return nil end
+  local key = lang:lower()
+  local own = type(c.icon_map) == "table" and c.icon_map[key]
+  if type(own) == "string" and own ~= "" then return own end
+  local ok, dev = pcall(require, "nvim-web-devicons")
+  if ok and type(dev.get_icon_by_filetype) == "function" then
+    local icon = dev.get_icon_by_filetype(key)
+    if type(icon) == "string" and icon ~= "" then return icon end
+  end
+  local okm, mini = pcall(require, "mini.icons")
+  if okm and type(mini.get) == "function" then
+    local okg, icon = pcall(mini.get, "filetype", key)
+    if okg and type(icon) == "string" and icon ~= "" then return icon end
+  end
+  return nil
+end
+
 ---@param out Mkdn.RenderMark[]
 ---@param col integer
 ---@param end_col integer
@@ -646,10 +670,13 @@ function M.line_marks(line, ctx)
         out[#out + 1] = { col = 0, opts = { line_hl_group = "MarkdownRenderCodeBg" } }
       end
       if role == "open" and c.code.label and ctx.lang and ctx.lang ~= "" then
+        local icon = M._lang_icon(ctx.lang, c.code)
         out[#out + 1] = {
           col = 0,
           opts = {
-            virt_text = { { ctx.lang, "MarkdownRenderCodeLabel" } },
+            virt_text = {
+              { (icon and (icon .. " ") or "") .. ctx.lang, "MarkdownRenderCodeLabel" },
+            },
             virt_text_pos = "right_align",
           },
         }

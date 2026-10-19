@@ -168,7 +168,7 @@ require("markdown").setup({
   --   bullets    = { enabled = true, icons = { "•", "◦", "▪" } },
   --   ordered    = { enabled = true },
   --   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
-  --   code       = { enabled = true, background = true, label = true },
+  --   code       = { enabled = true, background = true, label = true, icons = true, icon_map = {} },
   --   rules      = { enabled = true, char = "─" },
   --   quotes     = { enabled = true, icon = "▎", callouts = true },
   --   inline     = { enabled = true, code = true, links = true, images = true, bold = true, italic = true, strike = true, comments = true, footnotes = true, math = true },

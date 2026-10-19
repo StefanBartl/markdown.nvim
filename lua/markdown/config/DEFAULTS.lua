@@ -125,7 +125,8 @@ local DEFAULTS = {
     bullets = { enabled = true, icons = { "•", "◦", "▪" } },
     ordered = { enabled = true }, -- the number of a `1.` / `1)` list item gets its own colour
     checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
-    code = { enabled = true, background = true, label = true },
+    -- icons: the language label gets the icon of nvim-web-devicons / mini.icons; icon_map = { lua = "L" } overrides it
+    code = { enabled = true, background = true, label = true, icons = true, icon_map = {} },
     rules = { enabled = true, char = "─" },
     quotes = { enabled = true, icon = "▎", callouts = true },
     inline = {
