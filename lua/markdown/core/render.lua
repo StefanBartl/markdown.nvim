@@ -10,7 +10,7 @@
 --- scrolling, so a large file costs the same as a small one.
 ---
 ---   M.line_marks(line, i, ctx) – pure: the extmarks of one line
----   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front" / "cstart" | "cin" | "cend" (comment)
+---   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front" / "cstart" | "cin" | "cend" | "cmid" (comment)
 ---   M.enable/disable/toggle(bufnr), M.refresh(bufnr)
 
 local fences = require("markdown.util.fence")
@@ -205,9 +205,15 @@ local function scan_fences(lines, from, base, c, n, roles, langs, comment)
     local line = lines[i]
     local row = base + i - 1
     if comment then
-      if line:find("-->", 1, true) then
-        roles[row] = "cend"
-        comment = false
+      local _, close = line:find("-->", 1, true)
+      if close then
+        -- a second comment may open in the rest of the row
+        if comment_opens(line:sub(close + 1)) then
+          roles[row] = "cmid"
+        else
+          roles[row] = "cend"
+          comment = false
+        end
       else
         roles[row] = "cin"
       end
@@ -283,7 +289,7 @@ end
 ---@return boolean
 function M._comment_open(roles, first)
   local role = roles[first - 1]
-  return role == "cstart" or role == "cin"
+  return role == "cstart" or role == "cin" or role == "cmid"
 end
 
 ---The row of the fence that is open above `first`, or nil.
@@ -306,7 +312,7 @@ end
 ---@field opts table  # nvim_buf_set_extmark options
 
 ---@class Mkdn.RenderCtx
----@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" (a comment over several lines)
+---@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" | "cmid" (a comment over several lines; cmid closes one and opens the next)
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
 ---@field next? string  # the line below (a paragraph line above an underline is a setext title)
@@ -701,18 +707,35 @@ function M.line_marks(line, ctx)
   local role = ctx.role
 
   if role == "front" then return out end
-  -- a comment over several lines: the part of the row that belongs to it is dimmed and nothing else is drawn on it
-  if role == "cstart" or role == "cin" or role == "cend" then
-    if c.inline.enabled and c.inline.comments ~= false then
-      local from, to = 0, #line
-      if role == "cstart" then
-        from = (comment_opens(line) or 1) - 1
-      elseif role == "cend" then
-        local _, e = line:find("-->", 1, true)
-        to = e or #line
-      end
-      if to > from then
+  -- a comment over several lines: the part of a row that belongs to it is dimmed; what stands before the opening marker
+  -- is drawn as a row of its own (a heading, a list item), what stands after the closing marker as inline text
+  if role == "cstart" or role == "cin" or role == "cend" or role == "cmid" then
+    local dim = c.inline.enabled and c.inline.comments ~= false
+    local function dimmed(from, to)
+      if dim and to > from then
         out[#out + 1] = { col = from, opts = { end_col = to, hl_group = "MarkdownRenderComment" } }
+      end
+    end
+    local _, close = line:find("-->", 1, true)
+    if role == "cin" then
+      dimmed(0, #line)
+    elseif role == "cstart" then
+      local open = comment_opens(line) or 1
+      if open > 1 then
+        local head = { width = ctx.width, cfg = c, prev = ctx.prev, grid = ctx.grid }
+        out = M.line_marks(line:sub(1, open - 1), head)
+      end
+      dimmed(open - 1, #line)
+    else
+      close = close or #line
+      dimmed(0, close)
+      if role == "cmid" then
+        -- the closing marker and a new opening one in the same row: the text between them is plain
+        local open = close + comment_opens(line:sub(close + 1))
+        if c.inline.enabled then inline(out, line:sub(1, open - 1), close + 1, c.inline) end
+        dimmed(open - 1, #line)
+      elseif c.inline.enabled then
+        inline(out, line, close + 1, c.inline)
       end
     end
     return out

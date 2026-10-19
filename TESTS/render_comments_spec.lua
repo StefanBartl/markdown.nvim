@@ -63,4 +63,32 @@ return function(H)
     0,
     "comments = false"
   )
+
+  -- the rest of the opening row and of the closing row is drawn
+  local head = row("# Title <!-- start", "cstart")
+  local icon = false
+  for _, m in ipairs(head) do
+    if m.opts.virt_text and m.opts.virt_text[1][2] == "MarkdownRenderH1" then icon = true end
+  end
+  eq(icon, true, "the heading before the opening marker keeps its icon")
+  eq(count(head, "MarkdownRenderComment"), 1, "and the comment is dimmed after it")
+  local item = row("- a **b** <!-- start", "cstart")
+  eq(count(item, "MarkdownRenderComment"), 1, "a list item before the marker")
+  local tail = row("end --> see **bold** and [a](b)", "cend")
+  eq(count(tail, "MarkdownRenderBold"), 1, "emphasis after the closing marker")
+  eq(count(tail, "MarkdownRenderLink"), 1, "a link after it")
+  local before = row("**x** end --> y", "cend")
+  eq(count(before, "MarkdownRenderBold"), 0, "what stands inside the comment is not drawn")
+  eq(count(row("a **b** c", "cin"), "MarkdownRenderBold"), 0, "nor a row inside it")
+
+  -- a comment that closes and opens again in one row
+  local mroles = r.roles({ "<!-- a", "b --> x <!-- c", "d", "e -->", "f" })
+  eq(mroles[2], "cmid", "the row that closes one and opens the next")
+  eq(mroles[3], "cin", "the comment goes on")
+  eq(mroles[4], "cend", "until it closes")
+  eq(mroles[5], nil, "and the row after is text")
+  local mid = row("b --> x **y** <!-- c", "cmid")
+  eq(count(mid, "MarkdownRenderComment"), 2, "both comments are dimmed")
+  eq(count(mid, "MarkdownRenderBold"), 1, "the text between them is drawn")
+  eq(r._comment_open(mroles, 3), true, "a comment is open below a cmid row")
 end
