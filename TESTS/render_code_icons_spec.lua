@@ -5,6 +5,12 @@
 return function(H)
   local eq = H.eq
   local r = require("markdown.core.render")
+  local asked = {}
+  -- a stand-in for the icon plugins: file types in, icons out, and a record of what was asked
+  r._set_icon_provider(function(ft)
+    asked[#asked + 1] = ft
+    return ({ javascript = "JS", python = "PY", lua = "LU" })[ft]
+  end)
 
   local function label(lang, code)
     local cfg = vim.tbl_deep_extend("force", r.DEFAULTS, code and { code = code } or {})
@@ -26,7 +32,26 @@ return function(H)
     "lua",
     "the switch keeps the plain label"
   )
-  eq(label("lua", { icon_map = { lua = "" } }), "lua", "an empty entry is no icon")
+  eq(
+    label("lua", { icon_map = { lua = "" } }),
+    "LU lua",
+    "an empty entry is no icon of its own: the plugins answer"
+  )
+  eq(label("js"), "JS js", "an extension is taken to its file type")
+  eq(label("py"), "PY py", "also python")
+  eq(
+    label("lua title=" .. string.char(34) .. "x" .. string.char(34)),
+    "LU lua title=" .. string.char(34) .. "x" .. string.char(34),
+    "only the first word is the language"
+  )
+  eq(label("{lua}"), "{lua}", "an attribute block is no language")
+  eq(label("js", { icon_map = { javascript = "J" } }), "J js", "the map may name the file type")
+  -- the plugins are asked once per language, not at every draw
+  asked = {}
+  for _ = 1, 5 do
+    label("python")
+  end
+  eq(#asked <= 1, true, "the answer is cached")
   eq(
     r._lang_icon("zzz-no-such-language", { icons = true, icon_map = {} }),
     nil,

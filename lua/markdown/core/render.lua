@@ -67,7 +67,46 @@ local CALLOUTS = {
 }
 
 ---@internal
+---@internal
+---What the icon plugins know, per language, for the life of an enabled buffer or a colour scheme (`M.enable` and
+---`setup_highlights` drop it, so a plugin that loads later is seen): a module that is not installed is searched for on
+---the runtime path every time it is required, and a row with a fence label draws on every edit.
+---@type table<string, { fts: string[], icon: string|false }>
+local icon_cache = {}
+
+---@internal
+---Where icons come from: nil = nvim-web-devicons / mini.icons when installed; a function `fun(filetype): string|nil` or
+---`false` (none) replaces them, for the specs.
+---@type (fun(ft: string): string|nil)|false|nil
+local icon_provider
+
+---@internal
+---@param f (fun(ft: string): string|nil)|false|nil
+function M._set_icon_provider(f)
+  icon_provider = f
+  icon_cache = {}
+end
+
+---@internal
+---@param ft string
+---@return string|nil
+local function icon_of(ft)
+  if icon_provider ~= nil then return icon_provider and icon_provider(ft) or nil end
+  local ok, dev = pcall(require, "nvim-web-devicons")
+  if ok and type(dev.get_icon_by_filetype) == "function" then
+    local icon = dev.get_icon_by_filetype(ft)
+    if type(icon) == "string" and icon ~= "" then return icon end
+  end
+  local okm, mini = pcall(require, "mini.icons")
+  if okm and type(mini.get) == "function" then
+    local okg, icon, _, is_default = pcall(mini.get, "filetype", ft)
+    if okg and not is_default and type(icon) == "string" and icon ~= "" then return icon end
+  end
+  return nil
+end
+
 local function setup_highlights()
+  icon_cache = {}
   local links = {
     MarkdownRenderH1Bg = "DiffAdd",
     MarkdownRenderH2Bg = "DiffChange",
@@ -276,30 +315,44 @@ end
 ---@field cfg table
 
 ---@internal
----@internal
----The icon of a code block's language: the user's `code.icon_map` first, then nvim-web-devicons or mini.icons when one
----is installed (the language is taken as the file type). Nil when there is none.
+---The icon of a code block's language: the user's `code.icon_map` first (by the word as written, then by the file type
+---it stands for), then nvim-web-devicons or mini.icons when one is installed. The label may carry more than the
+---language (` ```lua title="x" `): the first word is the language, and `js`, `py`, `sh` are taken to their file types
+---(javascript, python, sh) the way a file with that extension would be. Nil when there is none.
 ---@param lang string
 ---@param c table  # `render.code`
 ---@return string|nil
 function M._lang_icon(lang, c)
   if c.icons == false then return nil end
-  local key = lang:lower()
-  local own = type(c.icon_map) == "table" and c.icon_map[key]
-  if type(own) == "string" and own ~= "" then return own end
-  local ok, dev = pcall(require, "nvim-web-devicons")
-  if ok and type(dev.get_icon_by_filetype) == "function" then
-    local icon = dev.get_icon_by_filetype(key)
-    if type(icon) == "string" and icon ~= "" then return icon end
+  local key = lang:match("^[^%s{]+")
+  if not key then return nil end
+  key = key:lower()
+  local map = type(c.icon_map) == "table" and c.icon_map or {}
+  local function mapped(k)
+    local own = map[k]
+    return type(own) == "string" and own ~= "" and own or nil
   end
-  local okm, mini = pcall(require, "mini.icons")
-  if okm and type(mini.get) == "function" then
-    local okg, icon = pcall(mini.get, "filetype", key)
-    if okg and type(icon) == "string" and icon ~= "" then return icon end
+  local entry = icon_cache[key]
+  if not entry then
+    local fts = { key }
+    local ok, ft = pcall(vim.filetype.match, { filename = "x." .. key })
+    if ok and type(ft) == "string" and ft ~= key then fts[#fts + 1] = ft end
+    entry = { fts = fts, icon = false }
+    for _, f in ipairs(fts) do
+      entry.icon = icon_of(f) or false
+      if entry.icon then break end
+    end
+    icon_cache[key] = entry
   end
-  return nil
+  -- the map is the user's and may change at any time: it is read each time, the plugins' answer is cached
+  for _, f in ipairs(entry.fts) do
+    local own = mapped(f)
+    if own then return own end
+  end
+  return entry.icon or nil
 end
 
+---@internal
 ---@param out Mkdn.RenderMark[]
 ---@param col integer
 ---@param end_col integer

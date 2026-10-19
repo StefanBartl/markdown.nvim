@@ -5,6 +5,7 @@
 return function(H)
   local eq, ok = H.eq, H.ok
   local r = require("markdown.core.render")
+  r._set_icon_provider(false) -- the labels must not depend on the icon plugins this machine has
 
   local function ctx(extra)
     return vim.tbl_extend("force", { width = 20, cfg = r.DEFAULTS }, extra or {})
