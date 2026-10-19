@@ -114,6 +114,36 @@ end
 -- Pure part
 -- ─────────────────────────────────────────────────────────────────────────────
 
+---@internal
+---The fence state machine over `lines[i]` for i >= `from`, writing the role of row `base + i - 1`.
+---@param lines string[]
+---@param from integer  # index into `lines`
+---@param base integer  # row of lines[1]
+---@param c string|nil  # fence character when a fence is open at the start
+---@param n integer|nil
+---@param roles table<integer, string>
+---@param langs table<integer, string>
+local function scan_fences(lines, from, base, c, n, roles, langs)
+  for i = from, #lines do
+    local line = lines[i]
+    local row = base + i - 1
+    if not c then
+      c, n = fences.open(line)
+      if c then
+        roles[row] = "open"
+        langs[row] = vim.trim(line:gsub("^%s*[`~]+", ""))
+      end
+    else
+      if fences.close(line, c, n) then
+        roles[row] = "close"
+        c, n = nil, nil
+      else
+        roles[row] = "in"
+      end
+    end
+  end
+end
+
 ---Role of every line: "front" (front matter), "open" / "in" / "close" (fenced code).
 ---@param lines string[]
 ---@return table<integer, string> roles
@@ -132,25 +162,46 @@ function M.roles(lines)
       end
     end
   end
-  local c, n
-  for i = start, #lines do
-    local line = lines[i]
-    if not c then
-      c, n = fences.open(line)
-      if c then
-        roles[i] = "open"
-        langs[i] = vim.trim(line:gsub("^%s*[`~]+", ""))
-      end
-    else
-      if fences.close(line, c, n) then
-        roles[i] = "close"
-        c, n = nil, nil
-      else
-        roles[i] = "in"
-      end
-    end
-  end
+  scan_fences(lines, start, 1, nil, nil, roles, langs)
   return roles, langs
+end
+
+---The roles from row `first` on, after an edit at `first`: everything above it keeps its role (a fence above
+---decides nothing below that the rows from `first` on do not recompute). `tail` holds the lines from row `first` to
+---the end; `roles` / `langs` are changed in place. Front matter is above or at row 1, so an edit that touches it
+---(`first` <= its last row) is the caller's case for the full `M.roles`.
+---@param roles table<integer, string>
+---@param langs table<integer, string>
+---@param first integer  # 1-based
+---@param tail string[]
+---@param open_line? string  # the opening fence line of the fence that is open above `first`, when one is
+function M.roles_after(roles, langs, first, tail, open_line)
+  for row in pairs(roles) do
+    if row >= first then roles[row] = nil end
+  end
+  for row in pairs(langs) do
+    if row >= first then langs[row] = nil end
+  end
+  local c, n
+  if open_line then
+    c, n = fences.open(open_line)
+  end
+  scan_fences(tail, 1, first, c, n, roles, langs)
+end
+
+---The row of the fence that is open above `first`, or nil.
+---@param roles table<integer, string>
+---@param first integer
+---@return integer|nil
+function M._open_fence_row(roles, first)
+  local row = first - 1
+  while row >= 1 and roles[row] == "in" do
+    row = row - 1
+  end
+  if row >= 1 and (roles[row] == "open" or roles[row] == "in") then
+    return roles[row] == "open" and row or nil
+  end
+  return nil
 end
 
 ---@class Mkdn.RenderMark
@@ -592,6 +643,8 @@ end
 ---@field roles table<integer, string>
 ---@field langs table<integer, string>
 ---@field look string
+---@field roles_ready boolean  # the roles in `roles` / `langs` are those of some state of the buffer
+---@field dirty? integer  # the first row that changed since then
 
 ---@type table<integer, Mkdn.RenderState>
 local S = {}
@@ -684,6 +737,41 @@ local function draw_row(bufnr, st, row, line, prev, width, c, grid)
   st.drawn[row] = ids
 end
 
+---@internal
+---The roles of the buffer. A buffer that has not changed above row N since they were last worked out only has its rows
+---from N on read again (`st.dirty`, set by `on_lines`): an edit at the end of a long file no longer reads and scans
+---all of it. Front matter is at the top, so an edit that reaches it, a first run, `force` and a reload read it all.
+---@param bufnr integer
+---@param st Mkdn.RenderState
+---@param force? boolean
+local function update_roles(bufnr, st, force)
+  local first = st.dirty
+  st.dirty = nil
+  if st.roles_ready and not force and first == nil then return end
+  if st.roles_ready and not force and first > 1 then
+    local front = 0
+    for row, role in pairs(st.roles) do
+      if role == "front" and row > front then front = row end
+    end
+    -- a first line `---` without front matter in the roles may be an unclosed one that an edit below just closed
+    local line1 = front == 0 and api.nvim_buf_get_lines(bufnr, 0, 1, false)[1] or nil
+    if first > front and not (line1 and line1:match("^%-%-%-%s*$")) then
+      local open_row = M._open_fence_row(st.roles, first)
+      local open_line = open_row and api.nvim_buf_get_lines(bufnr, open_row - 1, open_row, false)[1]
+      M.roles_after(
+        st.roles,
+        st.langs,
+        first,
+        api.nvim_buf_get_lines(bufnr, first - 1, -1, false),
+        open_line
+      )
+      return
+    end
+  end
+  st.roles, st.langs = M.roles(api.nvim_buf_get_lines(bufnr, 0, -1, false))
+  st.roles_ready = true
+end
+
 ---Draw the rows in and around the windows that are not drawn yet.
 ---@param bufnr integer
 ---@param force? boolean  # redraw everything in range
@@ -699,7 +787,7 @@ function M.refresh(bufnr, force)
   if force or st.tick ~= tick or st.look ~= look then
     api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
     st.drawn = {}
-    st.roles, st.langs = M.roles(api.nvim_buf_get_lines(bufnr, 0, -1, false))
+    update_roles(bufnr, st, force)
     st.tick, st.look = tick, look
   end
   local count = api.nvim_buf_line_count(bufnr)
@@ -846,7 +934,21 @@ function M.enable(bufnr)
     roles = {},
     langs = {},
     look = "",
+    roles_ready = false,
   }
+  -- which rows changed since the roles were worked out: the first of them is where reading again starts
+  api.nvim_buf_attach(bufnr, false, {
+    on_lines = function(_, buf, _, first)
+      local st = S[buf]
+      if not st then return true end
+      st.dirty = math.min(st.dirty or math.huge, first + 1)
+    end,
+    on_reload = function(_, buf)
+      local st = S[buf]
+      if not st then return true end
+      st.dirty = 1
+    end,
+  })
   local guard = require("markdown.core.conceal_guard")
   api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
     group = group,
