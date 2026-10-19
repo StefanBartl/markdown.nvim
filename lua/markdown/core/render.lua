@@ -28,6 +28,7 @@ M.DEFAULTS = {
     enabled = true,
     icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " },
     background = true,
+    setext = true, -- a paragraph line over `===` / `---` is drawn as a heading
   },
   bullets = { enabled = true, icons = { "•", "◦", "▪" } },
   ordered = { enabled = true }, -- the number of `1.` / `1)` list items gets its own colour
@@ -113,6 +114,16 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Pure part
 -- ─────────────────────────────────────────────────────────────────────────────
+
+---The level a setext underline stands for (`===` is 1, `---` is 2), or nil when the line is none.
+---@param line string|nil
+---@return integer|nil
+function M._setext_level(line)
+  if not line then return nil end
+  if line:match("^ ? ? ?=+%s*$") then return 1 end
+  if line:match("^ ? ? ?%-+%s*$") then return 2 end
+  return nil
+end
 
 ---@internal
 ---The byte position of a `<!--` on `line` that is not closed on that line and not inside a code span, or nil. The comment
@@ -255,6 +266,7 @@ end
 ---@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" (a comment over several lines)
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
+---@field next? string  # the line below (a paragraph line above an underline is a setext title)
 ---@field width integer  # columns a thematic break fills
 ---@field grid? boolean  # false: no table grid draws the table rows, so they get the inline marks (default true)
 ---@field cfg table
@@ -601,6 +613,25 @@ function M.line_marks(line, ctx)
 
   local text_from = 1
 
+  -- a setext heading: the paragraph line above `===` / `---` is the title, the underline is its second row
+  if c.headings.enabled and c.headings.setext ~= false then
+    local under = M._setext_level(line)
+    if under and M._is_paragraph_line(ctx.prev) then
+      if c.headings.background then
+        out[#out + 1] = { col = 0, opts = { line_hl_group = "MarkdownRenderH" .. under .. "Bg" } }
+      end
+      out[#out + 1] = { col = 0, opts = { end_col = #line, hl_group = "MarkdownRenderRule" } }
+      return out
+    end
+    local lvl = M._is_paragraph_line(line) and M._setext_level(ctx.next) or nil
+    if lvl then
+      if c.headings.background then
+        out[#out + 1] = { col = 0, opts = { line_hl_group = "MarkdownRenderH" .. lvl .. "Bg" } }
+      end
+      out[#out + 1] = { col = 0, opts = { end_col = #line, hl_group = "MarkdownRenderH" .. lvl } }
+    end
+  end
+
   local hashes = line:match("^(#+)%s")
   if hashes and #hashes <= 6 and c.headings.enabled then
     local lvl = #hashes
@@ -776,15 +807,17 @@ end
 ---@param row integer
 ---@param line string
 ---@param prev string|nil
+---@param next_line string|nil
 ---@param width integer
 ---@param c table
 ---@param grid boolean
-local function draw_row(bufnr, st, row, line, prev, width, c, grid)
+local function draw_row(bufnr, st, row, line, prev, next_line, width, c, grid)
   local ids = {}
   local marks = M.line_marks(line, {
     role = st.roles[row],
     lang = st.langs[row],
     prev = prev,
+    next = next_line,
     width = width,
     cfg = c,
     grid = grid,
@@ -861,7 +894,7 @@ function M.refresh(bufnr, force)
   for _, sp in ipairs(spans) do
     local first, last = sp[1], math.min(sp[2], count)
     local lo = math.max(first - 1, 1) -- one row above the range: the "previous line" of its first row
-    local seg = api.nvim_buf_get_lines(bufnr, lo - 1, last, false)
+    local seg = api.nvim_buf_get_lines(bufnr, lo - 1, math.min(last + 1, count), false)
     for row = first, last do
       if not st.drawn[row] then
         if st.cursor[row] then
@@ -869,7 +902,7 @@ function M.refresh(bufnr, force)
         else
           local line = seg[row - lo + 1]
           local prev = seg[row - lo]
-          if line then draw_row(bufnr, st, row, line, prev, width, c, grid) end
+          if line then draw_row(bufnr, st, row, line, prev, seg[row - lo + 2], width, c, grid) end
         end
       end
     end
@@ -907,7 +940,8 @@ local function on_cursor(bufnr)
       clear_row(bufnr, st, r)
       local line = api.nvim_buf_get_lines(bufnr, r - 1, r, false)[1]
       local prev = r > 1 and api.nvim_buf_get_lines(bufnr, r - 2, r - 1, false)[1] or nil
-      if line then draw_row(bufnr, st, r, line, prev, width, c, grid_active(bufnr)) end
+      local after = api.nvim_buf_get_lines(bufnr, r, r + 1, false)[1]
+      if line then draw_row(bufnr, st, r, line, prev, after, width, c, grid_active(bufnr)) end
     end
   end
   st.cursor = now

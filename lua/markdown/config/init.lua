@@ -129,7 +129,7 @@ local NESTED_OPTS = {
     "quotes",
     "inline",
   },
-  ["render.headings"] = { "enabled", "icons", "background" },
+  ["render.headings"] = { "enabled", "icons", "background", "setext" },
   ["render.bullets"] = { "enabled", "icons" },
   ["render.ordered"] = { "enabled" },
   ["render.checkboxes"] = { "enabled", "unchecked", "checked", "partial" },

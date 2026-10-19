@@ -55,7 +55,11 @@ return function(H)
   eq(rule.opts.virt_text[1][1], ("─"):rep(20), "a rule fills the width")
   eq(#marks("***"), 1, "stars")
   eq(#marks("- - -"), 1, "spaced dashes are a rule, not a bullet")
-  eq(#marks("---", { prev = "some text" }), 0, "under text it is a setext underline, not a rule")
+  local underline = marks("---", { prev = "some text" })
+  ok(
+    not find(underline, function(m) return m.opts.virt_text ~= nil end),
+    "under text it is a setext underline, not a rule (drawn as one in render_setext_spec)"
+  )
   eq(#marks("--"), 0, "two are not enough")
 
   -- ───────────── quotes / callouts ─────────────
@@ -282,7 +286,16 @@ return function(H)
       find(sp, function(m) return m.opts.virt_text ~= nil end),
       "a spaced rule under text is drawn as a rule"
     )
-    eq(#marks("---", { prev = "text" }), 0, "a plain run of dashes under text stays a setext line")
+    local ul = marks("---", { prev = "text" })
+    eq(
+      #ul,
+      2,
+      "a plain run of dashes under text is a setext underline (background + rule highlight)"
+    )
+    ok(
+      not find(ul, function(m) return m.opts.virt_text ~= nil end),
+      "a setext underline is not drawn as a rule"
+    )
   end
 
   -- the cursor row of a window that closes is drawn again

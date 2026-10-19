@@ -120,6 +120,7 @@ local DEFAULTS = {
       enabled = true,
       icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " },
       background = true,
+      setext = true, -- a paragraph line over `===` / `---` is drawn as a heading
     },
     bullets = { enabled = true, icons = { "•", "◦", "▪" } },
     ordered = { enabled = true }, -- the number of a `1.` / `1)` list item gets its own colour

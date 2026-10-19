@@ -164,7 +164,7 @@ require("markdown").setup({
   -- render = {
   --   enabled = false,            -- true: on for every markdown buffer
   --   margin = 40, debounce_ms = 60,
-  --   headings   = { enabled = true, icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " }, background = true },
+  --   headings   = { enabled = true, icons = { "◉ ", "○ ", "✸ ", "✿ ", "◆ ", "◇ " }, background = true, setext = true },
   --   bullets    = { enabled = true, icons = { "•", "◦", "▪" } },
   --   ordered    = { enabled = true },
   --   checkboxes = { enabled = true, unchecked = "☐", checked = "☑", partial = "◐" },
