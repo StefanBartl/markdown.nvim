@@ -58,6 +58,14 @@ M.MAX_LINK_DEPTH = 8
 ---with the square of the runs).
 M.MAX_EMPHASIS_RUNS = 256
 
+---The most `$` one line is searched for math (every opener looks for its closer to the end of the line, so the work grows
+---with the square of the dollars: a minified line, a generated table cell).
+M.MAX_MATH_DOLLARS = 64
+
+---How many paragraph lines below a row are looked through for a setext underline (a title of several lines is one
+---heading); a longer paragraph keeps the title style on the line above the underline only.
+M.MAX_SETEXT_LINES = 16
+
 local CALLOUTS = {
   NOTE = { "ⓘ Note", "MarkdownRenderInfo" },
   TIP = { "✦ Tip", "MarkdownRenderOk" },
@@ -165,6 +173,24 @@ function M._setext_level(line)
   if not line then return nil end
   if line:match("^ ? ? ?=+%s*$") then return 1 end
   if line:match("^ ? ? ?%-+%s*$") then return 2 end
+  return nil
+end
+
+---The level of the setext underline that ends the paragraph the row above `next` belongs to: `next` itself, or one of the
+---paragraph lines that follow it (`more(n)` returns the n lines below `next`, read only when `next` is a paragraph line).
+---Nil when the paragraph ends without one or runs past `M.MAX_SETEXT_LINES`.
+---@param next_line string|nil
+---@param more fun(n: integer): string[]
+---@return integer|nil
+function M._setext_ahead(next_line, more)
+  if not next_line then return nil end
+  local level = M._setext_level(next_line)
+  if level or not M._is_paragraph_line(next_line) then return level end
+  for _, l in ipairs(more(M.MAX_SETEXT_LINES)) do
+    level = M._setext_level(l)
+    if level then return level end
+    if not M._is_paragraph_line(l) then return nil end
+  end
   return nil
 end
 
@@ -316,6 +342,7 @@ end
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
 ---@field next? string  # the line below (a paragraph line above an underline is a setext title)
+---@field setext? integer  # the level of the setext underline below the paragraph this row belongs to (`next` alone sees one row)
 ---@field width integer  # columns a thematic break fills
 ---@field grid? boolean  # false: no table grid draws the table rows, so they get the inline marks (default true)
 ---@field cfg table
@@ -595,7 +622,7 @@ local function inline(out, line, from, c)
       end
     end
   end
-  if c.math ~= false then
+  if c.math ~= false and select(2, line:sub(from):gsub("%$", "")) <= M.MAX_MATH_DOLLARS then
     -- `$x$` and `$$x$$` on one line: the dollars go, the formula is coloured and is nobody's emphasis. A pair is
     -- not math when the opener is followed, or the closer preceded, by a space, or the closer is followed by a digit
     -- (`costs $5 and $6`).
@@ -795,7 +822,7 @@ function M.line_marks(line, ctx)
       out[#out + 1] = { col = 0, opts = { end_col = #line, hl_group = "MarkdownRenderRule" } }
       return out
     end
-    local lvl = M._is_paragraph_line(line) and M._setext_level(ctx.next) or nil
+    local lvl = M._is_paragraph_line(line) and (ctx.setext or M._setext_level(ctx.next)) or nil
     if lvl then
       if c.headings.background then
         out[#out + 1] = { col = 0, opts = { line_hl_group = "MarkdownRenderH" .. lvl .. "Bg" } }
@@ -912,6 +939,12 @@ end
 local S = {}
 
 ---@internal
+---Buffers that carry the `on_lines` callback, and how many were attached in all (the specs look at it).
+---@type table<integer, boolean>
+local attached = {}
+M._attach_count = 0
+
+---@internal
 ---Whether a table display (grid or truncation) owns the table rows of this buffer.
 ---@param bufnr integer
 ---@return boolean
@@ -985,11 +1018,16 @@ end
 ---@param grid boolean
 local function draw_row(bufnr, st, row, line, prev, next_line, width, c, grid)
   local ids = {}
+  local setext = M._setext_ahead(
+    next_line,
+    function(n) return api.nvim_buf_get_lines(bufnr, row + 1, row + 1 + n, false) end
+  )
   local marks = M.line_marks(line, {
     role = st.roles[row],
     lang = st.langs[row],
     prev = prev,
     next = next_line,
+    setext = setext,
     width = width,
     cfg = c,
     grid = grid,
@@ -1203,18 +1241,31 @@ function M.enable(bufnr)
     roles_ready = false,
   }
   -- which rows changed since the roles were worked out: the first of them is where reading again starts
-  api.nvim_buf_attach(bufnr, false, {
-    on_lines = function(_, buf, _, first)
-      local st = S[buf]
-      if not st then return true end
-      st.dirty = math.min(st.dirty or math.huge, first + 1)
-    end,
-    on_reload = function(_, buf)
-      local st = S[buf]
-      if not st then return true end
-      st.dirty = 1
-    end,
-  })
+  -- once per buffer: a callback detaches itself only when an edit finds the buffer disabled, so one that is enabled again
+  -- before the next edit is still attached and a second attach would run both on every edit
+  if not attached[bufnr] then
+    attached[bufnr] = true
+    M._attach_count = M._attach_count + 1
+    api.nvim_buf_attach(bufnr, false, {
+      on_lines = function(_, buf, _, first)
+        local st = S[buf]
+        if not st then
+          attached[buf] = nil
+          return true
+        end
+        st.dirty = math.min(st.dirty or math.huge, first + 1)
+      end,
+      on_reload = function(_, buf)
+        local st = S[buf]
+        if not st then
+          attached[buf] = nil
+          return true
+        end
+        st.dirty = 1
+      end,
+      on_detach = function(_, buf) attached[buf] = nil end,
+    })
+  end
   local guard = require("markdown.core.conceal_guard")
   api.nvim_create_autocmd({ "TextChanged", "TextChangedI", "InsertLeave" }, {
     group = group,

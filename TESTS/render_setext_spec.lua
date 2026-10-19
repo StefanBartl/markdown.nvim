@@ -77,4 +77,58 @@ return function(H)
     "headings.setext = false: no title"
   )
   eq(#marks("===", vim.tbl_extend("force", off, { prev = "Title" })), 0, "and no underline")
+
+  -- a title of several lines: every line of the paragraph is the title
+  local function ahead(lines, from)
+    return r._setext_ahead(
+      lines[from],
+      function(n) return { unpack(lines, from + 1, from + n) } end
+    )
+  end
+  eq(ahead({ "a", "b", "===" }, 2), 1, "the line right above the underline")
+  eq(ahead({ "a", "b", "c", "---" }, 2), 2, "a line further up sees it")
+  eq(ahead({ "a", "b", "", "===" }, 2), nil, "a blank line ends the paragraph")
+  eq(ahead({ "a", "b", "- item", "===" }, 2), nil, "so does a list item")
+  eq(ahead({ "a" }, 2), nil, "nothing below")
+  local long = { "t" }
+  for _ = 1, r.MAX_SETEXT_LINES + 2 do
+    long[#long + 1] = "p"
+  end
+  long[#long + 1] = "==="
+  eq(ahead(long, 1), nil, "a paragraph longer than the limit keeps only the last line")
+  local first = marks("first line", { next = "second line", setext = 1 })
+  ok(
+    find(first, function(m) return m.opts.line_hl_group == "MarkdownRenderH1Bg" end),
+    "the first line of a two-line title is drawn as the heading"
+  )
+  eq(#marks("first line", { next = "second line" }), 0, "without the underline ahead it is text")
+
+  -- in a buffer: both lines of the title carry the heading background
+  do
+    local buf = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(
+      buf,
+      0,
+      -1,
+      false,
+      { "first", "second", "=====", "", "plain", "text" }
+    )
+    vim.api.nvim_win_set_cursor(0, { 6, 0 })
+    r.enable(buf)
+    r.refresh(buf, true)
+    local ns = vim.api.nvim_create_namespace("markdown_render")
+    local function bg(row)
+      for _, m in
+        ipairs(vim.api.nvim_buf_get_extmarks(buf, ns, { row, 0 }, { row, -1 }, { details = true }))
+      do
+        if m[4].line_hl_group == "MarkdownRenderH1Bg" then return true end
+      end
+      return false
+    end
+    ok(bg(0), "the first line of the title")
+    ok(bg(1), "the second")
+    ok(bg(2), "the underline")
+    ok(not bg(4), "a paragraph without an underline is text")
+    r.disable(buf)
+  end
 end

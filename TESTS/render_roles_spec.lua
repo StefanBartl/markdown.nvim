@@ -116,4 +116,25 @@ return function(H)
   r.refresh(buf)
   ok(not code_bg(29), "after the edit that removed the fence the last row is plain text")
   r.disable(buf)
+
+  -- enable / disable / enable without an edit in between attaches the buffer once, not once per cycle
+  do
+    local b = H.scratch("markdown")
+    vim.api.nvim_buf_set_lines(b, 0, -1, false, { "a", "b" })
+    local before = r._attach_count
+    for _ = 1, 3 do
+      r.enable(b)
+      r.disable(b)
+    end
+    r.enable(b)
+    eq(r._attach_count - before, 1, "one attach for four enables")
+    vim.api.nvim_buf_set_lines(b, 1, 2, false, { "x" })
+    r.refresh(b)
+    r.disable(b)
+    -- an edit while disabled detaches it; the next enable attaches again
+    vim.api.nvim_buf_set_lines(b, 1, 2, false, { "y" })
+    r.enable(b)
+    eq(r._attach_count - before, 2, "attached again after the callback went")
+    r.disable(b)
+  end
 end

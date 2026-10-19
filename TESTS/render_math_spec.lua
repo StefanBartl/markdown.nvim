@@ -41,4 +41,17 @@ return function(H)
   eq(count(marks(string.char(92) .. "$x$"), "MarkdownRenderMath"), 0, "an escaped dollar is text")
   eq(count(marks("$x"), "MarkdownRenderMath"), 0, "an unpaired dollar")
   eq(count(marks("a $x$", { math = false }), "MarkdownRenderMath"), 0, "the switch turns it off")
+
+  -- a line with more dollars than the limit is left alone, at a bounded cost
+  local many = ("$a "):rep(r.MAX_MATH_DOLLARS + 10)
+  eq(count(marks(many), "MarkdownRenderMath"), 0, "too many dollars: nothing is searched")
+  local fine = ("$a$ "):rep(r.MAX_MATH_DOLLARS / 2)
+  eq(
+    count(marks(fine), "MarkdownRenderMath"),
+    r.MAX_MATH_DOLLARS / 2,
+    "at the limit every formula is drawn"
+  )
+  local t0 = vim.uv.hrtime()
+  marks(("$a "):rep(20000))
+  eq((vim.uv.hrtime() - t0) / 1e6 < 50, true, "a long line costs little")
 end
