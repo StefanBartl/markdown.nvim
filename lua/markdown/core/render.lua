@@ -45,6 +45,7 @@ M.DEFAULTS = {
     italic = true,
     strike = true,
     comments = true,
+    footnotes = true,
   },
 }
 
@@ -89,6 +90,7 @@ local function setup_highlights()
     MarkdownRenderStrike = "@markup.strikethrough",
     MarkdownRenderOrdered = "@markup.list.numbered",
     MarkdownRenderComment = "Comment",
+    MarkdownRenderFootnote = "@markup.link",
     MarkdownRenderRule = "Comment",
     MarkdownRenderQuote = "Comment",
     MarkdownRenderInfo = "DiagnosticInfo",
@@ -503,6 +505,24 @@ local function inline(out, line, from, c)
         local _, e = line:find("-->", s + 4, true)
         if not e then break end
         out[#out + 1] = { col = s - 1, opts = { end_col = e, hl_group = "MarkdownRenderComment" } }
+        spans[#spans + 1] = { s, e }
+        pos = e + 1
+      end
+    end
+  end
+  if c.footnotes ~= false then
+    -- `[^id]` (a reference) and `[^id]:` (a definition): the brackets and the caret go, the id is a link colour
+    local pos = from
+    while true do
+      local s, e = line:find("%[%^([^%]%s]+)%]", pos)
+      if not s then break end
+      if inside(s) or line:sub(s - 1, s - 1) == "\\" or line:sub(e + 1, e + 1) == "(" then
+        pos = s + 2
+      else
+        conceal(out, s - 1, s + 1, "")
+        out[#out + 1] =
+          { col = s + 1, opts = { end_col = e - 1, hl_group = "MarkdownRenderFootnote" } }
+        conceal(out, e - 1, e, "")
         spans[#spans + 1] = { s, e }
         pos = e + 1
       end

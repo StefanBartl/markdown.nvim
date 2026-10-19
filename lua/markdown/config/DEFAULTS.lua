@@ -137,6 +137,7 @@ local DEFAULTS = {
       italic = true, -- *italic* and _italic_ (and ***both***)
       strike = true, -- ~~strike~~
       comments = true, -- <!-- a comment on one line --> is dimmed
+      footnotes = true, -- [^id] references and [^id]: definitions lose the brackets and the caret
     },
   },
 
