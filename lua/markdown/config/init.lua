@@ -146,6 +146,7 @@ local NESTED_OPTS = {
     "strike",
     "comments",
     "footnotes",
+    "math",
   },
   underline_headings = { "char" },
   menu = { "enable", "fold", "toc", "refs" },

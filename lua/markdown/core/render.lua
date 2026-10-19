@@ -46,6 +46,7 @@ M.DEFAULTS = {
     strike = true,
     comments = true,
     footnotes = true,
+    math = true,
   },
 }
 
@@ -91,6 +92,7 @@ local function setup_highlights()
     MarkdownRenderOrdered = "@markup.list.numbered",
     MarkdownRenderComment = "Comment",
     MarkdownRenderFootnote = "@markup.link",
+    MarkdownRenderMath = "@markup.math",
     MarkdownRenderRule = "Comment",
     MarkdownRenderQuote = "Comment",
     MarkdownRenderInfo = "DiagnosticInfo",
@@ -507,6 +509,53 @@ local function inline(out, line, from, c)
         out[#out + 1] = { col = s - 1, opts = { end_col = e, hl_group = "MarkdownRenderComment" } }
         spans[#spans + 1] = { s, e }
         pos = e + 1
+      end
+    end
+  end
+  if c.math ~= false then
+    -- `$x$` and `$$x$$` on one line: the dollars go, the formula is coloured and is nobody's emphasis. A pair is
+    -- not math when the opener is followed, or the closer preceded, by a space, or the closer is followed by a digit
+    -- (`costs $5 and $6`).
+    local pos = from
+    while true do
+      local s = line:find("$", pos, true)
+      if not s then break end
+      local n = line:sub(s, s + 1) == "$$" and 2 or 1
+      local first = line:sub(s + n, s + n)
+      if inside(s) or line:sub(s - 1, s - 1) == "\\" or first == "" or first:find("%s") then
+        pos = s + n
+      else
+        local close = s + n
+        local cs, ce
+        while true do
+          local q = line:find("$", close, true)
+          if not q then break end
+          local qe = q + n - 1
+          local before = line:sub(q - 1, q - 1)
+          local after = line:sub(qe + 1, qe + 1)
+          if
+            q > s + n
+            and line:sub(q, qe) == string.rep("$", n)
+            and before ~= "\\"
+            and not before:find("%s")
+            and not after:find("%d")
+            and not inside(q)
+          then
+            cs, ce = q, qe
+            break
+          end
+          close = q + 1
+        end
+        if not cs then
+          pos = s + n
+        else
+          conceal(out, s - 1, s - 1 + n, "")
+          out[#out + 1] =
+            { col = s - 1 + n, opts = { end_col = cs - 1, hl_group = "MarkdownRenderMath" } }
+          conceal(out, cs - 1, ce, "")
+          spans[#spans + 1] = { s, ce }
+          pos = ce + 1
+        end
       end
     end
   end
