@@ -47,6 +47,14 @@ M.DEFAULTS = {
   },
 }
 
+---How deep links inside the text of links are drawn (`[![badge](img)](url)` is two). Deeper nesting is pathological,
+---and each level scans the rest of the line again.
+M.MAX_LINK_DEPTH = 8
+
+---The most runs of `*`, `_` and `~` one line is searched for emphasis (every run looks for its closer, so the work grows
+---with the square of the runs).
+M.MAX_EMPHASIS_RUNS = 256
+
 local CALLOUTS = {
   NOTE = { "ⓘ Note", "MarkdownRenderInfo" },
   TIP = { "✦ Tip", "MarkdownRenderOk" },
@@ -315,6 +323,7 @@ function M._emphasis(out, line, from, c, skip)
     end
   end
 
+  if #runs > M.MAX_EMPHASIS_RUNS then return end
   local used = {}
   for a = 1, #runs do
     local open = runs[a]
@@ -395,7 +404,9 @@ local function inline(out, line, from, c)
   end
   if c.links or c.images then
     -- `limit`: only links that end at or before it (the text of an enclosing link, a badge)
-    local function scan_links(pos, limit)
+    local function scan_links(pos, limit, depth)
+      -- a badge is two deep; a line that nests links further is not prose, and every level rescans the line
+      if depth > M.MAX_LINK_DEPTH then return end
       while true do
         local s, e, bang, text = M._link_at(line, pos)
         if not s or (limit and e > limit) then break end
@@ -418,12 +429,12 @@ local function inline(out, line, from, c)
             spans[#spans + 1] = { text_end + 1, e }
           end
           -- a link inside the text of this one: `[![alt](img)](url)`
-          if text:find("[", 1, true) then scan_links(s + open_len, text_end) end
+          if text:find("[", 1, true) then scan_links(s + open_len, text_end, depth + 1) end
         end
         pos = e + 1
       end
     end
-    scan_links(from)
+    scan_links(from, nil, 1)
   end
   if c.bold or c.italic or c.strike then M._emphasis(out, line, from, c, inside) end
 end
