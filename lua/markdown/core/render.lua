@@ -10,7 +10,7 @@
 --- scrolling, so a large file costs the same as a small one.
 ---
 ---   M.line_marks(line, i, ctx) – pure: the extmarks of one line
----   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front"
+---   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front" / "cstart" | "cin" | "cend" (comment)
 ---   M.enable/disable/toggle(bufnr), M.refresh(bufnr)
 
 local fences = require("markdown.util.fence")
@@ -115,7 +115,29 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 
 ---@internal
----The fence state machine over `lines[i]` for i >= `from`, writing the role of row `base + i - 1`.
+---The byte position of a `<!--` on `line` that is not closed on that line and not inside a code span, or nil. The comment
+---goes on into the next lines.
+---@param line string
+---@return integer|nil
+local function comment_opens(line)
+  local pos = 1
+  while true do
+    local s = line:find("<!--", pos, true)
+    if not s then return nil end
+    local _, ticks = line:sub(1, s - 1):gsub("`", "")
+    if ticks % 2 == 0 then
+      local _, e = line:find("-->", s + 4, true)
+      if not e then return s end
+      pos = e + 1
+    else
+      pos = s + 4
+    end
+  end
+end
+
+---@internal
+---The fence and comment state machine over `lines[i]` for i >= `from`, writing the role of row `base + i - 1`. A fenced
+---block is code and nothing inside it opens a comment; inside a comment no fence opens.
 ---@param lines string[]
 ---@param from integer  # index into `lines`
 ---@param base integer  # row of lines[1]
@@ -123,15 +145,26 @@ end
 ---@param n integer|nil
 ---@param roles table<integer, string>
 ---@param langs table<integer, string>
-local function scan_fences(lines, from, base, c, n, roles, langs)
+---@param comment boolean  # a comment is open at the start
+local function scan_fences(lines, from, base, c, n, roles, langs, comment)
   for i = from, #lines do
     local line = lines[i]
     local row = base + i - 1
-    if not c then
+    if comment then
+      if line:find("-->", 1, true) then
+        roles[row] = "cend"
+        comment = false
+      else
+        roles[row] = "cin"
+      end
+    elseif not c then
       c, n = fences.open(line)
       if c then
         roles[row] = "open"
         langs[row] = vim.trim(line:gsub("^%s*[`~]+", ""))
+      elseif comment_opens(line) then
+        roles[row] = "cstart"
+        comment = true
       end
     else
       if fences.close(line, c, n) then
@@ -162,7 +195,7 @@ function M.roles(lines)
       end
     end
   end
-  scan_fences(lines, start, 1, nil, nil, roles, langs)
+  scan_fences(lines, start, 1, nil, nil, roles, langs, false)
   return roles, langs
 end
 
@@ -175,7 +208,8 @@ end
 ---@param first integer  # 1-based
 ---@param tail string[]
 ---@param open_line? string  # the opening fence line of the fence that is open above `first`, when one is
-function M.roles_after(roles, langs, first, tail, open_line)
+---@param in_comment? boolean  # a comment is open above `first`
+function M.roles_after(roles, langs, first, tail, open_line, in_comment)
   for row in pairs(roles) do
     if row >= first then roles[row] = nil end
   end
@@ -186,7 +220,16 @@ function M.roles_after(roles, langs, first, tail, open_line)
   if open_line then
     c, n = fences.open(open_line)
   end
-  scan_fences(tail, 1, first, c, n, roles, langs)
+  scan_fences(tail, 1, first, c, n, roles, langs, in_comment == true)
+end
+
+---Is a comment open above `first`?
+---@param roles table<integer, string>
+---@param first integer
+---@return boolean
+function M._comment_open(roles, first)
+  local role = roles[first - 1]
+  return role == "cstart" or role == "cin"
 end
 
 ---The row of the fence that is open above `first`, or nil.
@@ -209,7 +252,7 @@ end
 ---@field opts table  # nvim_buf_set_extmark options
 
 ---@class Mkdn.RenderCtx
----@field role? string  # "open" | "in" | "close" | "front"
+---@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" (a comment over several lines)
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
 ---@field width integer  # columns a thematic break fills
@@ -500,6 +543,22 @@ function M.line_marks(line, ctx)
   local role = ctx.role
 
   if role == "front" then return out end
+  -- a comment over several lines: the part of the row that belongs to it is dimmed and nothing else is drawn on it
+  if role == "cstart" or role == "cin" or role == "cend" then
+    if c.inline.enabled and c.inline.comments ~= false then
+      local from, to = 0, #line
+      if role == "cstart" then
+        from = (comment_opens(line) or 1) - 1
+      elseif role == "cend" then
+        local _, e = line:find("-->", 1, true)
+        to = e or #line
+      end
+      if to > from then
+        out[#out + 1] = { col = from, opts = { end_col = to, hl_group = "MarkdownRenderComment" } }
+      end
+    end
+    return out
+  end
   if role then
     if c.code.enabled then
       if c.code.background then
@@ -763,7 +822,8 @@ local function update_roles(bufnr, st, force)
         st.langs,
         first,
         api.nvim_buf_get_lines(bufnr, first - 1, -1, false),
-        open_line
+        open_line,
+        M._comment_open(st.roles, first)
       )
       return
     end

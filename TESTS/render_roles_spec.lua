@@ -60,7 +60,14 @@ return function(H)
         for i = first, #edited do
           tail[#tail + 1] = edited[i]
         end
-        r.roles_after(roles, langs, first, tail, open_row and lines[open_row] or nil)
+        r.roles_after(
+          roles,
+          langs,
+          first,
+          tail,
+          open_row and lines[open_row] or nil,
+          r._comment_open(roles, first)
+        )
         local want_roles, want_langs = r.roles(edited)
         local equal, at = same(roles, want_roles)
         ok(equal, ("iteration %d: roles differ at row %s"):format(iter, tostring(at)))
