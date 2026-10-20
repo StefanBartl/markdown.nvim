@@ -52,15 +52,8 @@ for _, f in ipairs(FEATURES) do
   FEATURE_SET[f] = true
 end
 
-local _cfg = vim.deepcopy(DEFAULTS)
 ---@type table<string, boolean>
 local _resolved = {}
-
---- What the last `setup()` had to reject or degrade, one human-readable line
---- each (ERR-50/ERR-22), for `:checkhealth markdown`. Empty when every
---- option `setup()` was called with matched a known key and a valid value.
----@type string[]
-local _issues = {}
 
 ---@type string[]  Top-level `Mkdn.Config` keys `setup()` accepts.
 local TOP_LEVEL_OPTS = {
@@ -598,38 +591,62 @@ local function resolve_features(cfg)
   end
 end
 
+--- To the schema that `lib.lua.config` infers from `DEFAULTS`, every option is open: the checks are
+--- `sanitize_level` before the merge and `degrade_invalid_scalars` after it. An unknown top-level
+--- key is caught there as well.
+local ANY = "boolean|number|string|table|function"
+---@type table<string, string>
+local SCHEMA = {}
+for _, key in ipairs(TOP_LEVEL_OPTS) do
+  SCHEMA[key] = ANY
+end
+
+local cfg = require("lib.lua.config").new(DEFAULTS, {
+  name = "markdown",
+  schema = SCHEMA,
+  -- ERR-50: unknown keys dropped with a "did you mean" hint before the merge, so a typo cannot
+  -- vanish into its result next to the default it was meant to override. `opts` is a private
+  -- copy, so it is rewritten in place.
+  normalize = function(opts, issues)
+    local sanitized = sanitize_level(opts, TOP_LEVEL_OPTS, "", issues)
+    for key in pairs(opts) do
+      opts[key] = nil
+    end
+    for key, value in pairs(sanitized) do
+      opts[key] = value
+    end
+  end,
+  -- After the merge: a few known-invalid scalars degrade to their default (ERR-22) and feature
+  -- gating is re-resolved.
+  resolve = function(current, issues)
+    degrade_invalid_scalars(current, issues)
+    resolve_features(current)
+  end,
+  notify = function(message)
+    notify.warn("ignored/degraded config option(s):\n  " .. message:gsub("; ", "\n  "))
+  end,
+})
+
 --- Validates `opts` (ERR-50: unknown keys dropped with a "did you mean" hint,
---- before the merge, so a typo cannot vanish into `tbl_deep_extend`'s result
---- next to the default it was meant to override), deep-merges the rest over
---- DEFAULTS, degrades a few known-invalid scalars back to their default
---- (ERR-22), and re-resolves feature gating. Anything rejected or degraded is
---- collected in `M.issues()` and reported once here and again by
+--- before the merge, so a typo cannot vanish into the merge's result next to
+--- the default it was meant to override), merges the rest over DEFAULTS (every
+--- call starts from them), degrades a few known-invalid scalars back to their
+--- default (ERR-22), and re-resolves feature gating. Anything rejected or
+--- degraded is collected in `M.issues()` and reported once here and again by
 --- `:checkhealth markdown`.
 ---@param opts Mkdn.Config|nil
 ---@return nil
-function M.setup(opts)
-  local issues = {}
-  local sanitized = sanitize_level(opts or {}, TOP_LEVEL_OPTS, "", issues)
-
-  _cfg = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULTS), sanitized)
-  degrade_invalid_scalars(_cfg, issues)
-  resolve_features(_cfg)
-
-  _issues = issues
-  if #issues > 0 then
-    notify.warn("ignored/degraded config option(s):\n  " .. table.concat(issues, "\n  "))
-  end
-end
+function M.setup(opts) cfg.setup(type(opts) == "table" and opts or nil) end
 
 ---@return Mkdn.Config
-function M.get() return _cfg end
+function M.get() return cfg.get() end
 
 --- What the last `setup()` ignored or degraded: unknown keys and out-of-range
 --- scalar values, one human-readable line each. Empty when every option
 --- given to `setup()` matched a known key and a valid value. For
 --- `:checkhealth markdown`.
 ---@return string[]
-function M.issues() return vim.list_extend({}, _issues) end
+function M.issues() return cfg.issues() end
 
 --- Whether feature `name` is enabled by the resolved `features` gating.
 --- Unknown (non-gateable) names are always enabled.
