@@ -10,7 +10,7 @@
 --- scrolling, so a large file costs the same as a small one.
 ---
 ---   M.line_marks(line, i, ctx) – pure: the extmarks of one line
----   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front" / "cstart" | "cin" | "cend" | "cmid" (comment)
+---   M.roles(lines)             – pure: per line "open" | "in" | "close" (fenced code) / "front" / "cstart" | "cin" | "cend" | "cmid" (comment) / "mstart" | "min" | "mend" (math block)
 ---   M.enable/disable/toggle(bufnr), M.refresh(bufnr)
 
 local fences = require("markdown.util.fence")
@@ -47,6 +47,7 @@ M.DEFAULTS = {
     comments = true,
     footnotes = true,
     math = true,
+    math_blocks = true, -- a `$$` ... `$$` block over several lines (needs `math`)
   },
 }
 
@@ -216,8 +217,19 @@ local function comment_opens(line)
 end
 
 ---@internal
----The fence and comment state machine over `lines[i]` for i >= `from`, writing the role of row `base + i - 1`. A fenced
----block is code and nothing inside it opens a comment; inside a comment no fence opens.
+---Does `line` open a math block: `$$` in the first columns (at most three spaces) that is not closed on the same line
+---(`$$x$$` is inline math)? The block runs to the next line with a `$$` in it, or to the end of the buffer like an
+---unclosed fence, so that an edit below never changes a role above it.
+---@param line string
+---@return boolean
+local function math_opens(line)
+  local after = line:match("^ ? ? ?%$%$()")
+  return after ~= nil and not line:find("$$", after, true)
+end
+
+---@internal
+---The fence, comment and math state machine over `lines[i]` for i >= `from`, writing the role of row `base + i - 1`. A fenced
+---block is code and nothing inside it opens a comment or a math block; inside a comment or a math block no fence opens.
 ---@param lines string[]
 ---@param from integer  # index into `lines`
 ---@param base integer  # row of lines[1]
@@ -226,7 +238,8 @@ end
 ---@param roles table<integer, string>
 ---@param langs table<integer, string>
 ---@param comment boolean  # a comment is open at the start
-local function scan_fences(lines, from, base, c, n, roles, langs, comment)
+---@param math? boolean  # a math block is open at the start
+local function scan_fences(lines, from, base, c, n, roles, langs, comment, math)
   for i = from, #lines do
     local line = lines[i]
     local row = base + i - 1
@@ -243,6 +256,13 @@ local function scan_fences(lines, from, base, c, n, roles, langs, comment)
       else
         roles[row] = "cin"
       end
+    elseif math then
+      if line:find("$$", 1, true) then
+        roles[row] = "mend"
+        math = false
+      else
+        roles[row] = "min"
+      end
     elseif not c then
       c, n = fences.open(line)
       if c then
@@ -251,6 +271,9 @@ local function scan_fences(lines, from, base, c, n, roles, langs, comment)
       elseif comment_opens(line) then
         roles[row] = "cstart"
         comment = true
+      elseif math_opens(line) then
+        roles[row] = "mstart"
+        math = true
       end
     else
       if fences.close(line, c, n) then
@@ -295,7 +318,8 @@ end
 ---@param tail string[]
 ---@param open_line? string  # the opening fence line of the fence that is open above `first`, when one is
 ---@param in_comment? boolean  # a comment is open above `first`
-function M.roles_after(roles, langs, first, tail, open_line, in_comment)
+---@param in_math? boolean  # a math block is open above `first`
+function M.roles_after(roles, langs, first, tail, open_line, in_comment, in_math)
   for row in pairs(roles) do
     if row >= first then roles[row] = nil end
   end
@@ -306,7 +330,7 @@ function M.roles_after(roles, langs, first, tail, open_line, in_comment)
   if open_line then
     c, n = fences.open(open_line)
   end
-  scan_fences(tail, 1, first, c, n, roles, langs, in_comment == true)
+  scan_fences(tail, 1, first, c, n, roles, langs, in_comment == true, in_math == true)
 end
 
 ---Is a comment open above `first`?
@@ -316,6 +340,15 @@ end
 function M._comment_open(roles, first)
   local role = roles[first - 1]
   return role == "cstart" or role == "cin" or role == "cmid"
+end
+
+---Is a math block open above `first`?
+---@param roles table<integer, string>
+---@param first integer
+---@return boolean
+function M._math_open(roles, first)
+  local role = roles[first - 1]
+  return role == "mstart" or role == "min"
 end
 
 ---The row of the fence that is open above `first`, or nil.
@@ -338,7 +371,7 @@ end
 ---@field opts table  # nvim_buf_set_extmark options
 
 ---@class Mkdn.RenderCtx
----@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" | "cmid" (a comment over several lines; cmid closes one and opens the next)
+---@field role? string  # "open" | "in" | "close" | "front" | "cstart" | "cin" | "cend" | "cmid" (a comment over several lines; cmid closes one and opens the next) | "mstart" | "min" | "mend" (a `$$` block over several lines)
 ---@field lang? string
 ---@field prev? string  # the line above (setext headings are no thematic break)
 ---@field next? string  # the line below (a paragraph line above an underline is a setext title)
@@ -734,6 +767,33 @@ function M.line_marks(line, ctx)
   local role = ctx.role
 
   if role == "front" then return out end
+  -- a math block over several lines: the dollars go, the formula is coloured and is nobody's emphasis; what stands
+  -- after the closing `$$` is inline text. Switched off, the rows are plain text.
+  if role == "mstart" or role == "min" or role == "mend" then
+    local i = c.inline
+    if i.enabled and i.math ~= false and i.math_blocks ~= false then
+      local function formula(from, to)
+        if to > from then
+          out[#out + 1] = { col = from, opts = { end_col = to, hl_group = "MarkdownRenderMath" } }
+        end
+      end
+      if role == "mstart" then
+        local at = line:find("$$", 1, true)
+        conceal(out, at - 1, at + 1, "")
+        formula(at + 1, #line)
+      elseif role == "min" then
+        formula(0, #line)
+      else
+        local at = line:find("$$", 1, true)
+        formula(0, at - 1)
+        conceal(out, at - 1, at + 1, "")
+        inline(out, line, at + 2, i)
+      end
+      return out
+    end
+    role = nil
+    ctx = vim.tbl_extend("force", ctx, { role = nil })
+  end
   -- a comment over several lines: the part of a row that belongs to it is dimmed; what stands before the opening marker
   -- is drawn as a row of its own (a heading, a list item), what stands after the closing marker as inline text
   if role == "cstart" or role == "cin" or role == "cend" or role == "cmid" then
@@ -1066,7 +1126,8 @@ local function update_roles(bufnr, st, force)
         first,
         api.nvim_buf_get_lines(bufnr, first - 1, -1, false),
         open_line,
-        M._comment_open(st.roles, first)
+        M._comment_open(st.roles, first),
+        M._math_open(st.roles, first)
       )
       return
     end

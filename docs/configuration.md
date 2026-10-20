@@ -171,7 +171,10 @@ require("markdown").setup({
   --   code       = { enabled = true, background = true, label = true, icons = true, icon_map = {} },
   --   rules      = { enabled = true, char = "─" },
   --   quotes     = { enabled = true, icon = "▎", callouts = true },
-  --   inline     = { enabled = true, code = true, links = true, images = true, bold = true, italic = true, strike = true, comments = true, footnotes = true, math = true },
+  --   inline     = { enabled = true, code = true, links = true, images = true, bold = true, italic = true, strike = true, comments = true, footnotes = true, math = true, math_blocks = true },
+  --   -- math: `$x$` and `$$x$$` on one line lose their dollars and are coloured. math_blocks: a `$$` in the first
+  --   -- columns that is not closed on its row opens a block that runs to the next row with a `$$` (or to the end of
+  --   -- the buffer, like an unclosed fence); its rows are coloured as math and nothing inside is emphasis or a link.
   -- },
 
   -- Defaults for :Markdown table format; explicit command args (header=,

@@ -18,6 +18,12 @@ return function(H)
     "> quote",
     "---",
     "    code",
+    "$$",
+    "$$ x = 1",
+    "a + b $$",
+    "$$x$$",
+    "<!-- c",
+    "d -->",
   }
   local function same(a, b)
     local keys = {}
@@ -66,7 +72,8 @@ return function(H)
           first,
           tail,
           open_row and lines[open_row] or nil,
-          r._comment_open(roles, first)
+          r._comment_open(roles, first),
+          r._math_open(roles, first)
         )
         local want_roles, want_langs = r.roles(edited)
         local equal, at = same(roles, want_roles)
