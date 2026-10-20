@@ -777,22 +777,24 @@ function M.line_marks(line, ctx)
           out[#out + 1] = { col = from, opts = { end_col = to, hl_group = "MarkdownRenderMath" } }
         end
       end
+      -- the roles come from the text of the buffer, so the dollars are there; if a row was edited since, the
+      -- next pass draws it again, and until then it must not crash
+      local at = line:find("$$", 1, true)
       if role == "mstart" then
-        local at = line:find("$$", 1, true)
-        conceal(out, at - 1, at + 1, "")
-        formula(at + 1, #line)
-      elseif role == "min" then
+        if at then
+          conceal(out, at - 1, at + 1, "")
+          formula(at + 1, #line)
+        end
+      elseif role == "min" or not at then
         formula(0, #line)
       else
-        local at = line:find("$$", 1, true)
         formula(0, at - 1)
         conceal(out, at - 1, at + 1, "")
         inline(out, line, at + 2, i)
       end
       return out
     end
-    role = nil
-    ctx = vim.tbl_extend("force", ctx, { role = nil })
+    role = nil -- switched off: a row like any other
   end
   -- a comment over several lines: the part of a row that belongs to it is dimmed; what stands before the opening marker
   -- is drawn as a row of its own (a heading, a list item), what stands after the closing marker as inline text
