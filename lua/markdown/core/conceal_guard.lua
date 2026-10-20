@@ -47,9 +47,10 @@ end
 ---Release the window. One that still shows the buffer gets its level back. One that went to
 ---another buffer gets it back only while it carries the raised value (2, inherited from the
 ---buffer it left); a different value is that buffer's own and must not be overwritten. The
----original is kept in `last` for the day the buffer returns. Known limit: the raised 2 and a
----buffer's own remembered 2 cannot be told apart by value, so the latter is reset to the original
----of the buffer that was left (the 3 / 0 / 1 cases are exact).
+---original is kept in `last` for the day the buffer returns. Known limit, now only for a buffer
+---that was still shown in another window when this one left (no `BufWinLeave`, see `hook_leave`):
+---the raised 2 and a buffer's own remembered 2 cannot be told apart by value, so the latter is
+---reset to the original of the buffer that was left (the 3 / 0 / 1 cases are exact).
 ---@param win integer
 local function drop(win)
   local e = saved[win]
