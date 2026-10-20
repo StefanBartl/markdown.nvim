@@ -190,6 +190,12 @@ return function(H)
     rows[#rows + 1] = e[2]
   end
   ok(#rows < #many, "the far end of a many buffer is not painted")
+  local worked, total = tt._worked_out(big)
+  eq(total, 1500, "the whole buffer is parsed")
+  ok(
+    worked > 0 and worked < 200,
+    "but only the tables in the painted span are worked out, not all 1500: " .. worked
+  )
   ok(math.max(unpack(rows)) < 1000, "nothing beyond the margin below the window")
   eq(tt.render(big), 0, "a render without a move or an edit repaints nothing")
   vim.cmd("normal! G")
@@ -212,6 +218,37 @@ return function(H)
     #vim.api.nvim_buf_get_extmarks(big, ns, { #many - 5, 0 }, { #many - 1, -1 }, {}) > 0,
     "WinScrolled paints the new view before any debounce"
   )
+  -- the ranges worked out table by table for the painted span are the ones the whole-buffer computation gives
+  do
+    local want = tt.compute(many, { max = 10 })
+    local by_start = function(a, b) return a.s < b.s end
+    local checked = 0
+    local seen = {}
+    for _, e in ipairs(vim.api.nvim_buf_get_extmarks(big, ns, 0, -1, { details = true })) do
+      local ln = e[2] + 1
+      seen[ln] = seen[ln] or {}
+      seen[ln][#seen[ln] + 1] =
+        { s = e[3] + 1, e = e[4].end_row == e[2] and e[4].end_col or -1, text = e[4].conceal }
+    end
+    for ln, got in pairs(seen) do
+      table.sort(got, by_start)
+      local w = vim.deepcopy(want[ln] or {})
+      table.sort(w, by_start)
+      ok(vim.deep_equal(got, w), "line " .. ln .. ": painted ranges equal the computed ones")
+      checked = checked + 1
+    end
+    ok(checked > 20, "a whole screen of lines was compared")
+  end
+  -- an edit makes the ranges new (the memo belongs to one text)
+  vim.api.nvim_buf_set_lines(
+    big,
+    #many - 4,
+    #many - 3,
+    false,
+    { "| a | " .. string.rep("z", 40) .. " |" }
+  )
+  local after_edit = tt.render(big)
+  ok(after_edit > 0, "after an edit the visible tables are worked out again")
   tt.disable(big)
   vim.api.nvim_buf_delete(big, { force = true })
 

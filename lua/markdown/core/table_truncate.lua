@@ -15,7 +15,8 @@
 --- columns wide.
 ---
 ---   M.compute(lines, opts)   – pure: per-line conceal ranges
----   M.render(bufnr)          – apply extmarks for the whole buffer
+---   M.render(bufnr)          – apply extmarks for the lines the windows show (plus a margin); the buffer is parsed
+---                              once per text, the ranges of a table are worked out when it first comes into view
 ---   M.clear(bufnr)           – remove them
 ---   M.enable/disable/toggle(bufnr)
 
@@ -66,6 +67,100 @@ local function prefix_bytes(content, budget)
   return bytes
 end
 
+---@internal
+---The conceal ranges of ONE table, added to `result` (line index -> ranges). Nothing is added when no column of it
+---is wider than `max`. `lines` is the whole buffer: line numbers are the buffer's.
+---@param lines string[]
+---@param tbl table  # one entry of `lib_table.parse`
+---@param max integer
+---@param marker string
+---@param result table<integer, Mkdn.TruncateConceal[]>
+local function table_marks(lines, tbl, max, marker, result)
+  -- Natural width per column over the data rows.
+  local widths = {}
+  for _, row in ipairs(tbl.rows) do
+    for ci, cell in ipairs(row) do
+      widths[ci] = math.max(widths[ci] or 0, vim.fn.strdisplaywidth(cell))
+    end
+  end
+  local visible = {}
+  local any = false
+  for ci, w in pairs(widths) do
+    visible[ci] = math.min(w, max)
+    if w > max then any = true end
+  end
+
+  if any then
+    -- only the delimiter row loses dashes; a data row of dashes (`| - | - |`) is cut like data
+    local sep_idx = lib_table.separator_index(lines, tbl.start_line, tbl.end_line)
+    for ln = tbl.start_line, tbl.end_line do
+      local line = lines[ln]
+      local is_sep = ln == sep_idx
+      local cells, ranges = lib_table.split_cells(line)
+      local marks = {}
+      for ci, rng in ipairs(ranges) do
+        local v, w = visible[ci], widths[ci]
+        if v and w and v < w then
+          local s, e = rng[1], rng[2]
+          local raw = line:sub(s, e)
+          local lead = #raw:match("^ *")
+          local trail = #raw:match(" *$")
+          if raw:match("^ *$") then trail = 0 end
+          local rw = vim.fn.strdisplaywidth(raw)
+          local excess = rw - (v + 2)
+          if is_sep then
+            -- Hide surplus dashes (keep any trailing alignment colon).
+            local body = raw:gsub(" +$", "")
+            local stop = #body
+            if body:sub(stop, stop) == ":" then stop = stop - 1 end
+            local run_start = stop
+            while run_start > 1 and body:sub(run_start - 1, run_start - 1) == "-" do
+              run_start = run_start - 1
+            end
+            local run = stop - run_start + 1
+            local cut = math.min(excess, run - 1)
+            if cut > 0 then
+              marks[#marks + 1] = { s = s + stop - cut, e = s + stop - 1, text = "" }
+            end
+          else
+            local content = cells[ci]
+            local cw = vim.fn.strdisplaywidth(content)
+            if cw > v then
+              local budget = v - vim.fn.strdisplaywidth(marker)
+              local keep = prefix_bytes(content, budget)
+              -- a double-width character that does not fit leaves a column short: fill it
+              local short = math.max(0, budget - vim.fn.strdisplaywidth(content:sub(1, keep)))
+              local from = s + lead + keep
+              local to = trail >= 1 and (e - 1) or e
+              if to >= from then
+                marks[#marks + 1] = { s = from, e = to, text = marker .. (" "):rep(short) }
+              end
+              -- Centered / right-aligned column: a cut cell that is not the widest
+              -- also has padding in front; keep one margin space, hide the rest.
+              if lead > 1 then marks[#marks + 1] = { s = s + 1, e = s + lead - 1, text = "" } end
+            elseif excess > 0 then
+              local rt = math.min(excess, math.max(trail - 1, 0))
+              if rt > 0 then marks[#marks + 1] = { s = e - rt, e = e - 1, text = "" } end
+              local rl = math.min(excess - rt, math.max(lead - 1, 0))
+              if rl > 0 then marks[#marks + 1] = { s = s + 1, e = s + rl, text = "" } end
+            end
+          end
+        end
+      end
+      if #marks > 0 then result[ln] = marks end
+    end
+  end
+end
+
+---@internal
+---Does a table count for truncation? One inside a fenced code block is an example, not a table of the document.
+---@param tbl table
+---@param fenced table<integer, boolean>
+---@return boolean
+local function eligible(tbl, fenced)
+  return tbl.end_line - tbl.start_line < MAX_ROWS and not fenced[tbl.start_line]
+end
+
 ---Pure: the conceal ranges that truncate the over-wide cells of every table in
 ---`lines`. Returns a map `line index (1-based) -> TruncateConceal[]`.
 ---@param lines string[]
@@ -77,87 +172,8 @@ function M.compute(lines, opts)
   local marker = vim.fn.strcharpart((opts and opts.marker) or d.marker, 0, 1)
   local result = {}
   local fenced = require("markdown.util.fence").mask(lines)
-
   for _, tbl in ipairs(lib_table.parse(lines)) do
-    -- a table inside a fenced code block is an example, not a table of the document
-    if tbl.end_line - tbl.start_line < MAX_ROWS and not fenced[tbl.start_line] then
-      -- Natural width per column over the data rows.
-      local widths = {}
-      for _, row in ipairs(tbl.rows) do
-        for ci, cell in ipairs(row) do
-          widths[ci] = math.max(widths[ci] or 0, vim.fn.strdisplaywidth(cell))
-        end
-      end
-      local visible = {}
-      local any = false
-      for ci, w in pairs(widths) do
-        visible[ci] = math.min(w, max)
-        if w > max then any = true end
-      end
-
-      if any then
-        -- only the delimiter row loses dashes; a data row of dashes (`| - | - |`) is cut like data
-        local sep_idx = lib_table.separator_index(lines, tbl.start_line, tbl.end_line)
-        for ln = tbl.start_line, tbl.end_line do
-          local line = lines[ln]
-          local is_sep = ln == sep_idx
-          local cells, ranges = lib_table.split_cells(line)
-          local marks = {}
-          for ci, rng in ipairs(ranges) do
-            local v, w = visible[ci], widths[ci]
-            if v and w and v < w then
-              local s, e = rng[1], rng[2]
-              local raw = line:sub(s, e)
-              local lead = #raw:match("^ *")
-              local trail = #raw:match(" *$")
-              if raw:match("^ *$") then trail = 0 end
-              local rw = vim.fn.strdisplaywidth(raw)
-              local excess = rw - (v + 2)
-              if is_sep then
-                -- Hide surplus dashes (keep any trailing alignment colon).
-                local body = raw:gsub(" +$", "")
-                local stop = #body
-                if body:sub(stop, stop) == ":" then stop = stop - 1 end
-                local run_start = stop
-                while run_start > 1 and body:sub(run_start - 1, run_start - 1) == "-" do
-                  run_start = run_start - 1
-                end
-                local run = stop - run_start + 1
-                local cut = math.min(excess, run - 1)
-                if cut > 0 then
-                  marks[#marks + 1] = { s = s + stop - cut, e = s + stop - 1, text = "" }
-                end
-              else
-                local content = cells[ci]
-                local cw = vim.fn.strdisplaywidth(content)
-                if cw > v then
-                  local budget = v - vim.fn.strdisplaywidth(marker)
-                  local keep = prefix_bytes(content, budget)
-                  -- a double-width character that does not fit leaves a column short: fill it
-                  local short = math.max(0, budget - vim.fn.strdisplaywidth(content:sub(1, keep)))
-                  local from = s + lead + keep
-                  local to = trail >= 1 and (e - 1) or e
-                  if to >= from then
-                    marks[#marks + 1] = { s = from, e = to, text = marker .. (" "):rep(short) }
-                  end
-                  -- Centered / right-aligned column: a cut cell that is not the widest
-                  -- also has padding in front; keep one margin space, hide the rest.
-                  if lead > 1 then
-                    marks[#marks + 1] = { s = s + 1, e = s + lead - 1, text = "" }
-                  end
-                elseif excess > 0 then
-                  local rt = math.min(excess, math.max(trail - 1, 0))
-                  if rt > 0 then marks[#marks + 1] = { s = e - rt, e = e - 1, text = "" } end
-                  local rl = math.min(excess - rt, math.max(lead - 1, 0))
-                  if rl > 0 then marks[#marks + 1] = { s = s + 1, e = s + rl, text = "" } end
-                end
-              end
-            end
-          end
-          if #marks > 0 then result[ln] = marks end
-        end
-      end
-    end
+    if eligible(tbl, fenced) then table_marks(lines, tbl, max, marker, result) end
   end
   return result
 end
@@ -181,8 +197,38 @@ local VIEW_MARGIN = 200
 ---@type table<integer, Mkdn.TruncateRendered>  # what is currently painted per buffer
 local rendered_at = {}
 
----@type table<integer, { key: string, marks: table<integer, Mkdn.TruncateConceal[]> }>
+---What is worked out for one text and its settings: the tables (the width of a column needs every row of its table,
+---so the buffer is parsed whole, once), and the ranges of each table, computed when the table first comes into the
+---painted span. Working out every table of a long file at every edit cost 6 us per line.
+---@class Mkdn.TruncateComputed
+---@field key string
+---@field lines string[]
+---@field tables table[]
+---@field fenced table<integer, boolean>
+---@field max integer
+---@field marker string
+---@field memo table<integer, table<integer, Mkdn.TruncateConceal[]>>  # table index -> ranges
+
+---@type table<integer, Mkdn.TruncateComputed>
 local computed = {}
+
+---@internal
+---Index of the first table that ends at or below line `lo` (tables are in document order), or #tables + 1.
+---@param tables table[]
+---@param lo integer
+---@return integer
+local function first_table_from(tables, lo)
+  local a, b = 1, #tables + 1
+  while a < b do
+    local mid = math.floor((a + b) / 2)
+    if tables[mid].end_line < lo then
+      a = mid + 1
+    else
+      b = mid
+    end
+  end
+  return a
+end
 
 ---@internal
 ---The line span the windows showing `bufnr` currently display, over all of
@@ -217,9 +263,25 @@ function M.clear(bufnr)
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end
 end
 
+---@internal
+---How many of the tables of `bufnr` have their ranges worked out (the ones that were in the painted span since the
+---last edit). For the specs.
+---@param bufnr integer
+---@return integer worked_out, integer tables
+function M._worked_out(bufnr)
+  local c = computed[bufnr]
+  if not c then return 0, 0 end
+  local n = 0
+  for _ in pairs(c.memo) do
+    n = n + 1
+  end
+  return n, #c.tables
+end
+
 ---Apply the truncation extmarks to the lines the windows show (plus a margin).
----The ranges are computed once per text and settings (whole buffer: the width
----of a column needs every row of its table); a scroll only repaints.
+---The buffer is parsed once per text and settings (the width of a column needs
+---every row of its table) and the ranges of a table are worked out when it first
+---comes into the painted span; a scroll only repaints.
 ---@param bufnr integer
 ---@return integer count  # ranges concealed
 function M.render(bufnr)
@@ -232,7 +294,17 @@ function M.render(bufnr)
   if done and done.key == key and (not vlo or (vlo >= done.lo and vhi <= done.hi)) then return 0 end
   local c = computed[bufnr]
   if not c or c.key ~= key then
-    c = { key = key, marks = M.compute(api.nvim_buf_get_lines(bufnr, 0, -1, false)) }
+    local d = cfg()
+    local lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    c = {
+      key = key,
+      lines = lines,
+      tables = lib_table.parse(lines),
+      fenced = require("markdown.util.fence").mask(lines),
+      max = d.max,
+      marker = vim.fn.strcharpart(d.marker, 0, 1),
+      memo = {},
+    }
     computed[bufnr] = c
   end
   api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
@@ -240,15 +312,25 @@ function M.render(bufnr)
   local hi = vhi and (vhi + VIEW_MARGIN) or math.huge
   rendered_at[bufnr] = { key = key, lo = lo, hi = hi }
   local count = 0
-  for ln, marks in pairs(c.marks) do
-    if ln >= lo and ln <= hi then
-      for _, m in ipairs(marks) do
-        local ok = pcall(api.nvim_buf_set_extmark, bufnr, NS, ln - 1, m.s - 1, {
-          end_row = ln - 1,
-          end_col = m.e,
-          conceal = m.text,
-        })
-        if ok then count = count + 1 end
+  for i = first_table_from(c.tables, lo), #c.tables do
+    local tbl = c.tables[i]
+    if tbl.start_line > hi then break end
+    local marks_of = c.memo[i]
+    if not marks_of then
+      marks_of = {}
+      if eligible(tbl, c.fenced) then table_marks(c.lines, tbl, c.max, c.marker, marks_of) end
+      c.memo[i] = marks_of
+    end
+    for ln, marks in pairs(marks_of) do
+      if ln >= lo and ln <= hi then
+        for _, m in ipairs(marks) do
+          local ok = pcall(api.nvim_buf_set_extmark, bufnr, NS, ln - 1, m.s - 1, {
+            end_row = ln - 1,
+            end_col = m.e,
+            conceal = m.text,
+          })
+          if ok then count = count + 1 end
+        end
       end
     end
   end
