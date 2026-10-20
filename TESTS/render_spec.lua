@@ -410,6 +410,43 @@ return function(H)
     vim.api.nvim_set_current_buf(a)
   end
 
+  -- conceal_guard: the other buffer's own 2 cannot be told from the raised 2 by value, so the guard gives
+  -- the window its level back before the window leaves and nothing has to be guessed afterwards
+  do
+    local guard = require("markdown.core.conceal_guard")
+    local a, b, c = H.scratch("markdown"), H.scratch("markdown"), H.scratch("markdown")
+    vim.api.nvim_set_current_buf(b)
+    vim.wo.conceallevel = 2
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t6", a)
+    eq(vim.wo.conceallevel, 2, "a is raised")
+    vim.api.nvim_set_current_buf(b)
+    eq(vim.wo.conceallevel, 2, "b keeps its own 2")
+    guard.apply("t6", a) -- the scheduled BufWinLeave handler
+    eq(vim.wo.conceallevel, 2, "and the later release does not take it for the raised value")
+    guard.restore("t6", a)
+    eq(vim.wo.conceallevel, 2, "restore leaves it alone too")
+    -- a buffer that was never in this window inherits the original, not the raised 2
+    vim.api.nvim_set_current_buf(a)
+    vim.wo.conceallevel = 0
+    guard.apply("t6", a)
+    vim.api.nvim_set_current_buf(c)
+    eq(vim.wo.conceallevel, 0, "a new buffer inherits the original level")
+    guard.restore("t6", a)
+    vim.api.nvim_set_current_buf(a)
+    -- Neovim hands a back the raised 2 it remembered for it; the next release replaces it by the original
+    guard.restore("t6", a)
+    eq(
+      vim.wo.conceallevel,
+      0,
+      "a release without a new apply ends at the original, not the stale 2"
+    )
+    guard.apply("t6", a)
+    guard.restore("t6", a)
+    eq(vim.wo.conceallevel, 0, "and the round trip ends at the original")
+  end
+
   -- conceal_guard: a level the user sets after render was switched off is theirs
   do
     local guard = require("markdown.core.conceal_guard")
