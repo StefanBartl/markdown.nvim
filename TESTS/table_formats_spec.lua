@@ -230,7 +230,7 @@ return function(H)
   eq(conv.parse_args({ "to=org" }).to, "org", "to=")
   eq(conv.parse_args({ "from=csv", "to=tsv" }).from, "csv", "from=")
   eq(conv.parse_args({ "org" }).to, "org", "a bare word is the target")
-  ok(select(2, conv.parse_args({ "to=latex" })) ~= nil, "unknown target refused")
+  ok(select(2, conv.parse_args({ "to=bogus" })) ~= nil, "unknown target refused")
   ok(select(2, conv.parse_args({ "bogus=1" })) ~= nil, "unknown option refused")
   ok(vim.tbl_contains(conv.complete("to="), "to=org"), "completion")
   ok(
@@ -665,7 +665,7 @@ return function(H)
     1,
     "the parser answers for the enabled formats"
   )
-  cfgm.setup({ table = { formats = { "gfm", "latex" } } })
+  cfgm.setup({ table = { formats = { "gfm", "bogus" } } })
   eq(#cfgm.get().table.formats, 1, "an unknown format falls back to the default")
   cfgm.setup({ table = { formats = {} } })
   eq(cfgm.get().table.formats[1], "gfm", "an empty list falls back to the default")

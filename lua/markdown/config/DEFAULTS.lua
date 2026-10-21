@@ -207,8 +207,9 @@ local DEFAULTS = {
 
     -- Table formats looked for inside documents (list, view, select, render read them):
     -- "gfm" (pipe tables), "org" (org-mode tables), "box" (box-drawing tables),
-    -- "grid" (MySQL / reST / Pandoc grid), "psql" (psql output), "rst" (reST simple tables).
-    -- CSV / TSV are standalone: `:Markdown table convert from=csv`.
+    -- "grid" (MySQL / reST / Pandoc grid), "psql" (psql output), "rst" (reST simple tables),
+    -- "wiki" (MediaWiki), "asciidoc", "latex" (tabular), "html" (with colspan / rowspan).
+    -- CSV / TSV / JSON are standalone: `:Markdown table convert from=csv`.
     formats = { "gfm" },
 
     -- CursorHold in any table cell: float with the cell's full content.

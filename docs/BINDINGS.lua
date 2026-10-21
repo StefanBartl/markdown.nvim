@@ -574,7 +574,7 @@ return {
         desc = "Render table preview; scope=%|cwd|<path> or off-table cursor = every matching table, stacked",
       },
       {
-        name = "Markdown table convert [from=auto|gfm|org|box|grid|psql|rst|csv|tsv] [to=gfm|org|box|grid|psql|rst|csv|tsv]",
+        name = "Markdown table convert [from=auto|gfm|org|box|grid|psql|rst|wiki|asciidoc|latex|html|csv|tsv|json] [to=gfm|org|box|grid|psql|rst|wiki|asciidoc|latex|html|csv|tsv|json]",
         desc = "Rewrite the table at the cursor / in the range in another format; reports what the target cannot keep",
       },
       {

@@ -3,7 +3,7 @@
 ---@description
 --- Source: the `:'<,'>` range if there is one, otherwise the table under the cursor, otherwise
 --- (csv / tsv only) the whole buffer. `from=auto` finds the table with every embedded format
---- (gfm, org, box, grid, psql, rst) regardless of `table.formats`; `from=csv|tsv` reads the range as delimited text.
+--- (every embedded format) regardless of `table.formats`; `from=csv|tsv|json` reads the range as one standalone document.
 --- The lines of the source are replaced by the table in the `to=` format. What the target format
 --- cannot keep (alignment in csv, row groups of an org table, formulas after it) is reported.
 
@@ -12,7 +12,21 @@ local registry = require("markdown.tables.registry")
 
 local M = {}
 
-local TARGETS = { "gfm", "org", "box", "grid", "psql", "rst", "csv", "tsv" }
+local TARGETS = {
+  "gfm",
+  "org",
+  "box",
+  "grid",
+  "psql",
+  "rst",
+  "wiki",
+  "asciidoc",
+  "latex",
+  "html",
+  "csv",
+  "tsv",
+  "json",
+}
 
 ---@param argv string[]
 ---@return { from: string, to: string }|nil opts, string|nil err
@@ -44,7 +58,10 @@ end
 ---@param range? { [1]: integer, [2]: integer }
 ---@return table|nil tbl, string|nil err
 function M.read(lines, o, lnum, range)
-  local standalone = o.from == "csv" or o.from == "tsv"
+  local source_format = registry.get(o.from)
+  local standalone = source_format ~= nil
+    and source_format.parse ~= nil
+    and source_format.scan == nil
   if standalone then
     local first, last = 1, #lines
     if range then

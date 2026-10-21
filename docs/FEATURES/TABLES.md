@@ -143,9 +143,14 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
 | `grid` | embedded | `+---+---+ \| a \| b \| +===+===+`: MySQL/MariaDB output, reStructuredText and Pandoc grid tables. A `+===+` border ends the header (`+:===:+` gives the alignment), without one the first row is the header; lines between two borders are one row (multi-line cells, `<br>`). Spanning cells are not read: such a table is left alone |
 | `psql` | embedded | psql's aligned output (` id \| name`, `----+------`, rows, `(2 rows)`); the footer belongs to the table. Written back left-aligned (psql right-aligns numbers; reported by `convert`) |
 | `rst` | embedded | reST simple tables (`=====  =====`); a blank first column continues the row above, `..` is an empty cell; column span underlines are not read |
+| `wiki` | embedded | MediaWiki `{\| ... \|-` `! a !! b` `\| a \|\| b` `\|}`; cell attributes are dropped and reported, `{{!}}` is a pipe, a plain line continues the cell above, the caption (`\|+`) is kept by this format |
+| `asciidoc` | embedded | `[%header]` `\|===` `\|a \|b` ... `\|===`; a blank line after the first row marks the header, `\\|` is a pipe; cell specifiers (`2+\|`, `a\|`) are not read, such a table is left alone |
+| `latex` | embedded | `egin{tabular}{lr}` ... `\end{tabular}`; rules and `%` comments dropped, the spec gives the alignment, `\&` `\%` `\_` ... are unescaped and written escaped again; `\multicolumn` / `\multirow` tables are left alone |
+| `html` | embedded | `<table>` with `<tr>` / `<th>` / `<td>`; `colspan` / `rowspan` are laid out on the grid (covered slots empty), remembered and written back by this format, reported by every other |
 | `csv`, `tsv` | standalone | RFC 4180: quoted separators, doubled quotes, newlines in quotes; first record is the header; only through `convert from=csv\|tsv` |
+| `json` | standalone | an array of objects (columns in order of first appearance), of arrays (first = header) or of plain values; cells hold the value's text (`null` = empty, nested values as compact JSON). Written as an array of objects: a table read from JSON keeps every value's type, a table from another format writes plain numbers (`12`, `-3.5`) as numbers and everything else as strings |
 
-- **Config:** `table.formats = { "gfm" }` (default) -- add `"org"`, `"box"`, `"grid"`, `"psql"` and/or `"rst"` to find them in
+- **Config:** `table.formats = { "gfm" }` (default) -- add `"org"`, `"box"`, `"grid"`, `"psql"`, `"rst"`, `"wiki"`, `"asciidoc"`, `"latex"` and/or `"html"` to find them in
   markdown buffers too. Overlapping matches: the format listed first wins, so `{ "org", "gfm" }`
   and `{ "gfm", "org" }` can read the same lines differently (a one-column org table without a `+`
   in its rule is indistinguishable from GFM and is read as GFM). Tables inside code
@@ -172,8 +177,8 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   changes its group. A pipe in a
   cell is written escaped (`\|`) to org and gfm and plain to csv/tsv; a newline in a cell becomes
   `<br>`.
-- **Not built (yet):** HTML with spans, wiki tables, JSON, LaTeX, AsciiDoc. They fit the same registry (see the analysis note in the tasks vault).
-- **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,grid,psql,rst,csv,tsv}.lua`, `tables/slice.lua`,
+- **Not built:** AsciiDoc cell specifiers, LaTeX `multicolumn`, reST/grid spans (those tables are left alone, never guessed). They fit the same registry (see the analysis note in the tasks vault).
+- **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,grid,psql,rst,wiki,asciidoc,latex,html,csv,tsv,json}.lua`, `tables/slice.lua`,
   `commands/table_convert.lua`
 
 ## `table_render` — virtual grid that fits the window
