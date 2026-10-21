@@ -178,6 +178,13 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   cell is written escaped (`\|`) to org and gfm and plain to csv/tsv; a newline in a cell becomes
   `<br>`.
 - **Not built:** AsciiDoc cell specifiers, LaTeX `multicolumn`, reST/grid spans (those tables are left alone, never guessed). They fit the same registry (see the analysis note in the tasks vault).
+- **What counts as a table (html, latex):** the table has to start a line and end one (`<table>` ... `</table>`,
+  `\begin{tabular}` ... `\end{tabular}`), because converting replaces whole lines. A table that shares its
+  line with other text (a `\resizebox{..}{!}{` wrapper, a sentence, a code span) and a table inside a table
+  cell are left alone, not guessed. `from=auto` looks for the specific formats first and GFM last, so a
+  MediaWiki table is not read as pieces of a pipe table.
+- **Cell text:** a newline is a line break (`<br>`, `\newline`) in every format, and an escaped pipe (`\|`, GFM)
+  is a plain pipe in the formats that have no such escape (wiki, asciidoc, latex, html, json).
 - **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,grid,psql,rst,wiki,asciidoc,latex,html,csv,tsv,json}.lua`, `tables/slice.lua`,
   `commands/table_convert.lua`
 

@@ -15,8 +15,17 @@ local ENTITIES = { amp = "&", lt = "<", gt = ">", quot = '"', apos = "'", nbsp =
 ---@param s string
 ---@return string
 local function decode(s)
-  s = s:gsub("&#(%d+);", function(n) return vim.fn.nr2char(tonumber(n)) end)
-  return (s:gsub("&(%a+);", function(name) return ENTITIES[name] end))
+  -- one pass, so `&#38;lt;` becomes `&lt;` and stays that
+  return (
+    s:gsub("&(#?%w+);", function(ent)
+      if ent:sub(1, 1) ~= "#" then return ENTITIES[ent] end
+      local n = ent:match("^#[xX](%x+)$")
+      n = n and tonumber(n, 16) or tonumber(ent:match("^#(%d+)$") or "")
+      -- a character that cannot be one (NUL, a surrogate, past Unicode) stays as written
+      if not n or n < 1 or n > 0x10FFFF or (n >= 0xD800 and n <= 0xDFFF) then return nil end
+      return vim.fn.nr2char(n)
+    end)
+  )
 end
 
 ---@param s string
@@ -30,8 +39,11 @@ end
 ---@param name string
 ---@return string|nil
 local function attr(attrs, name)
-  local v = attrs:match(name .. '%s*=%s*"([^"]*)"') or attrs:match(name .. "%s*=%s*'([^']*)'")
-  return v or attrs:match(name .. "%s*=%s*([^%s>]+)")
+  -- (anchored on a blank, so `data-colspan` is not `colspan`)
+  attrs = " " .. attrs
+  local v = attrs:match("%s" .. name .. '%s*=%s*"([^"]*)"')
+    or attrs:match("%s" .. name .. "%s*=%s*'([^']*)'")
+  return v or attrs:match("%s" .. name .. "%s*=%s*([^%s>]+)")
 end
 
 ---@param attrs string
@@ -52,13 +64,30 @@ function M.scan(lines, opts)
   local found = {}
   local i = 1
   while i <= #lines do
-    if lines[i]:lower():find("<table[%s>]") and not fenced[i] then
-      local j = i
-      while j <= #lines and not lines[j]:lower():find("</table>", 1, true) do
+    -- The table must start a line and end one: the lines are replaced as a whole when converting,
+    -- so text before `<table>` or after `</table>` would be lost (and `<table>` in a sentence,
+    -- or in a code span, is no table).
+    if lines[i]:lower():find("^%s*<table[%s>]") and not fenced[i] then
+      local j, depth, nested = i, 0, false
+      while j <= #lines and not fenced[j] do
+        local low = lines[j]:lower()
+        for _ in low:gmatch("<table[%s>]") do
+          depth = depth + 1
+          if depth > 1 then nested = true end
+        end
+        for _ in low:gmatch("</table%s*>") do
+          depth = depth - 1
+        end
+        if depth <= 0 then break end
         j = j + 1
       end
-      if j <= #lines then
-        local tbl = M.parse_block(vim.list_slice(lines, i, j), i)
+      local closed = j <= #lines
+        and not fenced[j]
+        and depth == 0
+        and lines[j]:lower():find("</table%s*>%s*$") ~= nil
+      if closed then
+        -- (a table inside a cell is left alone: its end is not the end of this one)
+        local tbl = (not nested) and M.parse_block(vim.list_slice(lines, i, j), i) or nil
         if tbl then found[#found + 1] = tbl end
         i = j + 1
       else
@@ -75,13 +104,34 @@ end
 ---@param html string
 ---@return table[][]
 local function read_rows(html)
+  -- comments, scripts and styles hold no cells
+  html = html
+    :gsub("<!%-%-.-%-%->", "")
+    :gsub("<[sS][cC][rR][iI][pP][tT].-</[sS][cC][rR][iI][pP][tT]>", "")
+  html = html:gsub("<[sS][tT][yY][lL][eE].-</[sS][tT][yY][lL][eE]>", "")
   local rows, row = {}, nil
   local pos = 1
   local cell
   local function close_cell(upto)
     if cell then
       local raw = html:sub(cell.from, upto - 1)
-      raw = raw:gsub("<br%s*/?>", "\1"):gsub("<[^>]*>", "")
+      raw = raw:gsub("<br%s*/?>", "\1")
+      -- block elements end a line of text: `<p>a</p><p>b</p>` is not "ab"
+      raw = raw:gsub("</?[pPdDlLuUoOhH][%w]*[^>]*>", function(tag)
+        local name = tag:match("^</?(%w+)"):lower()
+        if
+          name == "p"
+          or name == "div"
+          or name == "li"
+          or name == "ul"
+          or name == "ol"
+          or name:match("^h%d$")
+        then
+          return " "
+        end
+        return nil
+      end)
+      raw = raw:gsub("<[^>]*>", "")
       raw = decode(raw):gsub("%s+", " "):gsub("\1", "<br>")
       cell.text = vim.trim(raw):gsub("%s*<br>%s*", "<br>")
       row[#row + 1] = cell
@@ -106,8 +156,15 @@ local function read_rows(html)
       end
       cell = {
         from = e + 1,
-        colspan = math.max(1, tonumber(attr(attrs, "colspan") or "") or 1),
-        rowspan = math.max(1, tonumber(attr(attrs, "rowspan") or "") or 1),
+        -- (the HTML limits: a larger value is clamped, not built)
+        colspan = math.min(
+          1000,
+          math.max(1, math.floor(tonumber(attr(attrs, "colspan") or "") or 1))
+        ),
+        rowspan = math.min(
+          65534,
+          math.max(1, math.floor(tonumber(attr(attrs, "rowspan") or "") or 1))
+        ),
         align = align_of(attrs),
       }
     elseif (name == "td" or name == "th" or name == "table") and closing == "/" then
@@ -138,6 +195,8 @@ function M.parse_block(block, start_line)
         c = c + 1
       end
       grid[r][c] = cell.text
+      -- (a rowspan reaches to the last row of the table at most, as a browser clamps it)
+      cell.rowspan = math.min(cell.rowspan, #rows - r + 1)
       if cell.colspan > 1 or cell.rowspan > 1 then
         spans[#spans + 1] = { r = r - 1, c = c, colspan = cell.colspan, rowspan = cell.rowspan }
       end
@@ -214,7 +273,7 @@ function M.render(tbl)
     return ("<%s%s>%s</%s>"):format(
       tag,
       #attrs > 0 and (" " .. table.concat(attrs, " ")) or "",
-      encode(text),
+      encode(require("markdown.tables.slice").plain(text, tbl)),
       tag
     )
   end

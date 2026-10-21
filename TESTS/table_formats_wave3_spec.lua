@@ -175,7 +175,7 @@ return function(H)
     "an unclosed table is none"
   )
   local one = reg.find(
-    { "<p>x</p> <table><tr><th>A</th></tr><tr><td>1 &lt; 2</td></tr></table>" },
+    { "<table><tr><th>A</th></tr><tr><td>1 &lt; 2</td></tr></table>" },
     { formats = { "html" } }
   )
   eq(strings(one[1]), "A/1 < 2", "a table on one line")

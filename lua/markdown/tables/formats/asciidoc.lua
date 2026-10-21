@@ -16,7 +16,29 @@ local function is_fence(line) return vim.trim(line) == "|===" end
 
 ---@param line string
 ---@return boolean
-local function is_attr(line) return vim.trim(line):match("^%[.*%]$") ~= nil end
+local function is_attr(line)
+  local t = vim.trim(line)
+  -- only the line this format writes itself; other attributes (anchors, `cols`, a style) stay
+  -- in the document, above the table
+  return t == "[%header]" or t:match('^%[options%s*=%s*"?header"?%]$') ~= nil
+end
+
+---The position of the first `|` that is not escaped, or nil.
+---@param line string
+---@return integer|nil
+local function first_pipe(line)
+  local i = 1
+  while i <= #line do
+    local ch = line:sub(i, i)
+    if ch == "\\" and line:sub(i + 1, i + 1) == "|" then
+      i = i + 1
+    elseif ch == "|" then
+      return i
+    end
+    i = i + 1
+  end
+  return nil
+end
 
 ---Cells of one row line: split at every `|` that is not escaped.
 ---@param line string
@@ -47,10 +69,18 @@ end
 ---@param line string
 ---@return boolean
 local function has_specifier(line)
-  for spec in line:gmatch("%s([%w%.%+<>%^]+)|") do
-    if spec:match("^[%d%.]*%+$") or spec:match("^[%d%.]*[<>%^]*[ademhls]?$") and spec ~= "" then
-      return true
-    end
+  ---@param spec string
+  ---@return boolean
+  local function is_spec(spec)
+    -- `2+` `.3+` `3*` `2.3+^.>` (span / duplication), `^.^` `<` `>` (alignment), `a` `e` `h` `l` `m` `s` `d` (style)
+    return spec:match("^[%d%.]*[%+%*][<>%^%.]*[ademhls]?$") ~= nil
+      or spec:match("^[%d%.]*[<>%^]+[%.<>%^]*[ademhls]?$") ~= nil
+      or spec:match("^[ademhls]$") ~= nil
+  end
+  local lead = line:match("^([%w%.%+%*<>%^]+)|")
+  if lead and is_spec(lead) then return true end
+  for spec in line:gmatch("%s([%w%.%+%*<>%^]+)|") do
+    if is_spec(spec) then return true end
   end
   return false
 end
@@ -94,24 +124,42 @@ end
 ---@return table|nil tbl
 function M.parse_block(block, start_line, nattr)
   local registry = require("markdown.tables.registry")
-  local attr = nattr > 0 and block[1] or ""
-  local header_attr = attr:find("header", 1, true) ~= nil
-  local rows, last, blank_after_first = {}, nil, false
+  local rows, last, para = {}, nil, false
+  ---@param row string[]
+  ---@param idx integer
+  ---@param text string
+  local function append(row, idx, text)
+    if text == "" then return end
+    local cur = row[idx]
+    row[idx] = (cur ~= "" and (cur .. (para and "<br><br>" or "<br>")) or "") .. text
+    para = false
+  end
   for k = nattr + 2, #block - 1 do
-    local line = block[k]
-    if vim.trim(line) == "" then
-      if #rows == 1 then blank_after_first = true end
-      last = nil
-    elseif vim.trim(line):sub(1, 1) == "|" then
-      local t = vim.trim(line)
-      if has_specifier(t) then return nil end
+    local t = vim.trim(block[k])
+    if t == "" then
+      -- the blank line under the header row separates it; inside a cell it is a paragraph break
+      if #rows > 1 then para = last ~= nil end
+      if #rows <= 1 then last = nil end
+    elseif has_specifier(t) then
+      return nil
+    elseif t:sub(1, 1) == "|" then
       local cells = cells_of(t)
       rows[#rows + 1] = cells
       last = { #rows, #cells }
+      para = false
     elseif last then
+      -- text continues the last cell; a `|` in it starts further cells of the same row
       local row = rows[last[1]]
-      local cur = row[last[2]]
-      row[last[2]] = (cur ~= "" and (cur .. "<br>") or "") .. vim.trim(line)
+      local at = first_pipe(t)
+      if at then
+        append(row, last[2], vim.trim(t:sub(1, at - 1)))
+        for _, cell in ipairs(cells_of(t:sub(at))) do
+          row[#row + 1] = cell
+        end
+        last = { last[1], #row }
+      else
+        append(row, last[2], t)
+      end
     end
   end
   if #rows == 0 then return nil end
@@ -124,7 +172,6 @@ function M.parse_block(block, start_line, nattr)
     header[c] = ""
   end
   local tbl = registry.from_strings(header, rows, nil, {
-    header_marked = header_attr or blank_after_first,
     start_line = start_line,
     end_line = start_line + #block - 1,
     raw_lines = block,
@@ -144,7 +191,8 @@ function M.render(tbl)
   local function line(row)
     local out = {}
     for c = 1, #header do
-      out[c] = "|" .. esc((row[c] or ""):gsub("<br>", "\n"))
+      local text = require("markdown.tables.slice").plain(row[c] or "", tbl)
+      out[c] = "|" .. esc((text:gsub("<br>", "\n")))
     end
     return vim.split(table.concat(out, " "), "\n", { plain = true })
   end

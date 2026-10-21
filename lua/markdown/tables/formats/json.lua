@@ -19,10 +19,31 @@ local M = {}
 ---@field map? table<string, MarkdownJsonValue>
 ---@field items? MarkdownJsonValue[]
 
+---A number as RFC 8259 writes it: `-?(0|[1-9]d*)(.d+)?([eE][+-]?d+)?`.
+---@param text string
+---@return boolean
+local function is_json_number(text)
+  local rest = text:match("^-?(.*)$")
+  local int, after = rest:match("^(0)(.*)$")
+  if not int then
+    int, after = rest:match("^([1-9]%d*)(.*)$")
+  end
+  if not int then return false end
+  local frac = after:match("^%.%d+(.*)$")
+  if frac then after = frac end
+  local exp = after:match("^[eE][+-]?%d+(.*)$")
+  if exp then after = exp end
+  return after == ""
+end
+
+---How deep arrays and objects may nest (a deeper text is refused instead of overflowing the stack).
+local MAX_DEPTH = 200
+
 ---@param src string
 ---@return MarkdownJsonValue|nil value, string|nil err
 local function parse(src)
   local pos = 1
+  local depth = 0
   local function skip() pos = src:find("[^ \t\r\n]", pos) or #src + 1 end
   local value
 
@@ -54,6 +75,8 @@ local function parse(src)
       if not s then return nil, err end
       return { kind = "string", text = s }
     elseif ch == "{" then
+      if depth >= MAX_DEPTH then return nil, "nested too deeply" end
+      depth = depth + 1
       local start = pos
       pos = pos + 1
       local obj = { kind = "object", keys = {}, map = {} }
@@ -81,8 +104,11 @@ local function parse(src)
         end
       end
       obj.text = src:sub(start, pos - 1)
+      depth = depth - 1
       return obj
     elseif ch == "[" then
+      if depth >= MAX_DEPTH then return nil, "nested too deeply" end
+      depth = depth + 1
       local start = pos
       pos = pos + 1
       local arr = { kind = "array", items = {} }
@@ -102,10 +128,12 @@ local function parse(src)
         end
       end
       arr.text = src:sub(start, pos - 1)
+      depth = depth - 1
       return arr
     end
     local lit = src:match("^-?%d[%d%.eE+-]*", pos)
     if lit then
+      if not is_json_number(lit) then return nil, ("invalid number '%s'"):format(lit) end
       pos = pos + #lit
       return { kind = "number", text = lit }
     end
@@ -129,7 +157,10 @@ end
 ---@return table|nil tbl, string|nil err
 function M.parse(lines)
   local registry = require("markdown.tables.registry")
-  local root, err = parse(table.concat(lines, "\n"))
+  local src = table.concat(lines, "\n")
+  -- a byte order mark in front of the text is no part of it
+  if src:sub(1, 3) == "\239\187\191" then src = src:sub(4) end
+  local root, err = parse(src)
   if not root then return nil, "not JSON: " .. tostring(err) end
   if root.kind ~= "array" then return nil, "a table needs a JSON array at the top" end
   if #root.items == 0 then return nil, "the array is empty" end
@@ -187,6 +218,7 @@ function M.parse(lines)
       kinds[r] = { item.kind }
     end
   end
+  if #header == 0 then return nil, "the array holds no columns" end
   local tbl = registry.from_strings(header, rows, nil, {
     start_line = 1,
     end_line = #lines,
@@ -200,10 +232,8 @@ end
 ---@param text string
 ---@return boolean
 local function plain_number(text)
-  return text:match("^-?[1-9]%d*$") ~= nil
-    or text == "0"
-    or text:match("^-?[1-9]%d*%.%d+$") ~= nil
-    or text:match("^-?0%.%d+$") ~= nil
+  -- (more than 15 digits do not survive a double: such an id stays a string)
+  return #text:gsub("%D", "") <= 15 and is_json_number(text) and not text:find("[eE]")
 end
 
 ---@param text string
@@ -213,7 +243,7 @@ local function encode(text, kind)
   if kind == "null" and text == "" then return "null" end
   if kind == "number" or kind == "boolean" then
     if kind == "boolean" and (text == "true" or text == "false") then return text end
-    if kind == "number" and text:match("^-?%d[%d%.eE+-]*$") then return text end
+    if kind == "number" and is_json_number(text) then return text end
   end
   if kind == "object" or kind == "array" then
     local root = parse(text)
@@ -223,21 +253,42 @@ local function encode(text, kind)
   return vim.json.encode((text:gsub("<br>", "\n")))
 end
 
+---The keys of the objects: an empty header is `column<n>`, a repeated one gets `_2`, `_3`, so that
+---no value is lost to a duplicate key.
+---@param header string[]
+---@return string[]
+local function unique_keys(header)
+  local used, keys = {}, {}
+  for c, name in ipairs(header) do
+    local key = name == "" and ("column" .. c) or name
+    local candidate, n = key, 1
+    while used[candidate] do
+      n = n + 1
+      candidate = key .. "_" .. n
+    end
+    used[candidate] = true
+    keys[c] = candidate
+  end
+  return keys
+end
+
 ---@param tbl table
 ---@return string[]
 function M.render(tbl)
   local registry = require("markdown.tables.registry")
   local header, rows = registry.strings(tbl)
   local own = tbl.format == "json" and tbl.json_kinds or nil
+  local keys = unique_keys(header)
+  local slice = require("markdown.tables.slice")
   local out = { "[" }
   for r, row in ipairs(rows) do
     local parts = {}
-    for c, key in ipairs(header) do
+    for c in ipairs(header) do
       local kind = own and own[r] and own[r][c] or nil
       -- (a changed cell keeps its kind only when the text still is that kind: see `encode`)
       parts[#parts + 1] = ("    %s: %s"):format(
-        vim.json.encode(key == "" and ("column" .. c) or key),
-        encode(row[c] or "", own and (kind or "string") or nil)
+        vim.json.encode(keys[c]),
+        encode(slice.plain(row[c] or "", tbl), own and (kind or "string") or nil)
       )
     end
     out[#out + 1] = "  {"

@@ -22,10 +22,32 @@ local UNESCAPE = {
   ["}"] = "}",
 }
 
----Alignments from a column spec such as `|l|c|r|` or `lp{3cm}r`.
+---A line without its comment (`%` that is not escaped, to the end).
+---@param line string
+---@return string
+local function strip_comment(line)
+  local i = 1
+  while i <= #line do
+    local ch = line:sub(i, i)
+    if ch == "\\" then
+      i = i + 1
+    elseif ch == "%" then
+      return line:sub(1, i - 1)
+    end
+    i = i + 1
+  end
+  return line
+end
+
+---Alignments from a column spec such as `|l|c|r|`, `lp{3cm}r` or `*{3}{c}`.
 ---@param spec string
 ---@return string[]
 local function alignments(spec)
+  -- `*{3}{c|}` is three times `c|`
+  spec = spec:gsub(
+    "%*%s*{(%d+)}%s*(%b{})",
+    function(n, body) return body:sub(2, -2):rep(math.min(tonumber(n) or 1, 200)) end
+  )
   local out = {}
   local i = 1
   while i <= #spec do
@@ -56,7 +78,7 @@ local function unescape(s)
   s = s:gsub("\\textbackslash%s*{}", "\1")
   s = s:gsub("\\textasciitilde%s*{}", "~")
   s = s:gsub("\\textasciicircum%s*{}", "^")
-  s = s:gsub("\\newline%s*", "<br>")
+  s = s:gsub("%s*\\newline%s*", "<br>")
   s = s:gsub("\\(.)", function(ch) return UNESCAPE[ch] or ("\\" .. ch) end)
   return (s:gsub("\1", "\\"))
 end
@@ -84,6 +106,9 @@ local function rows_of(body)
       if nxt == "\\" then
         push_row()
         i = i + 1
+        -- a row's extra space, `\\[2pt]`
+        local extra = body:match("^%[[^%]\n]*%]", i + 1)
+        if extra then i = i + #extra end
       else
         cell[#cell + 1] = ch .. nxt
         i = i + 1
@@ -110,13 +135,30 @@ function M.scan(lines, opts)
   local found = {}
   local i = 1
   while i <= #lines do
-    if lines[i]:find("\\begin{tabular}", 1, true) and not fenced[i] then
-      local j = i
-      while j <= #lines and not lines[j]:find("\\end{tabular}", 1, true) do
+    -- The table must start a line and end one: the lines are replaced as a whole when converting,
+    -- so a `\resizebox{..}{!}{` before it or a closing `}` after it would be lost (and a mention in
+    -- a sentence or code span is no table). Comments are not looked into.
+    if strip_comment(lines[i]):find("^%s*\\begin{tabular}") and not fenced[i] then
+      local j, depth, nested = i, 0, false
+      while j <= #lines and not fenced[j] do
+        local code = strip_comment(lines[j])
+        for _ in code:gmatch("\\begin{tabular}") do
+          depth = depth + 1
+          if depth > 1 then nested = true end
+        end
+        for _ in code:gmatch("\\end{tabular}") do
+          depth = depth - 1
+        end
+        if depth <= 0 then break end
         j = j + 1
       end
-      if j <= #lines then
-        local tbl = M.parse_block(vim.list_slice(lines, i, j), i)
+      local closed = j <= #lines
+        and not fenced[j]
+        and depth == 0
+        and strip_comment(lines[j]):find("\\end{tabular}%s*$") ~= nil
+      if closed then
+        -- (a tabular inside a cell is left alone: its end is not the end of this one)
+        local tbl = (not nested) and M.parse_block(vim.list_slice(lines, i, j), i) or nil
         if tbl then found[#found + 1] = tbl end
         i = j + 1
       else
@@ -134,18 +176,24 @@ end
 ---@return table|nil tbl
 function M.parse_block(block, start_line)
   local registry = require("markdown.tables.registry")
-  local text = table.concat(block, "\n")
+  local stripped = {}
+  for k, line in ipairs(block) do
+    stripped[k] = strip_comment(line)
+  end
+  local text = table.concat(stripped, "\n")
   local start_at = text:find("\\begin{tabular}", 1, true)
   if not start_at then return nil end
-  -- (`%b{}` keeps a nested brace such as `p{3cm}` together)
-  local spec_group, after = text:match("^%s*(%b{})()", start_at + #"\\begin{tabular}")
+  -- (`%b{}` keeps a nested brace such as `p{3cm}` together; `[t]` is the vertical position)
+  local spec_group, after =
+    text:match("^%s*%[?[tbc]?%]?%s*(%b{})()", start_at + #"\\begin{tabular}")
   local spec = spec_group and spec_group:sub(2, -2)
   local stop = text:find("\\end{tabular}", after or 1, true)
   if not spec or not stop then return nil end
   local body = text:sub(after, stop - 1)
   if body:find("\\multicolumn", 1, true) or body:find("\\multirow", 1, true) then return nil end
   for _, rule in ipairs(RULES) do
-    body = body:gsub(vim.pesc(rule), "")
+    -- (`\toprule[1pt]` has an optional width)
+    body = body:gsub(vim.pesc(rule) .. "%s*%[[^%]\n]*%]", ""):gsub(vim.pesc(rule), "")
   end
   body = body:gsub("\\cline%s*%b{}", "")
   local rows = rows_of(body)
@@ -168,7 +216,8 @@ end
 
 ---@param s string
 ---@return string
-local function esc(s)
+local function esc(s, tbl)
+  s = require("markdown.tables.slice").plain(s, tbl)
   s = s:gsub("\\", "\1")
   s = s:gsub("([&%%$#_{}])", "\\%1")
   s = s:gsub("~", "\\textasciitilde{}"):gsub("%^", "\\textasciicircum{}")
@@ -190,7 +239,7 @@ function M.render(tbl)
   local function line(row)
     local out = {}
     for c = 1, n do
-      out[c] = esc(row[c] or "")
+      out[c] = esc(row[c] or "", tbl)
     end
     return table.concat(out, " & ") .. " \\\\"
   end

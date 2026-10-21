@@ -71,4 +71,20 @@ function M.lines_of(s)
   return out
 end
 
+---Cell text for a format that has no escape for a pipe: an escaped pipe (`\|`, GFM / org cell text)
+---is a plain pipe in the data, and a newline is a line break. Not for a table read from csv / tsv,
+---where `\|` is a literal backslash and a pipe (same rule as `csv.render`).
+---@param s string
+---@param tbl table
+---@return string
+function M.plain(s, tbl)
+  if tbl.format ~= "csv" and tbl.format ~= "tsv" then
+    s = s:gsub("(\\*)|", function(bs)
+      if #bs % 2 == 1 then return bs:sub(1, -2) .. "|" end
+      return bs .. "|"
+    end)
+  end
+  return (s:gsub("\r?\n", "<br>"))
+end
+
 return M

@@ -58,8 +58,11 @@ function M.embedded()
   local out = {}
   for _, n in ipairs(BUILTIN) do
     local f = M.get(n)
-    if f and f.scan then out[#out + 1] = n end
+    if f and f.scan and n ~= "gfm" then out[#out + 1] = n end
   end
+  -- GFM last: on an overlap the first format listed wins, and its pipe-line reading is the least
+  -- specific (a MediaWiki table's `|-` and `|` lines are a header and delimiter row to it)
+  out[#out + 1] = "gfm"
   return out
 end
 

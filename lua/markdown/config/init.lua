@@ -300,18 +300,11 @@ local function degrade_invalid_scalars(cfg, issues)
       cfg.table.entry_align = DEFAULTS.table.entry_align
     end
 
-    local FORMATS = {
-      gfm = true,
-      org = true,
-      box = true,
-      grid = true,
-      psql = true,
-      rst = true,
-      wiki = true,
-      asciidoc = true,
-      latex = true,
-      html = true,
-    }
+    -- (the embedded formats the registry has: one list, so a new format needs no second entry here)
+    local FORMATS = {}
+    for _, name in ipairs(require("markdown.tables.registry").embedded()) do
+      FORMATS[name] = true
+    end
     local fmts = cfg.table.formats
     local fmts_ok = type(fmts) == "table" and #fmts > 0
     for _, name in ipairs(fmts_ok and fmts or {}) do

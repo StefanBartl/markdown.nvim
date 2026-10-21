@@ -11,7 +11,7 @@ local M = {}
 
 ---@param s string
 ---@return string
-local function unescape(s) return (s:gsub("{{!}}", "|")) end
+local function unescape(s) return (s:gsub("{{!}}", "|"):gsub("&#33;!", "!!")) end
 
 ---Split a cell line on the separator, dropping `attrs |` in front of a cell.
 ---@param body string  # the line without its leading `|` / `!`
@@ -25,7 +25,13 @@ local function split_cells(body, sep)
     local s, e = body:find(sep, pos, true)
     local part = body:sub(pos, (s or #body + 1) - 1)
     local a, text = part:match("^([^|]-=[^|]*)|%s*(.*)$")
-    if a and not part:find("||", 1, true) then
+    -- (`[[a=b|text]]` is a link and `{{t|a=b}}` a template, not attributes)
+    if
+      a
+      and not part:find("||", 1, true)
+      and not a:find("[[", 1, true)
+      and not a:find("{{", 1, true)
+    then
       attrs, part = true, text
     end
     cells[#cells + 1] = unescape(vim.trim(part))
@@ -45,11 +51,20 @@ function M.scan(lines, opts)
   while i <= #lines do
     if vim.trim(lines[i]):sub(1, 2) == "{|" and not fenced[i] then
       local j = i + 1
-      while j <= #lines and not fenced[j] and vim.trim(lines[j]):sub(1, 2) ~= "|}" do
+      local depth, nested = 1, false
+      while j <= #lines and not fenced[j] do
+        local head = vim.trim(lines[j]):sub(1, 2)
+        if head == "{|" then
+          depth, nested = depth + 1, true
+        elseif head == "|}" then
+          depth = depth - 1
+          if depth == 0 then break end
+        end
         j = j + 1
       end
       if j <= #lines and not fenced[j] then
-        local tbl = M.parse_block(vim.list_slice(lines, i, j), i)
+        -- (a table inside a table cell is left alone: its `|}` is not the end of this one)
+        local tbl = (not nested) and M.parse_block(vim.list_slice(lines, i, j), i) or nil
         if tbl then found[#found + 1] = tbl end
         i = j + 1
       else
@@ -124,13 +139,15 @@ function M.parse_block(block, start_line)
     raw_lines = block,
   })
   if dropped then tbl.lost = { "cell attributes (style, colspan, rowspan)" } end
+  if tbl.caption then tbl.lossy = { "the table caption (|+)" } end
   return tbl
 end
 
 ---@param s string
 ---@return string
-local function esc(s)
-  s = s:gsub("|", "{{!}}")
+local function esc(s, tbl)
+  s = require("markdown.tables.slice").plain(s, tbl)
+  s = s:gsub("|", "{{!}}"):gsub("!!", "&#33;!")
   return s
 end
 
@@ -142,7 +159,7 @@ function M.render(tbl)
   local function cells(row, sep)
     local out = {}
     for c = 1, #header do
-      out[c] = esc(row[c] or "")
+      out[c] = esc(row[c] or "", tbl)
     end
     return table.concat(out, sep)
   end
