@@ -3,7 +3,7 @@
 ---@description
 --- Source: the `:'<,'>` range if there is one, otherwise the table under the cursor, otherwise
 --- (csv / tsv only) the whole buffer. `from=auto` finds the table with every embedded format
---- (gfm, org, box) regardless of `table.formats`; `from=csv|tsv` reads the range as delimited text.
+--- (gfm, org, box, grid, psql, rst) regardless of `table.formats`; `from=csv|tsv` reads the range as delimited text.
 --- The lines of the source are replaced by the table in the `to=` format. What the target format
 --- cannot keep (alignment in csv, row groups of an org table, formulas after it) is reported.
 
@@ -12,7 +12,7 @@ local registry = require("markdown.tables.registry")
 
 local M = {}
 
-local TARGETS = { "gfm", "org", "box", "csv", "tsv" }
+local TARGETS = { "gfm", "org", "box", "grid", "psql", "rst", "csv", "tsv" }
 
 ---@param argv string[]
 ---@return { from: string, to: string }|nil opts, string|nil err

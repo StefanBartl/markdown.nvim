@@ -20,7 +20,7 @@
 
 local M = {}
 
-local BUILTIN = { "gfm", "org", "box", "csv", "tsv" }
+local BUILTIN = { "gfm", "org", "box", "grid", "psql", "rst", "csv", "tsv" }
 
 ---@type table<string, table>
 local loaded = {}

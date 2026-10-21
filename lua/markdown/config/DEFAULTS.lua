@@ -206,7 +206,8 @@ local DEFAULTS = {
     },
 
     -- Table formats looked for inside documents (list, view, select, render read them):
-    -- "gfm" (pipe tables), "org" (org-mode tables), "box" (box-drawing tables).
+    -- "gfm" (pipe tables), "org" (org-mode tables), "box" (box-drawing tables),
+    -- "grid" (MySQL / reST / Pandoc grid), "psql" (psql output), "rst" (reST simple tables).
     -- CSV / TSV are standalone: `:Markdown table convert from=csv`.
     formats = { "gfm" },
 

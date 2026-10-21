@@ -300,7 +300,7 @@ local function degrade_invalid_scalars(cfg, issues)
       cfg.table.entry_align = DEFAULTS.table.entry_align
     end
 
-    local FORMATS = { gfm = true, org = true, box = true }
+    local FORMATS = { gfm = true, org = true, box = true, grid = true, psql = true, rst = true }
     local fmts = cfg.table.formats
     local fmts_ok = type(fmts) == "table" and #fmts > 0
     for _, name in ipairs(fmts_ok and fmts or {}) do

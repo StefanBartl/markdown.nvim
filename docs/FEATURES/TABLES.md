@@ -140,9 +140,12 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
 | `gfm` | embedded | pipe tables; the default and the only one unless `table.formats` says more |
 | `org` | embedded | `\|---+---\|` rules, `<r>`/`<l>`/`<c>` cookie row for alignment; `#+TBLFM:` lines are not part of the table and stay untouched |
 | `box` | embedded | `┌─┬─┐ │ a │ b │ ├─┼─┤ └─┴─┘` as TableView's box style, psql unicode, sqlite `.mode box`; rules between body rows make multi-line cells (`<br>`) |
+| `grid` | embedded | `+---+---+ \| a \| b \| +===+===+`: MySQL/MariaDB output, reStructuredText and Pandoc grid tables. A `+===+` border ends the header (`+:===:+` gives the alignment), without one the first row is the header; lines between two borders are one row (multi-line cells, `<br>`). Spanning cells are not read: such a table is left alone |
+| `psql` | embedded | psql's aligned output (` id \| name`, `----+------`, rows, `(2 rows)`); the footer belongs to the table. Written back left-aligned (psql right-aligns numbers; reported by `convert`) |
+| `rst` | embedded | reST simple tables (`=====  =====`); a blank first column continues the row above, `..` is an empty cell; column span underlines are not read |
 | `csv`, `tsv` | standalone | RFC 4180: quoted separators, doubled quotes, newlines in quotes; first record is the header; only through `convert from=csv\|tsv` |
 
-- **Config:** `table.formats = { "gfm" }` (default) -- add `"org"` and/or `"box"` to find them in
+- **Config:** `table.formats = { "gfm" }` (default) -- add `"org"`, `"box"`, `"grid"`, `"psql"` and/or `"rst"` to find them in
   markdown buffers too. Overlapping matches: the format listed first wins, so `{ "org", "gfm" }`
   and `{ "gfm", "org" }` can read the same lines differently (a one-column org table without a `+`
   in its rule is indistinguishable from GFM and is read as GFM). Tables inside code
@@ -169,9 +172,8 @@ document) or `parse` (the whole text is one table) and `render` (write it back, 
   changes its group. A pipe in a
   cell is written escaped (`\|`) to org and gfm and plain to csv/tsv; a newline in a cell becomes
   `<br>`.
-- **Not built (yet):** RST/pandoc grid and simple tables, HTML with spans, wiki tables, SQL result
-  sets, JSON, LaTeX, AsciiDoc. They fit the same registry (see the analysis note in the tasks vault).
-- **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,csv,tsv}.lua`,
+- **Not built (yet):** HTML with spans, wiki tables, JSON, LaTeX, AsciiDoc. They fit the same registry (see the analysis note in the tasks vault).
+- **Modules:** `tables/registry.lua`, `tables/formats/{gfm,org,box,grid,psql,rst,csv,tsv}.lua`, `tables/slice.lua`,
   `commands/table_convert.lua`
 
 ## `table_render` — virtual grid that fits the window

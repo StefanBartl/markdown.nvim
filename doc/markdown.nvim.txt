@@ -533,7 +533,7 @@ command args (`header=`, `cell=`, `skip=`) always override these per call.
 (see below).
 
 `table.formats` is the list of embedded table formats looked for in markdown
-buffers (default { "gfm" }; "org" and "box" can be added, on an overlap the
+buffers (default { "gfm" }; "org", "box", "grid", "psql" and "rst" can be added, on an overlap the
 first one listed wins). csv / tsv are standalone and only used by `convert`.
 `table.render` configures the virtual grid (`enabled`, `border`, `cursor`,
 `pad`, `min_width`, `max_width`, `row_separator`, `debounce_ms`).
@@ -1162,14 +1162,14 @@ is deleted.
   choose. With pickers.nvim the preview switches between the file and the
   table alone with <M-c>. Also `:TableViewList`, <leader>mtl.
 
-:Markdown table convert [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]
+:Markdown table convert [from=auto|gfm|org|box|grid|psql|rst|csv|tsv] [to=gfm|org|box|grid|psql|rst|csv|tsv]
 
   Rewrite the table at the cursor (or in the range) in another format. `from`
   `auto` tries every embedded format; csv / tsv read the range (or the whole
   buffer) as delimited text. What the target cannot keep is reported
   (alignment in csv/tsv, org row groups, a `#+TBLFM:` line). Embedded formats
   found in buffers are chosen by `table.formats` (default { "gfm" }, add
-  "org" and/or "box"). TableView writes a table back in the format it was
+  "org", "box", "grid", "psql" and/or "rst"). TableView writes a table back in the format it was
   read in. Also `:TableViewConvert`.
 
 :Markdown table tableize [format]

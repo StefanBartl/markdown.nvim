@@ -2,7 +2,7 @@
 --- `:Markdown table <sub>` router.
 ---   view     [toggle|markdown|box|select|list|close|browser|browsernice]  TableView actions
 ---   list     [scope=%|cwd|PATH] [style=grid|markdown]   Tables of a scope in a picker
----   convert  [from=auto|gfm|org|box|csv|tsv] [to=gfm|org|box|csv|tsv]   Table at the cursor / in the range, rewritten
+---   convert  [from=auto|gfm|org|box|grid|psql|rst|csv|tsv] [to=gfm|org|box|grid|psql|rst|csv|tsv]   Table at the cursor / in the range, rewritten
 ---   format   [ALIGN] [header=A] [cell=A] [skip=COL] [scope=cursor|buffer|cwd|PATH]
 ---   new      [cols] [rows]                              Insert an empty table
 ---   mode     [on|off|toggle]                            Per-buffer auto-format mode
