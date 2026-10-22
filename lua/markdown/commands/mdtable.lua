@@ -301,7 +301,8 @@ end
 ---@param parsed table
 ---@param opts table
 ---@internal
----Copy of `parsed` with its continuation rows merged back (`reflow`).
+---Copy of `parsed` with its continuation rows merged back (`reflow`, and `auto`: it plans
+---from the content's natural widths, wrapped ones would shrink again on every pass).
 ---@param parsed table
 ---@param opts table
 ---@return table
@@ -332,7 +333,7 @@ local function apply_wrap(bufnr, parsed, opts)
   table_wrap._fire("before_reflow", bounds, opts)
 
   local rendered, layout =
-    table_wrap.render(opts.reflow and unwrapped(parsed, opts) or parsed, opts)
+    table_wrap.render((opts.reflow or opts.auto) and unwrapped(parsed, opts) or parsed, opts)
   local current = api.nvim_buf_get_lines(bufnr, parsed.start_line - 1, parsed.end_line, false)
   local wrote = not vim.deep_equal(current, rendered)
   if wrote then
@@ -905,7 +906,7 @@ function M.format_lines(lines, overrides)
     end
     local opts = M.resolve_wrap_opts(nil, t.start_line, overrides, lines)
     if not opts.max and not opts.auto then opts.max = M.DEFAULT_FORMAT_MAX end
-    local rendered = table_wrap.render(opts.reflow and unwrapped(t, opts) or t, opts)
+    local rendered = table_wrap.render((opts.reflow or opts.auto) and unwrapped(t, opts) or t, opts)
     -- A block whose every line ends in a CR (CRLF block of a mixed-ending file)
     -- keeps it: the parser trims the CR, the renderer never writes it.
     local cr = true
