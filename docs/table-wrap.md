@@ -31,7 +31,12 @@ the configured `col_overrides` instead of replacing them.
 
 `scope=cwd` and `scope=<file>` wrap too (the BOM, CRLF endings and a missing final
 newline of the file are kept; an unchanged file is not rewritten). `auto` uses the
-current window's width there.
+current window's width there. `scope=cwd` only touches `*.md` files (any letter case) and
+skips vendored trees (`node_modules`, `.git`, `.deps`, `vendor`, `target`, ...). Tables
+inside fenced code blocks are examples and are never reformatted, in the buffer or in files.
+
+A width-capped format restyles the separator to the configured `wrap.flavor`: under
+`github` a compact `|-|-|` becomes `| --- | --- |`; set `flavor = "loose"` to keep it compact.
 
 A table that is already wrapped is *not* unwrapped first (the continuation
 heuristic below could merge a genuine sparse row). To change `max` on a wrapped

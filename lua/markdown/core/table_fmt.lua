@@ -82,7 +82,12 @@ M.is_table_line = lib_table.is_table_line
 M.is_separator_line = lib_table.is_separator_line
 M.separator_index = lib_table.separator_index
 M.parse_row = lib_table.parse_row
-M.parse_all_tables = lib_table.parse
+---Every table of `lines` that belongs to the document: one inside a fenced code block is an example and is left out,
+---so no "all tables" scan (format, wrap, list) rewrites it. The table under the cursor is the user's choice and is
+---found by `find_table_at_cursor` on its own.
+---@param lines string[]
+---@return table[]
+function M.parse_all_tables(lines) return lib_table.parse(lines, { skip_fenced = true }) end
 M.find_table_at_cursor = lib_table.at_cursor
 M.calc_widths = lib_table.calc_widths
 M.gen_separator = lib_table.gen_separator
@@ -221,6 +226,7 @@ function M.format_tables_in_buffer(bufnr, opts)
     header_align = opts.header_align or dcfg.header_align,
     entry_align = opts.entry_align or dcfg.entry_align,
     col_overrides = merge_overrides(opts.col_overrides, dcfg.col_overrides),
+    skip_fenced = true,
   })
   report_warnings(warnings)
   return ok, err, count
@@ -238,6 +244,7 @@ function M.format_tables_in_scope(opts)
     header_align = opts.header_align or dcfg.header_align,
     entry_align = opts.entry_align or dcfg.entry_align,
     col_overrides = merge_overrides(opts.col_overrides, dcfg.col_overrides),
+    skip_fenced = true, -- the files of a scope are rewritten whole: example tables in code blocks stay
   }
 
   if scope == "cursor" then
