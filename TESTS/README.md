@@ -140,18 +140,17 @@ from commit `0d8f0ad`, which had no regression coverage), `handler/url.lua`,
 `fenced_fix/init.lua`, and `scope/init.lua`'s backend resolution + the real
 `color_my_ascii` integration branch.
 
-**Not closed this round** (real gaps, left open rather than padded with
-shallow tests to claim a number): `commands/create.lua`,
-`commands/headings.lua` (its own argument-parsing
-vocabulary), `commands/image.lua`, `commands/render.lua`,
-`commands/scope.lua`, `commands/markdown_links.lua`'s link-generation logic
-(`ignore`-filtered, sorted `:Markdown links create`), `tableview/views/*.lua`,
-`util/md_files.lua`, `util/progress.lua`, and the `anchor/is_*_line.lua`
-predicates. None of these hit any of the four bug patterns on inspection,
-and `commands.table`/`commands.refs` (the two subcommands most exercised
-elsewhere) showed no equivalent defect, but they have real logic and no
-direct spec — a genuine remainder for a future pass, not a "this repo is
-now 100% covered" claim.
+**Closed later**: `command_modules_spec.lua` pins `commands/headings.lua`
+(argument vocabulary, range, completion), `commands/scope.lua`,
+`commands/markdown_links.lua` (sorted, `ignore`-filtered output and its flags)
+and `util/progress.lua`; `command_modules_fs_spec.lua` covers
+`commands/create.lua`, `commands/image.lua`, `util/md_files.lua` and the
+`anchor/is_*_line.lua` predicates. `commands/export.lua` and
+`commands/render.lua` already have their own specs.
+
+**Still open**: `tableview/views/*.lua` — the browser and selector views are
+UI code; only `browser_session.lua` is reached headless
+(`browser_session_spec.lua`). Verify the rest by hand (see below).
 
 ### What can't be tested headless
 
