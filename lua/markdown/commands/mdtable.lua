@@ -261,10 +261,21 @@ local function restore_position(rendered, layout, logical_row, col_index, chars)
       break
     end
   end
-  if not target_pi then return nil, nil end
-  local line = rendered[target_pi]
-  if not line then return nil, nil end
-  return target_pi, col_in_cell(line, col_index, chars)
+  if not target_pi or not rendered[target_pi] then return nil, nil end
+  -- A cell that wrapped continues on the rows below: walk them until `chars` falls
+  -- inside a fragment (a break costs one space).
+  local remaining, pi = chars or 0, target_pi
+  while remaining > 0 do
+    local nxt = layout[pi + 1]
+    if not (nxt and nxt.logical_index == logical_row and nxt.is_continuation) then break end
+    local rng = cell_ranges(rendered[pi])[col_index]
+    local frag = rng and vim.trim(rendered[pi]:sub(rng[1], rng[2])) or ""
+    local len = vim.fn.strchars(frag, 1)
+    if remaining <= len then break end
+    remaining = remaining - len - 1
+    pi = pi + 1
+  end
+  return pi, col_in_cell(rendered[pi], col_index, remaining)
 end
 
 ---Where the cursor is, as (row, cell, characters into the cell), for a caller that
@@ -315,6 +326,37 @@ local function unwrapped(parsed, opts)
   )
 end
 
+---@internal Cursor row and cell offset when the continuation rows are merged before rendering:
+---the merged row index of the cursor's physical row, plus the characters of the fragments in
+---front of it in the same merged cell (and the join between them).
+---@param parsed table
+---@param cursor_line integer
+---@param col_index integer
+---@param join string
+---@return integer logical_row  # 0 = the separator row
+---@return integer extra_chars
+local function merged_cursor(parsed, cursor_line, col_index, join)
+  local logical = logical_row_at(parsed, cursor_line)
+  if logical < 2 then return logical, 0 end
+  local rows, n = parsed.rows, logical
+  local merged_at = {}
+  for k = 1, n do
+    merged_at[k] = #table_wrap.unwrap_rows(vim.list_slice(rows, 1, k), join, parsed.col_count)
+  end
+  local merged = merged_at[n]
+  local extra, seen = 0, false
+  for k = n - 1, 1, -1 do
+    if merged_at[k] ~= merged then break end
+    local frag = vim.trim((rows[k] or {})[col_index] or "")
+    if frag ~= "" then
+      extra = extra + vim.fn.strchars(frag, 1) + (seen and vim.fn.strchars(join, 1) or 0)
+      seen = true
+    end
+  end
+  if seen then extra = extra + vim.fn.strchars(join, 1) end
+  return merged, extra
+end
+
 ---@internal
 local function apply_wrap(bufnr, parsed, opts)
   local win = api.nvim_get_current_win()
@@ -323,10 +365,16 @@ local function apply_wrap(bufnr, parsed, opts)
   if api.nvim_win_get_buf(win) ~= bufnr then ok_cur = false end
   local logical_row, col_index, cell_chars
   if ok_cur and cur[1] >= parsed.start_line and cur[1] <= parsed.end_line then
-    logical_row = logical_row_at(parsed, cur[1])
     col_index = column_at(bufnr, cur[1], cur[2], parsed.col_count)
     local raw = api.nvim_buf_get_lines(bufnr, cur[1] - 1, cur[1], false)[1] or ""
     cell_chars = chars_into_cell(raw, cur[2], col_index)
+    if opts.reflow or opts.auto then
+      local extra
+      logical_row, extra = merged_cursor(parsed, cur[1], col_index, opts.join or " ")
+      cell_chars = cell_chars + extra
+    else
+      logical_row = logical_row_at(parsed, cur[1])
+    end
   end
 
   local bounds = { start_line = parsed.start_line, end_line = parsed.end_line }
