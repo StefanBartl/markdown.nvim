@@ -158,7 +158,7 @@ end
 function M.configure(hover_cfg)
   register()
   local h = lib()
-  if h then h.setup(hover_cfg) end
+  if h then h.setup(hover_cfg, "markdown") end
 end
 
 --- Open the *full* thing the target under the cursor points at, in whatever
