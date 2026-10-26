@@ -47,7 +47,7 @@ end
 local function do_pdf(path)
   local mod = pdfport()
   if not mod then
-    notify.warn("pdfport.nvim not installed — see https://github.com/StefanBartl/pdfport.nvim")
+    notify.warn("pdfport.nvim not installed — see https://github.com/WKDSteve/pdfport.nvim")
     return
   end
   if not mod.can_create("markdown") then

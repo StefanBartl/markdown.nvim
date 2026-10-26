@@ -5,7 +5,7 @@
 | Tool | Required | Purpose |
 |------|----------|---------|
 | Neovim | **>= 0.10** | core (`vim.system`, used unconditionally by the reverse-reference search behind `DD` once `rg` is on `$PATH`) |
-| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.bindings.usercmd.composer`), plus buffer debouncing |
+| [lib.nvim](https://github.com/WKDSteve/lib.nvim) | **required** | the `:Markdown`/`:TableView*` command layer (`lib.nvim.bindings.usercmd.composer`), plus buffer debouncing |
 | `rg` (ripgrep) | optional | speeds up the reverse file-reference search (`core.file_refs`); see [docs/install.json](install.json) |
 
 No other external tools are required — every other integration below is a
@@ -13,16 +13,16 @@ plugin, not a CLI, and every one of them is optional:
 
 | | Buys you |
 | --- | --- |
-| [hover.nvim](https://github.com/StefanBartl/hover.nvim) | The link and path preview float |
-| [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) | `.pdf` targets rendered in a buffer, and `:Markdown export pdf` |
-| [images.nvim](https://github.com/StefanBartl/images.nvim), [snacks.nvim](https://github.com/folke/snacks.nvim), [image.nvim](https://github.com/3rd/image.nvim) | Image previews in a float, and `:Markdown image paste\|screenshot` |
-| [mdview.nvim](https://github.com/StefanBartl/mdview.nvim) | The browser preview back end (in-buffer rendering is built in) |
+| [hover.nvim](https://github.com/WKDSteve/hover.nvim) | The link and path preview float |
+| [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim) | `.pdf` targets rendered in a buffer, and `:Markdown export pdf` |
+| [images.nvim](https://github.com/WKDSteve/images.nvim), [snacks.nvim](https://github.com/folke/snacks.nvim), [image.nvim](https://github.com/3rd/image.nvim) | Image previews in a float, and `:Markdown image paste\|screenshot` |
+| [mdview.nvim](https://github.com/WKDSteve/mdview.nvim) | The browser preview back end (in-buffer rendering is built in) |
 | telescope.nvim, fzf-lua, snacks.picker | Picker backends for link selection |
 | [nvzone/menu](https://github.com/nvzone/menu) | A host for the context-menu entries — see [FEATURES/INTEGRATIONS.md](FEATURES/INTEGRATIONS.md) |
-| [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit.select` is the default picker backend and `ui.kit.confirm` backs the `DD` delete-linked-file confirm dialog — both fall back to `vim.ui.select`/a plain `dd` when absent |
+| [ui.nvim](https://github.com/WKDSteve/ui.nvim) | `ui.kit.select` is the default picker backend and `ui.kit.confirm` backs the `DD` delete-linked-file confirm dialog — both fall back to `vim.ui.select`/a plain `dd` when absent |
 
 `rg` is declared in [install.json](install.json) and read by lib.nvim's
-[deps module](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md).
+[deps module](https://github.com/WKDSteve/lib.nvim/blob/main/lua/lib/nvim/deps/README.md).
 A popup says what is missing the first time `setup()` runs after installing;
 `:Lib deps show markdown.nvim` repeats it, `:Lib deps install markdown.nvim`
 offers to install it and asks first. Turn the popup off with
@@ -39,10 +39,10 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
 
 ```lua
 {
-  "StefanBartl/markdown.nvim",
+  "WKDSteve/markdown.nvim",
   dependencies = {
-    "StefanBartl/lib.nvim",
-    "StefanBartl/hover.nvim",
+    "WKDSteve/lib.nvim",
+    "WKDSteve/hover.nvim",
   },
   ft = { "markdown", "mdx", "md" },
   config = function()
@@ -55,8 +55,8 @@ natural lazy trigger. Use `lazy = false` / eager loading only if you want the
 
 ```lua
 use({
-  "StefanBartl/markdown.nvim",
-  requires = { "StefanBartl/lib.nvim", "StefanBartl/hover.nvim" },
+  "WKDSteve/markdown.nvim",
+  requires = { "WKDSteve/lib.nvim", "WKDSteve/hover.nvim" },
   ft = { "markdown", "mdx", "md" },
   config = function()
     require("markdown").setup()
@@ -67,8 +67,8 @@ use({
 ### vim-plug
 
 ```vim
-Plug 'StefanBartl/lib.nvim'
-Plug 'StefanBartl/markdown.nvim', { 'for': ['markdown', 'mdx', 'md'] }
+Plug 'WKDSteve/lib.nvim'
+Plug 'WKDSteve/markdown.nvim', { 'for': ['markdown', 'mdx', 'md'] }
 ```
 
 ```lua

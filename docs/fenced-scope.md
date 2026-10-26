@@ -33,7 +33,7 @@ outside, they act on the file but skip every fenced block's interior.
 |-----|---------|---------|
 | `enable` | `true` | Master switch. Off ⇒ every op reverts to its whole-buffer behavior. |
 | `langs` | `{ "markdown", "md", "mdx", "ascii-markdown", "ascii-md" }` | Fence tags that count as a Markdown sub-document. |
-| `provider` | `"auto"` | Fence-detection backend. `"auto"` uses [color_my_ascii](https://github.com/StefanBartl/color_my_ascii.nvim)'s fence API when present, else a built-in scanner. |
+| `provider` | `"auto"` | Fence-detection backend. `"auto"` uses [color_my_ascii](https://github.com/WKDSteve/color_my_ascii.nvim)'s fence API when present, else a built-in scanner. |
 | `operations` | all on | Per-op opt-out (`toc`, `nav`, `jump`, `shift`, `fold`). `fold` makes a `#` inside a non-markdown fence not open a fold. |
 
 ## Toggle at runtime

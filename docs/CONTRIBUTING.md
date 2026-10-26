@@ -1,7 +1,7 @@
 # Contributing to markdown.nvim
 
 Thank you for your interest! Bugs, ideas and questions are welcome in the
-[issue tracker](https://github.com/StefanBartl/markdown.nvim/issues); pull
+[issue tracker](https://github.com/WKDSteve/markdown.nvim/issues); pull
 requests very welcome.
 
 ## Getting the repository into a session
@@ -14,7 +14,7 @@ vim.opt.rtp:prepend("/path/to/markdown.nvim")
 require("markdown").setup({})
 ```
 
-[lib.nvim](https://github.com/StefanBartl/lib.nvim) has to be on the runtime
+[lib.nvim](https://github.com/WKDSteve/lib.nvim) has to be on the runtime
 path too — the `:Markdown` and `:TableView*` command layer is built on it.
 Nothing else is required; `rg` only speeds up the reverse file-reference
 search.
@@ -105,7 +105,7 @@ it to a handler.
 ## Tests
 
 `TESTS/` is a headless spec suite over fixture documents, run by
-[testing.nvim](https://github.com/StefanBartl/testing.nvim).
+[testing.nvim](https://github.com/WKDSteve/testing.nvim).
 
 ```
 bash scripts/test.sh

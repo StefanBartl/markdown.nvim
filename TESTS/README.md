@@ -13,7 +13,7 @@ bash scripts/test.sh --file config    # only spec files whose name contains "con
 bash scripts/test.sh --json ir.json   # also write the machine-readable result
 ```
 
-The suite is run by [testing.nvim](https://github.com/StefanBartl/testing.nvim)
+The suite is run by [testing.nvim](https://github.com/WKDSteve/testing.nvim)
 (configured in `.testing.lua`: the specs run on `TESTS/harness.lua`, one
 Neovim per spec file). It prints one line per spec and exits non-zero when one
 fails (`MARKDOWN_TESTS_OK` on success). `scripts/test.sh` needs `testing.nvim`,

@@ -19,7 +19,7 @@ end
 local function do_paste()
   local mod = images()
   if not mod then
-    notify.warn("images.nvim not installed — see https://github.com/StefanBartl/images.nvim")
+    notify.warn("images.nvim not installed — see https://github.com/WKDSteve/images.nvim")
     return
   end
   mod.paste()
@@ -29,7 +29,7 @@ end
 local function do_screenshot()
   local mod = images()
   if not mod then
-    notify.warn("images.nvim not installed — see https://github.com/StefanBartl/images.nvim")
+    notify.warn("images.nvim not installed — see https://github.com/WKDSteve/images.nvim")
     return
   end
   mod.screenshot()

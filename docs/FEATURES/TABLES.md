@@ -54,7 +54,7 @@ GFM table (`tableize`), and jump between cells.
   the GFM rule `lib.nvim`'s `markdown.table.parse` uses: a later `| - | - |`
   line is an ordinary data row, and a line ending in an escaped `\|` is not
   part of the table. Not bound to a key here —
-  [cascade.nvim](https://github.com/StefanBartl/cascade.nvim) calls it as a
+  [cascade.nvim](https://github.com/WKDSteve/cascade.nvim) calls it as a
   soft-dependency fallback for its own `o`/`O` when the cursor line isn't a
   list item (see its `docs/integrations.md`).
 

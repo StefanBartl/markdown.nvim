@@ -22,7 +22,7 @@ image, a PDF's first page, another file's section, a directory listing, an
 in-page anchor, a URL — or says the target does not exist. A path written as
 plain text hovers the same way, in any filetype: `./assets/diagram.png` in a
 code comment, or a truncated `...nvim/init.lua:42` out of a log. That float is
-[hover.nvim](https://github.com/StefanBartl/hover.nvim); the detail is
+[hover.nvim](https://github.com/WKDSteve/hover.nvim); the detail is
 [hover.md](hover.md).
 
 Verify your setup any time with:

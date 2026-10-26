@@ -4,7 +4,7 @@ Rest the cursor on a markdown link — or on a path written as plain text —
 and a small float shows what it points at, whatever that is.
 
 > **Where this lives.** The framework itself is
-> [`hover.nvim`](https://github.com/StefanBartl/hover.nvim/blob/main/README.md),
+> [`hover.nvim`](https://github.com/WKDSteve/hover.nvim/blob/main/README.md),
 > not this plugin: classification, the float, file/directory/URL previews,
 > the debounce and bare-path detection are "a path is a path" and were never
 > markdown. markdown.nvim contributes the two parts that genuinely are —
@@ -37,7 +37,7 @@ See [the architecture doc](docs/architecture.md#modules) for details.
 | Target | Shown |
 | --- | --- |
 | **Image** (`png`, `jpg`, `gif`, `webp`, `svg`, …) | The picture itself, in a float shaped to its aspect ratio — or dimensions, format and size where nothing can draw |
-| **PDF** | Page 1 rendered inline, in a float shaped to the page (via [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)) — or size and a reason where it cannot be rendered |
+| **PDF** | Page 1 rendered inline, in a float shaped to the page (via [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim)) — or size and a reason where it cannot be rendered |
 | **Markdown file** | First lines, markdown-highlighted |
 | **Markdown file + `#anchor`** | Just that section — heading, body, and any deeper subsections, stopping at the next same-level heading |
 | **In-page `#anchor`** | The section it points at, from the current buffer |
@@ -93,7 +93,7 @@ vim.api.nvim_set_hl(0, "HoverMissing", { fg = "#ff5555", bold = true })
 ```
 
 Truncated paths (`...nvim/init.lua`, `…/lua/config/init.lua`) and `:line:col`
-suffixes are resolved by [gopath.nvim](https://github.com/StefanBartl/gopath.nvim),
+suffixes are resolved by [gopath.nvim](https://github.com/WKDSteve/gopath.nvim),
 a soft dependency — that is exactly its subject matter, so this plugin asks
 it rather than reimplementing the search. Without gopath.nvim installed,
 ordinary relative and absolute paths still hover; only the truncated forms
@@ -236,7 +236,7 @@ does any other file whose bytes are not text (archives, executables, media),
 decided by looking at the bytes rather than at a list of extensions.
 
 `office.convert = true` (or `:Hover office on`) turns that into a real
-preview: [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim) converts
+preview: [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim) converts
 the document to a PDF through LibreOffice, and the first page is drawn like
 any other picture — with the same paging keys, because by then it *is* a PDF.
 Opt-in because the first conversion of each document starts LibreOffice, which
@@ -264,7 +264,7 @@ nothing installed; ImageMagick is consulted only for formats the parser
 cannot read, such as WebP.
 
 Drawing the picture needs
-[images.nvim](https://github.com/StefanBartl/images.nvim): it is the only
+[images.nvim](https://github.com/WKDSteve/images.nvim): it is the only
 supported provider that can draw into a window it does not own
 (`images.anchor.draw`, deferred — an undeferred draw is repainted over by
 the float that was just opened). snacks.nvim and image.nvim need a buffer
@@ -319,8 +319,8 @@ in whatever surface already owns that job, not a new one built for this:
 
 | Target | Opens via |
 | --- | --- |
-| Markdown file / in-page anchor | `:Markdown mdview` ([mdview.nvim](https://github.com/StefanBartl/mdview.nvim)) |
-| Image | A full-screen window via [images.nvim](https://github.com/StefanBartl/images.nvim)'s `images.zen.open` |
+| Markdown file / in-page anchor | `:Markdown mdview` ([mdview.nvim](https://github.com/WKDSteve/mdview.nvim)) |
+| Image | A full-screen window via [images.nvim](https://github.com/WKDSteve/images.nvim)'s `images.zen.open` |
 | PDF | The same system-vs-pdfport prompt the cursor-action handler uses |
 | Other file / directory | The system default application |
 | URL | The system default browser |

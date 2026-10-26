@@ -139,7 +139,7 @@ function M.check()
   else
     error_(
       "lib.nvim not found — :Markdown/:TableView* will fail to register",
-      { 'Install "StefanBartl/lib.nvim"' }
+      { 'Install "WKDSteve/lib.nvim"' }
     )
   end
 
@@ -205,7 +205,7 @@ function M.check()
       warn(
         "fenced_scope provider 'color_my_ascii' requested but its fence API is unavailable — using the built-in scanner",
         {
-          "Install StefanBartl/color_my_ascii.nvim, or set fenced_scope.provider to 'auto' or 'builtin'",
+          "Install WKDSteve/color_my_ascii.nvim, or set fenced_scope.provider to 'auto' or 'builtin'",
         }
       )
     else

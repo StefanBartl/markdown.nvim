@@ -18,10 +18,10 @@
 [![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
 ![Status](https://img.shields.io/badge/status-beta-orange)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)
-[![CI](https://github.com/StefanBartl/markdown.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/markdown.nvim/actions/workflows/ci.yml)
-[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://stefanbartl.github.io/wkd/p/markdown/)
+[![CI](https://github.com/WKDSteve/markdown.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/WKDSteve/markdown.nvim/actions/workflows/ci.yml)
+[![wkd](https://img.shields.io/badge/wkd-family-c6ff3d)](https://wkdsteve.github.io/wkd/p/markdown/)
 
-> Part of the [wkd](https://stefanbartl.github.io/wkd/) family — see this plugin's [page](https://stefanbartl.github.io/wkd/p/markdown/) on the site.
+> Part of the [wkd](https://wkdsteve.github.io/wkd/) family — see this plugin's [page](https://wkdsteve.github.io/wkd/p/markdown/) on the site.
 
 A self-contained Markdown toolkit for Neovim, behind one `:Markdown` command.
 Headings and folding, GFM tables, links and references, and a cursor-action
@@ -32,27 +32,27 @@ with no side effects on any buffer that is not Markdown.
 
 ## Around it
 
-> **[cascade.nvim](https://github.com/StefanBartl/cascade.nvim)** — the list
+> **[cascade.nvim](https://github.com/WKDSteve/cascade.nvim)** — the list
 > content inside the document: continue, renumber, rotate. markdown.nvim
 > structures the document, cascade edits what is in it.
 >
-> **[hover.nvim](https://github.com/StefanBartl/hover.nvim)** — the host for
+> **[hover.nvim](https://github.com/WKDSteve/hover.nvim)** — the host for
 > the link preview. markdown.nvim contributes its link scanner and `#heading`
 > previews; without it those simply do not exist.
 >
-> **[mdview.nvim](https://github.com/StefanBartl/mdview.nvim)** — renders the
+> **[mdview.nvim](https://github.com/WKDSteve/mdview.nvim)** — renders the
 > document outside the editor, for the moment you want to see it as a reader
 > would.
 >
-> **[pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)** — the PDF
+> **[pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim)** — the PDF
 > half: exports the buffer, and renders a `.pdf` link target into a Neovim
 > buffer instead of handing it to the system reader.
 >
-> **[images.nvim](https://github.com/StefanBartl/images.nvim)** — pasting and
+> **[images.nvim](https://github.com/WKDSteve/images.nvim)** — pasting and
 > screenshotting images into the document, and drawing them in the preview.
 >
 > All of the above are soft: without them everything else works unchanged.
-> [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real
+> [lib.nvim](https://github.com/WKDSteve/lib.nvim) is the one real
 > dependency — see [Requirements](docs/installation.md#requirements).
 
 ---
@@ -89,7 +89,7 @@ question each page answers.
 - [Workflow](docs/WORKFLOW.md) — how the features combine while actually writing a document, rather than what each one does.
 - [Health check](docs/health.md) — what `:checkhealth markdown` reports.
 - [Contributing](docs/CONTRIBUTING.md) — ground rules, project layout, and how to add a handler or a command.
-- [Feedback](https://github.com/StefanBartl/markdown.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/StefanBartl/markdown.nvim/discussions).
+- [Feedback](https://github.com/WKDSteve/markdown.nvim/issues) — bugs, feature requests and usage questions; broader discussion in [Discussions](https://github.com/WKDSteve/markdown.nvim/discussions).
 
 `:help markdown.nvim` is the same reference inside the editor.
 

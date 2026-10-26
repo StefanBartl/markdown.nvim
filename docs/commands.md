@@ -203,7 +203,7 @@ dependency-free reimplementation of the vim-table-mode essentials.
   Scope: `%` / `buffer` (default), `cwd` (every `*.md` below the working
   directory), `cfile` (the file under the cursor) or a file / directory; the
   `scope=` prefix is optional. With
-  [pickers.nvim](https://github.com/StefanBartl/pickers.nvim) the preview window
+  [pickers.nvim](https://github.com/WKDSteve/pickers.nvim) the preview window
   has two modes and `<M-c>` switches between them: *normal* (the file, cursor on
   the table) and *table* (only the table, formatted: `style=grid` box drawing,
   the default, or `style=markdown` aligned GFM). Without pickers.nvim (or with an
@@ -281,7 +281,7 @@ holds the per-construct switches and icons
 
 `preview` and `mdview` are thin wrappers around the optional mdview.nvim; they
 warn gracefully if the plugin is not installed. `preview` starts/stops a
-[mdview.nvim](https://github.com/StefanBartl/mdview.nvim) session for the
+[mdview.nvim](https://github.com/WKDSteve/mdview.nvim) session for the
 current buffer via `:MDView start`/`:MDView stop`; once running, mdview.nvim
 follows buffer switches and drives scroll sync itself (`browser.behavior`,
 default `"reuse"`), so no separate refresh step is needed here. `mdview` opens
@@ -348,7 +348,7 @@ fallback behavior as `links.picker`.
 :Markdown image screenshot               " same as :Image screenshot
 ```
 
-Thin delegators to [images.nvim](https://github.com/StefanBartl/images.nvim)
+Thin delegators to [images.nvim](https://github.com/WKDSteve/images.nvim)
 (optional host, soft dependency) — not a reimplementation. `paste` is the
 default sub when none is given. Both markdown.nvim and images.nvim are
 scoped to the same buffers (markdown/vimwiki/norg/text by default), so this
@@ -363,7 +363,7 @@ Without images.nvim installed, both report a warning instead of erroring.
 :Markdown export pdf other.md            " export a different file instead
 ```
 
-Thin delegator to [pdfport.nvim](https://github.com/StefanBartl/pdfport.nvim)
+Thin delegator to [pdfport.nvim](https://github.com/WKDSteve/pdfport.nvim)
 (optional host, soft dependency) — not a reimplementation. `pdf` is the only
 sub today, and the default when none is given. A `path` naming another file
 always exports that file as it is on disk (the current buffer is not involved,

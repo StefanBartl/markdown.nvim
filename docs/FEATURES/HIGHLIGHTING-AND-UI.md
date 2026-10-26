@@ -59,6 +59,6 @@ every fenced block's interior when it's outside. Full reference:
   `"builtin"`), `fenced_scope.operations` (per-op opt-out: `toc`, `nav`,
   `jump`, `shift`, `fold`). Feature name `fenced_scope`.
 - **Optional host:** prefers
-  [color_my_ascii](https://github.com/StefanBartl/color_my_ascii.nvim)'s
+  [color_my_ascii](https://github.com/WKDSteve/color_my_ascii.nvim)'s
   fence-detection API when installed; falls back to the built-in scanner
   otherwise.
