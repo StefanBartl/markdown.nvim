@@ -99,32 +99,39 @@ return function(H)
     eq(#gaps, 0, "check: silent_ok still returns the (empty) gap list")
   end
 
-  -- M.check: when gaps exist, vim.fn.confirm is consulted; "Yes" fixes them.
+  -- M.check: when gaps exist the shared dialog's yesno is asked; "Yes" fixes them.
   do
+    local dialog = require("lib.nvim.ui.dialog")
+    local real_yesno = dialog.yesno
+
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# One", "### Three" })
-
-    local real_confirm = vim.fn.confirm
-    vim.fn.confirm = function() return 1 end -- "&Yes"
+    local asked
+    dialog.yesno = function(question, label, cb)
+      asked = { question = question, label = label }
+      cb(true)
+    end
     local gaps = hg.check(buf)
-    vim.fn.confirm = real_confirm
+    dialog.yesno = real_yesno
 
     eq(#gaps, 1, "check: returns the gaps found regardless of the fix choice")
+    eq(asked and asked.label, "fix", "check: the question is asked through dialog.yesno")
     local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
-    eq(lines[2], "## Three", "check: 'Yes' at the confirm prompt actually fixes the gap")
+    eq(lines[2], "## Three", "check: 'Yes' at the dialog actually fixes the gap")
   end
 
-  -- M.check: "No" at the confirm prompt leaves the buffer untouched.
+  -- M.check: "No" at the dialog leaves the buffer untouched.
   do
+    local dialog = require("lib.nvim.ui.dialog")
+    local real_yesno = dialog.yesno
+
     local buf = H.scratch("markdown")
     api.nvim_buf_set_lines(buf, 0, -1, false, { "# One", "### Three" })
-
-    local real_confirm = vim.fn.confirm
-    vim.fn.confirm = function() return 2 end -- "&No"
+    dialog.yesno = function(_, _, cb) cb(false) end
     hg.check(buf)
-    vim.fn.confirm = real_confirm
+    dialog.yesno = real_yesno
 
     local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
-    eq(lines[2], "### Three", "check: 'No' at the confirm prompt leaves the heading as-is")
+    eq(lines[2], "### Three", "check: 'No' at the dialog leaves the heading as-is")
   end
 end

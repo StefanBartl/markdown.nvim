@@ -110,10 +110,19 @@ function M.check(bufnr, opts)
     )
   )
 
-  local choice = vim.fn.confirm("Fix heading-level gaps now?", "&Yes\n&No", 2)
-  if choice == 1 then
-    M.fix_gaps(bufnr, gaps)
-    notify.info(string.format("Fixed %d heading-level gap%s", #gaps, #gaps == 1 and "" or "s"))
+  local function answer(accepted)
+    if accepted then
+      M.fix_gaps(bufnr, gaps)
+      notify.info(string.format("Fixed %d heading-level gap%s", #gaps, #gaps == 1 and "" or "s"))
+    end
+  end
+
+  -- lib.nvim is a soft dependency: without it the question is the native one.
+  local ok, dialog = pcall(require, "lib.nvim.ui.dialog")
+  if ok and type(dialog.yesno) == "function" then
+    dialog.yesno("Fix heading-level gaps now?", "fix", answer)
+  else
+    answer(vim.fn.confirm("Fix heading-level gaps now?", "&Yes\n&No", 2) == 1)
   end
 
   return gaps
