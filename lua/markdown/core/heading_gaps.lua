@@ -111,19 +111,21 @@ function M.check(bufnr, opts)
   )
 
   local function answer(accepted)
-    if accepted then
-      M.fix_gaps(bufnr, gaps)
-      notify.info(string.format("Fixed %d heading-level gap%s", #gaps, #gaps == 1 and "" or "s"))
+    if not accepted or not vim.api.nvim_buf_is_valid(bufnr) then return end
+    -- The answer comes after the question was open for a while: the buffer may have changed, so the gaps it
+    -- has now are fixed, not the line numbers of the scan that raised the question.
+    local current = M.find_gaps(bufnr)
+    if #current == 0 then
+      notify.info("No heading-level gaps left to fix")
+      return
     end
+    M.fix_gaps(bufnr, current)
+    notify.info(
+      string.format("Fixed %d heading-level gap%s", #current, #current == 1 and "" or "s")
+    )
   end
 
-  -- lib.nvim is a soft dependency: without it the question is the native one.
-  local ok, dialog = pcall(require, "lib.nvim.ui.dialog")
-  if ok and type(dialog.yesno) == "function" then
-    dialog.yesno("Fix heading-level gaps now?", "fix", answer)
-  else
-    answer(vim.fn.confirm("Fix heading-level gaps now?", "&Yes\n&No", 2) == 1)
-  end
+  require("lib.nvim.ui.dialog").yesno("Fix heading-level gaps now?", "fix", answer)
 
   return gaps
 end

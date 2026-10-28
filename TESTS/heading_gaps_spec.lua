@@ -134,4 +134,30 @@ return function(H)
     local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
     eq(lines[2], "### Three", "check: 'No' at the dialog leaves the heading as-is")
   end
+
+  -- A late answer works on the buffer as it is then: lines inserted while the question was open do not
+  -- send the fix to a line number of the old scan, and a buffer that is gone is left alone.
+  do
+    local dialog = require("lib.nvim.ui.dialog")
+    local real_yesno = dialog.yesno
+
+    local buf = H.scratch("markdown")
+    api.nvim_buf_set_lines(buf, 0, -1, false, { "# One", "### Three" })
+    local answer
+    dialog.yesno = function(_, _, cb) answer = cb end
+    hg.check(buf)
+    api.nvim_buf_set_lines(buf, 0, 0, false, { "", "plain text" })
+    answer(true)
+    local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+    eq(lines[1], "", "check: a late answer leaves the lines that moved alone")
+    eq(lines[4], "## Three", "check: ...and fixes the heading where it is now")
+
+    local gone = H.scratch("markdown")
+    api.nvim_buf_set_lines(gone, 0, -1, false, { "# One", "### Three" })
+    hg.check(gone)
+    api.nvim_buf_delete(gone, { force = true })
+    local ok_late = pcall(answer, true)
+    dialog.yesno = real_yesno
+    eq(ok_late, true, "check: an answer for a buffer that is gone does not raise")
+  end
 end
