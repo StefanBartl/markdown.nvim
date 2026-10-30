@@ -14,9 +14,12 @@ return function(H)
   local okc, composer = pcall(require, "lib.nvim.bindings.usercmd.composer")
   ok(okc, "the composer loads")
 
-  -- A lib.nvim older than `help.undocumented` cannot answer the question; that is a missing
-  -- feature of the dependency, not a defect of this plugin.
-  if type(composer.help.undocumented) ~= "function" then return end
+  -- The case needs `help.undocumented` from lib.nvim: an older checkout fails here by name
+  -- instead of skipping the case silently (NEW-43).
+  assert(
+    type(composer.help.undocumented) == "function",
+    "lib.nvim lacks composer.help.undocumented: update lib.nvim, this case cannot run without it"
+  )
 
   require("markdown.config").setup({})
   local buf = H.scratch("markdown")
