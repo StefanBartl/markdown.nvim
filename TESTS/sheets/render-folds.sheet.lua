@@ -1,9 +1,11 @@
 -- Live check: rendering and table grid in folded regions
 -- (task markdown.nvim/live-tests-im-echten-editor-snacks-fzf-lua-folds-insert-modu, point "Folds").
 -- Automated: the real FileType wiring sets the heading foldexpr; with everything folded only the
--- headings are on screen, after `zo` the section's table is drawn as a grid again (extmarks of the
--- grid namespace inside the opened fold), the cursor row inside the table shows its source, and
--- `zM` / `zR` close and reopen everything. Left for a person: whether that reads well.
+-- headings are on screen, after `zo` the section's table is drawn as a grid again (the next heading
+-- sits two screen rows lower: top and bottom border are virtual lines, which only show inside an
+-- open fold; the grid extmarks themselves exist in closed folds too, so counting them proves
+-- nothing), the cursor row inside the table shows its source, and `zM` / `zR` close and reopen
+-- everything. Left for a person: whether that reads well.
 return {
   id = "render.folds",
   title = "markdown.nvim: rendering and table grid in folded regions",
@@ -57,9 +59,8 @@ return {
     { keys = "zo", note = "open the first section (cursor on its heading)" },
     { expect = "vim.fn.foldclosed(5) == -1 and vim.fn.foldclosed(10) == 10" },
     {
-      wait = [[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("markdown_table_render"),
-        { 4, 0 }, { 8, 0 }, {}) > 0]],
-      note = "the table of the opened section is drawn as a grid",
+      wait = "vim.fn.screenpos(0, 10, 1).row == 12",
+      note = "the opened table is drawn with its borders: the closed '# Second' fold moved from row 10 to 12",
     },
     { settle = 1000 },
     { screen = "first-open" },
@@ -69,9 +70,8 @@ return {
     { keys = "zR", note = "open every fold" },
     { expect = "vim.fn.foldclosed(15) == -1" },
     {
-      wait = [[#vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("markdown_table_render"),
-        { 14, 0 }, { 17, 0 }, {}) > 0]],
-      note = "the table of the second section is drawn after it was opened",
+      wait = "vim.fn.screenpos(0, 18, 1).row == 22",
+      note = "the table of the second section is drawn with its borders after it was opened (row 18 without either grid, 20 without this one)",
     },
     { keys = "gg" },
     { settle = 1000 },

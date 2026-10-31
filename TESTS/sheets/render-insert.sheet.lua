@@ -1,8 +1,11 @@
 -- Live check: typing in insert mode inside a table and a heading
 -- (task markdown.nvim/live-tests-im-echten-editor-snacks-fzf-lua-folds-insert-modu, point "Insert-Modus").
 -- Automated: with rendering and the table grid on, text typed into a table cell and into a heading
--- reaches the buffer; the lines below keep their screen row while typing (no shift); after <Esc>
--- the grid is drawn again with the new cell text. Left for a person: flicker, which only shows live.
+-- reaches the buffer; the lines below keep their screen row while typing (no shift); right after
+-- <Esc> (cursor still in the row) the grid already has the width of the new cell text, and once the
+-- cursor leaves the row it is drawn as grid again. TextChangedI already renders the final text, so
+-- the InsertLeave re-render on its own is not observable here. Left for a person: flicker, which
+-- only shows live.
 return {
   id = "render.insert",
   title = "markdown.nvim: typing in a table and a heading in insert mode",
@@ -56,6 +59,21 @@ return {
       note = "leave insert mode (with keys, the next typed key was inserted as text)",
     },
     { wait = "vim.api.nvim_get_mode().mode == 'n'" },
+    {
+      wait = [[(function()
+        local want = "┬" .. string.rep("─", 15) .. "┐"
+        for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, vim.api.nvim_create_namespace("markdown_table_render"),
+          0, -1, { details = true })) do
+          for _, vl in ipairs(m[4].virt_lines or {}) do
+            local line = {}
+            for _, chunk in ipairs(vl) do line[#line + 1] = chunk[1] end
+            if table.concat(line):find(want, 1, true) then return true end
+          end
+        end
+        return false
+      end)()]],
+      note = "cursor still in the row: the top border already has the width of 'NEW first row'",
+    },
     { keys = "gg", note = "cursor away from the table" },
     {
       wait = [[(function()
@@ -72,7 +90,7 @@ return {
         end
         return false
       end)()]],
-      note = "the grid is drawn again with the new cell text",
+      note = "after leaving the row it is drawn as grid again, with the new cell text",
     },
     { settle = 1000 },
     { screen = "table-after-edit" },
