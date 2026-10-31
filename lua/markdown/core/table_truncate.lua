@@ -27,6 +27,15 @@ local M = {}
 local api = vim.api
 local NS = api.nvim_create_namespace("markdown_table_truncate")
 
+---`nil` or `0` (as in the API) is the current buffer: the state is kept per real buffer number,
+---and `win_findbuf(0)` finds no window.
+---@param bufnr? integer
+---@return integer
+local function cur(bufnr)
+  if bufnr == nil or bufnr == 0 then return api.nvim_get_current_buf() end
+  return bufnr
+end
+
 M.DEFAULT_MAX = 40
 M.DEFAULT_MARKER = "…"
 local MAX_ROWS = 3000
@@ -285,6 +294,7 @@ end
 ---@param bufnr integer
 ---@return integer count  # ranges concealed
 function M.render(bufnr)
+  bufnr = cur(bufnr)
   if not api.nvim_buf_is_valid(bufnr) then return 0 end
   -- InsertLeave / BufWinEnter / a scroll inside the painted span fire without
   -- an edit: nothing to redo then.
@@ -351,11 +361,11 @@ end
 
 ---@param bufnr? integer
 ---@return boolean
-function M.is_enabled(bufnr) return S[bufnr or api.nvim_get_current_buf()] ~= nil end
+function M.is_enabled(bufnr) return S[cur(bufnr)] ~= nil end
 
 ---@param bufnr? integer
 function M.enable(bufnr)
-  bufnr = bufnr or api.nvim_get_current_buf()
+  bufnr = cur(bufnr)
   if S[bufnr] then return end
   -- Both hide table text with conceal: the last one switched on wins.
   local tr = package.loaded["markdown.core.table_render"]
@@ -432,7 +442,7 @@ end
 
 ---@param bufnr? integer
 function M.disable(bufnr)
-  bufnr = bufnr or api.nvim_get_current_buf()
+  bufnr = cur(bufnr)
   local st = S[bufnr]
   if not st then return end
   pcall(api.nvim_del_augroup_by_id, st.group)
@@ -446,7 +456,7 @@ end
 ---@param bufnr? integer
 ---@return boolean now_enabled
 function M.toggle(bufnr)
-  bufnr = bufnr or api.nvim_get_current_buf()
+  bufnr = cur(bufnr)
   if M.is_enabled(bufnr) then
     M.disable(bufnr)
     return false

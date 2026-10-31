@@ -136,12 +136,12 @@ end
 function M.is_open() return current ~= nil and api.nvim_win_is_valid(current.win) end
 
 ---Open the popup for the cell under the cursor.
----@param bufnr? integer
+---@param bufnr? integer `nil` or `0`: the current buffer (as in the API)
 ---@param opts? { force?: boolean, max?: integer, strict?: boolean } `strict`: only inside a real table (no fenced code, no special buffer)
 ---@return boolean shown
 function M.show(bufnr, opts)
   opts = opts or {}
-  bufnr = bufnr or api.nvim_get_current_buf()
+  if bufnr == nil or bufnr == 0 then bufnr = api.nvim_get_current_buf() end
   if bufnr ~= api.nvim_get_current_buf() then return false end
   local row, col = unpack(api.nvim_win_get_cursor(0))
   local line = api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1]

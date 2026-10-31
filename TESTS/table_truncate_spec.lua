@@ -129,6 +129,13 @@ return function(H)
   eq(vim.wo.conceallevel, 0, "conceallevel restored")
   eq(#vim.api.nvim_buf_get_extmarks(buf, ns, 0, -1, {}), 0, "extmarks cleared")
 
+  -- 0 is the current buffer, as in the API (win_findbuf(0) finds no window)
+  tt.enable(0)
+  eq(vim.wo.conceallevel, 2, "enable(0) raises conceallevel in the current window")
+  ok(tt.is_enabled(buf), "enable(0) is the state of the real buffer")
+  tt.disable(0)
+  eq(vim.wo.conceallevel, 0, "disable(0) restores it")
+
   -- centered columns: a cut cell that is not the widest also loses its leading padding
   local centered = lib.format_lines(SRC, { header_align = "center", entry_align = "center" })
   local cm = tt.compute(centered, { max = 20, marker = "…" })

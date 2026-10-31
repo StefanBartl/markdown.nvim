@@ -41,6 +41,8 @@ return function(H)
   eq(tp.show(buf, { force = true }), true, "force shows it anyway")
   ok(tp.is_open(), "the float is open")
   tp.close()
+  eq(tp.show(0, { force = true }), true, "0 means the current buffer, as in the API")
+  tp.close()
   eq(tp.is_open(), false, "close closes it")
 
   vim.api.nvim_win_set_cursor(0, { 3, 10 })
