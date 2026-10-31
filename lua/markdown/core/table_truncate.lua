@@ -267,6 +267,7 @@ end
 
 ---@param bufnr integer
 function M.clear(bufnr)
+  bufnr = cur(bufnr)
   rendered_at[bufnr] = nil
   computed[bufnr] = nil
   if api.nvim_buf_is_valid(bufnr) then api.nvim_buf_clear_namespace(bufnr, NS, 0, -1) end

@@ -40,10 +40,14 @@ return {
     {
       expect = [[(function()
         for _, w in ipairs(vim.api.nvim_list_wins()) do
-          if vim.api.nvim_win_get_config(w).relative ~= "" then
+          local cfg = vim.api.nvim_win_get_config(w)
+          if cfg.relative ~= "" then
+            -- the size without the border: add it; the command line is not part of the editor area
+            local b = (cfg.border ~= nil and cfg.border ~= "none" and #cfg.border > 0) and 2 or 0
             local pos = vim.api.nvim_win_get_position(w)
-            local h, wd = vim.api.nvim_win_get_height(w), vim.api.nvim_win_get_width(w)
-            if pos[1] < 0 or pos[2] < 0 or pos[1] + h > vim.o.lines or pos[2] + wd > vim.o.columns then
+            local h = vim.api.nvim_win_get_height(w) + b
+            local wd = vim.api.nvim_win_get_width(w) + b
+            if pos[1] < 0 or pos[2] < 0 or pos[1] + h > vim.o.lines - vim.o.cmdheight or pos[2] + wd > vim.o.columns then
               return false
             end
           end
