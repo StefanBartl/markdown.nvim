@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 1,1
+mode: n
+--- text
+01|+--  9 lines: # First···························································
+02|+--  9 lines: # Second··························································
+03|+--  3 lines: # Third···························································
+04|~
+05|~
+06|~
+07|~
+08|~
+09|~
+10|~
+11|~
+12|~
+13|~
+14|~
+15|~
+16|~
+17|~
+18|~
+19|~
+20|~
+21|~
+22|~
+23|[No Name] [+]                                                 1,1            All
+24|
+--- attrs
+01|aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+02|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+03|bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+04|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+05|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+06|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+07|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+08|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+09|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+10|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+11|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+12|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+13|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+14|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+15|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+16|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+17|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+18|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+19|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+20|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+21|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+22|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+23|dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+24|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee

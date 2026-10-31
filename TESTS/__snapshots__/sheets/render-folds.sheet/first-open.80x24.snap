@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 1,1
+mode: n
+--- text
+01|# First
+02|
+03|Some text with bold and code.
+04|
+05|┌──────┬────────────┐
+06|│ Name │ Note       │
+07|├──────┼────────────┤
+08|│ a    │ first row  │
+09|│ b    │ second row │
+10|└──────┴────────────┘
+11|
+12|+--  9 lines: # Second··························································
+13|+--  3 lines: # Third···························································
+14|~
+15|~
+16|~
+17|~
+18|~
+19|~
+20|~
+21|~
+22|~
+23|[No Name] [+]                                                 1,1            All
+24|
+--- attrs
+01|aaaaaaa
+02|
+03|               bbbb
+04|
+05|ccccccccccccccccccccc
+06|c aaaa c aaaa       c
+07|ccccccccccccccccccccc
+08|c      c            c
+09|c      c            c
+10|ccccccccccccccccccccc
+11|
+12|dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+13|dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+14|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+15|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+16|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+17|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+18|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+19|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+20|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+21|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+22|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+23|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+24|gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg

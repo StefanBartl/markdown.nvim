@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 8,1
+mode: n
+--- text
+01|◉ First
+02|
+03|Some text with bold and code.
+04|
+05|┌──────┬────────────┐
+06|│ Name │ Note       │
+07|├──────┼────────────┤
+08|| a    | first row   |
+09|│ b    │ second row │
+10|└──────┴────────────┘
+11|
+12|+--  9 lines: # Second··························································
+13|+--  3 lines: # Third···························································
+14|~
+15|~
+16|~
+17|~
+18|~
+19|~
+20|~
+21|~
+22|~
+23|[No Name] [+]                                                 7,1            All
+24|
+--- attrs
+01|aabbbbbccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+02|
+03|               dddd
+04|
+05|eeeeeeeeeeeeeeeeeeeee
+06|e ffff e ffff       e
+07|eeeeeeeeeeeeeeeeeeeee
+08|g      g             g
+09|e      e            e
+10|eeeeeeeeeeeeeeeeeeeee
+11|
+12|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+13|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+14|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+15|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+16|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+17|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+18|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+19|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+20|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+21|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+22|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+23|iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+24|jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj

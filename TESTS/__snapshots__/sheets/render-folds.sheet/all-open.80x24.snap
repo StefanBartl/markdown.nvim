@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 1,1
+mode: n
+--- text
+01|# First
+02|
+03|Some text with bold and code.
+04|
+05|┌──────┬────────────┐
+06|│ Name │ Note       │
+07|├──────┼────────────┤
+08|│ a    │ first row  │
+09|│ b    │ second row │
+10|└──────┴────────────┘
+11|
+12|◉ Second
+13|
+14|• item one
+15| ☐ todo
+16|
+17|┌───┬───┐
+18|│ K │ V │
+19|├───┼───┤
+20|│ x │ y │
+21|└───┴───┘
+22|
+23|[No Name] [+]                                                 1,1            Top
+24|
+--- attrs
+01|aaaaaaa
+02|
+03|               bbbb
+04|
+05|ccccccccccccccccccccc
+06|c aaaa c aaaa       c
+07|ccccccccccccccccccccc
+08|c      c            c
+09|c      c            c
+10|ccccccccccccccccccccc
+11|
+12|ddeeeeeeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+13|
+14|gh
+15|hg
+16|
+17|ccccccccc
+18|c a c a c
+19|ccccccccc
+20|c   c   c
+21|ccccccccc
+22|
+23|iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+24|jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj

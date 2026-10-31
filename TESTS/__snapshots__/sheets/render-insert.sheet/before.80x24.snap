@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 1,1
+mode: n
+--- text
+01|# Title
+02|
+03|┌──────┬────────────┐
+04|│ Name │ Note       │
+05|├──────┼────────────┤
+06|│ a    │ first row  │
+07|│ b    │ second row │
+08|└──────┴────────────┘
+09|
+10|○ Section
+11|
+12|text below
+13|~
+14|~
+15|~
+16|~
+17|~
+18|~
+19|~
+20|~
+21|~
+22|~
+23|[No Name] [+]                                                 1,1            All
+24|
+--- attrs
+01|aaaaaaa
+02|
+03|bbbbbbbbbbbbbbbbbbbbb
+04|b aaaa b aaaa       b
+05|bbbbbbbbbbbbbbbbbbbbb
+06|b      b            b
+07|b      b            b
+08|bbbbbbbbbbbbbbbbbbbbb
+09|
+10|ccdddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+11|
+12|
+13|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+14|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+15|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+16|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+17|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+18|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+19|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+20|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+21|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+22|ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+23|gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
+24|hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
