@@ -7,7 +7,8 @@ return {
   plugin = "markdown",
   -- How the spec files are run: "auto" = sniffed per file, "h" = on the project's own TESTS/harness.lua,
   -- "script" = a self-running script in its own process.
-  dialect = "h",
+  -- TESTS/sheets_spec.lua is busted style: one case per test sheet (`sheet:<id>`, testing sheets report).
+  dialect = { ["TESTS/sheets_spec.lua"] = "busted", ["*"] = "h" },
   -- Dependencies (directory names) put on the runtimepath: $<NAME>_DIR, .deps/<name>, ../<name>,
   -- stdpath('data')/lazy/<name>.
   deps = { "color_my_ascii.nvim", "hover.nvim", "lib.nvim" },

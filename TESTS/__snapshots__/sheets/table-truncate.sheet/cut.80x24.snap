@@ -1,0 +1,54 @@
+testing.nvim screen v1
+size: 80x24
+cursor: 1,1
+mode: n
+--- text
+01|Text above the table.
+02|
+03|| Name | Note         |
+04|| ---- | ------------ |
+05|| a    | a very long… |
+06|| b    | short        |
+07|| c    | 漢字漢字漢… |
+08|~
+09|~
+10|~
+11|~
+12|~
+13|~
+14|~
+15|~
+16|~
+17|~
+18|~
+19|~
+20|~
+21|~
+22|~
+23|[No Name] [+]                                                 1,1            All
+24|
+--- attrs
+01|
+02|
+03|a bbbbba bbbbbbbbbbbbba
+04|a aaaa a aaaaaaaaaaaa a
+05|a      a            c a
+06|a      a              a
+07|a      a      c a
+08|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+09|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+10|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+11|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+12|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+13|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+14|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+15|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+16|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+17|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+18|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+19|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+20|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+21|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+22|cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+23|dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+24|eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
